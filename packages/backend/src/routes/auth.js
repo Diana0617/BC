@@ -23,21 +23,23 @@ router.post('/refresh-token', AuthController.refreshToken);
 // Obtener perfil del usuario autenticado
 router.get('/profile', authenticateToken, AuthController.getProfile);
 
-// TODO: Implementar estas rutas
-router.post('/forgot-password', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de forgot-password aún no implementada'
-  });
-});
+// =====================================
+// RUTAS DE RECUPERACIÓN DE CONTRASEÑA
+// =====================================
 
-router.post('/reset-password', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de reset-password aún no implementada'
-  });
-});
+// Solicitar recuperación de contraseña (envía email)
+router.post('/forgot-password', AuthController.requestPasswordReset);
 
+// Verificar token de recuperación
+router.get('/reset-password/:token', AuthController.verifyResetToken);
+
+// Restablecer contraseña con token
+router.post('/reset-password', AuthController.resetPassword);
+
+// Cambiar contraseña (usuario autenticado)
+router.post('/change-password', authenticateToken, AuthController.changePassword);
+
+// TODO: Implementar verificación de email
 router.get('/verify-email/:token', (req, res) => {
   res.status(501).json({
     success: false,

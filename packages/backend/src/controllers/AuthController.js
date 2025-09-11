@@ -1,9 +1,12 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { Op } = require('sequelize');
 const User = require('../models/User');
 const Business = require('../models/Business');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
+const PasswordResetToken = require('../models/PasswordResetToken');
+const emailService = require('../services/EmailService');
 
 /**
  * Controlador de Autenticación para Beauty Control
@@ -512,6 +515,398 @@ class AuthController {
 
     } catch (error) {
       console.error('Error verificando subdominio:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Solicitar recuperación de contraseña
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   */
+  static async requestPasswordReset(req, res) {
+    try {
+      const { email } = req.body;
+
+      // Validación básica
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email es requerido'
+        });
+      }
+
+      // Buscar usuario por email
+      const user = await User.findOne({ where: { email: email.toLowerCase() } });
+
+      // Por seguridad, siempre devolvemos éxito aunque el usuario no exista
+      // Esto evita que atacantes puedan determinar si un email está registrado
+      if (!user) {
+        return res.json({
+          success: true,
+          message: 'Si el email existe en nuestro sistema, recibirás un enlace de recuperación'
+        });
+      }
+
+      // Verificar si el usuario está activo
+      if (!user.isActive) {
+        return res.json({
+          success: true,
+          message: 'Si el email existe en nuestro sistema, recibirás un enlace de recuperación'
+        });
+      }
+
+      // Invalidar tokens anteriores del usuario
+      await PasswordResetToken.invalidateUserTokens(user.id);
+
+      // Generar token seguro
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+      // Crear registro de token en base de datos
+      const tokenRecord = await PasswordResetToken.create({
+        userId: user.id,
+        token: resetToken,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hora
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent') || 'Unknown'
+      });
+
+      // Construir URL de reset
+      const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+      // Enviar email
+      const emailResult = await emailService.sendPasswordResetEmail(
+        user.email,
+        user.firstName,
+        resetToken,
+        resetUrl
+      );
+
+      if (!emailResult.success) {
+        console.error('❌ Error enviando email de recuperación:', emailResult.error);
+        
+        // Eliminar token si no se pudo enviar el email
+        await tokenRecord.destroy();
+        
+        return res.status(500).json({
+          success: false,
+          error: 'Error enviando email de recuperación. Intenta nuevamente'
+        });
+      }
+
+      console.log(`📧 Email de recuperación enviado a ${user.email}`);
+
+      res.json({
+        success: true,
+        message: 'Si el email existe en nuestro sistema, recibirás un enlace de recuperación',
+        data: {
+          emailSent: true,
+          expiresIn: '1 hora'
+        }
+      });
+
+    } catch (error) {
+      console.error('Error en solicitud de reset:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Verificar token de recuperación
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   */
+  static async verifyResetToken(req, res) {
+    try {
+      const { token } = req.params;
+
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          error: 'Token es requerido'
+        });
+      }
+
+      // Buscar token válido
+      const tokenRecord = await PasswordResetToken.scope('valid').findOne({
+        where: { token },
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'isActive']
+        }]
+      });
+
+      if (!tokenRecord) {
+        return res.status(400).json({
+          success: false,
+          error: 'Token inválido o expirado'
+        });
+      }
+
+      // Verificar que el usuario sigue activo
+      if (!tokenRecord.user.isActive) {
+        return res.status(400).json({
+          success: false,
+          error: 'Usuario inactivo'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Token válido',
+        data: {
+          userId: tokenRecord.user.id,
+          userEmail: tokenRecord.user.email,
+          userName: `${tokenRecord.user.firstName} ${tokenRecord.user.lastName}`,
+          expiresAt: tokenRecord.expiresAt
+        }
+      });
+
+    } catch (error) {
+      console.error('Error verificando token:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Restablecer contraseña con token
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   */
+  static async resetPassword(req, res) {
+    try {
+      const { token, newPassword, confirmPassword } = req.body;
+
+      // Validaciones básicas
+      if (!token || !newPassword || !confirmPassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'Token, nueva contraseña y confirmación son requeridos'
+        });
+      }
+
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'Las contraseñas no coinciden'
+        });
+      }
+
+      // Validar fortaleza de contraseña
+      if (newPassword.length < 8) {
+        return res.status(400).json({
+          success: false,
+          error: 'La contraseña debe tener al menos 8 caracteres'
+        });
+      }
+
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+      if (!passwordRegex.test(newPassword)) {
+        return res.status(400).json({
+          success: false,
+          error: 'La contraseña debe contener al menos: 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial'
+        });
+      }
+
+      // Buscar y validar token
+      const tokenRecord = await PasswordResetToken.scope('valid').findOne({
+        where: { token },
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'isActive', 'password']
+        }]
+      });
+
+      if (!tokenRecord) {
+        return res.status(400).json({
+          success: false,
+          error: 'Token inválido o expirado'
+        });
+      }
+
+      // Verificar que el usuario sigue activo
+      if (!tokenRecord.user.isActive) {
+        return res.status(400).json({
+          success: false,
+          error: 'Usuario inactivo'
+        });
+      }
+
+      // Verificar que la nueva contraseña no sea igual a la actual
+      const isSamePassword = await bcrypt.compare(newPassword, tokenRecord.user.password);
+      if (isSamePassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'La nueva contraseña debe ser diferente a la actual'
+        });
+      }
+
+      // Hashear nueva contraseña
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // Actualizar contraseña del usuario
+      await tokenRecord.user.update({
+        password: hashedPassword,
+        lastPasswordChange: new Date()
+      });
+
+      // Marcar token como usado
+      await tokenRecord.markAsUsed();
+
+      // Invalidar todos los demás tokens del usuario
+      await PasswordResetToken.invalidateUserTokens(tokenRecord.userId);
+
+      // Enviar email de confirmación
+      const confirmationEmailResult = await emailService.sendPasswordChangedConfirmation(
+        tokenRecord.user.email,
+        tokenRecord.user.firstName
+      );
+
+      if (!confirmationEmailResult.success) {
+        console.error('❌ Error enviando email de confirmación:', confirmationEmailResult.error);
+        // No fallar la operación por esto, solo loggear
+      }
+
+      console.log(`🔐 Contraseña restablecida para usuario ${tokenRecord.user.email}`);
+
+      res.json({
+        success: true,
+        message: 'Contraseña restablecida exitosamente',
+        data: {
+          userId: tokenRecord.user.id,
+          emailSent: confirmationEmailResult.success
+        }
+      });
+
+    } catch (error) {
+      console.error('Error restableciendo contraseña:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Cambiar contraseña (usuario autenticado)
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   */
+  static async changePassword(req, res) {
+    try {
+      const { currentPassword, newPassword, confirmPassword } = req.body;
+      const userId = req.user.id;
+
+      // Validaciones básicas
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'Contraseña actual, nueva contraseña y confirmación son requeridas'
+        });
+      }
+
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'Las contraseñas no coinciden'
+        });
+      }
+
+      // Validar fortaleza de contraseña
+      if (newPassword.length < 8) {
+        return res.status(400).json({
+          success: false,
+          error: 'La contraseña debe tener al menos 8 caracteres'
+        });
+      }
+
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+      if (!passwordRegex.test(newPassword)) {
+        return res.status(400).json({
+          success: false,
+          error: 'La contraseña debe contener al menos: 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial'
+        });
+      }
+
+      // Buscar usuario
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: 'Usuario no encontrado'
+        });
+      }
+
+      // Verificar contraseña actual
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({
+          success: false,
+          error: 'Contraseña actual incorrecta'
+        });
+      }
+
+      // Verificar que la nueva contraseña no sea igual a la actual
+      const isSamePassword = await bcrypt.compare(newPassword, user.password);
+      if (isSamePassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'La nueva contraseña debe ser diferente a la actual'
+        });
+      }
+
+      // Hashear nueva contraseña
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // Actualizar contraseña
+      await user.update({
+        password: hashedPassword,
+        lastPasswordChange: new Date()
+      });
+
+      // Invalidar todos los tokens de reset del usuario
+      await PasswordResetToken.invalidateUserTokens(userId);
+
+      // Enviar email de confirmación
+      const confirmationEmailResult = await emailService.sendPasswordChangedConfirmation(
+        user.email,
+        user.firstName
+      );
+
+      if (!confirmationEmailResult.success) {
+        console.error('❌ Error enviando email de confirmación:', confirmationEmailResult.error);
+        // No fallar la operación por esto, solo loggear
+      }
+
+      console.log(`🔐 Contraseña cambiada para usuario ${user.email}`);
+
+      res.json({
+        success: true,
+        message: 'Contraseña cambiada exitosamente',
+        data: {
+          userId: user.id,
+          emailSent: confirmationEmailResult.success,
+          changedAt: new Date()
+        }
+      });
+
+    } catch (error) {
+      console.error('Error cambiando contraseña:', error);
       res.status(500).json({
         success: false,
         error: 'Error interno del servidor'

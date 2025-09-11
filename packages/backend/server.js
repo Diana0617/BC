@@ -28,7 +28,8 @@ async function startServer() {
         BusinessClient,
         InventoryMovement,
         FinancialMovement,
-        PaymentIntegration
+        PaymentIntegration,
+        PasswordResetToken
       } = require('./src/models');
 
       // Sincronizar en orden de dependencias
@@ -59,9 +60,14 @@ async function startServer() {
       await InventoryMovement.sync({ alter: true });
       await FinancialMovement.sync({ alter: true });
       await PaymentIntegration.sync({ alter: true });
+      await PasswordResetToken.sync({ alter: true });
       
       console.log('✅ Todas las tablas sincronizadas con la base de datos');
     }
+
+    // Inicializar servicios
+    const tokenCleanupService = require('./src/services/TokenCleanupService');
+    console.log('🧹 Servicio de limpieza de tokens inicializado');
 
     // Iniciar servidor
     const server = app.listen(PORT, () => {

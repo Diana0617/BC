@@ -11,6 +11,7 @@ const Client = require('./Client');
 const Service = require('./Service');
 const Product = require('./Product');
 const Appointment = require('./Appointment');
+const PasswordResetToken = require('./PasswordResetToken');
 
 // Modelos de relaciones (tablas intermedias)
 const PlanModule = require('./PlanModule');
@@ -274,6 +275,16 @@ PaymentIntegration.belongsTo(Business, {
   as: 'business' 
 });
 
+// PasswordResetToken relationships
+User.hasMany(PasswordResetToken, { 
+  foreignKey: 'userId', 
+  as: 'passwordResetTokens' 
+});
+PasswordResetToken.belongsTo(User, { 
+  foreignKey: 'userId', 
+  as: 'user' 
+});
+
 // Exportar modelos y sequelize
 module.exports = {
   sequelize,
@@ -291,5 +302,6 @@ module.exports = {
   Product,
   InventoryMovement,
   FinancialMovement,
-  PaymentIntegration
+  PaymentIntegration,
+  PasswordResetToken
 };

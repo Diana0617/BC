@@ -95,6 +95,134 @@
       "_type": "request"
     },
     {
+      "_id": "req_auth_forgot_password",
+      "parentId": "fld_auth",
+      "modified": 1726084500000,
+      "created": 1726084500000,
+      "url": "{{ _.base_url }}/api/auth/forgot-password",
+      "name": "Solicitar Recuperación de Contraseña",
+      "description": "Enviar email de recuperación de contraseña",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"maria@example.com\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450115000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_verify_reset_token",
+      "parentId": "fld_auth",
+      "modified": 1726084510000,
+      "created": 1726084510000,
+      "url": "{{ _.base_url }}/api/auth/verify-reset-token",
+      "name": "Verificar Token de Recuperación",
+      "description": "Verificar que el token de recuperación sea válido",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"token\": \"TOKEN_DESDE_EMAIL\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450114000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_reset_password",
+      "parentId": "fld_auth",
+      "modified": 1726084520000,
+      "created": 1726084520000,
+      "url": "{{ _.base_url }}/api/auth/reset-password",
+      "name": "Restablecer Contraseña",
+      "description": "Cambiar contraseña usando token de recuperación",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"token\": \"TOKEN_DESDE_EMAIL\",\n  \"newPassword\": \"NuevaPassword123!\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450113000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_change_password",
+      "parentId": "fld_auth",
+      "modified": 1726084530000,
+      "created": 1726084530000,
+      "url": "{{ _.base_url }}/api/auth/change-password",
+      "name": "Cambiar Contraseña (Autenticado)",
+      "description": "Cambiar contraseña estando autenticado",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"currentPassword\": \"Password123!\",\n  \"newPassword\": \"NuevaPassword123!\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450112000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
       "_id": "req_plans_list",
       "parentId": "fld_plans",
       "modified": 1694450130000,
