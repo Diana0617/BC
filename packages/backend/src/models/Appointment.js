@@ -1,0 +1,213 @@
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const Appointment = sequelize.define('Appointment', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  businessId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'Businesses',
+      key: 'id'
+    }
+  },
+  clientId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'Clients',
+      key: 'id'
+    }
+  },
+  specialistId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  },
+  serviceId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'Services',
+      key: 'id'
+    }
+  },
+  appointmentNumber: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true
+  },
+  startTime: {
+    type: DataTypes.DATE,
+    allowNull: false
+  },
+  endTime: {
+    type: DataTypes.DATE,
+    allowNull: false
+  },
+  status: {
+    type: DataTypes.ENUM(
+      'PENDING', 
+      'CONFIRMED', 
+      'IN_PROGRESS', 
+      'COMPLETED', 
+      'CANCELED', 
+      'NO_SHOW',
+      'RESCHEDULED'
+    ),
+    allowNull: false,
+    defaultValue: 'PENDING'
+  },
+  paymentStatus: {
+    type: DataTypes.ENUM('PENDING', 'PARTIAL', 'PAID', 'REFUNDED'),
+    allowNull: false,
+    defaultValue: 'PENDING'
+  },
+  totalAmount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0
+  },
+  paidAmount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0
+  },
+  discountAmount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0
+  },
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  clientNotes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  specialistNotes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  cancelReason: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  canceledAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  canceledBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  },
+  confirmedAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  startedAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  completedAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  hasConsent: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
+  },
+  consentSignedAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  consentDocument: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  evidence: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {
+      before: [],
+      after: [],
+      documents: []
+    }
+  },
+  rating: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    validate: {
+      min: 1,
+      max: 5
+    }
+  },
+  feedback: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  remindersSent: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: []
+  },
+  isOnline: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
+  },
+  meetingLink: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  rescheduleHistory: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: []
+  },
+  additionalServices: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: []
+  },
+  metadata: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {}
+  }
+}, {
+  tableName: 'appointments',
+  timestamps: true,
+  indexes: [
+    {
+      fields: ['businessId', 'startTime']
+    },
+    {
+      fields: ['specialistId', 'startTime']
+    },
+    {
+      fields: ['clientId', 'businessId']
+    },
+    {
+      fields: ['status', 'businessId']
+    },
+    {
+      fields: ['appointmentNumber']
+    }
+  ]
+});
+
+module.exports = Appointment;
