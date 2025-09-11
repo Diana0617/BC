@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { User, Business } = require('../models');
 
-const authMiddleware = async (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
@@ -17,12 +17,12 @@ const authMiddleware = async (req, res, next) => {
     const user = await User.findOne({
       where: { 
         id: decoded.userId,
-        status: 'ACTIVE'
+        isActive: true
       },
       include: [{
         model: Business,
         as: 'business',
-        attributes: ['id', 'name', 'status']
+        attributes: ['id', 'name', 'isActive']
       }]
     });
 
@@ -34,7 +34,7 @@ const authMiddleware = async (req, res, next) => {
     }
 
     // Verificar que el negocio esté activo (excepto para OWNER)
-    if (user.role !== 'OWNER' && user.business && !['ACTIVE', 'TRIAL'].includes(user.business.status)) {
+    if (user.role !== 'OWNER' && user.business && !user.business.isActive) {
       return res.status(403).json({ 
         success: false,
         error: 'Negocio inactivo o suspendido' 
@@ -73,4 +73,4 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-module.exports = authMiddleware;
+module.exports = { authenticateToken };

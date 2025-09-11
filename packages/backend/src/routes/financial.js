@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const tenancyMiddleware = require('../middleware/tenancy');
-const { allStaffRoles, businessAndOwner } = require('../middleware/roleCheck');
+const { authenticateToken } = require('../middleware/auth');
+// const tenancyMiddleware = require('../middleware/tenancy');
+// const { allStaffRoles, businessAndOwner } = require('../middleware/roleCheck');
 
 // Todas las rutas financieras requieren autenticación
-router.use(authMiddleware);
-router.use(tenancyMiddleware);
-router.use(allStaffRoles);
+router.use(authenticateToken);
+// router.use(tenancyMiddleware);
+// router.use(allStaffRoles);
 
 // Obtener resumen financiero
 router.get('/summary', (req, res) => {
@@ -34,7 +34,7 @@ router.post('/movements', (req, res) => {
 });
 
 // Obtener reportes financieros
-router.get('/reports', businessAndOwner, (req, res) => {
+router.get('/reports', /* businessAndOwner, */ (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de reportes financieros aún no implementada'
@@ -42,7 +42,7 @@ router.get('/reports', businessAndOwner, (req, res) => {
 });
 
 // Obtener balance del negocio
-router.get('/balance', businessAndOwner, (req, res) => {
+router.get('/balance', /* businessAndOwner, */ (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de balance del negocio aún no implementada'
@@ -50,14 +50,14 @@ router.get('/balance', businessAndOwner, (req, res) => {
 });
 
 // Configurar integraciones de pago
-router.get('/payment-integrations', businessAndOwner, (req, res) => {
+router.get('/payment-integrations', /* businessAndOwner, */ (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de integraciones de pago aún no implementada'
   });
 });
 
-router.post('/payment-integrations', businessAndOwner, (req, res) => {
+router.post('/payment-integrations', /* businessAndOwner, */ (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de crear integración de pago aún no implementada'

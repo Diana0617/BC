@@ -11,7 +11,7 @@ const Product = sequelize.define('Product', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Businesses',
+      model: 'businesses',
       key: 'id'
     }
   },

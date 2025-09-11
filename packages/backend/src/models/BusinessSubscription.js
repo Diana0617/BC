@@ -11,7 +11,7 @@ const BusinessSubscription = sequelize.define('BusinessSubscription', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Businesses',
+      model: 'businesses',
       key: 'id'
     }
   },
@@ -19,7 +19,7 @@ const BusinessSubscription = sequelize.define('BusinessSubscription', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'SubscriptionPlans',
+      model: 'subscription_plans',
       key: 'id'
     }
   },

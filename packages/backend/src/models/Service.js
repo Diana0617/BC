@@ -11,7 +11,7 @@ const Service = sequelize.define('Service', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Businesses',
+      model: 'businesses',
       key: 'id'
     }
   },

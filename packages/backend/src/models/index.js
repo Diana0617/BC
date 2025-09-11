@@ -1,18 +1,21 @@
 const { sequelize } = require('../config/database');
 
-// Importar todos los modelos
-const User = require('./User');
-const Business = require('./Business');
-const BusinessRules = require('./BusinessRules');
+
+// Importar modelos en orden de dependencias (sin referencias primero)
 const SubscriptionPlan = require('./SubscriptionPlan');
 const Module = require('./Module');
+const Business = require('./Business');
+const BusinessRules = require('./BusinessRules');
+const User = require('./User');
+const Client = require('./Client');
+const Service = require('./Service');
+const Product = require('./Product');
+const Appointment = require('./Appointment');
+
+// Modelos de relaciones (tablas intermedias)
 const PlanModule = require('./PlanModule');
 const BusinessSubscription = require('./BusinessSubscription');
-const Client = require('./Client');
 const BusinessClient = require('./BusinessClient');
-const Service = require('./Service');
-const Appointment = require('./Appointment');
-const Product = require('./Product');
 const InventoryMovement = require('./InventoryMovement');
 const FinancialMovement = require('./FinancialMovement');
 const PaymentIntegration = require('./PaymentIntegration');
@@ -100,6 +103,16 @@ BusinessSubscription.belongsTo(Business, {
 BusinessSubscription.belongsTo(SubscriptionPlan, { 
   foreignKey: 'subscriptionPlanId', 
   as: 'plan' 
+});
+
+// Business - Plan actual (relación directa)
+Business.belongsTo(SubscriptionPlan, {
+  foreignKey: 'currentPlanId',
+  as: 'currentPlan'
+});
+SubscriptionPlan.hasMany(Business, {
+  foreignKey: 'currentPlanId',
+  as: 'activeBusinesses'
 });
 
 // Client - Business (muchos a muchos a través de BusinessClient)

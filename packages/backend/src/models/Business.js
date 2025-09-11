@@ -64,6 +64,16 @@ const Business = sequelize.define('Business', {
       isUrl: true
     }
   },
+  subdomain: {
+    type: DataTypes.STRING,
+    allowNull: true, // Opcional por ahora, se activará en producción
+    unique: true,    // Preparado para unicidad global
+    validate: {
+      is: /^[a-z0-9-]+$/i, // Solo letras, números y guiones
+      len: [3, 30],        // Entre 3 y 30 caracteres
+      notIn: ['www', 'api', 'admin', 'app', 'mail', 'ftp', 'test', 'dev', 'staging'] // Subdominios reservados
+    }
+  },
   status: {
     type: DataTypes.ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED', 'TRIAL'),
     allowNull: false,
@@ -95,6 +105,14 @@ const Business = sequelize.define('Business', {
   trialEndDate: {
     type: DataTypes.DATE,
     allowNull: true
+  },
+  currentPlanId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'subscription_plans',
+      key: 'id'
+    }
   },
   settings: {
     type: DataTypes.JSONB,

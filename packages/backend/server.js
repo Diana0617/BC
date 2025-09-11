@@ -12,8 +12,55 @@ async function startServer() {
 
     // Sincronizar modelos en desarrollo (cuidado en producción)
     if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ alter: true });
-      console.log('✅ Modelos sincronizados con la base de datos');
+      // Importar modelos para sincronización manual
+      const {
+        SubscriptionPlan,
+        Module,
+        Business,
+        BusinessRules,
+        User,
+        Client,
+        Service,
+        Product,
+        Appointment,
+        PlanModule,
+        BusinessSubscription,
+        BusinessClient,
+        InventoryMovement,
+        FinancialMovement,
+        PaymentIntegration
+      } = require('./src/models');
+
+      // Sincronizar en orden de dependencias
+      console.log('🔄 Sincronizando tablas en orden...');
+      
+      // 1. Tablas sin dependencias
+      await SubscriptionPlan.sync({ alter: true });
+      await Module.sync({ alter: true });
+      console.log('✅ Tablas base creadas');
+      
+      // 2. Business (puede depender de SubscriptionPlan si agregamos currentPlanId)
+      await Business.sync({ alter: true });
+      console.log('✅ Tabla Business creada');
+      
+      // 3. Tablas que dependen de Business
+      await BusinessRules.sync({ alter: true });
+      await User.sync({ alter: true });
+      await Client.sync({ alter: true });
+      await Service.sync({ alter: true });
+      await Product.sync({ alter: true });
+      console.log('✅ Tablas principales creadas');
+      
+      // 4. Tablas que dependen de múltiples entidades
+      await Appointment.sync({ alter: true });
+      await PlanModule.sync({ alter: true });
+      await BusinessSubscription.sync({ alter: true });
+      await BusinessClient.sync({ alter: true });
+      await InventoryMovement.sync({ alter: true });
+      await FinancialMovement.sync({ alter: true });
+      await PaymentIntegration.sync({ alter: true });
+      
+      console.log('✅ Todas las tablas sincronizadas con la base de datos');
     }
 
     // Iniciar servidor

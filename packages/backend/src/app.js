@@ -85,6 +85,7 @@ app.get('/health', (req, res) => {
 // Rutas de API
 const authRoutes = require('./routes/auth');
 const businessRoutes = require('./routes/business');
+const plansRoutes = require('./routes/plans');
 const clientRoutes = require('./routes/clients');
 const appointmentRoutes = require('./routes/appointments');
 const serviceRoutes = require('./routes/services');
@@ -93,6 +94,7 @@ const financialRoutes = require('./routes/financial');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
+app.use('/api/plans', plansRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/services', serviceRoutes);

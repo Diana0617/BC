@@ -45,4 +45,14 @@ router.get('/verify-email/:token', (req, res) => {
   });
 });
 
+// =====================================
+// RUTAS DE SUBDOMINIO (PREPARADAS PARA PRODUCCIÓN)
+// =====================================
+
+// Sugerir subdominio basado en nombre del negocio
+router.post('/suggest-subdomain', AuthController.suggestSubdomain);
+
+// Verificar disponibilidad de subdominio
+router.get('/check-subdomain/:subdomain', AuthController.checkSubdomainAvailability);
+
 module.exports = router;

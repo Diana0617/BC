@@ -11,7 +11,7 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Businesses',
+      model: 'businesses',
       key: 'id'
     }
   },
@@ -19,7 +19,7 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Clients',
+      model: 'clients',
       key: 'id'
     }
   },
@@ -27,7 +27,7 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     }
   },
@@ -35,7 +35,7 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Services',
+      model: 'services',
       key: 'id'
     }
   },
@@ -109,7 +109,7 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     }
   },

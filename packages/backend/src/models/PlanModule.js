@@ -11,7 +11,7 @@ const PlanModule = sequelize.define('PlanModule', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'SubscriptionPlans',
+      model: 'subscription_plans',
       key: 'id'
     }
   },
@@ -19,7 +19,7 @@ const PlanModule = sequelize.define('PlanModule', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Modules',
+      model: 'modules',
       key: 'id'
     }
   },

@@ -11,7 +11,7 @@ const FinancialMovement = sequelize.define('FinancialMovement', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Businesses',
+      model: 'businesses',
       key: 'id'
     }
   },
@@ -19,7 +19,7 @@ const FinancialMovement = sequelize.define('FinancialMovement', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     }
   },
@@ -94,7 +94,7 @@ const FinancialMovement = sequelize.define('FinancialMovement', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'Clients',
+      model: 'clients',
       key: 'id'
     }
   },

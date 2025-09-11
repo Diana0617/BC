@@ -1,7 +1,9 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User, Business, SubscriptionPlan } = require('../models');
 const { Op } = require('sequelize');
+const User = require('../models/User');
+const Business = require('../models/Business');
+const SubscriptionPlan = require('../models/SubscriptionPlan');
 
 /**
  * Controlador de Autenticación para Beauty Control
@@ -16,6 +18,9 @@ class AuthController {
    */
   static async register(req, res) {
     try {
+      // Debug: verificar qué datos están llegando
+      console.log('📨 Datos recibidos en registro:', req.body);
+      
       const {
         firstName,
         lastName,
@@ -28,9 +33,15 @@ class AuthController {
 
       // Validaciones básicas
       if (!firstName || !lastName || !email || !password) {
+        console.log('❌ Validación fallida:', {
+          firstName: !!firstName,
+          lastName: !!lastName,
+          email: !!email,
+          password: !!password
+        });
         return res.status(400).json({
           success: false,
-          error: 'Nombre, apellido, email y contraseña son requeridos'
+          error: 'Los campos firstName, lastName, email y password son requeridos'
         });
       }
 
@@ -418,6 +429,94 @@ class AuthController {
       refreshToken,
       expiresIn: process.env.JWT_EXPIRES_IN || '24h'
     };
+  }
+
+  /**
+   * Generar subdominio sugerido para nuevo negocio (PREPARADO PARA PRODUCCIÓN)
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   */
+  static async suggestSubdomain(req, res) {
+    try {
+      const { businessName } = req.body;
+
+      if (!businessName) {
+        return res.status(400).json({
+          success: false,
+          error: 'Nombre del negocio es requerido'
+        });
+      }
+
+      const { generateSubdomain, isSubdomainAvailable } = require('../middleware/subdomain');
+      
+      let suggestedSubdomain = generateSubdomain(businessName);
+      let counter = 1;
+      
+      // Si el subdominio sugerido no está disponible, agregar número
+      while (!(await isSubdomainAvailable(suggestedSubdomain))) {
+        suggestedSubdomain = `${generateSubdomain(businessName)}-${counter}`;
+        counter++;
+        
+        // Evitar loop infinito
+        if (counter > 99) {
+          suggestedSubdomain = `${generateSubdomain(businessName)}-${Date.now()}`;
+          break;
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          suggested: suggestedSubdomain,
+          preview: `https://${suggestedSubdomain}.${process.env.DOMAIN_BASE || 'beautycontrol.com'}`,
+          available: await isSubdomainAvailable(suggestedSubdomain)
+        }
+      });
+
+    } catch (error) {
+      console.error('Error sugiriendo subdominio:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Verificar disponibilidad de subdominio (PREPARADO PARA PRODUCCIÓN)
+   * @param {Object} req - Request object  
+   * @param {Object} res - Response object
+   */
+  static async checkSubdomainAvailability(req, res) {
+    try {
+      const { subdomain } = req.params;
+
+      if (!subdomain) {
+        return res.status(400).json({
+          success: false,
+          error: 'Subdominio es requerido'
+        });
+      }
+
+      const { isSubdomainAvailable } = require('../middleware/subdomain');
+      const available = await isSubdomainAvailable(subdomain);
+
+      res.json({
+        success: true,
+        data: {
+          subdomain,
+          available,
+          preview: available ? `https://${subdomain}.${process.env.DOMAIN_BASE || 'beautycontrol.com'}` : null
+        }
+      });
+
+    } catch (error) {
+      console.error('Error verificando subdominio:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
   }
 }
 

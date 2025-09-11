@@ -1,0 +1,513 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-09-11T18:55:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "req_auth_register",
+      "parentId": "fld_auth",
+      "modified": 1694450100000,
+      "created": 1694450100000,
+      "url": "{{ _.base_url }}/api/auth/register",
+      "name": "Registrar Usuario CLIENT",
+      "description": "Registra un nuevo usuario con rol CLIENT",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"maria@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"María\",\n  \"lastName\": \"García\",\n  \"phone\": \"+57300123456\",\n  \"role\": \"CLIENT\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450100000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_login",
+      "parentId": "fld_auth",
+      "modified": 1694450110000,
+      "created": 1694450110000,
+      "url": "{{ _.base_url }}/api/auth/login",
+      "name": "Login Usuario",
+      "description": "Login y obtener token JWT",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"maria@example.com\",\n  \"password\": \"Password123!\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450110000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_profile",
+      "parentId": "fld_auth",
+      "modified": 1694450120000,
+      "created": 1694450120000,
+      "url": "{{ _.base_url }}/api/auth/profile",
+      "name": "Ver Perfil",
+      "description": "Obtener información del usuario autenticado",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450120000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_plans_list",
+      "parentId": "fld_plans",
+      "modified": 1694450130000,
+      "created": 1694450130000,
+      "url": "{{ _.base_url }}/api/plans",
+      "name": "Listar Planes",
+      "description": "Obtener todos los planes de suscripción disponibles",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450130000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_plans_get",
+      "parentId": "fld_plans",
+      "modified": 1694450140000,
+      "created": 1694450140000,
+      "url": "{{ _.base_url }}/api/plans/17e05457-4d00-4010-a3db-79385fbb5219",
+      "name": "Ver Plan Específico",
+      "description": "Obtener detalles de un plan específico (Plan Básico)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450140000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_create",
+      "parentId": "fld_business",
+      "modified": 1694450150000,
+      "created": 1694450150000,
+      "url": "{{ _.base_url }}/api/business",
+      "name": "Crear Negocio (CLIENT → BUSINESS)",
+      "description": "Crear negocio y cambiar rol de CLIENT a BUSINESS",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Salón Bella Vista\",\n  \"description\": \"Salón de belleza especializado en cortes y peinados modernos\",\n  \"businessType\": \"SALON\",\n  \"address\": \"Calle 123 #45-67\",\n  \"phone\": \"+57300654321\",\n  \"email\": \"info@bellavista.com\",\n  \"city\": \"Bogotá\",\n  \"state\": \"Cundinamarca\",\n  \"country\": \"Colombia\",\n  \"postalCode\": \"110111\",\n  \"subdomain\": \"bellavista\",\n  \"subscriptionPlanId\": \"17e05457-4d00-4010-a3db-79385fbb5219\",\n  \"paymentReference\": \"PAYMENT_REF_123456\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450150000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_create_professional",
+      "parentId": "fld_business",
+      "modified": 1694450155000,
+      "created": 1694450155000,
+      "url": "{{ _.base_url }}/api/business",
+      "name": "Crear Negocio - Plan Profesional",
+      "description": "Crear negocio con Plan Profesional",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Centro Estético Premium\",\n  \"description\": \"Centro de estética integral con tecnología avanzada\",\n  \"businessType\": \"SPA\",\n  \"address\": \"Carrera 15 #85-42\",\n  \"phone\": \"+57300987654\",\n  \"email\": \"contacto@esteticapremium.com\",\n  \"city\": \"Medellín\",\n  \"state\": \"Antioquia\",\n  \"country\": \"Colombia\",\n  \"postalCode\": \"050021\",\n  \"subdomain\": \"esteticapremium\",\n  \"subscriptionPlanId\": \"7a32e129-a034-453b-ad64-38a873c6a952\",\n  \"paymentReference\": \"PAYMENT_PROF_789012\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450155000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_get",
+      "parentId": "fld_business",
+      "modified": 1694450160000,
+      "created": 1694450160000,
+      "url": "{{ _.base_url }}/api/business/my-business",
+      "name": "Ver Mi Negocio",
+      "description": "Obtener información del negocio del usuario autenticado",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450160000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_update",
+      "parentId": "fld_business",
+      "modified": 1694450170000,
+      "created": 1694450170000,
+      "url": "{{ _.base_url }}/api/business/my-business",
+      "name": "Actualizar Mi Negocio",
+      "description": "Actualizar información del negocio",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Salón Bella Vista Premium\",\n  \"description\": \"Salón de belleza premium con servicios exclusivos\",\n  \"phone\": \"+57300654322\",\n  \"settings\": {\n    \"workingHours\": {\n      \"monday\": { \"open\": \"08:00\", \"close\": \"18:00\" },\n      \"tuesday\": { \"open\": \"08:00\", \"close\": \"18:00\" },\n      \"wednesday\": { \"open\": \"08:00\", \"close\": \"18:00\" },\n      \"thursday\": { \"open\": \"08:00\", \"close\": \"18:00\" },\n      \"friday\": { \"open\": \"08:00\", \"close\": \"19:00\" },\n      \"saturday\": { \"open\": \"09:00\", \"close\": \"17:00\" },\n      \"sunday\": { \"closed\": true }\n    },\n    \"notifications\": {\n      \"email\": true,\n      \"sms\": false\n    }\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450170000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_invite",
+      "parentId": "fld_business",
+      "modified": 1694450180000,
+      "created": 1694450180000,
+      "url": "{{ _.base_url }}/api/business/invite-employee",
+      "name": "Invitar Empleado SPECIALIST",
+      "description": "Invitar un especialista al negocio",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"carlos.martinez@bellavista.com\",\n  \"firstName\": \"Carlos\",\n  \"lastName\": \"Martínez\",\n  \"phone\": \"+57300987654\",\n  \"role\": \"SPECIALIST\",\n  \"position\": \"Estilista Senior\",\n  \"specialties\": [\"Corte\", \"Peinado\", \"Coloración\"],\n  \"commissionRate\": 0.40\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450180000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_invite_receptionist",
+      "parentId": "fld_business",
+      "modified": 1694450185000,
+      "created": 1694450185000,
+      "url": "{{ _.base_url }}/api/business/invite-employee",
+      "name": "Invitar Empleado RECEPTIONIST",
+      "description": "Invitar un recepcionista al negocio",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"ana.lopez@bellavista.com\",\n  \"firstName\": \"Ana\",\n  \"lastName\": \"López\",\n  \"phone\": \"+57300456789\",\n  \"role\": \"RECEPTIONIST\",\n  \"position\": \"Recepcionista Principal\",\n  \"schedule\": {\n    \"monday\": { \"start\": \"08:00\", \"end\": \"16:00\" },\n    \"tuesday\": { \"start\": \"08:00\", \"end\": \"16:00\" },\n    \"wednesday\": { \"start\": \"08:00\", \"end\": \"16:00\" },\n    \"thursday\": { \"start\": \"08:00\", \"end\": \"16:00\" },\n    \"friday\": { \"start\": \"08:00\", \"end\": \"16:00\" }\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450185000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_health",
+      "parentId": "fld_system",
+      "modified": 1694450190000,
+      "created": 1694450190000,
+      "url": "{{ _.base_url }}/health",
+      "name": "Health Check",
+      "description": "Verificar estado del servidor",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1694450190000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_register_specialist",
+      "parentId": "fld_auth",
+      "modified": 1694450200000,
+      "created": 1694450200000,
+      "url": "{{ _.base_url }}/api/auth/register",
+      "name": "Registrar SPECIALIST Directo",
+      "description": "Registrar directamente un especialista (para testing)",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"specialist@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"Pedro\",\n  \"lastName\": \"Ramírez\",\n  \"phone\": \"+57300111222\",\n  \"role\": \"SPECIALIST\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450200000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "env_base",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450210000,
+      "created": 1694450210000,
+      "name": "Beauty Control - Development",
+      "data": {
+        "base_url": "http://localhost:3001",
+        "auth_token": "",
+        "plan_basic_id": "17e05457-4d00-4010-a3db-79385fbb5219",
+        "plan_professional_id": "7a32e129-a034-453b-ad64-38a873c6a952"
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url",
+          "auth_token",
+          "plan_basic_id",
+          "plan_professional_id"
+        ]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1694450210000,
+      "_type": "environment"
+    },
+    {
+      "_id": "jar_cookies",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450220000,
+      "created": 1694450220000,
+      "name": "Default Jar",
+      "cookies": [],
+      "_type": "cookie_jar"
+    },
+    {
+      "_id": "spc_beauty_control",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450230000,
+      "created": 1694450230000,
+      "fileName": "Beauty Control API",
+      "contents": "",
+      "contentType": "yaml",
+      "_type": "api_spec"
+    },
+    {
+      "_id": "wrk_beauty_control",
+      "parentId": null,
+      "modified": 1694450240000,
+      "created": 1694450240000,
+      "name": "Beauty Control API",
+      "description": "API completa para el sistema Beauty Control - Sistema de Gestión de Negocios de Belleza",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "fld_auth",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450250000,
+      "created": 1694450250000,
+      "name": "🔐 Autenticación",
+      "description": "Endpoints de registro, login y gestión de usuarios",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1694450250000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_plans",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450260000,
+      "created": 1694450260000,
+      "name": "📋 Planes de Suscripción",
+      "description": "Gestión de planes y suscripciones",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1694450260000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_business",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450270000,
+      "created": 1694450270000,
+      "name": "🏢 Gestión de Negocios",
+      "description": "Creación, actualización y gestión de negocios",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1694450270000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_system",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450280000,
+      "created": 1694450280000,
+      "name": "⚙️ Sistema",
+      "description": "Endpoints de sistema y monitoreo",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1694450280000,
+      "_type": "request_group"
+    }
+  ]
+}

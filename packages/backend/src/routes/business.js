@@ -1,31 +1,43 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
+const BusinessController = require('../controllers/BusinessController');
+const { authenticateToken } = require('../middleware/auth');
 const tenancyMiddleware = require('../middleware/tenancy');
-const { ownerOnly, businessAndOwner } = require('../middleware/roleCheck');
+const { ownerOnly, businessAndOwner, allStaffRoles } = require('../middleware/roleCheck');
 
-// Todas las rutas de business requieren autenticación
-router.use(authMiddleware);
+/**
+ * Rutas de Negocios - Beauty Control
+ * Gestión de negocios, empleados y configuraciones
+ */
+
+// Todas las rutas requieren autenticación
+router.use(authenticateToken);
+
+// =====================================
+// RUTAS PARA CLIENTES (sin tenancy)
+// =====================================
+
+// Crear nuevo negocio (solo para CLIENT que pagó)
+router.post('/', BusinessController.createBusiness);
+
+// =====================================
+// RUTAS PARA STAFF DEL NEGOCIO (con tenancy)
+// =====================================
+
+// Aplicar tenancy para las siguientes rutas
 router.use(tenancyMiddleware);
 
 // Obtener información del negocio
-router.get('/', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de obtener negocio aún no implementada'
-  });
-});
+router.get('/', allStaffRoles, BusinessController.getBusiness);
 
 // Actualizar información del negocio
-router.put('/', businessAndOwner, (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de actualizar negocio aún no implementada'
-  });
-});
+router.put('/', businessAndOwner, BusinessController.updateBusiness);
+
+// Invitar empleado al negocio
+router.post('/invite-employee', businessAndOwner, BusinessController.inviteEmployee);
 
 // Obtener reglas del negocio
-router.get('/rules', (req, res) => {
+router.get('/rules', allStaffRoles, (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de obtener reglas del negocio aún no implementada'
@@ -41,7 +53,7 @@ router.put('/rules', businessAndOwner, (req, res) => {
 });
 
 // Obtener estadísticas del negocio
-router.get('/stats', (req, res) => {
+router.get('/stats', allStaffRoles, (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de estadísticas del negocio aún no implementada'

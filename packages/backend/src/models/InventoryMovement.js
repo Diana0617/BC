@@ -11,7 +11,7 @@ const InventoryMovement = sequelize.define('InventoryMovement', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Businesses',
+      model: 'businesses',
       key: 'id'
     }
   },
@@ -19,7 +19,7 @@ const InventoryMovement = sequelize.define('InventoryMovement', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Products',
+      model: 'products',
       key: 'id'
     }
   },
@@ -27,7 +27,7 @@ const InventoryMovement = sequelize.define('InventoryMovement', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     }
   },

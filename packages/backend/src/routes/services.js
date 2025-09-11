@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const tenancyMiddleware = require('../middleware/tenancy');
-const { allStaffRoles, businessAndOwner } = require('../middleware/roleCheck');
+const { authenticateToken } = require('../middleware/auth');
+// const tenancyMiddleware = require('../middleware/tenancy');
+// const { allStaffRoles, businessAndOwner } = require('../middleware/roleCheck');
 
 // Todas las rutas de servicios requieren autenticación
-router.use(authMiddleware);
-router.use(tenancyMiddleware);
-router.use(allStaffRoles);
+router.use(authenticateToken);
+// router.use(tenancyMiddleware);
+// router.use(allStaffRoles);
 
 // Obtener lista de servicios
 router.get('/', (req, res) => {
@@ -18,7 +18,7 @@ router.get('/', (req, res) => {
 });
 
 // Crear nuevo servicio
-router.post('/', businessAndOwner, (req, res) => {
+router.post('/', /* businessAndOwner, */ (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de crear servicio aún no implementada'
@@ -34,7 +34,7 @@ router.get('/:id', (req, res) => {
 });
 
 // Actualizar servicio
-router.put('/:id', businessAndOwner, (req, res) => {
+router.put('/:id', /* businessAndOwner, */ (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de actualizar servicio aún no implementada'
@@ -42,7 +42,7 @@ router.put('/:id', businessAndOwner, (req, res) => {
 });
 
 // Eliminar servicio
-router.delete('/:id', businessAndOwner, (req, res) => {
+router.delete('/:id', /* businessAndOwner, */ (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de eliminar servicio aún no implementada'

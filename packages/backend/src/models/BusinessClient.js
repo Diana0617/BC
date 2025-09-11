@@ -11,7 +11,7 @@ const BusinessClient = sequelize.define('BusinessClient', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Businesses',
+      model: 'businesses',
       key: 'id'
     }
   },
@@ -19,7 +19,7 @@ const BusinessClient = sequelize.define('BusinessClient', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Clients',
+      model: 'clients',
       key: 'id'
     }
   },
@@ -62,7 +62,7 @@ const BusinessClient = sequelize.define('BusinessClient', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     }
   },

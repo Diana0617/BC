@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const tenancyMiddleware = require('../middleware/tenancy');
-const { allStaffRoles } = require('../middleware/roleCheck');
+const { authenticateToken } = require('../middleware/auth');
+// const tenancyMiddleware = require('../middleware/tenancy');
+// const { allStaffRoles } = require('../middleware/roleCheck');
 
 // Todas las rutas de clientes requieren autenticación
-router.use(authMiddleware);
-router.use(tenancyMiddleware);
-router.use(allStaffRoles);
+router.use(authenticateToken);
+// router.use(tenancyMiddleware);
+// router.use(allStaffRoles);
 
 // Obtener lista de clientes
 router.get('/', (req, res) => {

@@ -62,7 +62,7 @@ const User = sequelize.define('User', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'Businesses',
+      model: 'businesses',
       key: 'id'
     }
   },

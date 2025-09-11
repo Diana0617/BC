@@ -11,7 +11,7 @@ const BusinessRules = sequelize.define('BusinessRules', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Businesses',
+      model: 'businesses',
       key: 'id'
     }
   },
