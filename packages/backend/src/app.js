@@ -56,7 +56,7 @@ app.use('/api/', limiter);
 // Rate limiting más estricto para autenticación
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // máximo 5 intentos de login por IP
+  max: 50, // Aumentado temporalmente para testing
   message: {
     success: false,
     error: 'Demasiados intentos de inicio de sesión, intenta nuevamente en 15 minutos'
@@ -64,8 +64,9 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true
 });
 
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
+// Comentado temporalmente para testing
+// app.use('/api/auth/login', authLimiter);
+// app.use('/api/auth/register', authLimiter);
 
 // Middleware de parsing y compresión
 app.use(compression());
@@ -93,20 +94,24 @@ app.get('/health', (req, res) => {
 const authRoutes = require('./routes/auth');
 const businessRoutes = require('./routes/business');
 const plansRoutes = require('./routes/plans');
+const moduleRoutes = require('./routes/modules');
 const clientRoutes = require('./routes/clients');
 const appointmentRoutes = require('./routes/appointments');
 const serviceRoutes = require('./routes/services');
 const productRoutes = require('./routes/products');
 const financialRoutes = require('./routes/financial');
+const ownerRoutes = require('./routes/owner');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/plans', plansRoutes);
+app.use('/api/modules', moduleRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/financial', financialRoutes);
+app.use('/api/owner', ownerRoutes);
 
 // Ruta 404
 app.use('*', (req, res) => {

@@ -1,13 +1,21 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
 import userReducer from './slices/userSlice';
+import ownerStatsReducer from './slices/ownerStatsSlice';
+import ownerBusinessesReducer from './slices/ownerBusinessesSlice';
+import ownerSubscriptionsReducer from './slices/ownerSubscriptionsSlice';
+import plansReducer from './slices/plansSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
   return configureStore({
     reducer: {
       auth: authReducer,
-      user: userReducer
+      user: userReducer,
+      ownerStats: ownerStatsReducer,
+      ownerBusinesses: ownerBusinessesReducer,
+      ownerSubscriptions: ownerSubscriptionsReducer,
+      plans: plansReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>

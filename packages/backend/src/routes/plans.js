@@ -1,72 +1,87 @@
 const express = require('express');
 const router = express.Router();
-const SubscriptionPlan = require('../models/SubscriptionPlan');
-const Module = require('../models/Module');
+const SubscriptionPlanController = require('../controllers/SubscriptionPlanController');
+const { authenticateToken } = require('../middleware/auth');
+const ownerOnly = require('../middleware/ownerOnly');
+
+// Middleware para autenticación en todas las rutas
+router.use(authenticateToken);
+
+// === RUTAS PÚBLICAS (para usuarios autenticados) ===
 
 /**
- * Rutas de Planes de Suscripción - Beauty Control
- * Obtener información de planes disponibles
+ * @route GET /api/plans
+ * @desc Obtener todos los planes de suscripción con paginación y filtros
+ * @access Private (cualquier usuario autenticado)
+ * @query {number} page - Número de página (default: 1)
+ * @query {number} limit - Elementos por página (default: 10)
+ * @query {string} status - Filtrar por estado
+ * @query {string} search - Búsqueda por nombre o descripción
+ * @query {boolean} includeModules - Incluir módulos en la respuesta
  */
+router.get('/', SubscriptionPlanController.getPlans);
 
-// Obtener todos los planes activos
-router.get('/', async (req, res) => {
-  try {
-    const plans = await SubscriptionPlan.findAll({
-      where: { status: 'ACTIVE' },
-      include: [{
-        model: Module,
-        as: 'modules',
-        through: { attributes: ['isIncluded', 'limitQuantity', 'additionalPrice'] }
-      }],
-      order: [['price', 'ASC']]
-    });
+/**
+ * @route GET /api/plans/available-modules
+ * @desc Obtener módulos disponibles para crear planes
+ * @access Private (solo OWNER)
+ * @query {string} category - Filtrar por categoría
+ * @query {string} status - Filtrar por estado (default: ACTIVE)
+ */
+router.get('/available-modules', ownerOnly, SubscriptionPlanController.getAvailableModules);
 
-    res.json({
-      success: true,
-      data: plans
-    });
+/**
+ * @route POST /api/plans/calculate-price
+ * @desc Calcular precio total de un plan basado en módulos seleccionados
+ * @access Private (solo OWNER)
+ * @body {array} modules - Array de módulos seleccionados
+ * @body {number} basePlanPrice - Precio base del plan
+ */
+router.post('/calculate-price', ownerOnly, SubscriptionPlanController.calculatePlanPrice);
 
-  } catch (error) {
-    console.error('Error obteniendo planes:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error interno del servidor'
-    });
-  }
-});
+/**
+ * @route GET /api/plans/:id
+ * @desc Obtener un plan específico por ID
+ * @access Private (cualquier usuario autenticado)
+ * @param {string} id - ID del plan
+ * @query {boolean} includeModules - Incluir módulos en la respuesta (default: true)
+ */
+router.get('/:id', SubscriptionPlanController.getPlanById);
 
-// Obtener plan específico por ID
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
+// === RUTAS ADMINISTRATIVAS (solo para OWNER) ===
 
-    const plan = await SubscriptionPlan.findByPk(id, {
-      include: [{
-        model: Module,
-        as: 'modules',
-        through: { attributes: ['isIncluded', 'limitQuantity', 'additionalPrice'] }
-      }]
-    });
+/**
+ * @route POST /api/plans
+ * @desc Crear un nuevo plan de suscripción
+ * @access Private (solo OWNER)
+ * @body {object} planData - Datos del plan a crear
+ */
+router.post('/', ownerOnly, SubscriptionPlanController.createPlan);
 
-    if (!plan) {
-      return res.status(404).json({
-        success: false,
-        error: 'Plan no encontrado'
-      });
-    }
+/**
+ * @route PUT /api/plans/:id
+ * @desc Actualizar un plan de suscripción existente
+ * @access Private (solo OWNER)
+ * @param {string} id - ID del plan
+ * @body {object} planData - Datos del plan a actualizar
+ */
+router.put('/:id', ownerOnly, SubscriptionPlanController.updatePlan);
 
-    res.json({
-      success: true,
-      data: plan
-    });
+/**
+ * @route PATCH /api/plans/:id/status
+ * @desc Cambiar estado de un plan
+ * @access Private (solo OWNER)
+ * @param {string} id - ID del plan
+ * @body {string} status - Nuevo estado del plan
+ */
+router.patch('/:id/status', ownerOnly, SubscriptionPlanController.updatePlanStatus);
 
-  } catch (error) {
-    console.error('Error obteniendo plan:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error interno del servidor'
-    });
-  }
-});
+/**
+ * @route DELETE /api/plans/:id
+ * @desc Eliminar un plan (marcar como DEPRECATED)
+ * @access Private (solo OWNER)
+ * @param {string} id - ID del plan
+ */
+router.delete('/:id', ownerOnly, SubscriptionPlanController.deletePlan);
 
 module.exports = router;

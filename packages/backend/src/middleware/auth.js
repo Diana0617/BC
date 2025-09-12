@@ -45,6 +45,7 @@ const authenticateToken = async (req, res, next) => {
       id: user.id,
       email: user.email,
       role: user.role,
+      status: user.status,
       businessId: user.businessId,
       business: user.business
     };

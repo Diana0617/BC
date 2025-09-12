@@ -36,6 +36,37 @@
       "_type": "request"
     },
     {
+      "_id": "req_auth_register_owner",
+      "parentId": "fld_auth",
+      "modified": 1694450105000,
+      "created": 1694450105000,
+      "url": "{{ _.base_url }}/api/auth/register",
+      "name": "Registrar Usuario OWNER",
+      "description": "Registra un nuevo usuario con rol OWNER (administrador)",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"admin@beautycontrol.com\",\n  \"password\": \"AdminPassword123!\",\n  \"firstName\": \"Administrador\",\n  \"lastName\": \"Beauty Control\",\n  \"phone\": \"+57300000000\",\n  \"role\": \"OWNER\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450105000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
       "_id": "req_auth_login",
       "parentId": "fld_auth",
       "modified": 1694450110000,
@@ -223,6 +254,268 @@
       "_type": "request"
     },
     {
+      "_id": "req_modules_list",
+      "parentId": "fld_modules",
+      "modified": 1694450115000,
+      "created": 1694450115000,
+      "url": "{{ _.base_url }}/api/modules",
+      "name": "Listar Módulos",
+      "description": "Obtener todos los módulos del sistema con paginación y filtros",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "page",
+          "value": "1"
+        },
+        {
+          "name": "limit",
+          "value": "10"
+        },
+        {
+          "name": "category",
+          "value": ""
+        },
+        {
+          "name": "status",
+          "value": ""
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450115000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_modules_get",
+      "parentId": "fld_modules",
+      "modified": 1694450116000,
+      "created": 1694450116000,
+      "url": "{{ _.base_url }}/api/modules/{{ _.module_appointments_id }}",
+      "name": "Obtener Módulo",
+      "description": "Obtener un módulo específico por ID",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450116000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_modules_create",
+      "parentId": "fld_modules",
+      "modified": 1694450117000,
+      "created": 1694450117000,
+      "url": "{{ _.base_url }}/api/modules",
+      "name": "Crear Módulo",
+      "description": "Crear un nuevo módulo del sistema",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Notificaciones Push\",\n  \"description\": \"Sistema de notificaciones push para móviles\",\n  \"category\": \"COMMUNICATIONS\",\n  \"version\": \"1.0.0\",\n  \"isCore\": false,\n  \"basePrice\": 15000,\n  \"currency\": \"COP\",\n  \"billingType\": \"MONTHLY\",\n  \"status\": \"ACTIVE\",\n  \"dependencies\": [],\n  \"configuration\": {\n    \"maxNotifications\": 1000,\n    \"providers\": [\"firebase\", \"onesignal\"]\n  },\n  \"permissions\": [\"notifications.send\", \"notifications.manage\"]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450117000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_modules_update",
+      "parentId": "fld_modules",
+      "modified": 1694450118000,
+      "created": 1694450118000,
+      "url": "{{ _.base_url }}/api/modules/{{ _.module_appointments_id }}",
+      "name": "Actualizar Módulo",
+      "description": "Actualizar un módulo existente",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"description\": \"Sistema avanzado de gestión de citas y agenda\",\n  \"basePrice\": 25000,\n  \"configuration\": {\n    \"maxAppointments\": 500,\n    \"reminderEnabled\": true,\n    \"recurringAppointments\": true\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450118000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_modules_delete",
+      "parentId": "fld_modules",
+      "modified": 1694450119000,
+      "created": 1694450119000,
+      "url": "{{ _.base_url }}/api/modules/{{ _.module_appointments_id }}",
+      "name": "Eliminar Módulo",
+      "description": "Eliminar un módulo del sistema",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450119000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_modules_by_category",
+      "parentId": "fld_modules",
+      "modified": 1694450120000,
+      "created": 1694450120000,
+      "url": "{{ _.base_url }}/api/modules/category/CORE",
+      "name": "Módulos por Categoría",
+      "description": "Obtener módulos filtrados por categoría",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450120000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_modules_dependencies",
+      "parentId": "fld_modules",
+      "modified": 1694450121000,
+      "created": 1694450121000,
+      "url": "{{ _.base_url }}/api/modules/{{ _.module_appointments_id }}/dependencies",
+      "name": "Dependencias del Módulo",
+      "description": "Obtener dependencias de un módulo específico",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450121000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_modules_status",
+      "parentId": "fld_modules",
+      "modified": 1694450122000,
+      "created": 1694450122000,
+      "url": "{{ _.base_url }}/api/modules/{{ _.module_appointments_id }}/status",
+      "name": "Cambiar Estado Módulo",
+      "description": "Activar o desactivar un módulo",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"INACTIVE\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450122000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
       "_id": "req_plans_list",
       "parentId": "fld_plans",
       "modified": 1694450130000,
@@ -255,7 +548,7 @@
       "parentId": "fld_plans",
       "modified": 1694450140000,
       "created": 1694450140000,
-      "url": "{{ _.base_url }}/api/plans/17e05457-4d00-4010-a3db-79385fbb5219",
+      "url": "{{ _.base_url }}/api/plans/{{ _.plan_basic_id }}",
       "name": "Ver Plan Específico",
       "description": "Obtener detalles de un plan específico (Plan Básico)",
       "method": "GET",
@@ -269,6 +562,204 @@
       ],
       "authentication": {},
       "metaSortKey": -1694450140000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_plans_create",
+      "parentId": "fld_plans",
+      "modified": 1694450141000,
+      "created": 1694450141000,
+      "url": "{{ _.base_url }}/api/plans",
+      "name": "Crear Plan",
+      "description": "Crear un nuevo plan de suscripción con módulos",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Plan Profesional\",\n  \"description\": \"Plan completo para profesionales independientes\",\n  \"price\": 99900,\n  \"currency\": \"COP\",\n  \"duration\": 1,\n  \"durationType\": \"MONTH\",\n  \"maxUsers\": 5,\n  \"maxClients\": 200,\n  \"maxAppointments\": 1000,\n  \"storageLimit\": 5120,\n  \"isPopular\": false,\n  \"trialDays\": 7,\n  \"features\": [\"Agenda avanzada\", \"Gestión de clientes\", \"Reportes básicos\", \"Notificaciones\"],\n  \"limitations\": [\"Sin integración contable\", \"Soporte por email únicamente\"],\n  \"modules\": [\n    {\n      \"moduleId\": \"{{ _.module_appointments_id }}\",\n      \"isIncluded\": true,\n      \"limitQuantity\": null,\n      \"additionalPrice\": 0,\n      \"configuration\": {\"maxAppointments\": 1000}\n    },\n    {\n      \"moduleId\": \"{{ _.module_clients_id }}\",\n      \"isIncluded\": true,\n      \"limitQuantity\": 200,\n      \"additionalPrice\": 0,\n      \"configuration\": {\"exportEnabled\": true}\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450141000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_plans_update",
+      "parentId": "fld_plans",
+      "modified": 1694450142000,
+      "created": 1694450142000,
+      "url": "{{ _.base_url }}/api/plans/{{ _.plan_basic_id }}",
+      "name": "Actualizar Plan",
+      "description": "Actualizar un plan existente y sus módulos",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"description\": \"Plan básico actualizado con más funcionalidades\",\n  \"price\": 59900,\n  \"maxClients\": 150,\n  \"features\": [\"Agenda básica\", \"Gestión de clientes\", \"Reportes básicos\", \"Notificaciones\", \"Backup automático\"],\n  \"modules\": [\n    {\n      \"moduleId\": \"{{ _.module_appointments_id }}\",\n      \"isIncluded\": true,\n      \"limitQuantity\": null,\n      \"additionalPrice\": 0,\n      \"configuration\": {\"maxAppointments\": 300}\n    },\n    {\n      \"moduleId\": \"{{ _.module_clients_id }}\",\n      \"isIncluded\": true,\n      \"limitQuantity\": 150,\n      \"additionalPrice\": 0,\n      \"configuration\": {\"exportEnabled\": false}\n    },\n    {\n      \"moduleId\": \"{{ _.module_reports_id }}\",\n      \"isIncluded\": true,\n      \"limitQuantity\": null,\n      \"additionalPrice\": 0,\n      \"configuration\": {\"basicReports\": true}\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450142000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_plans_delete",
+      "parentId": "fld_plans",
+      "modified": 1694450143000,
+      "created": 1694450143000,
+      "url": "{{ _.base_url }}/api/plans/{{ _.plan_basic_id }}",
+      "name": "Eliminar Plan",
+      "description": "Eliminar un plan de suscripción",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450143000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_plans_modules",
+      "parentId": "fld_plans",
+      "modified": 1694450144000,
+      "created": 1694450144000,
+      "url": "{{ _.base_url }}/api/plans/{{ _.plan_basic_id }}/modules",
+      "name": "Módulos del Plan",
+      "description": "Obtener todos los módulos incluidos en un plan",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450144000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_plans_available_modules",
+      "parentId": "fld_plans",
+      "modified": 1694450145000,
+      "created": 1694450145000,
+      "url": "{{ _.base_url }}/api/plans/available-modules",
+      "name": "Módulos Disponibles",
+      "description": "Obtener módulos disponibles para agregar a planes",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "category",
+          "value": ""
+        },
+        {
+          "name": "excludePlanId",
+          "value": ""
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450145000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_plans_calculate_price",
+      "parentId": "fld_plans",
+      "modified": 1694450146000,
+      "created": 1694450146000,
+      "url": "{{ _.base_url }}/api/plans/calculate-price",
+      "name": "Calcular Precio Plan",
+      "description": "Calcular precio total de un plan con módulos",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"basePrice\": 49900,\n  \"modules\": [\n    {\n      \"moduleId\": \"{{ _.module_appointments_id }}\",\n      \"additionalPrice\": 0\n    },\n    {\n      \"moduleId\": \"{{ _.module_wompi_id }}\",\n      \"additionalPrice\": 15000\n    },\n    {\n      \"moduleId\": \"{{ _.module_taxxa_id }}\",\n      \"additionalPrice\": 20000\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450146000,
       "isPrivate": false,
       "settingStoreCookies": true,
       "settingSendCookies": true,
@@ -536,6 +1027,219 @@
       "_type": "request"
     },
     {
+      "_id": "req_owner_platform_stats",
+      "parentId": "fld_owner",
+      "modified": 1694450290000,
+      "created": 1694450290000,
+      "url": "{{ _.base_url }}/api/owner/stats/platform",
+      "name": "📊 Estadísticas de la Plataforma",
+      "description": "Obtener estadísticas globales de la plataforma (solo OWNER)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450290000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_businesses_list",
+      "parentId": "fld_owner",
+      "modified": 1694450291000,
+      "created": 1694450291000,
+      "url": "{{ _.base_url }}/api/owner/businesses",
+      "name": "🏢 Listar Todos los Negocios",
+      "description": "Ver todos los negocios de la plataforma con paginación",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "page",
+          "value": "1"
+        },
+        {
+          "name": "limit",
+          "value": "20"
+        },
+        {
+          "name": "status",
+          "value": ""
+        },
+        {
+          "name": "search",
+          "value": ""
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450291000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_business_create",
+      "parentId": "fld_owner",
+      "modified": 1694450292000,
+      "created": 1694450292000,
+      "url": "{{ _.base_url }}/api/owner/businesses",
+      "name": "🏗️ Crear Negocio Manual",
+      "description": "Crear un negocio manualmente con propietario y suscripción",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessName\": \"Belleza Total\",\n  \"businessEmail\": \"info@bellezatotal.com\",\n  \"businessPhone\": \"+57320777888\",\n  \"address\": \"Calle 123 #45-67\",\n  \"city\": \"Bogotá\",\n  \"country\": \"Colombia\",\n  \"ownerEmail\": \"propietario@bellezatotal.com\",\n  \"ownerFirstName\": \"Ana\",\n  \"ownerLastName\": \"Rodríguez\",\n  \"ownerPhone\": \"+57320888999\",\n  \"subscriptionPlanId\": \"{{ _.plan_standard_id }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450292000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_business_status",
+      "parentId": "fld_owner",
+      "modified": 1694450293000,
+      "created": 1694450293000,
+      "url": "{{ _.base_url }}/api/owner/businesses/BUSINESS_ID/status",
+      "name": "⚡ Cambiar Estado de Negocio",
+      "description": "Activar, desactivar o suspender un negocio",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"SUSPENDED\",\n  \"reason\": \"Incumplimiento de términos de uso\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450293000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_subscription_create",
+      "parentId": "fld_owner",
+      "modified": 1694450294000,
+      "created": 1694450294000,
+      "url": "{{ _.base_url }}/api/owner/subscriptions",
+      "name": "📝 Crear Suscripción Manual",
+      "description": "Crear una suscripción para un negocio específico",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": \"BUSINESS_ID_HERE\",\n  \"subscriptionPlanId\": \"{{ _.plan_premium_id }}\",\n  \"duration\": 3\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450294000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_subscription_cancel",
+      "parentId": "fld_owner",
+      "modified": 1694450295000,
+      "created": 1694450295000,
+      "url": "{{ _.base_url }}/api/owner/subscriptions/SUBSCRIPTION_ID/cancel",
+      "name": "❌ Cancelar Suscripción",
+      "description": "Cancelar una suscripción activa",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"reason\": \"Solicitud del cliente por problemas económicos\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.auth_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450295000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
       "_id": "env_base",
       "parentId": "wrk_beauty_control",
       "modified": 1694450210000,
@@ -544,15 +1248,31 @@
       "data": {
         "base_url": "http://localhost:3001",
         "auth_token": "",
-        "plan_basic_id": "17e05457-4d00-4010-a3db-79385fbb5219",
-        "plan_professional_id": "7a32e129-a034-453b-ad64-38a873c6a952"
+        "plan_basic_id": "9350ddb1-e6ed-4275-bbe2-181eab538bca",
+        "plan_standard_id": "312dd0eb-c36e-4c4a-b626-799692bdd059",
+        "plan_premium_id": "f7a6545b-1ceb-4bfd-9a7b-72d14add5d49",
+        "plan_enterprise_id": "09121952-acfe-4113-a159-83ee6148800b",
+        "module_appointments_id": "01a9953b-f22c-41db-a5a1-bc04a6c56456",
+        "module_clients_id": "ef6e6542-e6b2-43d3-979a-801ecb40503b",
+        "module_reports_id": "96ea9e80-624e-42d7-a002-4b19aa189e75",
+        "module_wompi_id": "3b2d80f2-b6cb-454e-a21a-6ada6d55611f",
+        "module_taxxa_id": "67d87266-207c-4d1d-8cd6-cfa2f86805bb",
+        "module_mercadopago_id": "5b10ca92-39cf-4302-b3e9-b7772e56fc12"
       },
       "dataPropertyOrder": {
         "&": [
           "base_url",
           "auth_token",
           "plan_basic_id",
-          "plan_professional_id"
+          "plan_standard_id",
+          "plan_premium_id",
+          "plan_enterprise_id",
+          "module_appointments_id",
+          "module_clients_id",
+          "module_reports_id",
+          "module_wompi_id",
+          "module_taxxa_id",
+          "module_mercadopago_id"
         ]
       },
       "color": null,
@@ -585,7 +1305,7 @@
       "modified": 1694450240000,
       "created": 1694450240000,
       "name": "Beauty Control API",
-      "description": "API completa para el sistema Beauty Control - Sistema de Gestión de Negocios de Belleza",
+      "description": "API completa para el sistema Beauty Control - Sistema de Gestión de Negocios de Belleza\n\n📝 **Rutas actualizadas en v2.1:**\n👑 **OWNER:** Administración completa de la plataforma - estadísticas, gestión de negocios y suscripciones\n🧩 **Módulos:** CRUD completo de módulos del sistema con categorías, dependencias y gestión de estado\n📋 **Planes:** Gestión avanzada de planes de suscripción con asociación de módulos y cálculos de precios\n🔐 **Autenticación:** Sistema completo de auth con roles y recuperación de contraseñas\n🏢 **Negocios:** Gestión de negocios y asignación de usuarios\n\n**Variables de entorno configuradas:**\n- base_url: URL del servidor backend\n- auth_token: Token JWT para autenticación\n- IDs de planes: basic, standard, premium, enterprise\n- IDs de módulos: appointments, clients, reports, wompi, taxxa, mercadopago\n\n**Roles del sistema:**\n- OWNER: Administrador de la plataforma (acceso total)\n- BUSINESS: Propietario de negocio\n- SPECIALIST: Especialista/empleado\n- RECEPTIONIST: Recepcionista\n- CLIENT: Cliente del negocio",
       "scope": "collection",
       "_type": "workspace"
     },
@@ -602,12 +1322,24 @@
       "_type": "request_group"
     },
     {
+      "_id": "fld_modules",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450255000,
+      "created": 1694450255000,
+      "name": "🧩 Gestión de Módulos",
+      "description": "CRUD de módulos del sistema, categorías y dependencias",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1694450255000,
+      "_type": "request_group"
+    },
+    {
       "_id": "fld_plans",
       "parentId": "wrk_beauty_control",
       "modified": 1694450260000,
       "created": 1694450260000,
       "name": "📋 Planes de Suscripción",
-      "description": "Gestión de planes y suscripciones",
+      "description": "Gestión de planes y suscripciones con módulos",
       "environment": {},
       "environmentPropertyOrder": null,
       "metaSortKey": -1694450260000,
@@ -635,6 +1367,18 @@
       "environment": {},
       "environmentPropertyOrder": null,
       "metaSortKey": -1694450280000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_owner",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450285000,
+      "created": 1694450285000,
+      "name": "👑 Administración OWNER",
+      "description": "Endpoints exclusivos para administradores de la plataforma",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1694450285000,
       "_type": "request_group"
     }
   ]

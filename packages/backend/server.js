@@ -33,16 +33,16 @@ async function startServer() {
       } = require('./src/models');
 
       // Sincronizar en orden de dependencias
-      console.log('🔄 Sincronizando tablas en orden...');
+      //console.log('🔄 Sincronizando tablas en orden...');
       
       // 1. Tablas sin dependencias
       await SubscriptionPlan.sync({ alter: true });
       await Module.sync({ alter: true });
-      console.log('✅ Tablas base creadas');
+      //console.log('✅ Tablas base creadas');
       
       // 2. Business (puede depender de SubscriptionPlan si agregamos currentPlanId)
       await Business.sync({ alter: true });
-      console.log('✅ Tabla Business creada');
+      //console.log('✅ Tabla Business creada');
       
       // 3. Tablas que dependen de Business
       await BusinessRules.sync({ alter: true });
@@ -50,7 +50,7 @@ async function startServer() {
       await Client.sync({ alter: true });
       await Service.sync({ alter: true });
       await Product.sync({ alter: true });
-      console.log('✅ Tablas principales creadas');
+      //console.log('✅ Tablas principales creadas');
       
       // 4. Tablas que dependen de múltiples entidades
       await Appointment.sync({ alter: true });
@@ -62,12 +62,12 @@ async function startServer() {
       await PaymentIntegration.sync({ alter: true });
       await PasswordResetToken.sync({ alter: true });
       
-      console.log('✅ Todas las tablas sincronizadas con la base de datos');
+      //console.log('✅ Todas las tablas sincronizadas con la base de datos');
     }
 
     // Inicializar servicios
     const tokenCleanupService = require('./src/services/TokenCleanupService');
-    console.log('🧹 Servicio de limpieza de tokens inicializado');
+    //console.log('🧹 Servicio de limpieza de tokens inicializado');
 
     // Iniciar servidor en todas las interfaces de red
     const server = app.listen(PORT, '0.0.0.0', () => {
