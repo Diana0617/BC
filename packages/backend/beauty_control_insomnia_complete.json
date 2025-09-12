@@ -21,7 +21,7 @@
       "created": 1736700010000,
       "name": "Base Environment",
       "data": {
-        "base_url": "http://localhost:5000",
+        "base_url": "http://localhost:3001",
         "token": "",
         "subdomain": "salon-bella-maria"
       },
