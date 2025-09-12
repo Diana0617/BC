@@ -5,6 +5,7 @@ const {
   uploadConsentDocument,
   uploadServiceImage,
   uploadProductImage,
+  uploadPaymentReceipt,
   deleteResponsiveImages,
   deleteVideo,
   deleteDocument
@@ -308,6 +309,25 @@ class CloudinaryService {
       };
     } catch (error) {
       console.error('Error obteniendo información del archivo:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Subir comprobante de pago del OWNER
+   * @param {String} filePath - Ruta del archivo temporal
+   * @param {String} paymentId - ID del pago
+   * @returns {Object} URLs y datos del comprobante
+   */
+  static async uploadPaymentReceipt(filePath, paymentId) {
+    try {
+      const result = await uploadPaymentReceipt(filePath, paymentId);
+      return result; // Ya retorna el formato { success, data/error }
+    } catch (error) {
+      console.error('Error subiendo comprobante de pago:', error);
       return {
         success: false,
         error: error.message

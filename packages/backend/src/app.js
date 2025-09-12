@@ -90,6 +90,35 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Test endpoint para verificar sistema de suscripciones
+app.get('/api/test/subscription-system', async (req, res) => {
+  try {
+    const SubscriptionStatusService = require('./services/SubscriptionStatusService');
+    const CronJobManager = require('./utils/CronJobManager');
+    
+    const summary = await SubscriptionStatusService.getSubscriptionsRequiringAttention();
+    
+    res.json({
+      success: true,
+      message: 'Sistema de suscripciones funcionando correctamente',
+      data: {
+        timestamp: new Date().toISOString(),
+        systemStatus: {
+          cronJobsActive: true,
+          subscriptionServiceActive: true,
+          attentionRequired: summary
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error en sistema de suscripciones',
+      error: error.message
+    });
+  }
+});
+
 // Rutas de API
 const authRoutes = require('./routes/auth');
 const businessRoutes = require('./routes/business');
@@ -101,6 +130,7 @@ const serviceRoutes = require('./routes/services');
 const productRoutes = require('./routes/products');
 const financialRoutes = require('./routes/financial');
 const ownerRoutes = require('./routes/owner');
+const wompiPaymentRoutes = require('./routes/wompiPayments');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
@@ -112,6 +142,7 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/financial', financialRoutes);
 app.use('/api/owner', ownerRoutes);
+app.use('/api/wompi', wompiPaymentRoutes);
 
 // Ruta 404
 app.use('*', (req, res) => {

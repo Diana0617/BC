@@ -1,0 +1,1508 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-01-12T15:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_beauty_control",
+      "parentId": null,
+      "modified": 1736700000000,
+      "created": 1736700000000,
+      "name": "Beauty Control API - COMPLETO",
+      "description": "API completa para el sistema Beauty Control - Todas las rutas implementadas",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_base",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736700010000,
+      "created": 1736700010000,
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:5000",
+        "token": "",
+        "subdomain": "salon-bella-maria"
+      },
+      "dataPropertyOrder": {
+        "&": ["base_url", "token", "subdomain"]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1736700010000,
+      "_type": "environment"
+    },
+    {
+      "_id": "fld_auth",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736700100000,
+      "created": 1736700100000,
+      "name": "🔐 Autenticación",
+      "description": "Endpoints de registro, login, recuperación de contraseña y gestión de subdominios",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736700100000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_auth_register_client",
+      "parentId": "fld_auth",
+      "modified": 1736700110000,
+      "created": 1736700110000,
+      "url": "{{ _.base_url }}/api/auth/register",
+      "name": "Registrar Usuario CLIENT",
+      "description": "Registra un nuevo usuario con rol CLIENT",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"maria@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"María\",\n  \"lastName\": \"García\",\n  \"phone\": \"+57300123456\",\n  \"role\": \"CLIENT\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700110000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_register_owner",
+      "parentId": "fld_auth",
+      "modified": 1736700120000,
+      "created": 1736700120000,
+      "url": "{{ _.base_url }}/api/auth/register",
+      "name": "Registrar Usuario OWNER",
+      "description": "Registra un nuevo usuario con rol OWNER (administrador)",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"admin@beautycontrol.com\",\n  \"password\": \"AdminPassword123!\",\n  \"firstName\": \"Administrador\",\n  \"lastName\": \"Beauty Control\",\n  \"phone\": \"+57300000000\",\n  \"role\": \"OWNER\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700120000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_login",
+      "parentId": "fld_auth",
+      "modified": 1736700130000,
+      "created": 1736700130000,
+      "url": "{{ _.base_url }}/api/auth/login",
+      "name": "Iniciar Sesión",
+      "description": "Autenticar usuario y obtener token JWT",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"admin@beautycontrol.com\",\n  \"password\": \"AdminPassword123!\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700130000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_logout",
+      "parentId": "fld_auth",
+      "modified": 1736700140000,
+      "created": 1736700140000,
+      "url": "{{ _.base_url }}/api/auth/logout",
+      "name": "Cerrar Sesión",
+      "description": "Cerrar sesión del usuario",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700140000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_profile",
+      "parentId": "fld_auth",
+      "modified": 1736700150000,
+      "created": 1736700150000,
+      "url": "{{ _.base_url }}/api/auth/profile",
+      "name": "Obtener Perfil",
+      "description": "Obtener perfil del usuario autenticado",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700150000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_suggest_subdomain",
+      "parentId": "fld_auth",
+      "modified": 1736700160000,
+      "created": 1736700160000,
+      "url": "{{ _.base_url }}/api/auth/suggest-subdomain",
+      "name": "Sugerir Subdominio",
+      "description": "Genera sugerencia de subdominio basado en nombre del negocio",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessName\": \"Salón Bella María\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700160000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_check_subdomain",
+      "parentId": "fld_auth",
+      "modified": 1736700170000,
+      "created": 1736700170000,
+      "url": "{{ _.base_url }}/api/auth/check-subdomain/{{ _.subdomain }}",
+      "name": "Verificar Disponibilidad de Subdominio",
+      "description": "Verifica si un subdominio está disponible",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1736700170000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_business",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736700200000,
+      "created": 1736700200000,
+      "name": "🏢 Gestión de Negocios",
+      "description": "Creación, actualización y gestión de negocios",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736700200000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_business_create",
+      "parentId": "fld_business",
+      "modified": 1736700210000,
+      "created": 1736700210000,
+      "url": "{{ _.base_url }}/api/business",
+      "name": "Crear Negocio",
+      "description": "Crear un nuevo negocio",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Salón Bella María\",\n  \"description\": \"Salón de belleza especializado en tratamientos capilares\",\n  \"email\": \"info@salon-bella-maria.com\",\n  \"phone\": \"+57300123456\",\n  \"address\": \"Calle 123 #45-67\",\n  \"city\": \"Bogotá\",\n  \"country\": \"Colombia\",\n  \"subdomain\": \"salon-bella-maria\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700210000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_get",
+      "parentId": "fld_business",
+      "modified": 1736700220000,
+      "created": 1736700220000,
+      "url": "{{ _.base_url }}/api/business",
+      "name": "Obtener Información del Negocio",
+      "description": "Obtiene información del negocio del usuario autenticado",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700220000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_update",
+      "parentId": "fld_business",
+      "modified": 1736700230000,
+      "created": 1736700230000,
+      "url": "{{ _.base_url }}/api/business",
+      "name": "Actualizar Negocio",
+      "description": "Actualiza información del negocio",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Salón Bella María Renovado\",\n  \"description\": \"Salón de belleza con nuevos tratamientos\",\n  \"phone\": \"+57300654321\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700230000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_business_payments",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736700300000,
+      "created": 1736700300000,
+      "name": "💳 Pagos de Negocios",
+      "description": "Gestión de pagos de suscripciones desde el lado del negocio",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736700300000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_business_payments_status",
+      "parentId": "fld_business_payments",
+      "modified": 1736700310000,
+      "created": 1736700310000,
+      "url": "{{ _.base_url }}/api/business/payments/subscription-status",
+      "name": "Verificar Estado de Suscripción",
+      "description": "Obtiene el estado actual de la suscripción del negocio",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700310000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_payments_upload",
+      "parentId": "fld_business_payments",
+      "modified": 1736700320000,
+      "created": 1736700320000,
+      "url": "{{ _.base_url }}/api/business/payments/upload-receipt",
+      "name": "Subir Comprobante de Pago",
+      "description": "Sube un comprobante de pago de suscripción",
+      "method": "POST",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "receipt",
+            "value": "",
+            "description": "Archivo de imagen del comprobante",
+            "type": "file"
+          },
+          {
+            "name": "planId",
+            "value": "1",
+            "description": "ID del plan de suscripción"
+          },
+          {
+            "name": "amount",
+            "value": "50000",
+            "description": "Monto pagado"
+          },
+          {
+            "name": "description",
+            "value": "Pago mensual plan básico",
+            "description": "Descripción del pago"
+          }
+        ]
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700320000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_payments_history",
+      "parentId": "fld_business_payments",
+      "modified": 1736700330000,
+      "created": 1736700330000,
+      "url": "{{ _.base_url }}/api/business/payments/history?page=1&limit=10",
+      "name": "Historial de Pagos",
+      "description": "Obtiene el historial de pagos del negocio",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700330000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_wompi_payments",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736700400000,
+      "created": 1736700400000,
+      "name": "🏦 Pagos Wompi",
+      "description": "Integración con gateway de pagos Wompi",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736700400000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_wompi_initiate_payment",
+      "parentId": "fld_wompi_payments",
+      "modified": 1736700410000,
+      "created": 1736700410000,
+      "url": "{{ _.base_url }}/api/wompi/initiate-subscription-payment",
+      "name": "Iniciar Pago con Wompi",
+      "description": "Inicia un proceso de pago de suscripción con Wompi",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"planId\": 1\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700410000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_wompi_webhook",
+      "parentId": "fld_wompi_payments",
+      "modified": 1736700420000,
+      "created": 1736700420000,
+      "url": "{{ _.base_url }}/api/wompi/webhook",
+      "name": "Webhook de Wompi",
+      "description": "Endpoint para recibir notificaciones de Wompi",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"event\": \"transaction.updated\",\n  \"data\": {\n    \"transaction\": {\n      \"id\": \"25078-1633375012-45031\",\n      \"amount_in_cents\": 5000000,\n      \"reference\": \"REF_SUB_20240912_001\",\n      \"status\": \"APPROVED\"\n    }\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700420000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_wompi_payment_status",
+      "parentId": "fld_wompi_payments",
+      "modified": 1736700430000,
+      "created": 1736700430000,
+      "url": "{{ _.base_url }}/api/wompi/payment-status/REF_SUB_20240912_001",
+      "name": "Consultar Estado de Pago",
+      "description": "Consulta el estado de un pago específico",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700430000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_owner_dashboard",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736700500000,
+      "created": 1736700500000,
+      "name": "👑 Dashboard Owner",
+      "description": "Dashboard y métricas para administradores",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736700500000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_owner_dashboard_summary",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1736700510000,
+      "created": 1736700510000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/summary",
+      "name": "Resumen del Dashboard",
+      "description": "Obtiene resumen rápido para widgets principales",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700510000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_metrics",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1736700520000,
+      "created": 1736700520000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/metrics?period=thisMonth",
+      "name": "Métricas Principales",
+      "description": "Obtiene métricas principales del dashboard",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700520000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_revenue_chart",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1736700530000,
+      "created": 1736700530000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/revenue-chart?months=6",
+      "name": "Gráfico de Ingresos",
+      "description": "Obtiene datos para gráfico de ingresos por mes",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700530000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_plan_distribution",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1736700540000,
+      "created": 1736700540000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/plan-distribution",
+      "name": "Distribución de Planes",
+      "description": "Obtiene distribución de planes para gráfico circular",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700540000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_top_businesses",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1736700550000,
+      "created": 1736700550000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/top-businesses?limit=10",
+      "name": "Top Negocios Activos",
+      "description": "Obtiene los negocios más activos",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700550000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_growth_stats",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1736700560000,
+      "created": 1736700560000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/growth-stats?period=thisMonth",
+      "name": "Estadísticas de Crecimiento",
+      "description": "Obtiene estadísticas de conversión y crecimiento",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700560000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_export",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1736700570000,
+      "created": 1736700570000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/export?format=json&period=thisMonth",
+      "name": "Exportar Datos",
+      "description": "Exporta datos del dashboard",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700570000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_owner_plans",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736700600000,
+      "created": 1736700600000,
+      "name": "📋 Gestión de Planes (Owner)",
+      "description": "Gestión completa de planes de suscripción para administradores",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736700600000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_owner_plans_list",
+      "parentId": "fld_owner_plans",
+      "modified": 1736700610000,
+      "created": 1736700610000,
+      "url": "{{ _.base_url }}/api/owner/plans?page=1&limit=10&status=all&sortBy=createdAt&sortOrder=DESC",
+      "name": "Listar Todos los Planes",
+      "description": "Lista todos los planes con estadísticas",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700610000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_plans_create",
+      "parentId": "fld_owner_plans",
+      "modified": 1736700620000,
+      "created": 1736700620000,
+      "url": "{{ _.base_url }}/api/owner/plans",
+      "name": "Crear Nuevo Plan",
+      "description": "Crea un nuevo plan de suscripción",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Plan Premium\",\n  \"description\": \"Plan completo con todas las funcionalidades\",\n  \"price\": 89900,\n  \"currency\": \"COP\",\n  \"duration\": 1,\n  \"durationType\": \"MONTHS\",\n  \"maxUsers\": 10,\n  \"maxClients\": 500,\n  \"maxAppointments\": 1000,\n  \"storageLimit\": 5368709120,\n  \"trialDays\": 7,\n  \"features\": {\n    \"advancedReports\": true,\n    \"multiLocation\": true,\n    \"customBranding\": true\n  },\n  \"limitations\": {},\n  \"isPopular\": true\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700620000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_plans_update",
+      "parentId": "fld_owner_plans",
+      "modified": 1736700630000,
+      "created": 1736700630000,
+      "url": "{{ _.base_url }}/api/owner/plans/plan-uuid-123",
+      "name": "Actualizar Plan",
+      "description": "Actualiza un plan existente",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"description\": \"Nueva descripción del plan\",\n  \"features\": {\n    \"advancedReports\": true,\n    \"apiAccess\": true\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700630000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_plans_change_status",
+      "parentId": "fld_owner_plans",
+      "modified": 1736700640000,
+      "created": 1736700640000,
+      "url": "{{ _.base_url }}/api/owner/plans/plan-uuid-123/status",
+      "name": "Cambiar Estado del Plan",
+      "description": "Activa, desactiva o depreca un plan",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"INACTIVE\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700640000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_plans_stats",
+      "parentId": "fld_owner_plans",
+      "modified": 1736700650000,
+      "created": 1736700650000,
+      "url": "{{ _.base_url }}/api/owner/plans/plan-uuid-123/stats",
+      "name": "Estadísticas del Plan",
+      "description": "Obtiene estadísticas detalladas de uso de un plan",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700650000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_plans",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736700700000,
+      "created": 1736700700000,
+      "name": "📋 Planes Públicos",
+      "description": "Endpoints públicos para consultar planes disponibles",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736700700000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_plans_list_public",
+      "parentId": "fld_plans",
+      "modified": 1736700710000,
+      "created": 1736700710000,
+      "url": "{{ _.base_url }}/api/plans",
+      "name": "Listar Planes Públicos",
+      "description": "Obtiene todos los planes de suscripción disponibles",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1736700710000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_plans_get_by_id_public",
+      "parentId": "fld_plans",
+      "modified": 1736700720000,
+      "created": 1736700720000,
+      "url": "{{ _.base_url }}/api/plans/plan-uuid-123",
+      "name": "Obtener Plan Específico",
+      "description": "Obtiene un plan específico por ID",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1736700720000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_modules",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736700800000,
+      "created": 1736700800000,
+      "name": "🧩 Módulos",
+      "description": "Gestión de módulos del sistema",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736700800000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_modules_list",
+      "parentId": "fld_modules",
+      "modified": 1736700810000,
+      "created": 1736700810000,
+      "url": "{{ _.base_url }}/api/modules",
+      "name": "Listar Módulos",
+      "description": "Obtiene lista de módulos disponibles",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700810000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_clients",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736700900000,
+      "created": 1736700900000,
+      "name": "👥 Clientes",
+      "description": "Gestión de clientes del negocio",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736700900000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_clients_create",
+      "parentId": "fld_clients",
+      "modified": 1736700910000,
+      "created": 1736700910000,
+      "url": "{{ _.base_url }}/api/clients",
+      "name": "Crear Cliente",
+      "description": "Crea un nuevo cliente para el negocio",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"firstName\": \"Ana\",\n  \"lastName\": \"Martínez\",\n  \"email\": \"ana.martinez@email.com\",\n  \"phone\": \"+57300789456\",\n  \"documentType\": \"CC\",\n  \"documentNumber\": \"1234567890\",\n  \"birthDate\": \"1985-03-15\",\n  \"gender\": \"FEMALE\",\n  \"address\": \"Carrera 10 #20-30\",\n  \"preferences\": {\n    \"notifications\": true,\n    \"reminders\": true\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700910000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_clients_list",
+      "parentId": "fld_clients",
+      "modified": 1736700920000,
+      "created": 1736700920000,
+      "url": "{{ _.base_url }}/api/clients?page=1&limit=10&search=ana",
+      "name": "Listar Clientes",
+      "description": "Lista los clientes del negocio con paginación y búsqueda",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700920000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_clients_get_by_id",
+      "parentId": "fld_clients",
+      "modified": 1736700930000,
+      "created": 1736700930000,
+      "url": "{{ _.base_url }}/api/clients/client-uuid-123",
+      "name": "Obtener Cliente por ID",
+      "description": "Obtiene detalles de un cliente específico",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700930000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_clients_update",
+      "parentId": "fld_clients",
+      "modified": 1736700940000,
+      "created": 1736700940000,
+      "url": "{{ _.base_url }}/api/clients/client-uuid-123",
+      "name": "Actualizar Cliente",
+      "description": "Actualiza información de un cliente",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"phone\": \"+57300999888\",\n  \"address\": \"Nueva dirección\",\n  \"preferences\": {\n    \"notifications\": false\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700940000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_clients_delete",
+      "parentId": "fld_clients",
+      "modified": 1736700950000,
+      "created": 1736700950000,
+      "url": "{{ _.base_url }}/api/clients/client-uuid-123",
+      "name": "Eliminar Cliente",
+      "description": "Elimina un cliente del sistema",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700950000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_services",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736701000000,
+      "created": 1736701000000,
+      "name": "💅 Servicios",
+      "description": "Gestión de servicios del negocio",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736701000000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_services_create",
+      "parentId": "fld_services",
+      "modified": 1736701010000,
+      "created": 1736701010000,
+      "url": "{{ _.base_url }}/api/services",
+      "name": "Crear Servicio",
+      "description": "Crea un nuevo servicio para el negocio",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Corte de Cabello\",\n  \"description\": \"Corte personalizado según el tipo de rostro\",\n  \"price\": 35000,\n  \"duration\": 60,\n  \"category\": \"CABELLO\",\n  \"isActive\": true,\n  \"requiresSpecialist\": true,\n  \"allowsMultipleBookings\": false\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701010000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_services_list",
+      "parentId": "fld_services",
+      "modified": 1736701020000,
+      "created": 1736701020000,
+      "url": "{{ _.base_url }}/api/services?page=1&limit=10&category=CABELLO&active=true",
+      "name": "Listar Servicios",
+      "description": "Lista los servicios del negocio con filtros",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701020000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_services_update",
+      "parentId": "fld_services",
+      "modified": 1736701030000,
+      "created": 1736701030000,
+      "url": "{{ _.base_url }}/api/services/service-uuid-123",
+      "name": "Actualizar Servicio",
+      "description": "Actualiza información de un servicio",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"price\": 40000,\n  \"duration\": 75,\n  \"description\": \"Corte premium con lavado incluido\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701030000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_products",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736701100000,
+      "created": 1736701100000,
+      "name": "🛍️ Productos",
+      "description": "Gestión de productos e inventario",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736701100000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_products_create",
+      "parentId": "fld_products",
+      "modified": 1736701110000,
+      "created": 1736701110000,
+      "url": "{{ _.base_url }}/api/products",
+      "name": "Crear Producto",
+      "description": "Crea un nuevo producto en el inventario",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Shampoo Reparador\",\n  \"description\": \"Shampoo para cabello dañado\",\n  \"sku\": \"SH-REP-001\",\n  \"barcode\": \"7890123456789\",\n  \"price\": 25000,\n  \"cost\": 15000,\n  \"category\": \"CUIDADO_CAPILAR\",\n  \"brand\": \"Beauty Pro\",\n  \"stock\": 50,\n  \"minStock\": 10,\n  \"maxStock\": 100,\n  \"isActive\": true,\n  \"trackInventory\": true\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701110000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_products_list",
+      "parentId": "fld_products",
+      "modified": 1736701120000,
+      "created": 1736701120000,
+      "url": "{{ _.base_url }}/api/products?page=1&limit=10&category=CUIDADO_CAPILAR&lowStock=false",
+      "name": "Listar Productos",
+      "description": "Lista productos con filtros de categoría y stock",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701120000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_appointments",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736701200000,
+      "created": 1736701200000,
+      "name": "📅 Citas",
+      "description": "Gestión de citas y agenda",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736701200000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_appointments_create",
+      "parentId": "fld_appointments",
+      "modified": 1736701210000,
+      "created": 1736701210000,
+      "url": "{{ _.base_url }}/api/appointments",
+      "name": "Crear Cita",
+      "description": "Agenda una nueva cita",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"clientId\": \"client-uuid-123\",\n  \"serviceId\": \"service-uuid-456\",\n  \"specialistId\": \"specialist-uuid-789\",\n  \"date\": \"2024-01-15\",\n  \"time\": \"10:00\",\n  \"notes\": \"Primera visita, cabello rizado\",\n  \"reminderEnabled\": true\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701210000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointments_list",
+      "parentId": "fld_appointments",
+      "modified": 1736701220000,
+      "created": 1736701220000,
+      "url": "{{ _.base_url }}/api/appointments?date=2024-01-15&status=CONFIRMED&specialistId=specialist-uuid-789",
+      "name": "Listar Citas",
+      "description": "Lista citas con filtros de fecha, estado y especialista",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701220000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointments_update_status",
+      "parentId": "fld_appointments",
+      "modified": 1736701230000,
+      "created": 1736701230000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-uuid-123/status",
+      "name": "Cambiar Estado de Cita",
+      "description": "Cambia el estado de una cita (confirmar, cancelar, etc.)",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"COMPLETED\",\n  \"notes\": \"Servicio completado satisfactoriamente\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701230000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_staff",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736701300000,
+      "created": 1736701300000,
+      "name": "👨‍💼 Personal",
+      "description": "Gestión de empleados y especialistas",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736701300000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_staff_create",
+      "parentId": "fld_staff",
+      "modified": 1736701310000,
+      "created": 1736701310000,
+      "url": "{{ _.base_url }}/api/staff",
+      "name": "Crear Empleado",
+      "description": "Agrega un nuevo empleado al negocio",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"firstName\": \"Carlos\",\n  \"lastName\": \"Rodríguez\",\n  \"email\": \"carlos.rodriguez@salon.com\",\n  \"phone\": \"+57300456789\",\n  \"position\": \"STYLIST\",\n  \"specialties\": [\"CORTE\", \"COLOR\"],\n  \"commissionRate\": 40,\n  \"schedule\": {\n    \"monday\": {\"start\": \"09:00\", \"end\": \"18:00\"},\n    \"tuesday\": {\"start\": \"09:00\", \"end\": \"18:00\"},\n    \"wednesday\": {\"start\": \"09:00\", \"end\": \"18:00\"}\n  },\n  \"isActive\": true\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701310000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_staff_list",
+      "parentId": "fld_staff",
+      "modified": 1736701320000,
+      "created": 1736701320000,
+      "url": "{{ _.base_url }}/api/staff?active=true&position=STYLIST",
+      "name": "Listar Personal",
+      "description": "Lista empleados con filtros",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701320000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_financial_reports",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736701400000,
+      "created": 1736701400000,
+      "name": "📊 Reportes Financieros",
+      "description": "Reportes y análisis financieros",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736701400000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_reports_sales_summary",
+      "parentId": "fld_financial_reports",
+      "modified": 1736701410000,
+      "created": 1736701410000,
+      "url": "{{ _.base_url }}/api/reports/sales-summary?startDate=2024-01-01&endDate=2024-01-31",
+      "name": "Resumen de Ventas",
+      "description": "Obtiene resumen de ventas por período",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701410000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_reports_commission_report",
+      "parentId": "fld_financial_reports",
+      "modified": 1736701420000,
+      "created": 1736701420000,
+      "url": "{{ _.base_url }}/api/reports/commission-report?specialistId=specialist-uuid-123&month=2024-01",
+      "name": "Reporte de Comisiones",
+      "description": "Obtiene reporte de comisiones por especialista",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701420000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_notifications",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736701500000,
+      "created": 1736701500000,
+      "name": "🔔 Notificaciones",
+      "description": "Sistema de notificaciones",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736701500000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_notifications_list",
+      "parentId": "fld_notifications",
+      "modified": 1736701510000,
+      "created": 1736701510000,
+      "url": "{{ _.base_url }}/api/notifications?page=1&limit=20&unreadOnly=true",
+      "name": "Listar Notificaciones",
+      "description": "Obtiene notificaciones del usuario",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701510000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_notifications_mark_read",
+      "parentId": "fld_notifications",
+      "modified": 1736701520000,
+      "created": 1736701520000,
+      "url": "{{ _.base_url }}/api/notifications/notification-uuid-123/mark-read",
+      "name": "Marcar como Leída",
+      "description": "Marca una notificación como leída",
+      "method": "PATCH",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701520000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_system",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736701600000,
+      "created": 1736701600000,
+      "name": "⚙️ Sistema",
+      "description": "Endpoints de sistema, salud y monitoreo",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736701600000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_health_check",
+      "parentId": "fld_system",
+      "modified": 1736701610000,
+      "created": 1736701610000,
+      "url": "{{ _.base_url }}/health",
+      "name": "Health Check",
+      "description": "Verifica el estado del servidor",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1736701610000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_system_status",
+      "parentId": "fld_system",
+      "modified": 1736701620000,
+      "created": 1736701620000,
+      "url": "{{ _.base_url }}/api/system/status",
+      "name": "Estado del Sistema",
+      "description": "Información detallada del estado del sistema",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736701620000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_test_subscription_system",
+      "parentId": "fld_system",
+      "modified": 1736701630000,
+      "created": 1736701630000,
+      "url": "{{ _.base_url }}/api/test/subscription-system",
+      "name": "Test Sistema de Suscripciones",
+      "description": "Verifica el funcionamiento del sistema de suscripciones",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1736701630000,
+      "isPrivate": false,
+      "_type": "request"
+    }
+  ]
+}

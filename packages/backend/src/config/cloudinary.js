@@ -339,6 +339,57 @@ const uploadProductImage = async (filePath, businessId, productId) => {
   return uploadResponsiveImage(filePath, 'beauty-control', `businesses/${businessId}/products/${productId}`);
 };
 
+// Función específica para comprobantes de pago del OWNER
+const uploadPaymentReceipt = async (filePath, paymentId) => {
+  try {
+    const fileExt = path.extname(filePath).toLowerCase();
+    
+    // Verificar si es imagen o documento
+    if (['.jpg', '.jpeg', '.png', '.webp'].includes(fileExt)) {
+      // Para imágenes, usar upload responsive con optimización especial para documentos
+      const optimizedFilePath = await compressImageIfNeeded(filePath);
+      
+      const result = await cloudinary.uploader.upload(optimizedFilePath, {
+        folder: `beauty-control/owner/payment-receipts/${paymentId}`,
+        transformation: [
+          { 
+            width: 1200, 
+            height: 1600, 
+            crop: 'limit',
+            quality: 'auto:good', 
+            format: 'auto',
+            flags: 'preserve_transparency'
+          }
+        ],
+        public_id_suffix: '_receipt'
+      });
+      
+      // Limpiar archivo temporal comprimido si es diferente al original
+      if (optimizedFilePath !== filePath) {
+        await fs.unlink(optimizedFilePath);
+      }
+      
+      return {
+        success: true,
+        data: result
+      };
+      
+    } else if (['.pdf', '.doc', '.docx'].includes(fileExt)) {
+      // Para documentos PDF/Word, usar upload de documento
+      return uploadDocument(filePath, 'beauty-control', `owner/payment-receipts/${paymentId}`);
+    } else {
+      throw new Error('Formato de archivo no soportado para comprobantes. Use: JPG, PNG, PDF, DOC, DOCX');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error subiendo comprobante de pago:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
 // Funciones para eliminar archivos
 const deleteResponsiveImages = async (imageData) => {
   try {
@@ -417,6 +468,7 @@ module.exports = {
   uploadConsentDocument,
   uploadServiceImage,
   uploadProductImage,
+  uploadPaymentReceipt,
   deleteResponsiveImages,
   deleteVideo,
   deleteDocument,

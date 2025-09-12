@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
+const { requireBasicAccess, requireFullAccess } = require('../middleware/subscription');
 // const tenancyMiddleware = require('../middleware/tenancy');
  const { allStaffRoles, businessAndOwner } = require('../middleware/roleCheck');
 
@@ -9,24 +10,24 @@ router.use(authenticateToken);
 // router.use(tenancyMiddleware);
 // router.use(allStaffRoles);
 
-// Obtener lista de productos
-router.get('/', (req, res) => {
+// Obtener lista de productos (acceso básico)
+router.get('/', requireBasicAccess, (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de obtener productos aún no implementada'
   });
 });
 
-// Crear nuevo producto
-router.post('/', /* businessAndOwner, */ (req, res) => {
+// Crear nuevo producto (requiere acceso completo)
+router.post('/', requireFullAccess, /* businessAndOwner, */ (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de crear producto aún no implementada'
   });
 });
 
-// Obtener producto por ID
-router.get('/:id', (req, res) => {
+// Obtener producto por ID (acceso básico)
+router.get('/:id', requireBasicAccess, (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de obtener producto por ID aún no implementada'

@@ -29,45 +29,87 @@ async function startServer() {
         InventoryMovement,
         FinancialMovement,
         PaymentIntegration,
-        PasswordResetToken
+        PasswordResetToken,
+        // Nuevos modelos de comisiones
+        SpecialistDocument,
+        SpecialistCommission,
+        CommissionPaymentRequest,
+        CommissionDetail,
+        // Nuevos modelos de pagos OWNER
+        OwnerPaymentConfiguration,
+        SubscriptionPayment,
+        OwnerFinancialReport
       } = require('./src/models');
 
-      // Sincronizar en orden de dependencias
-      //console.log('🔄 Sincronizando tablas en orden...');
+      // Configuración de sincronización - cambiar FORCE_SYNC_DB=true para recrear toda la base
+      const syncMode = process.env.FORCE_SYNC_DB === 'true' ? 'force' : 'alter';
+      const syncOptions = syncMode === 'force' ? { force: true } : { alter: true };
+      
+      if (syncMode === 'force') {
+        console.log('🔥 FORCE_SYNC_DB activado - RECREANDO TODA LA BASE DE DATOS');
+        console.log('⚠️  TODOS LOS DATOS SERÁN ELIMINADOS');
+      } else {
+        console.log('🔄 Sincronizando tablas con alter mode...');
+      }
       
       // 1. Tablas sin dependencias
-      await SubscriptionPlan.sync({ alter: true });
-      await Module.sync({ alter: true });
-      //console.log('✅ Tablas base creadas');
+      await SubscriptionPlan.sync(syncOptions);
+      await Module.sync(syncOptions);
+      console.log('✅ Tablas base sincronizadas');
       
       // 2. Business (puede depender de SubscriptionPlan si agregamos currentPlanId)
-      await Business.sync({ alter: true });
-      //console.log('✅ Tabla Business creada');
+      await Business.sync(syncOptions);
+      console.log('✅ Tabla Business sincronizada');
       
       // 3. Tablas que dependen de Business
-      await BusinessRules.sync({ alter: true });
-      await User.sync({ alter: true });
-      await Client.sync({ alter: true });
-      await Service.sync({ alter: true });
-      await Product.sync({ alter: true });
-      //console.log('✅ Tablas principales creadas');
+      await BusinessRules.sync(syncOptions);
+      await User.sync(syncOptions);
+      await Client.sync(syncOptions);
+      await Service.sync(syncOptions);
+      await Product.sync(syncOptions);
+      console.log('✅ Tablas principales sincronizadas');
       
-      // 4. Tablas que dependen de múltiples entidades
-      await Appointment.sync({ alter: true });
-      await PlanModule.sync({ alter: true });
-      await BusinessSubscription.sync({ alter: true });
-      await BusinessClient.sync({ alter: true });
-      await InventoryMovement.sync({ alter: true });
-      await FinancialMovement.sync({ alter: true });
-      await PaymentIntegration.sync({ alter: true });
-      await PasswordResetToken.sync({ alter: true });
+      // 4. Modelos de especialistas (nuevos)
+      await SpecialistDocument.sync(syncOptions);
+      await SpecialistCommission.sync(syncOptions);
+      console.log('✅ Tablas de especialistas sincronizadas');
       
-      //console.log('✅ Todas las tablas sincronizadas con la base de datos');
+      // 5. Modelos de pagos OWNER (nuevos)
+      await OwnerPaymentConfiguration.sync(syncOptions);
+      console.log('✅ Configuración de pagos OWNER sincronizada');
+      
+      // 6. Tablas que dependen de múltiples entidades
+      await Appointment.sync(syncOptions);
+      await PlanModule.sync(syncOptions);
+      await BusinessSubscription.sync(syncOptions);
+      await BusinessClient.sync(syncOptions);
+      await InventoryMovement.sync(syncOptions);
+      await FinancialMovement.sync(syncOptions);
+      await PaymentIntegration.sync(syncOptions);
+      await PasswordResetToken.sync(syncOptions);
+      
+      // 7. Tablas de comisiones (al final porque dependen de otras)
+      await CommissionPaymentRequest.sync(syncOptions);
+      await CommissionDetail.sync(syncOptions);
+      console.log('✅ Tablas de comisiones sincronizadas');
+      
+      // 8. Tablas de pagos del OWNER (al final porque dependen de BusinessSubscription)
+      await SubscriptionPayment.sync(syncOptions);
+      await OwnerFinancialReport.sync(syncOptions);
+      console.log('✅ Tablas de pagos OWNER sincronizadas');
+      
+      console.log(`✅ Todas las tablas sincronizadas en modo: ${syncMode.toUpperCase()}`);
     }
 
     // Inicializar servicios
     const tokenCleanupService = require('./src/services/TokenCleanupService');
     //console.log('🧹 Servicio de limpieza de tokens inicializado');
+
+    // Inicializar Cron Jobs
+    const CronJobManager = require('./src/utils/CronJobManager');
+    if (process.env.NODE_ENV !== 'test') {
+      CronJobManager.initializeJobs();
+    }
 
     // Iniciar servidor en todas las interfaces de red
     const server = app.listen(PORT, '0.0.0.0', () => {

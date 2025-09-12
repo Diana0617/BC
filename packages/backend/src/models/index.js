@@ -21,6 +21,17 @@ const InventoryMovement = require('./InventoryMovement');
 const FinancialMovement = require('./FinancialMovement');
 const PaymentIntegration = require('./PaymentIntegration');
 
+// Nuevos modelos de comisiones y documentos
+const SpecialistDocument = require('./SpecialistDocument');
+const SpecialistCommission = require('./SpecialistCommission');
+const CommissionPaymentRequest = require('./CommissionPaymentRequest');
+const CommissionDetail = require('./CommissionDetail');
+
+// Nuevos modelos de pagos OWNER
+const OwnerPaymentConfiguration = require('./OwnerPaymentConfiguration');
+const SubscriptionPayment = require('./SubscriptionPayment');
+const OwnerFinancialReport = require('./OwnerFinancialReport');
+
 // Definir asociaciones
 // User - Business
 User.belongsTo(Business, { 
@@ -285,6 +296,190 @@ PasswordResetToken.belongsTo(User, {
   as: 'user' 
 });
 
+// === NUEVAS ASOCIACIONES DE COMISIONES Y DOCUMENTOS ===
+
+// SpecialistDocument relationships
+User.hasMany(SpecialistDocument, { 
+  foreignKey: 'specialistId', 
+  as: 'documents' 
+});
+SpecialistDocument.belongsTo(User, { 
+  foreignKey: 'specialistId', 
+  as: 'specialist' 
+});
+
+Business.hasMany(SpecialistDocument, { 
+  foreignKey: 'businessId', 
+  as: 'specialistDocuments' 
+});
+SpecialistDocument.belongsTo(Business, { 
+  foreignKey: 'businessId', 
+  as: 'business' 
+});
+
+User.hasMany(SpecialistDocument, { 
+  foreignKey: 'uploadedBy', 
+  as: 'uploadedDocuments' 
+});
+SpecialistDocument.belongsTo(User, { 
+  foreignKey: 'uploadedBy', 
+  as: 'uploader' 
+});
+
+User.hasMany(SpecialistDocument, { 
+  foreignKey: 'approvedBy', 
+  as: 'approvedDocuments' 
+});
+SpecialistDocument.belongsTo(User, { 
+  foreignKey: 'approvedBy', 
+  as: 'approver' 
+});
+
+// SpecialistCommission relationships
+User.hasMany(SpecialistCommission, { 
+  foreignKey: 'specialistId', 
+  as: 'commissions' 
+});
+SpecialistCommission.belongsTo(User, { 
+  foreignKey: 'specialistId', 
+  as: 'specialist' 
+});
+
+Business.hasMany(SpecialistCommission, { 
+  foreignKey: 'businessId', 
+  as: 'specialistCommissions' 
+});
+SpecialistCommission.belongsTo(Business, { 
+  foreignKey: 'businessId', 
+  as: 'business' 
+});
+
+Service.hasMany(SpecialistCommission, { 
+  foreignKey: 'serviceId', 
+  as: 'commissions' 
+});
+SpecialistCommission.belongsTo(Service, { 
+  foreignKey: 'serviceId', 
+  as: 'service' 
+});
+
+User.hasMany(SpecialistCommission, { 
+  foreignKey: 'createdBy', 
+  as: 'createdCommissions' 
+});
+SpecialistCommission.belongsTo(User, { 
+  foreignKey: 'createdBy', 
+  as: 'creator' 
+});
+
+// CommissionPaymentRequest relationships
+User.hasMany(CommissionPaymentRequest, { 
+  foreignKey: 'specialistId', 
+  as: 'paymentRequests' 
+});
+CommissionPaymentRequest.belongsTo(User, { 
+  foreignKey: 'specialistId', 
+  as: 'specialist' 
+});
+
+Business.hasMany(CommissionPaymentRequest, { 
+  foreignKey: 'businessId', 
+  as: 'commissionPaymentRequests' 
+});
+CommissionPaymentRequest.belongsTo(Business, { 
+  foreignKey: 'businessId', 
+  as: 'business' 
+});
+
+User.hasMany(CommissionPaymentRequest, { 
+  foreignKey: 'reviewedBy', 
+  as: 'reviewedPaymentRequests' 
+});
+CommissionPaymentRequest.belongsTo(User, { 
+  foreignKey: 'reviewedBy', 
+  as: 'reviewer' 
+});
+
+User.hasMany(CommissionPaymentRequest, { 
+  foreignKey: 'paidBy', 
+  as: 'paidPaymentRequests' 
+});
+CommissionPaymentRequest.belongsTo(User, { 
+  foreignKey: 'paidBy', 
+  as: 'payer' 
+});
+
+// CommissionDetail relationships
+CommissionPaymentRequest.hasMany(CommissionDetail, { 
+  foreignKey: 'paymentRequestId', 
+  as: 'details' 
+});
+CommissionDetail.belongsTo(CommissionPaymentRequest, { 
+  foreignKey: 'paymentRequestId', 
+  as: 'paymentRequest' 
+});
+
+Appointment.hasMany(CommissionDetail, { 
+  foreignKey: 'appointmentId', 
+  as: 'commissionDetails' 
+});
+CommissionDetail.belongsTo(Appointment, { 
+  foreignKey: 'appointmentId', 
+  as: 'appointment' 
+});
+
+Service.hasMany(CommissionDetail, { 
+  foreignKey: 'serviceId', 
+  as: 'commissionDetails' 
+});
+CommissionDetail.belongsTo(Service, { 
+  foreignKey: 'serviceId', 
+  as: 'service' 
+});
+
+Client.hasMany(CommissionDetail, { 
+  foreignKey: 'clientId', 
+  as: 'commissionDetails' 
+});
+CommissionDetail.belongsTo(Client, { 
+  foreignKey: 'clientId', 
+  as: 'client' 
+});
+
+// ===============================
+// ASOCIACIONES PAGOS OWNER
+// ===============================
+
+// BusinessSubscription - SubscriptionPayment (uno a muchos)
+BusinessSubscription.hasMany(SubscriptionPayment, { 
+  foreignKey: 'businessSubscriptionId', 
+  as: 'payments' 
+});
+SubscriptionPayment.belongsTo(BusinessSubscription, { 
+  foreignKey: 'businessSubscriptionId', 
+  as: 'subscription' 
+});
+
+// OwnerPaymentConfiguration - SubscriptionPayment (uno a muchos)
+OwnerPaymentConfiguration.hasMany(SubscriptionPayment, { 
+  foreignKey: 'paymentConfigurationId', 
+  as: 'payments' 
+});
+SubscriptionPayment.belongsTo(OwnerPaymentConfiguration, { 
+  foreignKey: 'paymentConfigurationId', 
+  as: 'paymentConfiguration' 
+});
+
+// User - SubscriptionPayment (para el usuario que subió el comprobante)
+User.hasMany(SubscriptionPayment, { 
+  foreignKey: 'receiptUploadedBy', 
+  as: 'uploadedReceipts' 
+});
+SubscriptionPayment.belongsTo(User, { 
+  foreignKey: 'receiptUploadedBy', 
+  as: 'receiptUploader' 
+});
+
 // Exportar modelos y sequelize
 module.exports = {
   sequelize,
@@ -303,5 +498,14 @@ module.exports = {
   InventoryMovement,
   FinancialMovement,
   PaymentIntegration,
-  PasswordResetToken
+  PasswordResetToken,
+  // Modelos de comisiones especialistas
+  SpecialistDocument,
+  SpecialistCommission,
+  CommissionPaymentRequest,
+  CommissionDetail,
+  // Modelos de pagos OWNER
+  OwnerPaymentConfiguration,
+  SubscriptionPayment,
+  OwnerFinancialReport
 };

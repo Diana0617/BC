@@ -60,4 +60,14 @@ router.get('/stats', allStaffRoles, (req, res) => {
   });
 });
 
+// =====================================
+// RUTAS DE GESTIÓN DE PAGOS DE NEGOCIOS
+// =====================================
+
+/**
+ * Sub-rutas para gestión de pagos desde el lado del negocio
+ * Incluye: consulta de suscripción, subida de comprobantes, historial
+ */
+router.use('/', require('./businessPayments'));
+
 module.exports = router;

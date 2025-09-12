@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
+const { requireBasicAccess, requireFullAccess } = require('../middleware/subscription');
 // const tenancyMiddleware = require('../middleware/tenancy');
 // const { allStaffRoles, businessAndOwner } = require('../middleware/roleCheck');
 
@@ -9,24 +10,24 @@ router.use(authenticateToken);
 // router.use(tenancyMiddleware);
 // router.use(allStaffRoles);
 
-// Obtener lista de servicios
-router.get('/', (req, res) => {
+// Obtener lista de servicios (acceso básico)
+router.get('/', requireBasicAccess, (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de obtener servicios aún no implementada'
   });
 });
 
-// Crear nuevo servicio
-router.post('/', /* businessAndOwner, */ (req, res) => {
+// Crear nuevo servicio (requiere acceso completo)
+router.post('/', requireFullAccess, /* businessAndOwner, */ (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de crear servicio aún no implementada'
   });
 });
 
-// Obtener servicio por ID
-router.get('/:id', (req, res) => {
+// Obtener servicio por ID (acceso básico)
+router.get('/:id', requireBasicAccess, (req, res) => {
   res.status(501).json({
     success: false,
     error: 'Ruta de obtener servicio por ID aún no implementada'

@@ -1,8 +1,604 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2025-09-11T18:55:00.000Z",
+  "__export_date": "2025-01-12T15:00:00.000Z",
   "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450105000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_login",
+      "parentId": "fld_auth",
+      "modified": 1694450110000,
+      "created": 1694450110000,
+      "url": "{{ _.base_url }}/api/auth/login",
+      "name": "Iniciar Sesión",
+      "description": "Autenticar usuario y obtener token JWT",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"admin@beautycontrol.com\",\n  \"password\": \"AdminPassword123!\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694450110000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_payments_status",
+      "parentId": "fld_business_payments",
+      "modified": 1726142400000,
+      "created": 1726142400000,
+      "url": "{{ _.base_url }}/api/business/payments/subscription-status",
+      "name": "Verificar Estado de Suscripción",
+      "description": "Obtiene el estado actual de la suscripción del negocio",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142400000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_payments_upload",
+      "parentId": "fld_business_payments",
+      "modified": 1726142410000,
+      "created": 1726142410000,
+      "url": "{{ _.base_url }}/api/business/payments/upload-receipt",
+      "name": "Subir Comprobante de Pago",
+      "description": "Sube un comprobante de pago de suscripción",
+      "method": "POST",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "receipt",
+            "value": "",
+            "description": "Archivo de imagen del comprobante",
+            "type": "file"
+          },
+          {
+            "name": "planId",
+            "value": "1",
+            "description": "ID del plan de suscripción"
+          },
+          {
+            "name": "amount",
+            "value": "50000",
+            "description": "Monto pagado"
+          },
+          {
+            "name": "description",
+            "value": "Pago mensual plan básico",
+            "description": "Descripción del pago"
+          }
+        ]
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142410000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_payments_history",
+      "parentId": "fld_business_payments",
+      "modified": 1726142420000,
+      "created": 1726142420000,
+      "url": "{{ _.base_url }}/api/business/payments/history",
+      "name": "Historial de Pagos",
+      "description": "Obtiene el historial de pagos del negocio",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "page",
+          "value": "1",
+          "description": "Número de página"
+        },
+        {
+          "name": "limit",
+          "value": "10",
+          "description": "Elementos por página"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142420000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_wompi_initiate_payment",
+      "parentId": "fld_wompi_payments",
+      "modified": 1726142500000,
+      "created": 1726142500000,
+      "url": "{{ _.base_url }}/api/wompi/initiate-subscription-payment",
+      "name": "Iniciar Pago con Wompi",
+      "description": "Inicia un proceso de pago de suscripción con Wompi",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"planId\": 1\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142500000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_wompi_webhook",
+      "parentId": "fld_wompi_payments",
+      "modified": 1726142510000,
+      "created": 1726142510000,
+      "url": "{{ _.base_url }}/api/wompi/webhook",
+      "name": "Webhook de Wompi",
+      "description": "Endpoint para recibir notificaciones de Wompi",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"event\": \"transaction.updated\",\n  \"data\": {\n    \"transaction\": {\n      \"id\": \"25078-1633375012-45031\",\n      \"amount_in_cents\": 5000000,\n      \"reference\": \"REF_SUB_20240912_001\",\n      \"status\": \"APPROVED\"\n    }\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Signature",
+          "value": "test_signature"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142510000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_wompi_payment_status",
+      "parentId": "fld_wompi_payments",
+      "modified": 1726142520000,
+      "created": 1726142520000,
+      "url": "{{ _.base_url }}/api/wompi/payment-status/REF_SUB_20240912_001",
+      "name": "Consultar Estado de Pago",
+      "description": "Consulta el estado de un pago específico",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142520000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_wompi_config",
+      "parentId": "fld_wompi_payments",
+      "modified": 1726142530000,
+      "created": 1726142530000,
+      "url": "{{ _.base_url }}/api/wompi/config",
+      "name": "Obtener Configuración Wompi",
+      "description": "Obtiene la configuración pública de Wompi",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142530000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_summary",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1726142600000,
+      "created": 1726142600000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/summary",
+      "name": "Resumen del Dashboard",
+      "description": "Obtiene resumen rápido para widgets principales",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142600000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_metrics",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1726142610000,
+      "created": 1726142610000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/metrics",
+      "name": "Métricas Principales",
+      "description": "Obtiene métricas principales del dashboard",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "period",
+          "value": "thisMonth",
+          "description": "thisMonth, lastMonth, last3Months, lastYear"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142610000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_revenue_chart",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1726142620000,
+      "created": 1726142620000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/revenue-chart",
+      "name": "Gráfico de Ingresos",
+      "description": "Obtiene datos para gráfico de ingresos por mes",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "months",
+          "value": "6",
+          "description": "Número de meses a mostrar (1-24)"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142620000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_plan_distribution",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1726142630000,
+      "created": 1726142630000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/plan-distribution",
+      "name": "Distribución de Planes",
+      "description": "Obtiene distribución de planes para gráfico circular",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142630000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_top_businesses",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1726142640000,
+      "created": 1726142640000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/top-businesses",
+      "name": "Top Negocios Activos",
+      "description": "Obtiene los negocios más activos",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "limit",
+          "value": "10",
+          "description": "Número de negocios a mostrar (máximo 50)"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142640000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_growth_stats",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1726142650000,
+      "created": 1726142650000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/growth-stats",
+      "name": "Estadísticas de Crecimiento",
+      "description": "Obtiene estadísticas de conversión y crecimiento",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "period",
+          "value": "thisMonth",
+          "description": "Período para comparación"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142650000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_dashboard_export",
+      "parentId": "fld_owner_dashboard",
+      "modified": 1726142660000,
+      "created": 1726142660000,
+      "url": "{{ _.base_url }}/api/owner/dashboard/export",
+      "name": "Exportar Datos",
+      "description": "Exporta datos del dashboard",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "format",
+          "value": "json",
+          "description": "json o csv"
+        },
+        {
+          "name": "period",
+          "value": "thisMonth",
+          "description": "Período de datos"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1726142660000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_plans_list",
+      "parentId": "fld_plans",
+      "modified": 1694450200000,
+      "created": 1694450200000,
+      "url": "{{ _.base_url }}/api/plans",
+      "name": "Listar Planes",
+      "description": "Obtiene todos los planes de suscripción disponibles",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1694450200000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_test_subscription_system",
+      "parentId": "fld_system",
+      "modified": 1726142700000,
+      "created": 1726142700000,
+      "url": "{{ _.base_url }}/api/test/subscription-system",
+      "name": "Test Sistema de Suscripciones",
+      "description": "Verifica el funcionamiento del sistema de suscripciones",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1726142700000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_health_check",
+      "parentId": "fld_system",
+      "modified": 1694450290000,
+      "created": 1694450290000,
+      "url": "{{ _.base_url }}/health",
+      "name": "Health Check",
+      "description": "Verifica el estado del servidor",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1694450290000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "wrk_beauty_control",
+      "parentId": null,
+      "modified": 1694450000000,
+      "created": 1694450000000,
+      "name": "Beauty Control API",
+      "description": "API completa para el sistema Beauty Control",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_base",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450010000,
+      "created": 1694450010000,
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:5000",
+        "token": ""
+      },
+      "dataPropertyOrder": {
+        "&": ["base_url", "token"]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1694450010000,
+      "_type": "environment"
+    },
+    {
+      "_id": "fld_auth",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450250000,
+      "created": 1694450250000,
+      "name": "🔐 Autenticación",
+      "description": "Endpoints de registro, login y gestión de sesiones",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1694450250000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_business_payments",
+      "parentId": "wrk_beauty_control",
+      "modified": 1726142350000,
+      "created": 1726142350000,
+      "name": "💳 Pagos de Negocios",
+      "description": "Gestión de pagos de suscripciones desde el lado del negocio",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1726142350000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_wompi_payments",
+      "parentId": "wrk_beauty_control",
+      "modified": 1726142450000,
+      "created": 1726142450000,
+      "name": "🏦 Pagos Wompi",
+      "description": "Integración con gateway de pagos Wompi",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1726142450000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_owner_dashboard",
+      "parentId": "wrk_beauty_control",
+      "modified": 1726142550000,
+      "created": 1726142550000,
+      "name": "👑 Dashboard Owner",
+      "description": "Dashboard y métricas para administradores",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1726142550000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_plans",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450260000,
+      "created": 1694450260000,
+      "name": "📋 Planes de Suscripción",
+      "description": "Gestión de planes y suscripciones",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1694450260000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_system",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694450280000,
+      "created": 1694450280000,
+      "name": "⚙️ Sistema",
+      "description": "Endpoints de sistema y monitoreo",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1694450280000,
+      "_type": "request_group"
+    }
+  ]
+}
   "resources": [
     {
       "_id": "req_auth_register",
