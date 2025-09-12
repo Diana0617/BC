@@ -110,3 +110,6 @@ class ApiClient {
 
 // Export singleton instance
 export const apiClient = new ApiClient();
+
+// Export as 'api' for backward compatibility
+export const api = apiClient;

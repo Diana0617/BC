@@ -700,7 +700,7 @@
       "method": "POST",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"name\": \"Plan Premium\",\n  \"description\": \"Plan completo con todas las funcionalidades\",\n  \"price\": 89900,\n  \"currency\": \"COP\",\n  \"duration\": 1,\n  \"durationType\": \"MONTHS\",\n  \"maxUsers\": 10,\n  \"maxClients\": 500,\n  \"maxAppointments\": 1000,\n  \"storageLimit\": 5368709120,\n  \"trialDays\": 7,\n  \"features\": {\n    \"advancedReports\": true,\n    \"multiLocation\": true,\n    \"customBranding\": true\n  },\n  \"limitations\": {},\n  \"isPopular\": true\n}"
+        "text": "{\n  \"name\": \"Plan Premium\",\n  \"description\": \"Plan completo con todas las funcionalidades\",\n  \"price\": 89900,\n  \"currency\": \"COP\",\n  \"duration\": 1,\n  \"durationType\": \"MONTHS\",\n  \"maxUsers\": 10,\n  \"maxClients\": 500,\n  \"maxAppointments\": 1000,\n  \"storageLimit\": 5368709120,\n  \"trialDays\": 7,\n  \"features\": {\n    \"advancedReports\": true,\n    \"multiLocation\": true,\n    \"customBranding\": true\n  },\n  \"limitations\": {},\n  \"isPopular\": true,\n  \"modules\": [\n    {\n      \"moduleId\": \"module-uuid-1\",\n      \"isIncluded\": true,\n      \"limitQuantity\": null,\n      \"additionalPrice\": 0,\n      \"configuration\": {}\n    },\n    {\n      \"moduleId\": \"module-uuid-2\",\n      \"isIncluded\": true,\n      \"limitQuantity\": 100,\n      \"additionalPrice\": 0,\n      \"configuration\": {\n        \"maxClients\": 500\n      }\n    },\n    {\n      \"moduleId\": \"module-uuid-3\",\n      \"isIncluded\": false,\n      \"limitQuantity\": null,\n      \"additionalPrice\": 15000,\n      \"configuration\": {}\n    }\n  ]\n}"
       },
       "parameters": [],
       "headers": [
@@ -875,6 +875,35 @@
       ],
       "authentication": {},
       "metaSortKey": -1736700810000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_modules_create",
+      "parentId": "fld_modules",
+      "modified": 1736700815000,
+      "created": 1736700815000,
+      "url": "{{ _.base_url }}/api/modules",
+      "name": "Crear Módulo",
+      "description": "Crea un nuevo módulo del sistema (Solo OWNER)",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"appointment-management\",\n  \"displayName\": \"Gestión de Citas\",\n  \"description\": \"Módulo para gestionar citas y agenda del salón\",\n  \"icon\": \"calendar\",\n  \"category\": \"CORE\",\n  \"status\": \"ACTIVE\",\n  \"version\": \"1.0.0\",\n  \"requiresConfiguration\": true,\n  \"configurationSchema\": {\n    \"maxAppointmentsPerDay\": {\n      \"type\": \"number\",\n      \"default\": 20,\n      \"min\": 1,\n      \"max\": 100\n    },\n    \"allowOnlineBooking\": {\n      \"type\": \"boolean\",\n      \"default\": true\n    }\n  },\n  \"permissions\": [\n    \"appointment.read\",\n    \"appointment.create\",\n    \"appointment.update\",\n    \"appointment.delete\"\n  ],\n  \"dependencies\": [],\n  \"pricing\": {\n    \"type\": \"INCLUDED\",\n    \"price\": 0,\n    \"currency\": \"COP\"\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700815000,
       "isPrivate": false,
       "_type": "request"
     },

@@ -3,7 +3,7 @@
  * Permite al OWNER crear, editar, activar/desactivar y gestionar planes
  */
 
-const { SubscriptionPlan, BusinessSubscription, Business, Module } = require('../models');
+const { SubscriptionPlan, BusinessSubscription, Business, Module, PlanModule } = require('../models');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
 
@@ -156,6 +156,8 @@ class OwnerPlanController {
    * Crear un nuevo plan de suscripción
    */
   static async createPlan(req, res) {
+    const transaction = await sequelize.transaction();
+    
     try {
       const {
         name,
@@ -171,11 +173,13 @@ class OwnerPlanController {
         trialDays = 0,
         features = {},
         limitations = {},
-        isPopular = false
+        isPopular = false,
+        modules = [] // Array de módulos a asociar
       } = req.body;
 
       // Validaciones básicas
       if (!name || !price || !duration) {
+        await transaction.rollback();
         return res.status(400).json({
           success: false,
           message: 'Nombre, precio y duración son requeridos'
@@ -188,12 +192,32 @@ class OwnerPlanController {
       });
 
       if (existingPlan) {
+        await transaction.rollback();
         return res.status(409).json({
           success: false,
           message: 'Ya existe un plan con ese nombre'
         });
       }
 
+      // Validar módulos si se proporcionan
+      if (modules.length > 0) {
+        const moduleIds = modules.map(m => m.moduleId || m.id);
+        const existingModules = await Module.findAll({
+          where: { id: moduleIds },
+          attributes: ['id', 'name'],
+          transaction
+        });
+
+        if (existingModules.length !== moduleIds.length) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: 'Uno o más módulos especificados no existen'
+          });
+        }
+      }
+
+      // Crear el plan
       const newPlan = await SubscriptionPlan.create({
         name,
         description,
@@ -210,15 +234,43 @@ class OwnerPlanController {
         limitations,
         isPopular,
         status: 'ACTIVE'
+      }, { transaction });
+
+      // Asociar módulos al plan si se proporcionan
+      if (modules.length > 0) {
+        const planModuleData = modules.map(module => ({
+          subscriptionPlanId: newPlan.id,
+          moduleId: module.moduleId || module.id,
+          isIncluded: module.isIncluded !== undefined ? module.isIncluded : true,
+          limitQuantity: module.limitQuantity || null,
+          additionalPrice: module.additionalPrice || 0,
+          configuration: module.configuration || {}
+        }));
+
+        await PlanModule.bulkCreate(planModuleData, { transaction });
+      }
+
+      await transaction.commit();
+
+      // Obtener el plan creado con sus módulos asociados
+      const createdPlan = await SubscriptionPlan.findByPk(newPlan.id, {
+        include: [{
+          model: Module,
+          through: {
+            model: PlanModule,
+            attributes: ['isIncluded', 'limitQuantity', 'additionalPrice', 'configuration']
+          }
+        }]
       });
 
       res.status(201).json({
         success: true,
-        data: newPlan,
+        data: createdPlan,
         message: 'Plan creado correctamente'
       });
 
     } catch (error) {
+      await transaction.rollback();
       console.error('Error creando plan:', error);
       res.status(500).json({
         success: false,

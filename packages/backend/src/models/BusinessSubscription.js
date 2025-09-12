@@ -24,7 +24,7 @@ const BusinessSubscription = sequelize.define('BusinessSubscription', {
     }
   },
   status: {
-    type: DataTypes.ENUM('ACTIVE', 'EXPIRED', 'CANCELED', 'SUSPENDED', 'TRIAL'),
+    type: DataTypes.ENUM('ACTIVE', 'EXPIRED', 'CANCELED', 'SUSPENDED', 'TRIAL', 'PENDING', 'OVERDUE'),
     allowNull: false,
     defaultValue: 'TRIAL'
   },

@@ -1,5 +1,5 @@
 const { Module, PlanModule, SubscriptionPlan } = require('../models');
-const { PaginationService } = require('../services/PaginationService');
+const PaginationService = require('../services/PaginationService');
 const { Op } = require('sequelize');
 
 class ModuleController {
@@ -31,15 +31,19 @@ class ModuleController {
         ];
       }
       
-      const options = {
-        where,
-        order: [['name', 'ASC']],
-        attributes: {
-          exclude: ['configurationSchema'] // Excluir esquemas de configuración por defecto
-        }
+      const paginationOptions = {
+        req,
+        query: {
+          where,
+          attributes: {
+            exclude: ['configurationSchema'] // Excluir esquemas de configuración por defecto
+          }
+        },
+        include: [],
+        order: [['name', 'ASC']]
       };
       
-      const result = await PaginationService.paginate(Module, page, limit, options);
+      const result = await PaginationService.paginate(Module, paginationOptions);
       
       res.status(200).json({
         success: true,

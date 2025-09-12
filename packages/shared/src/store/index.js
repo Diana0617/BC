@@ -5,6 +5,14 @@ import ownerStatsReducer from './slices/ownerStatsSlice';
 import ownerBusinessesReducer from './slices/ownerBusinessesSlice';
 import ownerSubscriptionsReducer from './slices/ownerSubscriptionsSlice';
 import plansReducer from './slices/plansSlice';
+import ownerPlansReducer from './slices/ownerPlansSlice';
+import ownerModulesReducer from './slices/ownerModulesSlice';
+// New OWNER Redux slices
+import ownerDashboardReducer from './slices/ownerDashboardSlice';
+import ownerBusinessReducer from './slices/ownerBusinessSlice';
+import ownerSubscriptionReducer from './slices/ownerSubscriptionSlice';
+import ownerPaymentsReducer from './slices/ownerPaymentsSlice';
+import ownerFinancialReportsReducer from './slices/ownerFinancialReportsSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -15,7 +23,15 @@ export const createStore = (preloadedState = {}) => {
       ownerStats: ownerStatsReducer,
       ownerBusinesses: ownerBusinessesReducer,
       ownerSubscriptions: ownerSubscriptionsReducer,
-      plans: plansReducer
+      plans: plansReducer,
+      ownerPlans: ownerPlansReducer,
+      ownerModules: ownerModulesReducer,
+      // New OWNER reducers
+      ownerDashboard: ownerDashboardReducer,
+      ownerBusiness: ownerBusinessReducer,
+      ownerSubscription: ownerSubscriptionReducer,
+      ownerPayments: ownerPaymentsReducer,
+      ownerFinancialReports: ownerFinancialReportsReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>
