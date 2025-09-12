@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { authAPI } from '../api/auth.js';
-import { STORAGE_KEYS } from '../constants/api.js';
+import { authAPI } from '../../api/auth.js';
+import { STORAGE_KEYS } from '../../constants/api.js';
+import { StorageHelper } from '../../utils/storage.js';
 
 // Async thunks for auth actions
 export const registerUser = createAsyncThunk(
@@ -24,12 +25,11 @@ export const loginUser = createAsyncThunk(
 
       // Store token and user data
       if (typeof window !== 'undefined') {
-        const storage = rememberMe ? localStorage : sessionStorage;
-        storage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
-        storage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
+        StorageHelper.setItem(STORAGE_KEYS.AUTH_TOKEN, token, rememberMe);
+        StorageHelper.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user), rememberMe);
         
         if (rememberMe) {
-          localStorage.setItem(STORAGE_KEYS.REMEMBER_EMAIL, credentials.email);
+          StorageHelper.setItem(STORAGE_KEYS.REMEMBER_EMAIL, credentials.email, true);
         }
       }
 
@@ -100,17 +100,37 @@ export const changePassword = createAsyncThunk(
   }
 );
 
+export const checkExistingSession = createAsyncThunk(
+  'auth/checkExistingSession',
+  async (_, { rejectWithValue }) => {
+    try {
+      if (typeof window === 'undefined') {
+        return null;
+      }
+      
+      const token = StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      const userDataStr = StorageHelper.getItem(STORAGE_KEYS.USER_DATA);
+      
+      if (!token || !userDataStr) {
+        return null;
+      }
+      
+      const user = JSON.parse(userDataStr);
+      return { token, user };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // Helper function to get initial state from storage
 const getInitialAuthState = () => {
   if (typeof window === 'undefined') {
     return { token: null, user: null };
   }
 
-  const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) || 
-                sessionStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-  
-  const userDataStr = localStorage.getItem(STORAGE_KEYS.USER_DATA) || 
-                      sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
+  const token = StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
+  const userDataStr = StorageHelper.getItem(STORAGE_KEYS.USER_DATA);
   
   let user = null;
   if (userDataStr) {
@@ -156,7 +176,7 @@ const initialState = {
   
   // Remember email
   rememberedEmail: typeof window !== 'undefined' ? 
-    localStorage.getItem(STORAGE_KEYS.REMEMBER_EMAIL) : null,
+    StorageHelper.getItem(STORAGE_KEYS.REMEMBER_EMAIL) : null,
   
   // Initialize from storage
   ...getInitialAuthState()
@@ -199,10 +219,8 @@ const authSlice = createSlice({
       
       // Clear storage
       if (typeof window !== 'undefined') {
-        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-        localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-        sessionStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-        sessionStorage.removeItem(STORAGE_KEYS.USER_DATA);
+        StorageHelper.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+        StorageHelper.removeItem(STORAGE_KEYS.USER_DATA);
       }
     },
     
@@ -213,9 +231,7 @@ const authSlice = createSlice({
         
         // Update storage
         if (typeof window !== 'undefined') {
-          const storage = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) ? 
-            localStorage : sessionStorage;
-          storage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(state.user));
+          StorageHelper.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(state.user), true);
         }
       }
     }
@@ -336,6 +352,30 @@ const authSlice = createSlice({
       .addCase(changePassword.rejected, (state, action) => {
         state.isChangingPassword = false;
         state.changePasswordError = action.payload;
+      });
+
+    // Check existing session
+    builder
+      .addCase(checkExistingSession.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(checkExistingSession.fulfilled, (state, action) => {
+        state.isLoading = false;
+        if (action.payload) {
+          state.isAuthenticated = true;
+          state.token = action.payload.token;
+          state.user = action.payload.user;
+        } else {
+          state.isAuthenticated = false;
+          state.token = null;
+          state.user = null;
+        }
+      })
+      .addCase(checkExistingSession.rejected, (state) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
+        state.token = null;
+        state.user = null;
       });
   }
 });

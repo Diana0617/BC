@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
-import authReducer from './slices/authSlice.js';
-import userReducer from './slices/userSlice.js';
+import authReducer from './slices/authSlice';
+import userReducer from './slices/userSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -17,7 +17,7 @@ export const createStore = (preloadedState = {}) => {
           ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE']
         }
       }),
-    devTools: process.env.NODE_ENV !== 'production'
+    devTools: typeof window !== 'undefined' && window.__ENV__?.NODE_ENV !== 'production'
   });
 };
 

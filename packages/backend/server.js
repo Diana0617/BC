@@ -69,11 +69,12 @@ async function startServer() {
     const tokenCleanupService = require('./src/services/TokenCleanupService');
     console.log('🧹 Servicio de limpieza de tokens inicializado');
 
-    // Iniciar servidor
-    const server = app.listen(PORT, () => {
+    // Iniciar servidor en todas las interfaces de red
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Servidor Beauty Control corriendo en puerto ${PORT}`);
       console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
+      console.log(`📱 Mobile access: http://192.168.0.213:${PORT}/health`);
     });
 
     // Manejo de errores del servidor

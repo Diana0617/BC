@@ -1,21 +1,56 @@
+// Storage utilities for cross-platform compatibility
+export const storage = {
+  // Get item from storage
 import { StorageHelper } from './storage.js';
 
 // Storage helpers
 export const storage = {
-  get: (key) => {
-    return StorageHelper.getItem(key);
-  },
-
+    get: (key) => {
+        return StorageHelper.getItem(key);
+    },  // Set item in storage
   setItem: (key, value, persistent = true) => {
-    StorageHelper.setItem(key, value, persistent);
+    try {
+      if (typeof window !== 'undefined') {
+        const storage = persistent ? localStorage : sessionStorage;
+        storage.setItem(key, value);
+        return true;
+      }
+      // For React Native, you'd use AsyncStorage here
+      return false;
+    } catch (error) {
+      console.warn('Storage setItem error:', error);
+      return false;
+    }
   },
 
+  // Remove item from storage
   removeItem: (key) => {
-    StorageHelper.removeItem(key);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.warn('Storage removeItem error:', error);
+      return false;
+    }
   },
 
+  // Clear all storage
   clear: () => {
-    StorageHelper.clear();
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.warn('Storage clear error:', error);
+      return false;
+    }
   }
 };
 

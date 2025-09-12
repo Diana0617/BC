@@ -17,12 +17,12 @@ const authenticateToken = async (req, res, next) => {
     const user = await User.findOne({
       where: { 
         id: decoded.userId,
-        isActive: true
+        status: 'ACTIVE'
       },
       include: [{
         model: Business,
         as: 'business',
-        attributes: ['id', 'name', 'isActive']
+        attributes: ['id', 'name', 'status']
       }]
     });
 
@@ -34,7 +34,7 @@ const authenticateToken = async (req, res, next) => {
     }
 
     // Verificar que el negocio esté activo (excepto para OWNER)
-    if (user.role !== 'OWNER' && user.business && !user.business.isActive) {
+    if (user.role !== 'OWNER' && user.business && user.business.status !== 'ACTIVE') {
       return res.status(403).json({ 
         success: false,
         error: 'Negocio inactivo o suspendido' 

@@ -1,0 +1,28 @@
+/* eslint-disable no-undef */
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3000,
+    strictPort: true,
+  },
+  resolve: {
+    alias: {
+      '@shared': path.resolve(__dirname, '../shared/src'),
+    },
+  },
+  define: {
+    global: 'globalThis',
+    'process.env': '{}',
+    'window.__ENV__': JSON.stringify({
+      VITE_API_URL: process.env.VITE_API_URL,
+      NODE_ENV: process.env.NODE_ENV || 'development'
+    })
+  },
+  optimizeDeps: {
+    exclude: ['@react-native-async-storage/async-storage']
+  }
+})

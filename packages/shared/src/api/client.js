@@ -10,9 +10,12 @@ class ApiClient {
   // Get auth token from storage
   getAuthToken() {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('bc_auth_token') || sessionStorage.getItem('bc_auth_token');
+      // Web environment - use localStorage
+      return localStorage.getItem('auth_token') || localStorage.getItem('AUTH_TOKEN');
+    } else {
+      // React Native environment - TODO: implement AsyncStorage
+      return null;
     }
-    return null;
   }
 
   // Build headers with auth if available

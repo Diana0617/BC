@@ -89,7 +89,7 @@ class AuthController {
         password: hashedPassword,
         phone,
         role,
-        isActive: true,
+        status: 'ACTIVE',
         emailVerified: false // En desarrollo, cambiar según necesidades
       };
 
@@ -128,7 +128,7 @@ class AuthController {
         phone: newUser.phone,
         role: newUser.role,
         businessId: newUser.businessId,
-        isActive: newUser.isActive,
+        status: newUser.status,
         emailVerified: newUser.emailVerified,
         createdAt: newUser.createdAt
       };
@@ -172,7 +172,7 @@ class AuthController {
       const user = await User.findOne({
         where: { 
           email: email.toLowerCase(),
-          isActive: true 
+          status: 'ACTIVE'
         },
         include: [
           {
@@ -205,7 +205,7 @@ class AuthController {
       }
 
       // Verificar si el negocio está activo (para usuarios de negocio)
-      if (user.businessId && user.business && !user.business.isActive) {
+      if (user.businessId && user.business && user.business.status !== 'ACTIVE') {
         return res.status(403).json({
           success: false,
           error: 'El negocio asociado está inactivo'
@@ -227,14 +227,14 @@ class AuthController {
         phone: user.phone,
         role: user.role,
         businessId: user.businessId,
-        isActive: user.isActive,
+        status: user.status,
         emailVerified: user.emailVerified,
         lastLogin: user.lastLogin,
         business: user.business ? {
           id: user.business.id,
           name: user.business.name,
           businessType: user.business.businessType,
-          isActive: user.business.isActive,
+          status: user.business.status,
           currentPlan: user.business.currentPlan
         } : null
       };
@@ -310,7 +310,7 @@ class AuthController {
 
       // Buscar usuario
       const user = await User.findByPk(decoded.userId);
-      if (!user || !user.isActive) {
+      if (!user || user.status !== 'ACTIVE') {
         return res.status(401).json({
           success: false,
           error: 'Usuario no encontrado o inactivo'
@@ -375,7 +375,7 @@ class AuthController {
         phone: user.phone,
         role: user.role,
         businessId: user.businessId,
-        isActive: user.isActive,
+        status: user.status,
         emailVerified: user.emailVerified,
         lastLogin: user.lastLogin,
         createdAt: user.createdAt,
@@ -383,7 +383,7 @@ class AuthController {
           id: user.business.id,
           name: user.business.name,
           businessType: user.business.businessType,
-          isActive: user.business.isActive,
+          status: user.business.status,
           currentPlan: user.business.currentPlan
         } : null
       };
@@ -552,7 +552,7 @@ class AuthController {
       }
 
       // Verificar si el usuario está activo
-      if (!user.isActive) {
+      if (user.status !== 'ACTIVE') {
         return res.json({
           success: true,
           message: 'Si el email existe en nuestro sistema, recibirás un enlace de recuperación'
@@ -641,7 +641,7 @@ class AuthController {
         include: [{
           model: User,
           as: 'user',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'isActive']
+          attributes: ['id', 'firstName', 'lastName', 'email', 'status']
         }]
       });
 
@@ -653,7 +653,7 @@ class AuthController {
       }
 
       // Verificar que el usuario sigue activo
-      if (!tokenRecord.user.isActive) {
+      if (tokenRecord.user.status !== 'ACTIVE') {
         return res.status(400).json({
           success: false,
           error: 'Usuario inactivo'
@@ -726,7 +726,7 @@ class AuthController {
         include: [{
           model: User,
           as: 'user',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'isActive', 'password']
+          attributes: ['id', 'firstName', 'lastName', 'email', 'status', 'password']
         }]
       });
 
@@ -738,7 +738,7 @@ class AuthController {
       }
 
       // Verificar que el usuario sigue activo
-      if (!tokenRecord.user.isActive) {
+      if (tokenRecord.user.status !== 'ACTIVE') {
         return res.status(400).json({
           success: false,
           error: 'Usuario inactivo'

@@ -1,23 +1,6 @@
-// API Configuration
-const getApiUrl = () => {
-  // Check if we're in React Native environment
-  const isReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
-  
-  if (isReactNative) {
-    // React Native environment
-    return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
-  } else if (typeof window !== 'undefined') {
-    // Web browser environment
-    // Try to get from window.__ENV__ or default
-    return window.__ENV__?.VITE_API_URL || 'http://localhost:3001';
-  } else {
-    // Node.js environment
-    return process.env.REACT_APP_API_URL || 'http://localhost:3001';
-  }
-};
-
+// API Configuration for web app
 export const API_CONFIG = {
-  BASE_URL: getApiUrl(),
+  BASE_URL: 'http://localhost:3001',
   ENDPOINTS: {
     // Auth endpoints
     AUTH: {
