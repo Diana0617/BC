@@ -27,11 +27,18 @@ export { default as ownerPaymentsApi } from './ownerPaymentsApi';
 // OWNER financial reports API
 export { default as ownerFinancialReportsApi } from './ownerFinancialReportsApi';
 
+// OWNER expenses management API
+export { ownerExpensesApi } from './ownerExpensesApi';
+
+// OWNER trials management API
+export { default as ownerTrialsApi } from './ownerTrialsApi';
+
 // 🔄 NEW SYSTEM APIS
 export { autoRenewalApi } from './autoRenewalApi';
 export { ownerBusinessManagementApi } from './ownerBusinessManagementApi';
 export { publicInvitationApi } from './publicInvitationApi';
 export { ownerPaymentConfigApi } from './ownerPaymentConfigApi';
+export { subscriptionStatusApi } from './subscriptionStatusApi';
 
 // 🔧 RULE TEMPLATE SYSTEM APIS
 export { ruleTemplateApi } from './ruleTemplateApi';
@@ -47,11 +54,14 @@ export const ownerApis = {
   ownerModulesApi,
   ownerPaymentsApi,
   ownerFinancialReportsApi,
+  ownerExpensesApi,
+  ownerTrialsApi,
   // New APIs
   autoRenewalApi,
   ownerBusinessManagementApi,
   publicInvitationApi,
   ownerPaymentConfigApi,
+  subscriptionStatusApi,
   // Rule Template APIs
   ruleTemplateApi,
   businessRuleApi

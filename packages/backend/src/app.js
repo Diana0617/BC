@@ -161,6 +161,7 @@ const ownerBusinessManagementRoutes = require('./routes/ownerBusinessManagement'
 const publicInvitationRoutes = require('./routes/publicInvitation');
 const businessConfigRoutes = require('./routes/businessConfig');
 const ruleTemplateRoutes = require('./routes/ruleTemplate');
+const ownerExpenseRoutes = require('./routes/ownerExpenses');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
@@ -175,6 +176,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/financial', financialRoutes);
 app.use('/api/owner', ownerRoutes);
 app.use('/api/owner/business', ownerBusinessManagementRoutes);
+app.use('/api/owner/expenses', ownerExpenseRoutes);
 app.use('/api/public', publicInvitationRoutes);
 app.use('/api/wompi', wompiPaymentRoutes);
 app.use('/api/test/auto-renewal', autoRenewalTestRoutes);

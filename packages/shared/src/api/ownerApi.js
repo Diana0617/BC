@@ -1,10 +1,6 @@
 import { apiClient } from './client';
 
 export const ownerApi = {
-  // Platform Statistics
-  getPlatformStats: () => 
-    apiClient.get('/owner/stats/platform'),
-
   // Business Management
   getAllBusinesses: (params = {}) => 
     apiClient.get('/owner/businesses', { params }),

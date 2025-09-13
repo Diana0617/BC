@@ -90,7 +90,7 @@ export const ownerDashboardApi = {
    * @returns {Promise} Estadísticas globales de la plataforma
    */
   getPlatformStats: async () => {
-    const response = await api.get('/owner/platform-stats');
+    const response = await api.get('/owner/stats/platform');
     return response.data.data;
   }
 };

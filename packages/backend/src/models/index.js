@@ -41,6 +41,7 @@ const CommissionDetail = require('./CommissionDetail');
 const OwnerPaymentConfiguration = require('./OwnerPaymentConfiguration');
 const SubscriptionPayment = require('./SubscriptionPayment');
 const OwnerFinancialReport = require('./OwnerFinancialReport');
+const OwnerExpense = require('./OwnerExpense');
 const SavedPaymentMethod = require('./SavedPaymentMethod');
 const BusinessInvitation = require('./BusinessInvitation');
 
@@ -492,6 +493,25 @@ SubscriptionPayment.belongsTo(User, {
   as: 'receiptUploader' 
 });
 
+// User - OwnerExpense (usuario que crea y aprueba gastos)
+User.hasMany(OwnerExpense, { 
+  foreignKey: 'createdBy', 
+  as: 'createdExpenses' 
+});
+OwnerExpense.belongsTo(User, { 
+  foreignKey: 'createdBy', 
+  as: 'creator' 
+});
+
+User.hasMany(OwnerExpense, { 
+  foreignKey: 'approvedBy', 
+  as: 'approvedExpenses' 
+});
+OwnerExpense.belongsTo(User, { 
+  foreignKey: 'approvedBy', 
+  as: 'approver' 
+});
+
 // Business - BusinessInvitation (uno a muchos)
 Business.hasMany(BusinessInvitation, { 
   foreignKey: 'businessId', 
@@ -759,6 +779,7 @@ module.exports = {
   OwnerPaymentConfiguration,
   SubscriptionPayment,
   OwnerFinancialReport,
+  OwnerExpense,
   SavedPaymentMethod,
   BusinessInvitation
 };
