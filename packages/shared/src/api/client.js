@@ -113,3 +113,6 @@ export const apiClient = new ApiClient();
 
 // Export as 'api' for backward compatibility
 export const api = apiClient;
+
+// Export as default for import convenience
+export default apiClient;

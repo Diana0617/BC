@@ -15,29 +15,95 @@ const BusinessRules = sequelize.define('BusinessRules', {
       key: 'id'
     }
   },
+  ruleKey: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  ruleValue: {
+    type: DataTypes.JSONB,
+    allowNull: false
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  priority: {
+    type: DataTypes.INTEGER,
+    defaultValue: 1
+  },
+  category: {
+    type: DataTypes.ENUM(
+      'PAYMENT_POLICY',
+      'CANCELLATION_POLICY', 
+      'APPOINTMENT_RULES',
+      'NOTIFICATION_SETTINGS',
+      'BUSINESS_HOURS',
+      'SPECIALIST_RULES',
+      'GENERAL'
+    ),
+    defaultValue: 'GENERAL'
+  },
+  // Nuevos campos para integración con plantillas
+  ruleTemplateId: {
+    type: DataTypes.UUID,
+    allowNull: true
+  },
+  ruleAssignmentId: {
+    type: DataTypes.UUID,
+    allowNull: true
+  },
+  isFromTemplate: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  isCustomized: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  originalTemplateValue: {
+    type: DataTypes.JSONB,
+    allowNull: true
+  },
+  customizationNotes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  lastSyncedAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  templateVersion: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  // Campos legacy mantenidos para compatibilidad
   allowCloseWithoutPayment: {
     type: DataTypes.BOOLEAN,
-    allowNull: false,
+    allowNull: true,
     defaultValue: false
   },
   enableCancellation: {
     type: DataTypes.BOOLEAN,
-    allowNull: false,
+    allowNull: true,
     defaultValue: true
   },
   autoRefundOnCancel: {
     type: DataTypes.BOOLEAN,
-    allowNull: false,
+    allowNull: true,
     defaultValue: false
   },
   createVoucherOnCancel: {
     type: DataTypes.BOOLEAN,
-    allowNull: false,
+    allowNull: true,
     defaultValue: false
   },
   allowCloseWithoutConsent: {
     type: DataTypes.BOOLEAN,
-    allowNull: false,
+    allowNull: true,
     defaultValue: false
   },
   cancellationPolicy: {
@@ -46,22 +112,22 @@ const BusinessRules = sequelize.define('BusinessRules', {
   },
   cancellationTimeLimit: {
     type: DataTypes.INTEGER, // horas antes del turno
-    allowNull: false,
+    allowNull: true,
     defaultValue: 24
   },
   allowReschedule: {
     type: DataTypes.BOOLEAN,
-    allowNull: false,
+    allowNull: true,
     defaultValue: true
   },
   rescheduleTimeLimit: {
     type: DataTypes.INTEGER, // horas antes del turno
-    allowNull: false,
+    allowNull: true,
     defaultValue: 4
   },
   requireDepositForBooking: {
     type: DataTypes.BOOLEAN,
-    allowNull: false,
+    allowNull: true,
     defaultValue: false
   },
   depositPercentage: {
@@ -74,12 +140,12 @@ const BusinessRules = sequelize.define('BusinessRules', {
   },
   allowOnlineBooking: {
     type: DataTypes.BOOLEAN,
-    allowNull: false,
+    allowNull: true,
     defaultValue: true
   },
   maxAdvanceBookingDays: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     defaultValue: 30
   },
   workingHours: {
@@ -110,8 +176,33 @@ const BusinessRules = sequelize.define('BusinessRules', {
   timestamps: true,
   indexes: [
     {
-      unique: true,
       fields: ['businessId']
+    },
+    {
+      fields: ['ruleKey']
+    },
+    {
+      fields: ['isActive']
+    },
+    {
+      fields: ['category']
+    },
+    {
+      fields: ['ruleTemplateId']
+    },
+    {
+      fields: ['ruleAssignmentId']
+    },
+    {
+      fields: ['isFromTemplate']
+    },
+    {
+      fields: ['isCustomized']
+    },
+    {
+      unique: true,
+      fields: ['businessId', 'ruleKey'],
+      name: 'unique_business_rule'
     }
   ]
 });

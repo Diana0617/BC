@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const { specs, swaggerUi, swaggerConfig } = require('./config/swagger');
 require('dotenv').config();
 
 const app = express();
@@ -52,6 +53,15 @@ const limiter = rateLimit({
 });
 
 app.use('/api/', limiter);
+
+// 📚 SWAGGER DOCUMENTATION
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerConfig));
+
+// Ruta para acceder al JSON de la documentación
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(specs);
+});
 
 // Rate limiting más estricto para autenticación
 const authLimiter = rateLimit({
@@ -131,9 +141,16 @@ const productRoutes = require('./routes/products');
 const financialRoutes = require('./routes/financial');
 const ownerRoutes = require('./routes/owner');
 const wompiPaymentRoutes = require('./routes/wompiPayments');
+const autoRenewalTestRoutes = require('./routes/autoRenewalTest');
+const ownerBusinessManagementRoutes = require('./routes/ownerBusinessManagement');
+const publicInvitationRoutes = require('./routes/publicInvitation');
+const businessConfigRoutes = require('./routes/businessConfig');
+const ruleTemplateRoutes = require('./routes/ruleTemplate');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
+app.use('/api/business', businessConfigRoutes); // Rutas de configuración del negocio
+app.use('/api', ruleTemplateRoutes); // Rutas de plantillas de reglas
 app.use('/api/plans', plansRoutes);
 app.use('/api/modules', moduleRoutes);
 app.use('/api/clients', clientRoutes);
@@ -142,7 +159,10 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/financial', financialRoutes);
 app.use('/api/owner', ownerRoutes);
+app.use('/api/owner/business', ownerBusinessManagementRoutes);
+app.use('/api/public', publicInvitationRoutes);
 app.use('/api/wompi', wompiPaymentRoutes);
+app.use('/api/test/auto-renewal', autoRenewalTestRoutes);
 
 // Ruta 404
 app.use('*', (req, res) => {

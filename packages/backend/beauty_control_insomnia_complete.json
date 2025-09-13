@@ -1532,6 +1532,885 @@
       "metaSortKey": -1736701630000,
       "isPrivate": false,
       "_type": "request"
+    },
+    {
+      "_id": "fld_auto_renewal",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736702000000,
+      "created": 1736702000000,
+      "name": "🔄 Auto-Renovación (Testing)",
+      "description": "Endpoints para testing y administración del sistema de auto-renovación de suscripciones",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736702000000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_auto_renewal_stats",
+      "parentId": "fld_auto_renewal",
+      "modified": 1736702100000,
+      "created": 1736702100000,
+      "url": "{{ _.base_url }}/api/test/auto-renewal/stats",
+      "name": "📊 Estadísticas del Sistema",
+      "description": "Obtiene estadísticas completas del sistema de auto-renovación",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736702100000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auto_renewal_create_subscription",
+      "parentId": "fld_auto_renewal",
+      "modified": 1736702200000,
+      "created": 1736702200000,
+      "url": "{{ _.base_url }}/api/test/auto-renewal/create-subscription",
+      "name": "➕ Crear Suscripción de Prueba",
+      "description": "Crea una suscripción de prueba para testing del auto-renewal",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"daysUntilExpiry\": 1,\n  \"businessId\": null,\n  \"planId\": null\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736702200000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auto_renewal_force_expire",
+      "parentId": "fld_auto_renewal",
+      "modified": 1736702300000,
+      "created": 1736702300000,
+      "url": "{{ _.base_url }}/api/test/auto-renewal/force-expire-soon",
+      "name": "⏰ Forzar Expiración Pronta",
+      "description": "Configura una suscripción para que expire pronto (mañana)",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"subscriptionId\": null\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736702300000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auto_renewal_expiring_subscriptions",
+      "parentId": "fld_auto_renewal",
+      "modified": 1736702400000,
+      "created": 1736702400000,
+      "url": "{{ _.base_url }}/api/test/auto-renewal/expiring",
+      "name": "📅 Ver Suscripciones Próximas a Vencer",
+      "description": "Lista suscripciones que vencerán en los próximos días",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736702400000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auto_renewal_process_renewals",
+      "parentId": "fld_auto_renewal",
+      "modified": 1736702500000,
+      "created": 1736702500000,
+      "url": "{{ _.base_url }}/api/test/auto-renewal/run",
+      "name": "🚀 Procesar Renovaciones Manualmente",
+      "description": "Ejecuta el proceso de auto-renovación manualmente para testing",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736702500000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auto_renewal_payment_retries",
+      "parentId": "fld_auto_renewal",
+      "modified": 1736702600000,
+      "created": 1736702600000,
+      "url": "{{ _.base_url }}/api/test/auto-renewal/retries",
+      "name": "🔄 Procesar Reintentos de Pago",
+      "description": "Ejecuta manualmente los reintentos de pagos fallidos",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736702600000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auto_renewal_notifications",
+      "parentId": "fld_auto_renewal",
+      "modified": 1736702700000,
+      "created": 1736702700000,
+      "url": "{{ _.base_url }}/api/test/auto-renewal/notifications",
+      "name": "📧 Enviar Notificaciones",
+      "description": "Ejecuta manualmente el envío de notificaciones de renovación",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736702700000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auto_renewal_create_payment_method",
+      "parentId": "fld_auto_renewal",
+      "modified": 1736702800000,
+      "created": 1736702800000,
+      "url": "{{ _.base_url }}/api/test/auto-renewal/payment-method",
+      "name": "💳 Crear Método de Pago de Prueba",
+      "description": "Crea un método de pago de prueba para testing",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": 1,\n  \"cardLastFour\": \"1234\",\n  \"cardBrand\": \"VISA\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736702800000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_owner_business",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736703000000,
+      "created": 1736703000000,
+      "name": "🏢 Gestión de Negocios (Owner)",
+      "description": "Endpoints para que el Owner pueda crear y gestionar negocios manualmente",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736703000000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_owner_get_plans",
+      "parentId": "fld_owner_business",
+      "modified": 1736703100000,
+      "created": 1736703100000,
+      "url": "{{ _.base_url }}/api/owner/business/plans",
+      "name": "📋 Ver Planes Disponibles",
+      "description": "Lista todos los planes de suscripción disponibles para invitaciones",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736703100000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_create_invitation",
+      "parentId": "fld_owner_business",
+      "modified": 1736703200000,
+      "created": 1736703200000,
+      "url": "{{ _.base_url }}/api/owner/business/invite",
+      "name": "📧 Crear Invitación de Negocio",
+      "description": "Crea un nuevo negocio y envía invitación de pago por email",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessName\": \"Salón de Belleza María\",\n  \"email\": \"maria@salon.com\",\n  \"phone\": \"3001234567\",\n  \"address\": \"Calle 123 #45-67, Bogotá\",\n  \"ownerName\": \"María García\",\n  \"planId\": \"plan-uuid-aqui\",\n  \"expirationDays\": 7\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736703200000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_list_invitations",
+      "parentId": "fld_owner_business",
+      "modified": 1736703300000,
+      "created": 1736703300000,
+      "url": "{{ _.base_url }}/api/owner/business/invitations",
+      "name": "📋 Listar Mis Invitaciones",
+      "description": "Lista todas las invitaciones enviadas por el owner",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "status",
+          "value": "",
+          "description": "Filtrar por estado: SENT, VIEWED, PAYMENT_STARTED, COMPLETED, EXPIRED, CANCELLED"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736703300000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_invitation_stats",
+      "parentId": "fld_owner_business",
+      "modified": 1736703400000,
+      "created": 1736703400000,
+      "url": "{{ _.base_url }}/api/owner/business/invitations/stats",
+      "name": "📊 Estadísticas de Invitaciones",
+      "description": "Obtiene métricas y estadísticas de todas las invitaciones",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736703400000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_resend_invitation",
+      "parentId": "fld_owner_business",
+      "modified": 1736703500000,
+      "created": 1736703500000,
+      "url": "{{ _.base_url }}/api/owner/business/invitations/invitation-id-aqui/resend",
+      "name": "🔄 Reenviar Invitación",
+      "description": "Reenvía una invitación existente con nueva fecha de expiración",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736703500000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_cancel_invitation",
+      "parentId": "fld_owner_business",
+      "modified": 1736703600000,
+      "created": 1736703600000,
+      "url": "{{ _.base_url }}/api/owner/business/invitations/invitation-id-aqui",
+      "name": "❌ Cancelar Invitación",
+      "description": "Cancela una invitación pendiente",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736703600000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_public_invitations",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736704000000,
+      "created": 1736704000000,
+      "name": "🌐 Invitaciones Públicas",
+      "description": "Endpoints públicos para que los negocios invitados completen su registro y pago",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736704000000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_public_validate_invitation",
+      "parentId": "fld_public_invitations",
+      "modified": 1736704100000,
+      "created": 1736704100000,
+      "url": "{{ _.base_url }}/api/public/invitation/token-de-invitacion-aqui",
+      "name": "✅ Validar Token de Invitación",
+      "description": "Valida un token de invitación y retorna información del negocio y plan",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736704100000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_public_process_payment",
+      "parentId": "fld_public_invitations",
+      "modified": 1736704200000,
+      "created": 1736704200000,
+      "url": "{{ _.base_url }}/api/public/invitation/token-de-invitacion-aqui/payment",
+      "name": "💳 Procesar Pago de Invitación",
+      "description": "Procesa el pago de la invitación y activa el negocio",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cardNumber\": \"4242424242424242\",\n  \"cardHolderName\": \"María García\",\n  \"expiryMonth\": 12,\n  \"expiryYear\": 2026,\n  \"cvc\": \"123\",\n  \"acceptTerms\": true\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736704200000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_public_invitation_status",
+      "parentId": "fld_public_invitations",
+      "modified": 1736704300000,
+      "created": 1736704300000,
+      "url": "{{ _.base_url }}/api/public/invitation/token-de-invitacion-aqui/status",
+      "name": "📄 Estado de Invitación",
+      "description": "Consulta el estado actual de una invitación",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736704300000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_public_payment_success",
+      "parentId": "fld_public_invitations",
+      "modified": 1736704400000,
+      "created": 1736704400000,
+      "url": "{{ _.base_url }}/api/public/invitation/token-de-invitacion-aqui/success",
+      "name": "🎉 Página de Éxito",
+      "description": "Información de éxito después del pago completado",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736704400000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_public_payment_webhook",
+      "parentId": "fld_public_invitations",
+      "modified": 1736704500000,
+      "created": 1736704500000,
+      "url": "{{ _.base_url }}/api/public/webhooks/payment",
+      "name": "🔗 Webhook de Wompi",
+      "description": "Endpoint para confirmaciones de pago desde Wompi",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"data\": {\n    \"transaction\": {\n      \"id\": \"transaction_id\",\n      \"reference\": \"invitation-invitation_id\",\n      \"status\": \"APPROVED\",\n      \"amount_in_cents\": 5000000\n    }\n  },\n  \"timestamp\": 1736704500,\n  \"signature\": \"webhook_signature\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736704500000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_rule_templates",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736705000000,
+      "created": 1736705000000,
+      "name": "📋 Rule Templates",
+      "description": "Gestión de plantillas de reglas para Owner y uso por parte de negocios",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736705000000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_rule_templates_owner",
+      "parentId": "fld_rule_templates",
+      "modified": 1736705100000,
+      "created": 1736705100000,
+      "name": "👑 Owner - Gestión de Plantillas",
+      "description": "Endpoints para que el Owner gestione plantillas de reglas",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736705100000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_create_rule_template",
+      "parentId": "fld_rule_templates_owner",
+      "modified": 1736705200000,
+      "created": 1736705200000,
+      "name": "Crear Plantilla de Regla",
+      "url": "{{ _.base_url }}/api/rule-templates/owner/rule-templates",
+      "description": "Crear nueva plantilla de regla (solo Owner)",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Cierre sin comprobante de pago\",\n  \"description\": \"Permite cerrar citas sin validar el pago\",\n  \"category\": \"PAYMENT_POLICY\",\n  \"ruleKey\": \"allowCloseWithoutPayment\",\n  \"ruleValue\": {\n    \"enabled\": false,\n    \"requiresManagerApproval\": true\n  },\n  \"businessTypes\": [\"SALON\", \"SPA\"],\n  \"planTypes\": [\"PREMIUM\", \"ENTERPRISE\"],\n  \"tags\": [\"payment\", \"closure\", \"validation\"]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736705200000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_owner_rule_templates",
+      "parentId": "fld_rule_templates_owner",
+      "modified": 1736705300000,
+      "created": 1736705300000,
+      "name": "Listar Plantillas del Owner",
+      "url": "{{ _.base_url }}/api/rule-templates/owner/rule-templates?category=PAYMENT_POLICY&active=true",
+      "description": "Obtener todas las plantillas del Owner con filtros",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "category",
+          "value": "PAYMENT_POLICY",
+          "description": "Filtrar por categoría",
+          "disabled": true
+        },
+        {
+          "name": "active",
+          "value": "true",
+          "description": "Solo plantillas activas",
+          "disabled": true
+        },
+        {
+          "name": "page",
+          "value": "1",
+          "description": "Página",
+          "disabled": true
+        },
+        {
+          "name": "limit",
+          "value": "10",
+          "description": "Límite por página",
+          "disabled": true
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736705300000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_update_rule_template",
+      "parentId": "fld_rule_templates_owner",
+      "modified": 1736705400000,
+      "created": 1736705400000,
+      "name": "Actualizar Plantilla",
+      "url": "{{ _.base_url }}/api/rule-templates/owner/rule-templates/template_id_here",
+      "description": "Actualizar plantilla específica del Owner",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Cierre sin comprobante - Actualizado\",\n  \"description\": \"Permite cerrar citas sin validar el pago con nuevas condiciones\",\n  \"ruleValue\": {\n    \"enabled\": true,\n    \"requiresManagerApproval\": false\n  },\n  \"isActive\": true\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736705400000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_delete_rule_template",
+      "parentId": "fld_rule_templates_owner",
+      "modified": 1736705500000,
+      "created": 1736705500000,
+      "name": "Eliminar Plantilla",
+      "url": "{{ _.base_url }}/api/rule-templates/owner/rule-templates/template_id_here",
+      "description": "Eliminar plantilla específica del Owner",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736705500000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_rule_templates_business",
+      "parentId": "fld_rule_templates",
+      "modified": 1736705600000,
+      "created": 1736705600000,
+      "name": "🏢 Business - Uso de Plantillas",
+      "description": "Endpoints para que los negocios usen las plantillas de reglas",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736705600000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_get_available_templates",
+      "parentId": "fld_rule_templates_business",
+      "modified": 1736705700000,
+      "created": 1736705700000,
+      "name": "Plantillas Disponibles",
+      "url": "{{ _.base_url }}/api/rule-templates/business/rule-templates/available",
+      "description": "Obtener plantillas disponibles para el negocio",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "X-Subdomain",
+          "value": "{{ _.subdomain }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736705700000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_assign_rule_template",
+      "parentId": "fld_rule_templates_business",
+      "modified": 1736705800000,
+      "created": 1736705800000,
+      "name": "Asignar Plantilla al Negocio",
+      "url": "{{ _.base_url }}/api/rule-templates/business/rule-templates/template_id_here/assign",
+      "description": "Asignar una plantilla de regla al negocio",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customValue\": {\n    \"enabled\": true,\n    \"requiresManagerApproval\": false\n  },\n  \"notes\": \"Personalizado para nuestro negocio\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "X-Subdomain",
+          "value": "{{ _.subdomain }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736705800000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_business_assigned_rules",
+      "parentId": "fld_rule_templates_business",
+      "modified": 1736705900000,
+      "created": 1736705900000,
+      "name": "Reglas Asignadas al Negocio",
+      "url": "{{ _.base_url }}/api/rule-templates/business/rule-assignments",
+      "description": "Obtener reglas asignadas al negocio",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "X-Subdomain",
+          "value": "{{ _.subdomain }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736705900000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_customize_assigned_rule",
+      "parentId": "fld_rule_templates_business",
+      "modified": 1736706000000,
+      "created": 1736706000000,
+      "name": "Personalizar Regla Asignada",
+      "url": "{{ _.base_url }}/api/rule-templates/business/rule-assignments/assignment_id_here/customize",
+      "description": "Personalizar una regla ya asignada al negocio",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customValue\": {\n    \"enabled\": false,\n    \"requiresManagerApproval\": true,\n    \"maxAmount\": 50000\n  },\n  \"notes\": \"Ajustado según políticas internas\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "X-Subdomain",
+          "value": "{{ _.subdomain }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736706000000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_toggle_rule_assignment",
+      "parentId": "fld_rule_templates_business",
+      "modified": 1736706100000,
+      "created": 1736706100000,
+      "name": "Activar/Desactivar Regla",
+      "url": "{{ _.base_url }}/api/rule-templates/business/rule-assignments/assignment_id_here/toggle",
+      "description": "Activar o desactivar una regla asignada",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"isActive\": false\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "X-Subdomain",
+          "value": "{{ _.subdomain }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736706100000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_rule_templates_admin",
+      "parentId": "fld_rule_templates",
+      "modified": 1736706200000,
+      "created": 1736706200000,
+      "name": "⚙️ Admin - Administración",
+      "description": "Endpoints administrativos para rule templates",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736706200000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_sync_rules_with_templates",
+      "parentId": "fld_rule_templates_admin",
+      "modified": 1736706300000,
+      "created": 1736706300000,
+      "name": "Sincronizar Reglas con Plantillas",
+      "url": "{{ _.base_url }}/api/rule-templates/admin/rule-templates/sync",
+      "description": "Sincronizar reglas de negocios con plantillas actualizadas",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"templateId\": \"template_id_here\",\n  \"updateMode\": \"merge\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736706300000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_rule_template_stats",
+      "parentId": "fld_rule_templates_admin",
+      "modified": 1736706400000,
+      "created": 1736706400000,
+      "name": "Estadísticas de Plantillas",
+      "url": "{{ _.base_url }}/api/rule-templates/admin/rule-templates/stats",
+      "description": "Obtener estadísticas de uso de plantillas de reglas",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736706400000,
+      "isPrivate": false,
+      "_type": "request"
     }
   ]
 }

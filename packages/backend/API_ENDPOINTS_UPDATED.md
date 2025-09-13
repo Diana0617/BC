@@ -168,6 +168,98 @@ npm install axios
 }
 ```
 
+### 📋 Rule Templates
+Sistema de plantillas de reglas para Owner y negocios
+
+```bash
+# OWNER - Gestión de Plantillas
+# Crear plantilla de regla
+POST /api/rule-templates/owner/rule-templates
+Headers: Authorization: Bearer {token}
+Body: {
+  "name": "Cierre sin comprobante",
+  "category": "PAYMENT_POLICY",
+  "ruleKey": "allowCloseWithoutPayment",
+  "ruleValue": {"enabled": false},
+  "businessTypes": ["SALON", "SPA"],
+  "planTypes": ["PREMIUM"]
+}
+
+# Listar plantillas del Owner
+GET /api/rule-templates/owner/rule-templates?category=PAYMENT_POLICY&active=true
+Headers: Authorization: Bearer {token}
+
+# Actualizar plantilla
+PUT /api/rule-templates/owner/rule-templates/{templateId}
+Headers: Authorization: Bearer {token}
+Body: {"name": "Nombre actualizado", "isActive": true}
+
+# Eliminar plantilla
+DELETE /api/rule-templates/owner/rule-templates/{templateId}
+Headers: Authorization: Bearer {token}
+
+# BUSINESS - Uso de Plantillas
+# Obtener plantillas disponibles
+GET /api/rule-templates/business/rule-templates/available
+Headers: Authorization: Bearer {token}, X-Subdomain: {subdomain}
+
+# Asignar plantilla al negocio
+POST /api/rule-templates/business/rule-templates/{templateId}/assign
+Headers: Authorization: Bearer {token}, X-Subdomain: {subdomain}
+Body: {
+  "customValue": {"enabled": true},
+  "notes": "Personalizado"
+}
+
+# Ver reglas asignadas
+GET /api/rule-templates/business/rule-assignments
+Headers: Authorization: Bearer {token}, X-Subdomain: {subdomain}
+
+# Personalizar regla asignada
+PUT /api/rule-templates/business/rule-assignments/{assignmentId}/customize
+Headers: Authorization: Bearer {token}, X-Subdomain: {subdomain}
+Body: {"customValue": {"enabled": false}}
+
+# Activar/desactivar regla
+PATCH /api/rule-templates/business/rule-assignments/{assignmentId}/toggle
+Headers: Authorization: Bearer {token}, X-Subdomain: {subdomain}
+Body: {"isActive": false}
+
+# ADMIN - Administración
+# Sincronizar reglas con plantillas
+POST /api/rule-templates/admin/rule-templates/sync
+Headers: Authorization: Bearer {token}
+Body: {"templateId": "uuid", "updateMode": "merge"}
+
+# Estadísticas de plantillas
+GET /api/rule-templates/admin/rule-templates/stats
+Headers: Authorization: Bearer {token}
+```
+
+### Rule Template Response
+```json
+{
+  "success": true,
+  "data": {
+    "id": "template-uuid",
+    "name": "Cierre sin comprobante de pago",
+    "description": "Permite cerrar citas sin validar el pago",
+    "category": "PAYMENT_POLICY",
+    "ruleKey": "allowCloseWithoutPayment",
+    "ruleValue": {
+      "enabled": false,
+      "requiresManagerApproval": true
+    },
+    "businessTypes": ["SALON", "SPA"],
+    "planTypes": ["PREMIUM", "ENTERPRISE"],
+    "tags": ["payment", "closure", "validation"],
+    "isActive": true,
+    "version": "1.0.0",
+    "createdAt": "2024-09-12T10:00:00Z"
+  }
+}
+```
+
 ### Wompi Payment Response
 ```json
 {

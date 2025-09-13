@@ -13,6 +13,14 @@ import ownerBusinessReducer from './slices/ownerBusinessSlice';
 import ownerSubscriptionReducer from './slices/ownerSubscriptionSlice';
 import ownerPaymentsReducer from './slices/ownerPaymentsSlice';
 import ownerFinancialReportsReducer from './slices/ownerFinancialReportsSlice';
+// 🔄 NEW SYSTEM REDUCERS
+import autoRenewalReducer from './slices/autoRenewalSlice';
+import ownerBusinessManagementReducer from './slices/ownerBusinessManagementSlice';
+import publicInvitationReducer from './slices/publicInvitationSlice';
+import ownerPaymentConfigReducer from './slices/ownerPaymentConfigSlice';
+// 🔧 RULE TEMPLATE SYSTEM REDUCERS
+import ruleTemplateReducer from './slices/ruleTemplateSlice';
+import businessRuleReducer from './slices/businessRuleSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -31,7 +39,15 @@ export const createStore = (preloadedState = {}) => {
       ownerBusiness: ownerBusinessReducer,
       ownerSubscription: ownerSubscriptionReducer,
       ownerPayments: ownerPaymentsReducer,
-      ownerFinancialReports: ownerFinancialReportsReducer
+      ownerFinancialReports: ownerFinancialReportsReducer,
+      // 🔄 NEW SYSTEM REDUCERS
+      autoRenewal: autoRenewalReducer,
+      ownerBusinessManagement: ownerBusinessManagementReducer,
+      publicInvitation: publicInvitationReducer,
+      ownerPaymentConfig: ownerPaymentConfigReducer,
+      // 🔧 RULE TEMPLATE SYSTEM REDUCERS
+      ruleTemplate: ruleTemplateReducer,
+      businessRule: businessRuleReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>

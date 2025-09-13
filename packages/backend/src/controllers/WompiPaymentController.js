@@ -188,6 +188,57 @@ class WompiPaymentController {
       });
     }
   }
+
+  /**
+   * Webhook de Wompi para notificaciones de pago
+   */
+  static async handleWebhook(req, res) {
+    try {
+      const webhookData = req.body;
+      const signature = req.headers['x-wompi-signature'];
+
+      console.log('📨 Webhook recibido de Wompi:', {
+        event: webhookData.event,
+        transaction_id: webhookData.data?.id,
+        reference: webhookData.data?.reference
+      });
+
+      // Verificar firma del webhook
+      const wompiService = new WompiSubscriptionService();
+      if (signature && !wompiService.verifyWebhookSignature(webhookData, signature)) {
+        console.error('❌ Firma de webhook inválida');
+        return res.status(401).json({
+          success: false,
+          message: 'Firma inválida'
+        });
+      }
+
+      // Procesar el webhook según el tipo de evento
+      if (webhookData.event === 'transaction.updated') {
+        const result = await wompiService.processWebhook(webhookData.data);
+        
+        res.json({
+          success: true,
+          message: 'Webhook procesado',
+          data: result
+        });
+      } else {
+        console.log('ℹ️ Evento de webhook no manejado:', webhookData.event);
+        res.json({
+          success: true,
+          message: 'Evento no manejado'
+        });
+      }
+
+    } catch (error) {
+      console.error('Error procesando webhook Wompi:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error procesando webhook',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 }
 
 module.exports = WompiPaymentController;

@@ -282,6 +282,139 @@ class EmailService {
       };
     }
   }
+
+  /**
+   * Enviar notificación de renovación exitosa
+   */
+  async sendRenewalSuccess(business, subscription) {
+    const subject = `✅ Suscripción renovada exitosamente - ${subscription.plan.name}`;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+          .header { background: #28a745; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f8f9fa; }
+          .footer { background: #6c757d; color: white; padding: 15px; text-align: center; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>✅ Renovación Exitosa</h1>
+          </div>
+          <div class="content">
+            <h2>¡Hola ${business.name}!</h2>
+            <p>Tu suscripción a <strong>${subscription.plan.name}</strong> ha sido renovada exitosamente.</p>
+            <p><strong>Detalles de la renovación:</strong></p>
+            <ul>
+              <li>Plan: ${subscription.plan.name}</li>
+              <li>Monto: $${subscription.plan.price.toLocaleString()} COP</li>
+              <li>Próxima fecha de cobro: ${new Date(subscription.endDate).toLocaleDateString()}</li>
+            </ul>
+            <p>Tu suscripción continuará activa sin interrupciones.</p>
+          </div>
+          <div class="footer">
+            <p>Beauty Control - Sistema de Gestión para Salones de Belleza</p>
+            <p>¿Necesitas ayuda? Contáctanos: soporte@beautycontrol.com</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return await this.sendEmail(business.email, subject, '', html);
+  }
+
+  /**
+   * Enviar notificación de fallo en renovación
+   */
+  async sendRenewalFailure(business, subscription, error) {
+    const subject = `❌ Problema con tu suscripción - ${subscription.plan.name}`;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+          .header { background: #dc3545; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f8f9fa; }
+          .footer { background: #6c757d; color: white; padding: 15px; text-align: center; font-size: 12px; }
+          .action-button { background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>❌ Problema con Renovación</h1>
+          </div>
+          <div class="content">
+            <h2>¡Hola ${business.name}!</h2>
+            <p>Hubo un problema al renovar tu suscripción a <strong>${subscription.plan.name}</strong>.</p>
+            <p><strong>Error:</strong> ${error}</p>
+            <p>Para evitar la suspensión de tu servicio, por favor actualiza tu método de pago:</p>
+            <a href="${process.env.FRONTEND_URL}/subscription/payment-method" class="action-button">Actualizar Método de Pago</a>
+            <p>Si tienes preguntas, no dudes en contactarnos.</p>
+          </div>
+          <div class="footer">
+            <p>Beauty Control - Sistema de Gestión para Salones de Belleza</p>
+            <p>¿Necesitas ayuda? Contáctanos: soporte@beautycontrol.com</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return await this.sendEmail(business.email, subject, '', html);
+  }
+
+  /**
+   * Enviar notificación de suscripción próxima a vencer
+   */
+  async sendExpirationWarning(business, subscription, daysLeft) {
+    const subject = `⚠️ Tu suscripción vence en ${daysLeft} días`;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+          .header { background: #ffc107; color: #212529; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f8f9fa; }
+          .footer { background: #6c757d; color: white; padding: 15px; text-align: center; font-size: 12px; }
+          .action-button { background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>⚠️ Recordatorio de Renovación</h1>
+          </div>
+          <div class="content">
+            <h2>¡Hola ${business.name}!</h2>
+            <p>Tu suscripción a <strong>${subscription.plan.name}</strong> vence en <strong>${daysLeft} días</strong>.</p>
+            <p><strong>Fecha de vencimiento:</strong> ${new Date(subscription.endDate).toLocaleDateString()}</p>
+            <p>Asegúrate de tener un método de pago válido para que tu suscripción se renueve automáticamente.</p>
+            <a href="${process.env.FRONTEND_URL}/subscription/manage" class="action-button">Gestionar Suscripción</a>
+          </div>
+          <div class="footer">
+            <p>Beauty Control - Sistema de Gestión para Salones de Belleza</p>
+            <p>¿Necesitas ayuda? Contáctanos: soporte@beautycontrol.com</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return await this.sendEmail(business.email, subject, '', html);
+  }
 }
 
 // Exportar instancia singleton

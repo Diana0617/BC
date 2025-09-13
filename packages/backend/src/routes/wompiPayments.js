@@ -25,6 +25,6 @@ router.get('/config',
 );
 
 // Webhook público (sin autenticación porque viene de Wompi)
-router.post('/webhook', WompiPaymentController.handleWompiWebhook);
+router.post('/webhook', WompiPaymentController.handleWebhook);
 
 module.exports = router;

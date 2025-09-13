@@ -20,6 +20,13 @@ export { default as ownerSubscriptionSlice } from './ownerSubscriptionSlice';
 export { default as ownerPaymentsSlice } from './ownerPaymentsSlice';
 export { default as ownerFinancialReportsSlice } from './ownerFinancialReportsSlice';
 
+// 🔄 NEW SYSTEM SLICES
+export { default as autoRenewalSlice } from './autoRenewalSlice';
+export { default as ownerBusinessManagementSlice } from './ownerBusinessManagementSlice';
+export { default as publicInvitationSlice } from './publicInvitationSlice';
+export { default as ownerPaymentConfigSlice } from './ownerPaymentConfigSlice';
+export { default as ownerFinancialReportsSlice } from './ownerFinancialReportsSlice';
+
 // Export all OWNER slices as a group
 export const ownerSlices = {
   ownerStatsSlice,

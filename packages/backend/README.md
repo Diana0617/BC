@@ -8,6 +8,7 @@ Backend para el sistema de gestión Beauty Control, desarrollado con Node.js, Ex
 - **Seguridad Multi-Tenant**: Aislamiento completo de datos por negocio
 - **Autenticación JWT**: Sistema seguro de autenticación y autorización
 - **Control de Roles**: OWNER, BUSINESS, SPECIALIST, RECEPTIONIST, CLIENT
+- **Rule Templates**: Sistema de plantillas de reglas reutilizables entre negocios
 - **Paginación Automática**: Sistema eficiente de paginación en todas las consultas
 - **Rate Limiting**: Protección contra abuso de API
 - **Validación Robusta**: Validación de datos con Sequelize y middleware personalizado
@@ -28,6 +29,38 @@ src/
 ## 📦 Modelos Principales
 
 - **User**: Usuarios del sistema con roles específicos
+- **Business**: Negocios registrados en la plataforma
+- **BusinessRules**: Reglas específicas de cada negocio
+- **BusinessRuleTemplate**: Plantillas de reglas creadas por Owner
+- **BusinessRuleAssignment**: Asignación de plantillas a negocios
+- **SubscriptionPlan**: Planes de suscripción disponibles
+- **Module**: Módulos funcionales del sistema
+- **Client**: Clientes de los negocios
+- **Appointment**: Citas agendadas
+- **Service**: Servicios ofrecidos por negocios
+- **Product**: Productos en inventario
+
+## 🎯 Sistema de Rule Templates
+
+El sistema de **Rule Templates** permite al Owner crear plantillas de reglas de negocio reutilizables:
+
+### Características
+- **Plantillas Centralizadas**: Owner crea reglas que pueden usar múltiples negocios
+- **Personalización**: Cada negocio puede personalizar las reglas según sus necesidades
+- **Compatibilidad**: Plantillas específicas por tipo de negocio y plan de suscripción
+- **Versionado**: Control de versiones en las plantillas
+- **Sincronización**: Actualización masiva cuando el Owner modifica plantillas
+
+### Flujo de Trabajo
+1. **Owner** crea plantillas con configuraciones base
+2. **Negocios** exploran plantillas compatibles con su tipo y plan
+3. **Negocios** asignan plantillas y las personalizan si es necesario
+4. **Admin** puede sincronizar cambios cuando se actualizan plantillas
+
+### Archivos de Documentación
+- [`RULE_TEMPLATES_API.md`](./RULE_TEMPLATES_API.md) - Documentación completa de la API
+- [`RULE_TEMPLATES_EXAMPLES.md`](./RULE_TEMPLATES_EXAMPLES.md) - Ejemplos de uso
+- [`beauty_control_insomnia_complete.json`](./beauty_control_insomnia_complete.json) - Colección de Insomnia actualizada
 - **Business**: Negocios suscriptores
 - **BusinessRules**: Reglas configurables por negocio
 - **Client**: Clientes finales
@@ -197,7 +230,10 @@ npm test         # Ejecutar tests
 
 ## 📝 TODO
 
-- [ ] Implementar controladores completos
+- [x] ✅ Sistema de Rule Templates (Completado)
+- [x] ✅ Controladores y servicios de Rule Templates
+- [x] ✅ Middlewares de seguridad y tenancy
+- [x] ✅ Documentación completa de Rule Templates API
 - [ ] Sistema de notificaciones
 - [ ] Integración con Cloudinary
 - [ ] Tests unitarios y de integración

@@ -5,10 +5,74 @@
 
 const OwnerDashboardService = require('../services/OwnerDashboardService');
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     DashboardMetrics:
+ *       type: object
+ *       properties:
+ *         totalBusinesses:
+ *           type: integer
+ *           description: Total de negocios activos
+ *         totalRevenue:
+ *           type: number
+ *           description: Ingresos totales en centavos
+ *         totalSubscriptions:
+ *           type: integer
+ *           description: Total de suscripciones activas
+ *         averageRevenue:
+ *           type: number
+ *           description: Ingreso promedio por negocio
+ *         growthRate:
+ *           type: number
+ *           description: Tasa de crecimiento vs período anterior
+ *         period:
+ *           type: string
+ *           description: Período de las métricas
+ */
+
 class OwnerDashboardController {
 
   /**
-   * Obtener métricas principales del dashboard
+   * @swagger
+   * /api/owner/dashboard/metrics:
+   *   get:
+   *     summary: 📊 Obtener métricas principales del dashboard
+   *     description: Retorna las métricas clave para el dashboard del Owner
+   *     tags: [👤 Owner - Dashboard]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: period
+   *         schema:
+   *           type: string
+   *           enum: [thisMonth, lastMonth, thisYear, lastYear]
+   *           default: thisMonth
+   *         description: Período para calcular las métricas
+   *     responses:
+   *       200:
+   *         description: Métricas obtenidas exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   $ref: '#/components/schemas/DashboardMetrics'
+   *                 message:
+   *                   type: string
+   *                   example: "Métricas principales obtenidas correctamente"
+   *       401:
+   *         description: No autorizado - Token inválido
+   *       403:
+   *         description: Forbidden - No es Owner
+   *       500:
+   *         description: Error interno del servidor
    */
   static async getMainMetrics(req, res) {
     try {
@@ -33,7 +97,60 @@ class OwnerDashboardController {
   }
 
   /**
-   * Obtener datos para gráfico de ingresos por mes
+   * @swagger
+   * /api/owner/dashboard/revenue-chart:
+   *   get:
+   *     summary: 📈 Obtener datos para gráfico de ingresos
+   *     description: Retorna datos para graficar ingresos por mes
+   *     tags: [👤 Owner - Dashboard]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: months
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 24
+   *           default: 6
+   *         description: Número de meses hacia atrás para el gráfico
+   *     responses:
+   *       200:
+   *         description: Datos del gráfico obtenidos exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     chartData:
+   *                       type: array
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           month:
+   *                             type: string
+   *                             example: "2024-01"
+   *                           revenue:
+   *                             type: number
+   *                             example: 1500000
+   *                           count:
+   *                             type: integer
+   *                             example: 15
+   *                     period:
+   *                       type: string
+   *                       example: "6 meses"
+   *       400:
+   *         description: Parámetros inválidos
+   *       401:
+   *         description: No autorizado
+   *       500:
+   *         description: Error interno del servidor
    */
   static async getRevenueChart(req, res) {
     try {

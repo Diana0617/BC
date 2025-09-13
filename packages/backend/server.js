@@ -38,7 +38,10 @@ async function startServer() {
         // Nuevos modelos de pagos OWNER
         OwnerPaymentConfiguration,
         SubscriptionPayment,
-        OwnerFinancialReport
+        OwnerFinancialReport,
+        // Nuevos modelos de Rule Templates
+        BusinessRuleTemplate,
+        BusinessRuleAssignment
       } = require('./src/models');
 
       // Configuración de sincronización - cambiar FORCE_SYNC_DB=true para recrear toda la base
@@ -61,24 +64,32 @@ async function startServer() {
       await Business.sync(syncOptions);
       console.log('✅ Tabla Business sincronizada');
       
-      // 3. Tablas que dependen de Business
-      await BusinessRules.sync(syncOptions);
+      // 3. User primero (porque BusinessRuleTemplate referencia al Owner/User)
       await User.sync(syncOptions);
+      console.log('✅ Tabla User sincronizada');
+      
+      // 4. Tablas de Rule Templates (necesarias antes de BusinessRules)
+      await BusinessRuleTemplate.sync(syncOptions);
+      await BusinessRuleAssignment.sync(syncOptions);
+      console.log('✅ Tablas de Rule Templates sincronizadas');
+      
+      // 5. Ahora BusinessRules (después de que existan las tablas que referencia)
+      await BusinessRules.sync(syncOptions);
       await Client.sync(syncOptions);
       await Service.sync(syncOptions);
       await Product.sync(syncOptions);
       console.log('✅ Tablas principales sincronizadas');
       
-      // 4. Modelos de especialistas (nuevos)
+      // 6. Modelos de especialistas (nuevos)
       await SpecialistDocument.sync(syncOptions);
       await SpecialistCommission.sync(syncOptions);
       console.log('✅ Tablas de especialistas sincronizadas');
       
-      // 5. Modelos de pagos OWNER (nuevos)
+      // 7. Modelos de pagos OWNER (nuevos)
       await OwnerPaymentConfiguration.sync(syncOptions);
       console.log('✅ Configuración de pagos OWNER sincronizada');
       
-      // 6. Tablas que dependen de múltiples entidades
+      // 8. Tablas que dependen de múltiples entidades
       await Appointment.sync(syncOptions);
       await PlanModule.sync(syncOptions);
       await BusinessSubscription.sync(syncOptions);
@@ -93,7 +104,7 @@ async function startServer() {
       await CommissionDetail.sync(syncOptions);
       console.log('✅ Tablas de comisiones sincronizadas');
       
-      // 8. Tablas de pagos del OWNER (al final porque dependen de BusinessSubscription)
+      // 9. Tablas de pagos del OWNER (al final porque dependen de BusinessSubscription)
       await SubscriptionPayment.sync(syncOptions);
       await OwnerFinancialReport.sync(syncOptions);
       console.log('✅ Tablas de pagos OWNER sincronizadas');

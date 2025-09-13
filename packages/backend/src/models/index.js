@@ -13,6 +13,16 @@ const Product = require('./Product');
 const Appointment = require('./Appointment');
 const PasswordResetToken = require('./PasswordResetToken');
 
+// Modelos de configuración del negocio
+const SpecialistProfile = require('./SpecialistProfile');
+const Schedule = require('./Schedule');
+const TimeSlot = require('./TimeSlot');
+const BusinessPaymentConfig = require('./BusinessPaymentConfig');
+
+// Modelos de plantillas de reglas
+const BusinessRuleTemplate = require('./BusinessRuleTemplate');
+const BusinessRuleAssignment = require('./BusinessRuleAssignment');
+
 // Modelos de relaciones (tablas intermedias)
 const PlanModule = require('./PlanModule');
 const BusinessSubscription = require('./BusinessSubscription');
@@ -31,6 +41,8 @@ const CommissionDetail = require('./CommissionDetail');
 const OwnerPaymentConfiguration = require('./OwnerPaymentConfiguration');
 const SubscriptionPayment = require('./SubscriptionPayment');
 const OwnerFinancialReport = require('./OwnerFinancialReport');
+const SavedPaymentMethod = require('./SavedPaymentMethod');
+const BusinessInvitation = require('./BusinessInvitation');
 
 // Definir asociaciones
 // User - Business
@@ -480,6 +492,237 @@ SubscriptionPayment.belongsTo(User, {
   as: 'receiptUploader' 
 });
 
+// Business - BusinessInvitation (uno a muchos)
+Business.hasMany(BusinessInvitation, { 
+  foreignKey: 'businessId', 
+  as: 'invitations' 
+});
+BusinessInvitation.belongsTo(Business, { 
+  foreignKey: 'businessId', 
+  as: 'business' 
+});
+
+// SubscriptionPlan - BusinessInvitation (uno a muchos)
+SubscriptionPlan.hasMany(BusinessInvitation, { 
+  foreignKey: 'planId', 
+  as: 'invitations' 
+});
+BusinessInvitation.belongsTo(SubscriptionPlan, { 
+  foreignKey: 'planId', 
+  as: 'plan' 
+});
+
+// ==================== RELACIONES DE CONFIGURACIÓN DEL NEGOCIO ====================
+
+// User - SpecialistProfile (uno a uno)
+User.hasOne(SpecialistProfile, { 
+  foreignKey: 'userId', 
+  as: 'specialistProfile' 
+});
+SpecialistProfile.belongsTo(User, { 
+  foreignKey: 'userId', 
+  as: 'user' 
+});
+
+// Business - SpecialistProfile (uno a muchos)
+Business.hasMany(SpecialistProfile, { 
+  foreignKey: 'businessId', 
+  as: 'specialistProfiles' 
+});
+SpecialistProfile.belongsTo(Business, { 
+  foreignKey: 'businessId', 
+  as: 'business' 
+});
+
+// Business - Schedule (uno a muchos)
+Business.hasMany(Schedule, { 
+  foreignKey: 'businessId', 
+  as: 'schedules' 
+});
+Schedule.belongsTo(Business, { 
+  foreignKey: 'businessId', 
+  as: 'business' 
+});
+
+// User - Schedule (uno a muchos) - Para especialistas
+User.hasMany(Schedule, { 
+  foreignKey: 'specialistId', 
+  as: 'schedules' 
+});
+Schedule.belongsTo(User, { 
+  foreignKey: 'specialistId', 
+  as: 'specialist' 
+});
+
+// User - Schedule (createdBy)
+User.hasMany(Schedule, { 
+  foreignKey: 'createdBy', 
+  as: 'createdSchedules' 
+});
+Schedule.belongsTo(User, { 
+  foreignKey: 'createdBy', 
+  as: 'createdByUser' 
+});
+
+// User - Schedule (updatedBy)
+User.hasMany(Schedule, { 
+  foreignKey: 'updatedBy', 
+  as: 'updatedSchedules' 
+});
+Schedule.belongsTo(User, { 
+  foreignKey: 'updatedBy', 
+  as: 'updatedByUser' 
+});
+
+// Schedule - TimeSlot (uno a muchos)
+Schedule.hasMany(TimeSlot, { 
+  foreignKey: 'scheduleId', 
+  as: 'timeSlots' 
+});
+TimeSlot.belongsTo(Schedule, { 
+  foreignKey: 'scheduleId', 
+  as: 'schedule' 
+});
+
+// Business - TimeSlot (uno a muchos)
+Business.hasMany(TimeSlot, { 
+  foreignKey: 'businessId', 
+  as: 'timeSlots' 
+});
+TimeSlot.belongsTo(Business, { 
+  foreignKey: 'businessId', 
+  as: 'business' 
+});
+
+// User - TimeSlot (especialista)
+User.hasMany(TimeSlot, { 
+  foreignKey: 'specialistId', 
+  as: 'timeSlots' 
+});
+TimeSlot.belongsTo(User, { 
+  foreignKey: 'specialistId', 
+  as: 'specialist' 
+});
+
+// Appointment - TimeSlot (uno a uno)
+Appointment.hasOne(TimeSlot, { 
+  foreignKey: 'appointmentId', 
+  as: 'timeSlot' 
+});
+TimeSlot.belongsTo(Appointment, { 
+  foreignKey: 'appointmentId', 
+  as: 'appointment' 
+});
+
+// Service - TimeSlot (uno a muchos)
+Service.hasMany(TimeSlot, { 
+  foreignKey: 'serviceId', 
+  as: 'timeSlots' 
+});
+TimeSlot.belongsTo(Service, { 
+  foreignKey: 'serviceId', 
+  as: 'service' 
+});
+
+// User - TimeSlot (lastModifiedBy)
+User.hasMany(TimeSlot, { 
+  foreignKey: 'lastModifiedBy', 
+  as: 'modifiedTimeSlots' 
+});
+TimeSlot.belongsTo(User, { 
+  foreignKey: 'lastModifiedBy', 
+  as: 'lastModifiedByUser' 
+});
+
+// Business - BusinessPaymentConfig (uno a uno)
+Business.hasOne(BusinessPaymentConfig, { 
+  foreignKey: 'businessId', 
+  as: 'paymentConfig' 
+});
+BusinessPaymentConfig.belongsTo(Business, { 
+  foreignKey: 'businessId', 
+  as: 'business' 
+});
+
+// User - BusinessPaymentConfig (activatedBy)
+User.hasMany(BusinessPaymentConfig, { 
+  foreignKey: 'activatedBy', 
+  as: 'activatedPaymentConfigs' 
+});
+BusinessPaymentConfig.belongsTo(User, { 
+  foreignKey: 'activatedBy', 
+  as: 'activatedByUser' 
+});
+
+// ================================
+// RULE TEMPLATE ASSOCIATIONS
+// ================================
+
+// BusinessRuleTemplate belongs to User (creator)
+BusinessRuleTemplate.belongsTo(User, {
+  foreignKey: 'createdBy',
+  as: 'creator'
+});
+
+// User has many BusinessRuleTemplates
+User.hasMany(BusinessRuleTemplate, {
+  foreignKey: 'createdBy',
+  as: 'createdRuleTemplates'
+});
+
+// BusinessRuleAssignment belongs to BusinessRuleTemplate
+BusinessRuleAssignment.belongsTo(BusinessRuleTemplate, {
+  foreignKey: 'ruleTemplateId'
+});
+
+// BusinessRuleTemplate has many BusinessRuleAssignments
+BusinessRuleTemplate.hasMany(BusinessRuleAssignment, {
+  foreignKey: 'ruleTemplateId',
+  as: 'assignments'
+});
+
+// BusinessRuleAssignment belongs to Business
+BusinessRuleAssignment.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+
+// Business has many BusinessRuleAssignments
+Business.hasMany(BusinessRuleAssignment, {
+  foreignKey: 'businessId',
+  as: 'ruleAssignments'
+});
+
+// BusinessRuleAssignment belongs to User (assignedBy)
+BusinessRuleAssignment.belongsTo(User, {
+  foreignKey: 'assignedBy',
+  as: 'assignedByUser'
+});
+
+// BusinessRuleAssignment belongs to User (modifiedBy)
+BusinessRuleAssignment.belongsTo(User, {
+  foreignKey: 'modifiedBy',
+  as: 'modifiedByUser'
+});
+
+// BusinessRules belongs to BusinessRuleTemplate
+// BusinessRules.belongsTo(BusinessRuleTemplate, {
+//   foreignKey: 'ruleTemplateId',
+//   as: 'ruleTemplate'
+// });
+
+// BusinessRules belongs to BusinessRuleAssignment  
+// BusinessRules.belongsTo(BusinessRuleAssignment, {
+//   foreignKey: 'ruleAssignmentId',
+//   as: 'assignment'
+// });
+
+// BusinessRuleAssignment has one BusinessRules
+BusinessRuleAssignment.hasOne(BusinessRules, {
+  foreignKey: 'ruleAssignmentId',
+  as: 'effectiveRule'
+});
+
 // Exportar modelos y sequelize
 module.exports = {
   sequelize,
@@ -504,8 +747,18 @@ module.exports = {
   SpecialistCommission,
   CommissionPaymentRequest,
   CommissionDetail,
+  // Modelos de configuración del negocio
+  SpecialistProfile,
+  Schedule,
+  TimeSlot,
+  BusinessPaymentConfig,
+  // Modelos de plantillas de reglas
+  BusinessRuleTemplate,
+  BusinessRuleAssignment,
   // Modelos de pagos OWNER
   OwnerPaymentConfiguration,
   SubscriptionPayment,
-  OwnerFinancialReport
+  OwnerFinancialReport,
+  SavedPaymentMethod,
+  BusinessInvitation
 };

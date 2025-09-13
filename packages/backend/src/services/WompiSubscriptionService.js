@@ -5,6 +5,7 @@
 
 const axios = require('axios');
 const crypto = require('crypto');
+const { Business, SubscriptionPlan, BusinessSubscription, SubscriptionPayment } = require('../models');
 
 class WompiSubscriptionService {
   
