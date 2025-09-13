@@ -5,12 +5,15 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Beauty Control API',
+      title: 'Business Control API',
       version: '1.0.0',
       description: `
-        🎯 **Sistema Completo de Gestión de Negocios de Belleza**
+        🎯 **Sistema Completo de Gestión de Negocios **
         
-        Esta API proporciona todas las funcionalidades para gestionar negocios de belleza incluyendo:
+        Esta API proporciona todas las funcionalidades para gestionar negocios  incluyendo:
+        
+        ## 🔒 **Acceso Restringido**
+        ⚠️ **Esta documentación está disponible solo para usuarios con rol OWNER**
         
         ## 🏢 **Gestión de Owner**
         - Dashboard con métricas y estadísticas
@@ -35,8 +38,8 @@ const options = {
         \`Authorization: Bearer <tu-token>\`
       `,
       contact: {
-        name: 'Beauty Control Team',
-        email: 'dev@beautycontrol.com'
+        name: 'Business Control Team',
+        email: 'dev@businesscontrol.com'
       },
       license: {
         name: 'MIT',
@@ -280,8 +283,22 @@ const swaggerConfig = {
     .swagger-ui .info { margin: 50px 0 }
     .swagger-ui .info .title { color: #1976d2 }
     .swagger-ui .scheme-container { background: #fafafa; padding: 10px; margin: 20px 0 }
+    
+    /* Mensaje de acceso restringido */
+    .swagger-ui .info .description::before {
+      content: "🔒 ACCESO RESTRINGIDO - Solo usuarios OWNER";
+      display: block;
+      background: #ff6b35;
+      color: white;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      font-weight: bold;
+      text-align: center;
+      font-size: 16px;
+    }
   `,
-  customSiteTitle: "Beauty Control API Docs",
+  customSiteTitle: "Beauty Control API Docs - OWNER ONLY",
   customfavIcon: "/favicon.ico",
   swaggerOptions: {
     persistAuthorization: true,

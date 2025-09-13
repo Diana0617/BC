@@ -5,6 +5,8 @@ const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const { specs, swaggerUi, swaggerConfig } = require('./config/swagger');
+const { authenticateToken } = require('./middleware/auth');
+const ownerOnly = require('./middleware/ownerOnly');
 require('dotenv').config();
 
 const app = express();
@@ -54,11 +56,12 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
-// 📚 SWAGGER DOCUMENTATION
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerConfig));
+// 📚 SWAGGER DOCUMENTATION - SOLO PARA OWNERS
+// Middleware de autenticación y autorización para la documentación
+app.use('/api-docs', authenticateToken, ownerOnly, swaggerUi.serve, swaggerUi.setup(specs, swaggerConfig));
 
-// Ruta para acceder al JSON de la documentación
-app.get('/api-docs.json', (req, res) => {
+// Ruta para acceder al JSON de la documentación - También restringida
+app.get('/api-docs.json', authenticateToken, ownerOnly, (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(specs);
 });

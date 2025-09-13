@@ -2411,6 +2411,62 @@
       "metaSortKey": -1736706400000,
       "isPrivate": false,
       "_type": "request"
+    },
+    {
+      "_id": "fld_documentation",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736706500000,
+      "created": 1736706500000,
+      "name": "📚 Documentación API",
+      "description": "Acceso a la documentación Swagger (Solo OWNER)",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736706500000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_api_docs",
+      "parentId": "fld_documentation",
+      "modified": 1736706600000,
+      "created": 1736706600000,
+      "name": "Ver Documentación Swagger",
+      "url": "{{ _.base_url }}/api-docs",
+      "description": "Acceder a la documentación Swagger de la API (Requiere rol OWNER)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736706600000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_api_docs_json",
+      "parentId": "fld_documentation",
+      "modified": 1736706700000,
+      "created": 1736706700000,
+      "name": "Descargar Documentación JSON",
+      "url": "{{ _.base_url }}/api-docs.json",
+      "description": "Obtener la documentación en formato JSON (Requiere rol OWNER)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736706700000,
+      "isPrivate": false,
+      "_type": "request"
     }
   ]
 }
