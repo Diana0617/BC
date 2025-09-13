@@ -19,7 +19,202 @@ router.use(ownerOnly);
  *     tags:
  *       - Owner Business Management
  *     summary: Crear negocio e invitación de pago
- *     description: Crea un nuevo negocio y envía una invitación de pago personalizada al propietario del negocio
+ *     description: Crea un nuevo negocio y envía una invitación de pago personaliz/**
+ * @swagger
+ * /api/owner/business/plans:
+ *   get:
+ *     tags:
+ *       - Owner Business Management
+ *     summary: Obtener planes disponibles para nuevos negocios
+ *     description: Lista todos los planes de suscripción disponibles para asignar a nuevos negocios durante el proceso de invitación
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: active
+ *         schema:
+ *           type: boolean
+ *           default: true
+ *         description: Filtrar solo planes activos
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [basic, standard, premium, enterprise]
+ *         description: Categoría de planes a filtrar
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *           minimum: 0
+ *         description: Precio máximo de filtro
+ *       - in: query
+ *         name: features
+ *         schema:
+ *           type: string
+ *         description: Buscar planes que incluyan características específicas
+ *     responses:
+ *       200:
+ *         description: Lista de planes disponibles obtenida exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         description: ID único del plan
+ *                         example: "plan_basic_001"
+ *                       name:
+ *                         type: string
+ *                         description: Nombre del plan
+ *                         example: "Plan Básico"
+ *                       description:
+ *                         type: string
+ *                         description: Descripción del plan
+ *                         example: "Plan ideal para pequeños negocios"
+ *                       price:
+ *                         type: number
+ *                         description: Precio mensual del plan
+ *                         example: 29.99
+ *                       currency:
+ *                         type: string
+ *                         description: Moneda del precio
+ *                         example: "COP"
+ *                       billingCycle:
+ *                         type: string
+ *                         enum: [monthly, quarterly, yearly]
+ *                         description: Ciclo de facturación
+ *                         example: "monthly"
+ *                       category:
+ *                         type: string
+ *                         enum: [basic, standard, premium, enterprise]
+ *                         description: Categoría del plan
+ *                         example: "basic"
+ *                       features:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             name:
+ *                               type: string
+ *                               description: Nombre de la característica
+ *                             included:
+ *                               type: boolean
+ *                               description: Si está incluida en el plan
+ *                             limit:
+ *                               type: integer
+ *                               description: Límite de la característica (si aplica)
+ *                         example:
+ *                           - name: "Usuarios"
+ *                             included: true
+ *                             limit: 5
+ *                           - name: "Almacenamiento"
+ *                             included: true
+ *                             limit: 1000
+ *                           - name: "Reportes avanzados"
+ *                             included: false
+ *                       modules:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: string
+ *                               description: ID del módulo
+ *                             name:
+ *                               type: string
+ *                               description: Nombre del módulo
+ *                             enabled:
+ *                               type: boolean
+ *                               description: Si el módulo está habilitado
+ *                         example:
+ *                           - id: "inventory"
+ *                             name: "Gestión de Inventario"
+ *                             enabled: true
+ *                           - id: "crm"
+ *                             name: "CRM Básico"
+ *                             enabled: true
+ *                       isActive:
+ *                         type: boolean
+ *                         description: Si el plan está activo
+ *                         example: true
+ *                       isPopular:
+ *                         type: boolean
+ *                         description: Si es un plan popular/recomendado
+ *                         example: false
+ *                       trialPeriod:
+ *                         type: integer
+ *                         description: Días de período de prueba
+ *                         example: 30
+ *                       setupFee:
+ *                         type: number
+ *                         description: Tarifa de configuración inicial
+ *                         example: 0
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         description: Fecha de creación del plan
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *                         description: Última actualización del plan
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       description: Total de planes encontrados
+ *                       example: 4
+ *                     categories:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Categorías disponibles
+ *                       example: ["basic", "standard", "premium"]
+ *                     priceRange:
+ *                       type: object
+ *                       properties:
+ *                         min:
+ *                           type: number
+ *                           example: 29.99
+ *                         max:
+ *                           type: number
+ *                           example: 199.99
+ *             example:
+ *               success: true
+ *               data:
+ *                 - id: "plan_basic_001"
+ *                   name: "Plan Básico"
+ *                   description: "Ideal para pequeños negocios"
+ *                   price: 29.99
+ *                   currency: "COP"
+ *                   billingCycle: "monthly"
+ *                   category: "basic"
+ *                   isActive: true
+ *                   isPopular: false
+ *                   trialPeriod: 30
+ *               meta:
+ *                 total: 4
+ *                 categories: ["basic", "standard", "premium"]
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/plans', OwnerBusinessManagementController.getAvailablePlans); propietario del negocio
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -54,26 +249,33 @@ router.use(ownerOnly);
  *                 format: email
  *                 description: Email personal del propietario (opcional, usa businessEmail si no se proporciona)
  *                 example: "maria@gmail.com"
+ *               phone:
+ *                 type: string
+ *                 maxLength: 20
+ *                 description: Teléfono de contacto
+ *                 example: "+57 300 123 4567"
+ *               address:
+ *                 type: string
+ *                 maxLength: 500
+ *                 description: Dirección física del negocio
+ *                 example: "Calle 123 #45-67, Bogotá"
  *               subscriptionPlanId:
  *                 type: string
+ *                 format: uuid
  *                 description: ID del plan de suscripción a asignar
- *                 example: "plan_basic_001"
+ *                 example: "123e4567-e89b-12d3-a456-426614174000"
  *               customMessage:
  *                 type: string
  *                 maxLength: 1000
  *                 description: Mensaje personalizado para la invitación
- *                 example: "Te invitamos a unirte a nuestra plataforma"
- *               dueDate:
- *                 type: string
- *                 format: date-time
- *                 description: Fecha límite para completar el pago (opcional, por defecto 30 días)
- *                 example: "2024-02-15T23:59:59Z"
- *           example:
- *             businessName: "Salón Bella Vista"
- *             businessEmail: "admin@bellavista.com"
- *             ownerName: "María González"
- *             subscriptionPlanId: "plan_basic_001"
- *             customMessage: "¡Bienvenida a Beauty Control!"
+ *                 example: "¡Bienvenido a Beauty Control! Hemos preparado este plan especial para tu salón."
+ *               invitationExpiryDays:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 30
+ *                 default: 7
+ *                 description: Días hasta que expire la invitación
+ *                 example: 7
  *     responses:
  *       201:
  *         description: Negocio e invitación creados exitosamente
@@ -89,37 +291,70 @@ router.use(ownerOnly);
  *                   type: string
  *                   example: "Negocio e invitación creados exitosamente"
  *                 data:
- *                   $ref: '#/components/schemas/BusinessInvitation'
+ *                   type: object
+ *                   properties:
+ *                     business:
+ *                       $ref: '#/components/schemas/Business'
+ *                     invitation:
+ *                       $ref: '#/components/schemas/BusinessInvitation'
+ *                     invitationUrl:
+ *                       type: string
+ *                       description: URL de la invitación para el negocio
+ *                       example: "https://beauty-control.com/invitation/abc123def456"
  *             example:
  *               success: true
  *               message: "Negocio e invitación creados exitosamente"
  *               data:
- *                 id: "789e0123-e89b-12d3-a456-426614174002"
- *                 token: "abc123def456"
- *                 status: "PENDING"
- *                 expiresAt: "2024-01-22T10:30:00Z"
  *                 business:
+ *                   id: "456e7890-e89b-12d3-a456-426614174001"
  *                   name: "Salón Bella Vista"
  *                   email: "admin@bellavista.com"
- *                 subscriptionPlan:
- *                   name: "Plan Básico"
- *                   price: 29.99
+ *                   isActive: false
+ *                   createdAt: "2024-01-15T10:30:00Z"
+ *                 invitation:
+ *                   id: "789e0123-e89b-12d3-a456-426614174002"
+ *                   token: "abc123def456"
+ *                   status: "PENDING"
+ *                   expiresAt: "2024-01-22T10:30:00Z"
+ *                 invitationUrl: "https://beauty-control.com/invitation/abc123def456"
  *       400:
- *         $ref: '#/components/responses/BadRequestError'
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
- *       403:
- *         $ref: '#/components/responses/ForbiddenError'
- *       409:
- *         description: El negocio ya existe
+ *         description: Datos de entrada inválidos
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
  *               success: false
- *               message: "Ya existe un negocio con ese email"
- *               error: "BUSINESS_ALREADY_EXISTS"
+ *               message: "Datos de entrada inválidos"
+ *               errors:
+ *                 - field: "businessEmail"
+ *                   message: "El email del negocio ya está registrado"
+ *                 - field: "subscriptionPlanId"
+ *                   message: "Plan de suscripción no encontrado"
+ *       404:
+ *         description: Plan de suscripción no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "Plan de suscripción no encontrado"
+ *               error: "SUBSCRIPTION_PLAN_NOT_FOUND"
+ *       409:
+ *         description: Conflicto - Email ya existe
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "Ya existe un negocio con este email"
+ *               error: "BUSINESS_EMAIL_EXISTS"
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
@@ -132,7 +367,7 @@ router.post('/invite', OwnerBusinessManagementController.createBusinessInvitatio
  *     tags:
  *       - Owner Business Management
  *     summary: Listar invitaciones enviadas
- *     description: Obtiene todas las invitaciones de negocio enviadas por el propietario autenticado con filtros opcionales
+ *     description: Obtiene una lista paginada de todas las invitaciones de negocio enviadas por el owner con filtros avanzados
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -146,12 +381,26 @@ router.post('/invite', OwnerBusinessManagementController.createBusinessInvitatio
  *         name: search
  *         schema:
  *           type: string
- *         description: Buscar por nombre del negocio o email
+ *         description: Buscar por nombre de negocio o email
  *       - in: query
  *         name: planId
  *         schema:
  *           type: string
  *         description: Filtrar por plan de suscripción
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: "2024-01-01"
+ *         description: Filtrar invitaciones creadas desde esta fecha
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: "2024-12-31"
+ *         description: Filtrar invitaciones creadas hasta esta fecha
  *       - in: query
  *         name: page
  *         schema:
@@ -165,13 +414,13 @@ router.post('/invite', OwnerBusinessManagementController.createBusinessInvitatio
  *           type: integer
  *           minimum: 1
  *           maximum: 100
- *           default: 10
- *         description: Cantidad de resultados por página
+ *           default: 20
+ *         description: Cantidad de elementos por página
  *       - in: query
  *         name: sortBy
  *         schema:
  *           type: string
- *           enum: [createdAt, expiresAt, businessName]
+ *           enum: [createdAt, businessName, status, expiresAt]
  *           default: createdAt
  *         description: Campo por el cual ordenar
  *       - in: query
@@ -198,22 +447,43 @@ router.post('/invite', OwnerBusinessManagementController.createBusinessInvitatio
  *                     invitations:
  *                       type: array
  *                       items:
- *                         $ref: '#/components/schemas/BusinessInvitation'
+ *                         allOf:
+ *                           - $ref: '#/components/schemas/BusinessInvitation'
+ *                           - type: object
+ *                             properties:
+ *                               business:
+ *                                 type: object
+ *                                 properties:
+ *                                   name:
+ *                                     type: string
+ *                                   email:
+ *                                     type: string
+ *                               subscriptionPlan:
+ *                                 type: object
+ *                                 properties:
+ *                                   name:
+ *                                     type: string
+ *                                   price:
+ *                                     type: number
  *                     pagination:
  *                       $ref: '#/components/schemas/Pagination'
  *                     summary:
  *                       type: object
  *                       properties:
- *                         total:
+ *                         totalInvitations:
  *                           type: integer
- *                         pending:
- *                           type: integer
- *                         accepted:
- *                           type: integer
- *                         expired:
- *                           type: integer
- *                         cancelled:
- *                           type: integer
+ *                           description: Total de invitaciones
+ *                         byStatus:
+ *                           type: object
+ *                           properties:
+ *                             pending:
+ *                               type: integer
+ *                             accepted:
+ *                               type: integer
+ *                             expired:
+ *                               type: integer
+ *                             cancelled:
+ *                               type: integer
  *             example:
  *               success: true
  *               data:
@@ -228,20 +498,12 @@ router.post('/invite', OwnerBusinessManagementController.createBusinessInvitatio
  *                       email: "admin@bellavista.com"
  *                     subscriptionPlan:
  *                       name: "Plan Pro"
- *                       price: 49.99
+ *                       price: 199900
  *                 pagination:
- *                   page: 1
- *                   limit: 10
- *                   total: 25
- *                   pages: 3
- *                 summary:
- *                   total: 25
- *                   pending: 8
- *                   accepted: 12
- *                   expired: 3
- *                   cancelled: 2
- *       400:
- *         $ref: '#/components/responses/BadRequestError'
+ *                   currentPage: 1
+ *                   totalPages: 3
+ *                   totalItems: 45
+ *                   itemsPerPage: 20
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *       403:
@@ -258,7 +520,7 @@ router.get('/invitations', OwnerBusinessManagementController.getMyInvitations);
  *     tags:
  *       - Owner Business Management
  *     summary: Reenviar invitación
- *     description: Reenvía una invitación pendiente, renovando su fecha de expiración y notificando al destinatario
+ *     description: Reenvía una invitación existente al negocio, actualizando la fecha de expiración y enviando un nuevo email
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -278,17 +540,15 @@ router.get('/invitations', OwnerBusinessManagementController.getMyInvitations);
  *               customMessage:
  *                 type: string
  *                 maxLength: 1000
- *                 description: Mensaje personalizado para el reenvío
- *                 example: "Recordatorio: Tu invitación expira pronto"
- *               newExpirationDays:
+ *                 description: Mensaje personalizado para el reenvío (opcional)
+ *                 example: "Te enviamos nuevamente la invitación. ¡No te pierdas esta oportunidad!"
+ *               extendExpiryDays:
  *                 type: integer
  *                 minimum: 1
- *                 maximum: 90
- *                 description: Nuevos días para la expiración (por defecto 30)
- *                 example: 15
- *           example:
- *             customMessage: "Recordatorio: No olvides completar tu registro"
- *             newExpirationDays: 15
+ *                 maximum: 30
+ *                 default: 7
+ *                 description: Días adicionales de validez desde ahora
+ *                 example: 7
  *     responses:
  *       200:
  *         description: Invitación reenviada exitosamente
@@ -306,31 +566,32 @@ router.get('/invitations', OwnerBusinessManagementController.getMyInvitations);
  *                 data:
  *                   type: object
  *                   properties:
- *                     id:
- *                       type: string
- *                       example: "789e0123-e89b-12d3-a456-426614174002"
- *                     newExpiresAt:
+ *                     invitation:
+ *                       $ref: '#/components/schemas/BusinessInvitation'
+ *                     newExpiryDate:
  *                       type: string
  *                       format: date-time
  *                       description: Nueva fecha de expiración
- *                       example: "2024-02-15T23:59:59Z"
- *                     resentAt:
+ *                       example: "2024-01-29T10:30:00Z"
+ *                     emailSent:
+ *                       type: boolean
+ *                       description: Indica si el email fue enviado exitosamente
+ *                       example: true
+ *                     invitationUrl:
  *                       type: string
- *                       format: date-time
- *                       description: Fecha del reenvío
- *                       example: "2024-01-20T14:30:00Z"
- *                     resendCount:
- *                       type: integer
- *                       description: Número de reenvíos realizados
- *                       example: 2
+ *                       description: URL actualizada de la invitación
+ *                       example: "https://beauty-control.com/invitation/abc123def456"
  *             example:
  *               success: true
  *               message: "Invitación reenviada exitosamente"
  *               data:
- *                 id: "789e0123-e89b-12d3-a456-426614174002"
- *                 newExpiresAt: "2024-02-15T23:59:59Z"
- *                 resentAt: "2024-01-20T14:30:00Z"
- *                 resendCount: 2
+ *                 invitation:
+ *                   id: "789e0123-e89b-12d3-a456-426614174002"
+ *                   status: "PENDING"
+ *                   expiresAt: "2024-01-29T10:30:00Z"
+ *                 newExpiryDate: "2024-01-29T10:30:00Z"
+ *                 emailSent: true
+ *                 invitationUrl: "https://beauty-control.com/invitation/abc123def456"
  *       404:
  *         description: Invitación no encontrada
  *         content:
@@ -396,10 +657,13 @@ router.post('/invitations/:invitationId/resend', OwnerBusinessManagementControll
  *               reason:
  *                 type: string
  *                 maxLength: 500
- *                 description: Motivo de la cancelación (opcional)
- *                 example: "El negocio decidió no continuar con el servicio"
- *           example:
- *             reason: "Cambio en los requerimientos del negocio"
+ *                 description: Razón de la cancelación (opcional)
+ *                 example: "El negocio decidió no continuar con el proceso"
+ *               notifyBusiness:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Enviar notificación al negocio sobre la cancelación
+ *                 example: false
  *     responses:
  *       200:
  *         description: Invitación cancelada exitosamente
@@ -417,29 +681,37 @@ router.post('/invitations/:invitationId/resend', OwnerBusinessManagementControll
  *                 data:
  *                   type: object
  *                   properties:
- *                     id:
+ *                     invitationId:
  *                       type: string
+ *                       description: ID de la invitación cancelada
  *                       example: "789e0123-e89b-12d3-a456-426614174002"
- *                     status:
+ *                     previousStatus:
  *                       type: string
- *                       example: "CANCELLED"
+ *                       description: Estado anterior de la invitación
+ *                       example: "PENDING"
  *                     cancelledAt:
  *                       type: string
  *                       format: date-time
- *                       description: Fecha de cancelación
+ *                       description: Fecha y hora de cancelación
  *                       example: "2024-01-20T15:45:00Z"
- *                     cancelReason:
+ *                     businessNotified:
+ *                       type: boolean
+ *                       description: Indica si se notificó al negocio
+ *                       example: false
+ *                     reason:
  *                       type: string
- *                       description: Motivo de la cancelación
- *                       example: "Cambio en los requerimientos del negocio"
+ *                       nullable: true
+ *                       description: Razón de la cancelación
+ *                       example: "El negocio decidió no continuar con el proceso"
  *             example:
  *               success: true
  *               message: "Invitación cancelada exitosamente"
  *               data:
- *                 id: "789e0123-e89b-12d3-a456-426614174002"
- *                 status: "CANCELLED"
+ *                 invitationId: "789e0123-e89b-12d3-a456-426614174002"
+ *                 previousStatus: "PENDING"
  *                 cancelledAt: "2024-01-20T15:45:00Z"
- *                 cancelReason: "Cambio en los requerimientos del negocio"
+ *                 businessNotified: false
+ *                 reason: "El negocio decidió no continuar con el proceso"
  *       404:
  *         description: Invitación no encontrada
  *         content:

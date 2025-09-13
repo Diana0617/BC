@@ -13,6 +13,19 @@ const OwnerPlanController = require('../controllers/OwnerPlanController');
 const { authenticateToken } = require('../middleware/auth');
 const ownerOnly = require('../middleware/ownerOnly');
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Owner Dashboard
+ *     description: Dashboard y métricas administrativas para el Owner
+ *   - name: Owner Plan Management
+ *     description: Gestión de planes de suscripción por parte del Owner
+ *   - name: Owner Business Management
+ *     description: Gestión de negocios de la plataforma por parte del Owner
+ *   - name: Owner Platform Stats
+ *     description: Estadísticas globales de la plataforma
+ */
+
 // Middleware para autenticación y verificación de rol OWNER
 router.use(authenticateToken);
 router.use(ownerOnly);
@@ -20,25 +33,250 @@ router.use(ownerOnly);
 // === DASHBOARD DEL OWNER ===
 
 /**
- * @route GET /api/owner/dashboard/metrics
- * @desc Obtener métricas principales del dashboard
- * @access Private (solo OWNER)
- * @query {string} period - Período de tiempo (thisMonth, lastMonth, last3Months, lastYear)
+ * @swagger
+ * /api/owner/dashboard/metrics:
+ *   get:
+ *     tags:
+ *       - Owner Dashboard
+ *     summary: Obtener métricas principales del dashboard
+ *     description: Recupera las métricas clave de la plataforma para el dashboard administrativo del Owner
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [thisMonth, lastMonth, last3Months, lastYear]
+ *           default: thisMonth
+ *         description: Período de tiempo para las métricas
+ *         example: "thisMonth"
+ *     responses:
+ *       200:
+ *         description: Métricas obtenidas exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     revenue:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: number
+ *                           description: Ingresos totales del período
+ *                           example: 15750.50
+ *                         growth:
+ *                           type: number
+ *                           description: Porcentaje de crecimiento vs período anterior
+ *                           example: 12.5
+ *                         currency:
+ *                           type: string
+ *                           example: "COP"
+ *                     subscriptions:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           description: Total de suscripciones activas
+ *                           example: 156
+ *                         new:
+ *                           type: integer
+ *                           description: Nuevas suscripciones en el período
+ *                           example: 23
+ *                         cancelled:
+ *                           type: integer
+ *                           description: Suscripciones canceladas en el período
+ *                           example: 3
+ *                         renewalRate:
+ *                           type: number
+ *                           description: Tasa de renovación (%)
+ *                           example: 85.2
+ *                     businesses:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           description: Total de negocios registrados
+ *                           example: 134
+ *                         active:
+ *                           type: integer
+ *                           description: Negocios activos
+ *                           example: 128
+ *                         newThisPeriod:
+ *                           type: integer
+ *                           description: Nuevos negocios en el período
+ *                           example: 18
+ *             example:
+ *               success: true
+ *               data:
+ *                 revenue:
+ *                   total: 15750.50
+ *                   growth: 12.5
+ *                   currency: "COP"
+ *                 subscriptions:
+ *                   total: 156
+ *                   new: 23
+ *                   cancelled: 3
+ *                   renewalRate: 85.2
+ *                 businesses:
+ *                   total: 134
+ *                   active: 128
+ *                   newThisPeriod: 18
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 router.get('/dashboard/metrics', OwnerDashboardController.getMainMetrics);
 
 /**
- * @route GET /api/owner/dashboard/summary
- * @desc Obtener resumen rápido para widgets
- * @access Private (solo OWNER)
+ * @swagger
+ * /api/owner/dashboard/summary:
+ *   get:
+ *     tags:
+ *       - Owner Dashboard
+ *     summary: Obtener resumen rápido para widgets
+ *     description: Recupera un resumen condensado de información clave para widgets del dashboard del Owner
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Resumen obtenido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     todayRevenue:
+ *                       type: number
+ *                       description: Ingresos del día actual
+ *                       example: 540.25
+ *                     pendingPayments:
+ *                       type: integer
+ *                       description: Pagos pendientes de verificación
+ *                       example: 8
+ *                     expiringSoon:
+ *                       type: integer
+ *                       description: Suscripciones que vencen en los próximos 7 días
+ *                       example: 12
+ *                     supportTickets:
+ *                       type: integer
+ *                       description: Tickets de soporte abiertos
+ *                       example: 3
+ *             example:
+ *               success: true
+ *               data:
+ *                 todayRevenue: 540.25
+ *                 pendingPayments: 8
+ *                 expiringSoon: 12
+ *                 supportTickets: 3
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 router.get('/dashboard/summary', OwnerDashboardController.getQuickSummary);
 
 /**
- * @route GET /api/owner/dashboard/revenue-chart
- * @desc Obtener datos para gráfico de ingresos por mes
- * @access Private (solo OWNER)
- * @query {number} months - Número de meses a mostrar (1-24, default: 6)
+ * @swagger
+ * /api/owner/dashboard/revenue-chart:
+ *   get:
+ *     tags:
+ *       - Owner Dashboard
+ *     summary: Obtener datos para gráfico de ingresos por mes
+ *     description: Recupera datos históricos de ingresos para generar gráficos de tendencias mensuales
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: months
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 24
+ *           default: 6
+ *         description: Número de meses a mostrar en el gráfico
+ *         example: 6
+ *     responses:
+ *       200:
+ *         description: Datos del gráfico obtenidos exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     chartData:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           month:
+ *                             type: string
+ *                             description: Mes en formato YYYY-MM
+ *                             example: "2024-01"
+ *                           monthName:
+ *                             type: string
+ *                             description: Nombre del mes
+ *                             example: "Enero"
+ *                           revenue:
+ *                             type: number
+ *                             description: Ingresos del mes
+ *                             example: 12450.75
+ *                           subscriptions:
+ *                             type: integer
+ *                             description: Número de suscripciones activas
+ *                             example: 145
+ *                     totalRevenue:
+ *                       type: number
+ *                       description: Ingresos totales del período
+ *                       example: 67890.25
+ *                     averageMonthlyRevenue:
+ *                       type: number
+ *                       description: Promedio mensual de ingresos
+ *                       example: 11315.04
+ *             example:
+ *               success: true
+ *               data:
+ *                 chartData:
+ *                   - month: "2024-01"
+ *                     monthName: "Enero"
+ *                     revenue: 12450.75
+ *                     subscriptions: 145
+ *                   - month: "2023-12"
+ *                     monthName: "Diciembre"
+ *                     revenue: 11980.50
+ *                     subscriptions: 142
+ *                 totalRevenue: 67890.25
+ *                 averageMonthlyRevenue: 11315.04
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 router.get('/dashboard/revenue-chart', OwnerDashboardController.getRevenueChart);
 

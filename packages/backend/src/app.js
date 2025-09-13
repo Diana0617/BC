@@ -56,12 +56,24 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
-// 📚 SWAGGER DOCUMENTATION - SOLO PARA OWNERS
-// Middleware de autenticación y autorización para la documentación
-app.use('/api-docs', authenticateToken, ownerOnly, swaggerUi.serve, swaggerUi.setup(specs, swaggerConfig));
+// 📚 SWAGGER DOCUMENTATION - SOLO PARA OWNERS (excepto en desarrollo)
+// Middleware condicional para desarrollo vs producción
+const swaggerMiddleware = process.env.NODE_ENV === 'development' 
+  ? [] // Sin restricciones en desarrollo
+  : [authenticateToken, ownerOnly]; // Con restricciones en producción
 
-// Ruta para acceder al JSON de la documentación - También restringida
-app.get('/api-docs.json', authenticateToken, ownerOnly, (req, res) => {
+app.use('/api-docs', ...swaggerMiddleware, swaggerUi.serve, swaggerUi.setup(specs, swaggerConfig));
+
+// Ruta adicional para desarrollo sin restricciones
+if (process.env.NODE_ENV === 'development') {
+  app.use('/api-docs-dev', swaggerUi.serve, swaggerUi.setup(specs, {
+    ...swaggerConfig,
+    customSiteTitle: "Beauty Control API Docs - DESARROLLO (Sin restricciones)"
+  }));
+}
+
+// Ruta para acceder al JSON de la documentación - También con restricción condicional
+app.get('/api-docs.json', ...swaggerMiddleware, (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(specs);
 });

@@ -8,21 +8,413 @@ const router = express.Router();
 const WompiPaymentController = require('../controllers/WompiPaymentController');
 const { authenticateToken } = require('../middleware/auth');
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Wompi Payments
+ *     description: Integración con Wompi para procesamiento de pagos de suscripciones
+ */
+
+/**
+ * @swagger
+ * /api/wompi/initiate-subscription-payment:
+ *   post:
+ *     tags:
+ *       - Wompi Payments
+ *     summary: Iniciar proceso de pago de suscripción con Wompi
+ *     description: Crea una transacción de pago en Wompi para que el negocio pueda pagar su suscripción a Beauty Control
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - planId
+ *             properties:
+ *               planId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID del plan de suscripción a pagar
+ *                 example: "plan_001"
+ *           example:
+ *             planId: "plan_001"
+ *     responses:
+ *       200:
+ *         description: Transacción de pago creada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Transacción de pago creada. Proceda a completar el pago."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     paymentReference:
+ *                       type: string
+ *                       description: Referencia única del pago en Wompi
+ *                       example: "BC_PAY_20240120_001"
+ *                     amount:
+ *                       type: number
+ *                       description: Monto a pagar en centavos (COP)
+ *                       example: 4999000
+ *                     publicKey:
+ *                       type: string
+ *                       description: Clave pública de Wompi para el frontend
+ *                       example: "pub_test_xxxxxxxxxxxxx"
+ *                     redirectUrl:
+ *                       type: string
+ *                       format: uri
+ *                       description: URL de redirección después del pago
+ *                       example: "https://beautycontrol.com/payment/success"
+ *                     planName:
+ *                       type: string
+ *                       description: Nombre del plan seleccionado
+ *                       example: "Plan Pro"
+ *             example:
+ *               success: true
+ *               message: "Transacción de pago creada. Proceda a completar el pago."
+ *               data:
+ *                 paymentReference: "BC_PAY_20240120_001"
+ *                 amount: 4999000
+ *                 publicKey: "pub_test_xxxxxxxxxxxxx"
+ *                 redirectUrl: "https://beautycontrol.com/payment/success"
+ *                 planName: "Plan Pro"
+ *       400:
+ *         description: Datos de entrada inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               missing_plan:
+ *                 summary: Plan ID faltante
+ *                 value:
+ *                   success: false
+ *                   message: "ID del plan es requerido"
+ *               invalid_plan:
+ *                 summary: Plan no encontrado
+ *                 value:
+ *                   success: false
+ *                   message: "Plan de suscripción no encontrado"
+ *       409:
+ *         description: Conflicto - suscripción existente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "Ya tienes una suscripción activa. No puedes crear otra."
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+
 // Rutas protegidas que requieren autenticación
 router.post('/initiate-subscription-payment', 
   authenticateToken, 
   WompiPaymentController.initiateSubscriptionPayment
 );
 
+/**
+ * @swagger
+ * /api/wompi/payment-status/{reference}:
+ *   get:
+ *     tags:
+ *       - Wompi Payments
+ *     summary: Verificar estado de un pago específico
+ *     description: Consulta el estado actual de un pago en Wompi usando la referencia del pago, y actualiza el estado local si es necesario
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reference
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Referencia única del pago en Wompi
+ *         example: "BC_PAY_20240120_001"
+ *     responses:
+ *       200:
+ *         description: Estado del pago obtenido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     reference:
+ *                       type: string
+ *                       description: Referencia del pago
+ *                       example: "BC_PAY_20240120_001"
+ *                     status:
+ *                       type: string
+ *                       enum: [PENDING, APPROVED, DECLINED, VOIDED, ERROR]
+ *                       description: Estado actual del pago
+ *                       example: "APPROVED"
+ *                     amount:
+ *                       type: number
+ *                       description: Monto del pago en centavos
+ *                       example: 4999000
+ *                     paymentDate:
+ *                       type: string
+ *                       format: date-time
+ *                       description: Fecha de procesamiento del pago
+ *                       example: "2024-01-20T14:30:00Z"
+ *                     paymentMethod:
+ *                       type: string
+ *                       description: Método de pago utilizado
+ *                       example: "CREDIT_CARD"
+ *             example:
+ *               success: true
+ *               data:
+ *                 reference: "BC_PAY_20240120_001"
+ *                 status: "APPROVED"
+ *                 amount: 4999000
+ *                 paymentDate: "2024-01-20T14:30:00Z"
+ *                 paymentMethod: "CREDIT_CARD"
+ *       404:
+ *         description: Pago no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "Pago no encontrado"
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+
 router.get('/payment-status/:reference', 
   authenticateToken, 
   WompiPaymentController.checkPaymentStatus
 );
 
+/**
+ * @swagger
+ * /api/wompi/config:
+ *   get:
+ *     tags:
+ *       - Wompi Payments
+ *     summary: Obtener configuración pública de Wompi
+ *     description: Proporciona la configuración necesaria para integrar Wompi en el frontend (clave pública, moneda, entorno)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Configuración de Wompi obtenida exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     publicKey:
+ *                       type: string
+ *                       description: Clave pública de Wompi para usar en el frontend
+ *                       example: "pub_test_xxxxxxxxxxxxx"
+ *                     currency:
+ *                       type: string
+ *                       description: Moneda utilizada para los pagos
+ *                       example: "COP"
+ *                     environment:
+ *                       type: string
+ *                       enum: [sandbox, production]
+ *                       description: Entorno de Wompi (sandbox para pruebas, production para pagos reales)
+ *                       example: "sandbox"
+ *             example:
+ *               success: true
+ *               data:
+ *                 publicKey: "pub_test_xxxxxxxxxxxxx"
+ *                 currency: "COP"
+ *                 environment: "sandbox"
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+
 router.get('/config', 
   authenticateToken, 
   WompiPaymentController.getWompiConfig
 );
+
+/**
+ * @swagger
+ * /api/wompi/webhook:
+ *   post:
+ *     tags:
+ *       - Wompi Payments
+ *     summary: Webhook para notificaciones de Wompi
+ *     description: Endpoint público que recibe notificaciones automáticas de Wompi sobre cambios en el estado de las transacciones. No requiere autenticación ya que viene directamente de Wompi.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               event:
+ *                 type: string
+ *                 description: Tipo de evento de Wompi
+ *                 example: "transaction.updated"
+ *               data:
+ *                 type: object
+ *                 description: Datos de la transacción
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     description: ID de la transacción en Wompi
+ *                     example: "54321-1579024991-12345"
+ *                   reference:
+ *                     type: string
+ *                     description: Referencia de la transacción
+ *                     example: "BC_PAY_20240120_001"
+ *                   status:
+ *                     type: string
+ *                     enum: [PENDING, APPROVED, DECLINED, VOIDED, ERROR]
+ *                     description: Nuevo estado de la transacción
+ *                     example: "APPROVED"
+ *                   amount_in_cents:
+ *                     type: integer
+ *                     description: Monto en centavos
+ *                     example: 4999000
+ *                   currency:
+ *                     type: string
+ *                     description: Moneda de la transacción
+ *                     example: "COP"
+ *                   created_at:
+ *                     type: string
+ *                     format: date-time
+ *                     description: Fecha de creación
+ *                     example: "2024-01-20T14:30:00Z"
+ *                   finalized_at:
+ *                     type: string
+ *                     format: date-time
+ *                     description: Fecha de finalización
+ *                     example: "2024-01-20T14:35:00Z"
+ *                   payment_method:
+ *                     type: object
+ *                     description: Información del método de pago
+ *                     properties:
+ *                       type:
+ *                         type: string
+ *                         example: "CREDIT_CARD"
+ *                       extra:
+ *                         type: object
+ *                         properties:
+ *                           last_four:
+ *                             type: string
+ *                             example: "1234"
+ *                           brand:
+ *                             type: string
+ *                             example: "VISA"
+ *           example:
+ *             event: "transaction.updated"
+ *             data:
+ *               id: "54321-1579024991-12345"
+ *               reference: "BC_PAY_20240120_001"
+ *               status: "APPROVED"
+ *               amount_in_cents: 4999000
+ *               currency: "COP"
+ *               created_at: "2024-01-20T14:30:00Z"
+ *               finalized_at: "2024-01-20T14:35:00Z"
+ *               payment_method:
+ *                 type: "CREDIT_CARD"
+ *                 extra:
+ *                   last_four: "1234"
+ *                   brand: "VISA"
+ *     parameters:
+ *       - in: header
+ *         name: x-wompi-signature
+ *         schema:
+ *           type: string
+ *         description: Firma digital de Wompi para verificar la autenticidad del webhook
+ *         example: "fb4f25c81b6e2d7c8c9e1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d"
+ *     responses:
+ *       200:
+ *         description: Webhook procesado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Webhook procesado"
+ *                 data:
+ *                   type: object
+ *                   description: Resultado del procesamiento
+ *                   properties:
+ *                     transactionId:
+ *                       type: string
+ *                       description: ID de la transacción procesada
+ *                       example: "54321-1579024991-12345"
+ *                     subscriptionUpdated:
+ *                       type: boolean
+ *                       description: Si se actualizó la suscripción
+ *                       example: true
+ *                     newStatus:
+ *                       type: string
+ *                       description: Nuevo estado de la suscripción
+ *                       example: "ACTIVE"
+ *             examples:
+ *               success_processing:
+ *                 summary: Procesamiento exitoso
+ *                 value:
+ *                   success: true
+ *                   message: "Webhook procesado"
+ *                   data:
+ *                     transactionId: "54321-1579024991-12345"
+ *                     subscriptionUpdated: true
+ *                     newStatus: "ACTIVE"
+ *               unhandled_event:
+ *                 summary: Evento no manejado
+ *                 value:
+ *                   success: true
+ *                   message: "Evento no manejado"
+ *       401:
+ *         description: Firma inválida
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "Firma inválida"
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
 
 // Webhook público (sin autenticación porque viene de Wompi)
 router.post('/webhook', WompiPaymentController.handleWebhook);

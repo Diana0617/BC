@@ -167,29 +167,86 @@ const options = {
               type: 'string',
               description: 'Token único para la invitación'
             },
-            businessName: {
-              type: 'string',
-              description: 'Nombre del negocio invitado'
-            },
-            email: {
-              type: 'string',
-              format: 'email',
-              description: 'Email de contacto'
-            },
             status: {
               type: 'string',
-              enum: ['SENT', 'VIEWED', 'PAYMENT_STARTED', 'COMPLETED', 'EXPIRED', 'CANCELLED'],
+              enum: ['PENDING', 'ACCEPTED', 'EXPIRED', 'CANCELLED'],
               description: 'Estado actual de la invitación'
             },
             expiresAt: {
               type: 'string',
               format: 'date-time',
-              description: 'Fecha de expiración'
+              description: 'Fecha de expiración de la invitación'
             },
             createdAt: {
               type: 'string',
               format: 'date-time',
-              description: 'Fecha de creación'
+              description: 'Fecha de creación de la invitación'
+            },
+            business: {
+              type: 'object',
+              properties: {
+                name: {
+                  type: 'string',
+                  description: 'Nombre del negocio'
+                },
+                email: {
+                  type: 'string',
+                  format: 'email',
+                  description: 'Email del negocio'
+                },
+                ownerName: {
+                  type: 'string',
+                  description: 'Nombre del propietario'
+                }
+              }
+            },
+            subscriptionPlan: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  description: 'ID del plan'
+                },
+                name: {
+                  type: 'string',
+                  description: 'Nombre del plan'
+                },
+                price: {
+                  type: 'number',
+                  description: 'Precio del plan'
+                },
+                currency: {
+                  type: 'string',
+                  description: 'Moneda del precio'
+                }
+              }
+            },
+            customMessage: {
+              type: 'string',
+              description: 'Mensaje personalizado de la invitación'
+            },
+            resendCount: {
+              type: 'integer',
+              description: 'Número de reenvíos realizados'
+            },
+            lastResentAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha del último reenvío'
+            },
+            cancelledAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de cancelación (si aplica)'
+            },
+            cancelReason: {
+              type: 'string',
+              description: 'Motivo de cancelación (si aplica)'
+            },
+            acceptedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de aceptación (si aplica)'
             }
           }
         },
@@ -226,6 +283,526 @@ const options = {
             }
           },
           required: ['cardNumber', 'cardHolderName', 'expiryMonth', 'expiryYear', 'cvc', 'acceptTerms']
+        },
+        SubscriptionPayment: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID único del pago'
+            },
+            businessSubscriptionId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID de la suscripción de negocio'
+            },
+            paymentConfigurationId: {
+              type: 'string',
+              format: 'uuid',
+              nullable: true,
+              description: 'ID de la configuración de pago utilizada'
+            },
+            amount: {
+              type: 'number',
+              minimum: 0,
+              description: 'Monto del pago en centavos'
+            },
+            currency: {
+              type: 'string',
+              default: 'COP',
+              description: 'Moneda del pago'
+            },
+            status: {
+              type: 'string',
+              enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED', 'REFUNDED', 'PARTIALLY_REFUNDED'],
+              description: 'Estado del pago'
+            },
+            paymentMethod: {
+              type: 'string',
+              enum: ['CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'PSE', 'CASH', 'CHECK', 'DIGITAL_WALLET', 'MANUAL'],
+              description: 'Método de pago utilizado'
+            },
+            transactionId: {
+              type: 'string',
+              nullable: true,
+              description: 'ID de transacción del proveedor'
+            },
+            externalReference: {
+              type: 'string',
+              nullable: true,
+              description: 'Referencia externa del pago'
+            },
+            paidAt: {
+              type: 'string',
+              format: 'date-time',
+              nullable: true,
+              description: 'Fecha y hora del pago'
+            },
+            dueDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de vencimiento'
+            },
+            receiptUrl: {
+              type: 'string',
+              nullable: true,
+              description: 'URL del comprobante de pago'
+            },
+            receiptPublicId: {
+              type: 'string',
+              nullable: true,
+              description: 'Public ID del comprobante en Cloudinary'
+            },
+            receiptMetadata: {
+              type: 'object',
+              nullable: true,
+              description: 'Metadatos del archivo de comprobante'
+            },
+            receiptUploadedBy: {
+              type: 'string',
+              format: 'uuid',
+              nullable: true,
+              description: 'ID del usuario que subió el comprobante'
+            },
+            receiptUploadedAt: {
+              type: 'string',
+              format: 'date-time',
+              nullable: true,
+              description: 'Fecha de subida del comprobante'
+            },
+            commissionFee: {
+              type: 'number',
+              default: 0,
+              description: 'Comisión cobrada por el proveedor'
+            },
+            netAmount: {
+              type: 'number',
+              description: 'Monto neto después de comisiones'
+            },
+            description: {
+              type: 'string',
+              nullable: true,
+              description: 'Descripción del pago'
+            },
+            notes: {
+              type: 'string',
+              nullable: true,
+              description: 'Notas internas'
+            },
+            failureReason: {
+              type: 'string',
+              nullable: true,
+              description: 'Razón del fallo si aplica'
+            },
+            refundReason: {
+              type: 'string',
+              nullable: true,
+              description: 'Razón del reembolso si aplica'
+            },
+            refundedAmount: {
+              type: 'number',
+              default: 0,
+              description: 'Monto reembolsado'
+            },
+            refundedAt: {
+              type: 'string',
+              format: 'date-time',
+              nullable: true,
+              description: 'Fecha del reembolso'
+            },
+            providerResponse: {
+              type: 'object',
+              nullable: true,
+              description: 'Respuesta del proveedor de pagos'
+            },
+            metadata: {
+              type: 'object',
+              nullable: true,
+              description: 'Metadatos adicionales'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de creación'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de última actualización'
+            }
+          }
+        },
+        BusinessSubscription: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID único de la suscripción'
+            },
+            businessId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del negocio'
+            },
+            subscriptionPlanId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del plan de suscripción'
+            },
+            status: {
+              type: 'string',
+              enum: ['ACTIVE', 'PENDING', 'OVERDUE', 'SUSPENDED', 'CANCELLED'],
+              description: 'Estado de la suscripción'
+            },
+            startDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de inicio'
+            },
+            endDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de fin'
+            },
+            autoRenew: {
+              type: 'boolean',
+              description: 'Renovación automática habilitada'
+            },
+            amount: {
+              type: 'number',
+              description: 'Monto de la suscripción'
+            },
+            currency: {
+              type: 'string',
+              description: 'Moneda'
+            }
+          }
+        },
+        PaymentConfiguration: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID único de la configuración'
+            },
+            name: {
+              type: 'string',
+              description: 'Nombre descriptivo de la configuración'
+            },
+            provider: {
+              type: 'string',
+              enum: ['WOMPI', 'TAXXA', 'STRIPE', 'PAYPAL', 'MERCADOPAGO'],
+              description: 'Proveedor de pago'
+            },
+            environment: {
+              type: 'string',
+              enum: ['SANDBOX', 'PRODUCTION'],
+              description: 'Ambiente de la configuración'
+            },
+            isActive: {
+              type: 'boolean',
+              description: 'Estado activo de la configuración'
+            },
+            isDefault: {
+              type: 'boolean',
+              description: 'Si es la configuración por defecto'
+            },
+            supportedCurrencies: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Monedas soportadas'
+            },
+            commissionRate: {
+              type: 'number',
+              description: 'Tasa de comisión en porcentaje'
+            },
+            fixedFee: {
+              type: 'number',
+              description: 'Tarifa fija por transacción'
+            },
+            maxAmount: {
+              type: 'number',
+              nullable: true,
+              description: 'Monto máximo permitido'
+            },
+            minAmount: {
+              type: 'number',
+              nullable: true,
+              description: 'Monto mínimo permitido'
+            },
+            webhookUrl: {
+              type: 'string',
+              format: 'uri',
+              nullable: true,
+              description: 'URL del webhook para notificaciones'
+            },
+            webhookSecret: {
+              type: 'string',
+              nullable: true,
+              description: 'Secret para validar webhooks'
+            },
+            configuration: {
+              type: 'object',
+              nullable: true,
+              description: 'Configuración específica del proveedor',
+              additionalProperties: true
+            },
+            credentials: {
+              type: 'object',
+              nullable: true,
+              description: 'Credenciales del proveedor (encriptadas)',
+              additionalProperties: true
+            },
+            lastTestedAt: {
+              type: 'string',
+              format: 'date-time',
+              nullable: true,
+              description: 'Fecha de la última prueba'
+            },
+            lastTestResult: {
+              type: 'string',
+              enum: ['SUCCESS', 'FAILED', 'PENDING'],
+              nullable: true,
+              description: 'Resultado de la última prueba'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de creación'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de última actualización'
+            }
+          }
+        },
+        Pagination: {
+          type: 'object',
+          properties: {
+            currentPage: {
+              type: 'integer',
+              description: 'Página actual'
+            },
+            totalPages: {
+              type: 'integer',
+              description: 'Total de páginas'
+            },
+            totalItems: {
+              type: 'integer',
+              description: 'Total de elementos'
+            },
+            itemsPerPage: {
+              type: 'integer',
+              description: 'Elementos por página'
+            },
+            hasNext: {
+              type: 'boolean',
+              description: 'Hay página siguiente'
+            },
+            hasPrev: {
+              type: 'boolean',
+              description: 'Hay página anterior'
+            }
+          }
+        },
+        ErrorResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: false
+            },
+            message: {
+              type: 'string',
+              description: 'Mensaje de error'
+            },
+            error: {
+              type: 'string',
+              description: 'Código de error'
+            },
+            errors: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  field: {
+                    type: 'string'
+                  },
+                  message: {
+                    type: 'string'
+                  }
+                }
+              },
+              description: 'Errores de validación detallados'
+            }
+          }
+        },
+        OwnerFinancialReport: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID único del reporte'
+            },
+            reportType: {
+              type: 'string',
+              enum: ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY', 'CUSTOM'],
+              description: 'Tipo de reporte'
+            },
+            reportPeriod: {
+              type: 'string',
+              description: 'Período del reporte en formato YYYY-MM-DD o YYYY-MM o YYYY'
+            },
+            startDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de inicio del período'
+            },
+            endDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de fin del período'
+            },
+            status: {
+              type: 'string',
+              enum: ['GENERATING', 'COMPLETED', 'FAILED'],
+              description: 'Estado del reporte'
+            },
+            totalRevenue: {
+              type: 'number',
+              description: 'Ingresos totales del período'
+            },
+            subscriptionRevenue: {
+              type: 'number',
+              description: 'Ingresos por suscripciones'
+            },
+            netRevenue: {
+              type: 'number',
+              description: 'Ingresos netos después de comisiones'
+            },
+            totalPayments: {
+              type: 'integer',
+              description: 'Número total de pagos'
+            },
+            completedPayments: {
+              type: 'integer',
+              description: 'Pagos completados exitosamente'
+            },
+            failedPayments: {
+              type: 'integer',
+              description: 'Pagos fallidos'
+            },
+            pendingPayments: {
+              type: 'integer',
+              description: 'Pagos pendientes'
+            },
+            refundedPayments: {
+              type: 'integer',
+              description: 'Pagos reembolsados'
+            },
+            totalCommissions: {
+              type: 'number',
+              description: 'Comisiones totales pagadas a proveedores'
+            },
+            averageCommissionRate: {
+              type: 'number',
+              description: 'Tasa promedio de comisión'
+            },
+            newSubscriptions: {
+              type: 'integer',
+              description: 'Nuevas suscripciones en el período'
+            },
+            renewedSubscriptions: {
+              type: 'integer',
+              description: 'Suscripciones renovadas'
+            },
+            canceledSubscriptions: {
+              type: 'integer',
+              description: 'Suscripciones canceladas'
+            },
+            activeSubscriptions: {
+              type: 'integer',
+              description: 'Suscripciones activas al final del período'
+            },
+            churnRate: {
+              type: 'number',
+              description: 'Tasa de cancelación en porcentaje'
+            },
+            retentionRate: {
+              type: 'number',
+              description: 'Tasa de retención en porcentaje'
+            },
+            revenueByPlan: {
+              type: 'object',
+              description: 'Ingresos desglosados por plan de suscripción'
+            },
+            subscriptionsByPlan: {
+              type: 'object',
+              description: 'Cantidad de suscripciones por plan'
+            },
+            revenueByPaymentMethod: {
+              type: 'object',
+              description: 'Ingresos por método de pago'
+            },
+            paymentsByMethod: {
+              type: 'object',
+              description: 'Cantidad de pagos por método'
+            },
+            averageRevenuePerBusiness: {
+              type: 'number',
+              description: 'Ingreso promedio por negocio'
+            },
+            previousPeriodComparison: {
+              type: 'object',
+              description: 'Comparación con período anterior'
+            },
+            yearOverYearGrowth: {
+              type: 'number',
+              description: 'Crecimiento año sobre año en porcentaje'
+            },
+            currency: {
+              type: 'string',
+              default: 'COP',
+              description: 'Moneda del reporte'
+            },
+            generatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de generación del reporte'
+            },
+            generatedBy: {
+              type: 'string',
+              enum: ['AUTOMATIC', 'MANUAL', 'SCHEDULED'],
+              description: 'Método de generación'
+            },
+            notes: {
+              type: 'string',
+              nullable: true,
+              description: 'Notas adicionales'
+            },
+            metadata: {
+              type: 'object',
+              nullable: true,
+              description: 'Metadatos adicionales'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de creación'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de última actualización'
+            }
+          }
         }
       }
     },
@@ -243,6 +820,22 @@ const options = {
         description: 'Configuración y gestión de pagos'
       },
       {
+        name: 'Owner Payments',
+        description: 'Gestión de pagos de suscripciones - Ver, crear, actualizar y gestionar comprobantes'
+      },
+      {
+        name: 'Owner Financial Reports',
+        description: 'Generación y gestión de reportes financieros detallados con análisis de métricas y KPIs'
+      },
+      {
+        name: 'Owner Business Management',
+        description: 'Gestión de negocios e invitaciones por parte del Owner'
+      },
+      {
+        name: 'Owner Payment Configurations',
+        description: 'Configuración y gestión de proveedores de pago para el Owner'
+      },
+      {
         name: '📊 Owner - Planes',
         description: 'Gestión de planes de suscripción'
       },
@@ -257,6 +850,10 @@ const options = {
       {
         name: '🔄 Auto-Renovación',
         description: 'Sistema automático de renovación de suscripciones'
+      },
+      {
+        name: 'Owner Subscription Status',
+        description: 'Gestión y verificación de estados de suscripciones (solo Owner)'
       },
       {
         name: '📧 Invitaciones Públicas',
