@@ -25,7 +25,16 @@ export { default as autoRenewalSlice } from './autoRenewalSlice';
 export { default as ownerBusinessManagementSlice } from './ownerBusinessManagementSlice';
 export { default as publicInvitationSlice } from './publicInvitationSlice';
 export { default as ownerPaymentConfigSlice } from './ownerPaymentConfigSlice';
-export { default as ownerFinancialReportsSlice } from './ownerFinancialReportsSlice';
+
+// 🔧 RULE TEMPLATE SYSTEM SLICES
+export { default as ruleTemplateSlice } from './ruleTemplateSlice';
+export { default as businessRuleSlice } from './businessRuleSlice';
+
+// 💳 ADVANCE PAYMENT SYSTEM SLICES
+export { default as advancePaymentSlice } from './advancePaymentSlice';
+
+// 🔐 BUSINESS VALIDATION SYSTEM SLICES
+export { default as businessValidationSlice } from './businessValidationSlice';
 
 // Export all OWNER slices as a group
 export const ownerSlices = {
@@ -40,3 +49,66 @@ export const ownerSlices = {
   ownerPaymentsSlice,
   ownerFinancialReportsSlice
 };
+
+// 💳 ADVANCE PAYMENT EXPORTS
+export {
+  // Actions
+  checkAdvancePaymentRequired,
+  initiateAdvancePayment,
+  checkAdvancePaymentStatus,
+  getBusinessAdvancePaymentConfig,
+  clearErrors as clearAdvancePaymentErrors,
+  clearCurrentPayment,
+  showPaymentModal,
+  hidePaymentModal,
+  setPaymentInProgress,
+  updatePaymentFromWebhook,
+  cachePaymentInfo,
+  // Selectors
+  selectAdvancePaymentState,
+  selectAdvancePaymentLoading,
+  selectAdvancePaymentErrors,
+  selectCurrentPayment,
+  selectBusinessConfig as selectAdvancePaymentBusinessConfig,
+  selectPaymentsHistory,
+  selectAdvancePaymentUI,
+  selectPaymentForAppointment,
+  selectIsPaymentRequired,
+  selectIsPaymentPaid,
+  selectCanProceedWithAppointment
+} from './advancePaymentSlice';
+
+// 🔐 BUSINESS VALIDATION EXPORTS
+export {
+  // Actions
+  validateBusinessAccess,
+  getAccessibleBusinesses,
+  switchActiveBusiness,
+  checkBusinessPermission,
+  clearErrors as clearBusinessValidationErrors,
+  clearValidationCache,
+  clearActiveBusiness,
+  showBusinessSelector,
+  hideBusinessSelector,
+  selectBusinessForSwitch,
+  updateMultitenancyConfig,
+  cacheValidationResult,
+  getCachedValidation,
+  invalidateBusinessCache,
+  // Selectors
+  selectBusinessValidationState,
+  selectBusinessValidationLoading,
+  selectBusinessValidationErrors,
+  selectActiveBusiness,
+  selectAccessibleBusinesses,
+  selectValidationCache,
+  selectMultitenancyConfig,
+  selectBusinessValidationUI,
+  selectHasBusinessAccess,
+  selectIsBusinessOwner,
+  selectActiveBusinessId,
+  selectHasBusinessPermission,
+  selectCanAccessMultipleBusinesses,
+  selectCachedValidation,
+  selectNeedsBusinessSwitch
+} from './businessValidationSlice';

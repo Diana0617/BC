@@ -32,6 +32,9 @@ import type {
   WompiWebhookData
 } from './newEndpoints';
 
+// Export advance payment and business validation types
+export * from './advancePaymentTypes';
+
 // Export all types from different modules
 export * from './newEndpoints';
 

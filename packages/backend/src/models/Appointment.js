@@ -183,6 +183,37 @@ const Appointment = sequelize.define('Appointment', {
     allowNull: true,
     defaultValue: []
   },
+  // Información de pagos adelantados/depósitos
+  advancePayment: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null,
+    comment: 'Información del pago adelantado requerido para la cita'
+    // Estructura: {
+    //   required: boolean,
+    //   amount: number,
+    //   percentage: number,
+    //   wompiReference: string,
+    //   status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED',
+    //   paidAt: timestamp,
+    //   refundedAt: timestamp,
+    //   transactionData: object
+    // }
+  },
+  // Referencia de pago en Wompi para el adelanto
+  wompiPaymentReference: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+    comment: 'Referencia única del pago adelantado en Wompi'
+  },
+  // Estado específico del depósito/adelanto
+  depositStatus: {
+    type: DataTypes.ENUM('NOT_REQUIRED', 'PENDING', 'PAID', 'FAILED', 'REFUNDED'),
+    allowNull: false,
+    defaultValue: 'NOT_REQUIRED',
+    comment: 'Estado del depósito requerido para agendar la cita'
+  },
   metadata: {
     type: DataTypes.JSONB,
     allowNull: true,

@@ -1986,6 +1986,398 @@ const options = {
             }
           },
           required: ['supplierSku', 'name', 'price']
+        },
+
+        // 💳 ADVANCE PAYMENT SCHEMAS
+        AdvancePaymentInfo: {
+          type: 'object',
+          properties: {
+            appointmentId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID de la cita'
+            },
+            required: {
+              type: 'boolean',
+              description: 'Si se requiere pago adelantado'
+            },
+            amount: {
+              type: 'number',
+              description: 'Monto del pago adelantado en centavos'
+            },
+            percentage: {
+              type: 'number',
+              description: 'Porcentaje del servicio para el depósito'
+            },
+            status: {
+              type: 'string',
+              enum: ['NOT_REQUIRED', 'PENDING', 'PAID', 'FAILED', 'REFUNDED'],
+              description: 'Estado del pago adelantado'
+            },
+            wompiReference: {
+              type: 'string',
+              description: 'Referencia de la transacción en Wompi'
+            },
+            paymentLink: {
+              type: 'string',
+              format: 'uri',
+              description: 'Link de pago de Wompi'
+            },
+            wompiPublicKey: {
+              type: 'string',
+              description: 'Clave pública de Wompi para el checkout'
+            },
+            paidAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha y hora del pago'
+            },
+            transactionData: {
+              type: 'object',
+              description: 'Datos completos de la transacción de Wompi'
+            }
+          },
+          required: ['appointmentId', 'required', 'amount', 'status']
+        },
+
+        AdvancePaymentCustomerData: {
+          type: 'object',
+          properties: {
+            email: {
+              type: 'string',
+              format: 'email',
+              description: 'Email del cliente'
+            },
+            phone: {
+              type: 'string',
+              description: 'Teléfono del cliente'
+            },
+            fullName: {
+              type: 'string',
+              description: 'Nombre completo del cliente'
+            },
+            documentType: {
+              type: 'string',
+              description: 'Tipo de documento'
+            },
+            documentNumber: {
+              type: 'string',
+              description: 'Número de documento'
+            }
+          },
+          required: ['email', 'phone', 'fullName']
+        },
+
+        AdvancePaymentConfig: {
+          type: 'object',
+          properties: {
+            requireDeposit: {
+              type: 'boolean',
+              description: 'Si se requiere depósito para citas'
+            },
+            depositPercentage: {
+              type: 'number',
+              description: 'Porcentaje del servicio para depósito',
+              minimum: 0,
+              maximum: 100
+            },
+            depositMinAmount: {
+              type: 'number',
+              description: 'Monto mínimo de depósito en centavos'
+            },
+            allowPartialPayments: {
+              type: 'boolean',
+              description: 'Permitir pagos parciales'
+            },
+            autoRefundCancellations: {
+              type: 'boolean',
+              description: 'Reembolso automático al cancelar'
+            }
+          },
+          required: ['requireDeposit', 'depositPercentage', 'depositMinAmount']
+        },
+
+        AdvancePaymentResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+              description: 'Si la operación fue exitosa'
+            },
+            paymentLink: {
+              type: 'string',
+              format: 'uri',
+              description: 'URL de pago de Wompi'
+            },
+            wompiReference: {
+              type: 'string',
+              description: 'Referencia única en Wompi'
+            },
+            wompiPublicKey: {
+              type: 'string',
+              description: 'Clave pública de Wompi'
+            },
+            amount: {
+              type: 'number',
+              description: 'Monto a pagar en centavos'
+            },
+            expirationTime: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de expiración del link'
+            }
+          },
+          required: ['success', 'paymentLink', 'wompiReference', 'amount']
+        },
+
+        WompiWebhookPayload: {
+          type: 'object',
+          properties: {
+            event: {
+              type: 'string',
+              description: 'Tipo de evento de Wompi'
+            },
+            data: {
+              type: 'object',
+              properties: {
+                transaction: {
+                  type: 'object',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      description: 'ID de la transacción'
+                    },
+                    reference: {
+                      type: 'string',
+                      description: 'Referencia de la transacción'
+                    },
+                    status: {
+                      type: 'string',
+                      description: 'Estado de la transacción'
+                    },
+                    amount_in_cents: {
+                      type: 'number',
+                      description: 'Monto en centavos'
+                    },
+                    currency: {
+                      type: 'string',
+                      description: 'Moneda de la transacción'
+                    }
+                  }
+                }
+              }
+            },
+            sent_at: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de envío del webhook'
+            }
+          },
+          required: ['event', 'data']
+        },
+
+        // 🔐 BUSINESS VALIDATION SCHEMAS
+        BusinessAccessValidation: {
+          type: 'object',
+          properties: {
+            businessId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del negocio validado'
+            },
+            hasAccess: {
+              type: 'boolean',
+              description: 'Si el usuario tiene acceso al negocio'
+            },
+            userRole: {
+              type: 'string',
+              enum: ['OWNER', 'ADMIN', 'SPECIALIST', 'RECEPTIONIST', 'VIEWER'],
+              description: 'Rol del usuario en el negocio'
+            },
+            permissions: {
+              type: 'array',
+              items: {
+                type: 'string',
+                enum: [
+                  'READ_APPOINTMENTS', 'WRITE_APPOINTMENTS', 'DELETE_APPOINTMENTS',
+                  'READ_CLIENTS', 'WRITE_CLIENTS',
+                  'READ_INVENTORY', 'WRITE_INVENTORY',
+                  'READ_PAYMENTS', 'WRITE_PAYMENTS',
+                  'READ_REPORTS', 'MANAGE_STAFF', 'MANAGE_SETTINGS',
+                  'MANAGE_BILLING', 'SUPER_ADMIN'
+                ]
+              },
+              description: 'Lista de permisos del usuario'
+            },
+            businessData: {
+              $ref: '#/components/schemas/BusinessBasicInfo'
+            },
+            restrictions: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/AccessRestriction'
+              },
+              description: 'Restricciones de acceso aplicables'
+            }
+          },
+          required: ['businessId', 'hasAccess', 'userRole', 'permissions']
+        },
+
+        BusinessBasicInfo: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del negocio'
+            },
+            name: {
+              type: 'string',
+              description: 'Nombre del negocio'
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              description: 'Email del negocio'
+            },
+            phone: {
+              type: 'string',
+              description: 'Teléfono del negocio'
+            },
+            address: {
+              type: 'string',
+              description: 'Dirección del negocio'
+            },
+            status: {
+              type: 'string',
+              enum: ['ACTIVE', 'SUSPENDED', 'TRIAL', 'EXPIRED', 'PENDING_SETUP'],
+              description: 'Estado del negocio'
+            },
+            planType: {
+              type: 'string',
+              description: 'Tipo de plan contratado'
+            },
+            subscriptionStatus: {
+              type: 'string',
+              description: 'Estado de la suscripción'
+            }
+          },
+          required: ['id', 'name', 'email', 'status']
+        },
+
+        AccessRestriction: {
+          type: 'object',
+          properties: {
+            type: {
+              type: 'string',
+              enum: ['TIME_LIMIT', 'IP_RESTRICTION', 'FEATURE_LIMIT'],
+              description: 'Tipo de restricción'
+            },
+            description: {
+              type: 'string',
+              description: 'Descripción de la restricción'
+            },
+            active: {
+              type: 'boolean',
+              description: 'Si la restricción está activa'
+            },
+            metadata: {
+              type: 'object',
+              description: 'Metadatos adicionales de la restricción'
+            }
+          },
+          required: ['type', 'description', 'active']
+        },
+
+        AccessibleBusiness: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del negocio'
+            },
+            name: {
+              type: 'string',
+              description: 'Nombre del negocio'
+            },
+            role: {
+              type: 'string',
+              enum: ['OWNER', 'ADMIN', 'SPECIALIST', 'RECEPTIONIST', 'VIEWER'],
+              description: 'Rol del usuario en este negocio'
+            },
+            permissions: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Permisos en este negocio'
+            },
+            status: {
+              type: 'string',
+              enum: ['ACTIVE', 'SUSPENDED', 'TRIAL', 'EXPIRED', 'PENDING_SETUP'],
+              description: 'Estado del negocio'
+            },
+            lastAccessed: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Último acceso al negocio'
+            },
+            isActive: {
+              type: 'boolean',
+              description: 'Si es el negocio actualmente activo'
+            }
+          },
+          required: ['id', 'name', 'role', 'permissions', 'status']
+        },
+
+        BusinessValidationRequest: {
+          type: 'object',
+          properties: {
+            businessId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del negocio a validar'
+            },
+            userId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del usuario (opcional)'
+            },
+            requestedAction: {
+              type: 'string',
+              description: 'Acción que se desea realizar'
+            },
+            requestedResource: {
+              type: 'string',
+              description: 'Recurso sobre el que se actúa'
+            }
+          },
+          required: ['businessId']
+        },
+
+        BusinessPermissionCheck: {
+          type: 'object',
+          properties: {
+            businessId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del negocio'
+            },
+            permission: {
+              type: 'string',
+              description: 'Permiso a verificar'
+            },
+            hasPermission: {
+              type: 'boolean',
+              description: 'Si el usuario tiene el permiso'
+            },
+            reason: {
+              type: 'string',
+              description: 'Razón del resultado'
+            }
+          },
+          required: ['businessId', 'permission', 'hasPermission']
         }
       }
     },
@@ -2053,6 +2445,14 @@ const options = {
       {
         name: '🏪 Negocio',
         description: 'Endpoints para gestión interna de negocios'
+      },
+      {
+        name: '💳 Pagos Adelantados',
+        description: 'Sistema de pagos adelantados con Wompi - Verificación, iniciación, estado y webhooks'
+      },
+      {
+        name: '🔐 Validación de Business',
+        description: 'Sistema de validación multitenancy - Acceso, permisos y seguridad entre negocios'
       }
     ]
   },

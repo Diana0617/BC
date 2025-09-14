@@ -2799,6 +2799,951 @@
       "metaSortKey": -1736707330000,
       "isPrivate": false,
       "_type": "request"
+    },
+    {
+      "_id": "fld_specialists",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736708000000,
+      "created": 1736708000000,
+      "name": "👨‍⚕️ ESPECIALISTAS",
+      "description": "Endpoints para especialistas - Gestión de agenda, procedimientos y ventas",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736708000000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_specialist_agenda",
+      "parentId": "fld_specialists",
+      "modified": 1736708100000,
+      "created": 1736708100000,
+      "name": "📅 Agenda Personal",
+      "description": "Gestión de agenda personal del especialista",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736708100000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_specialists_my_appointments",
+      "parentId": "fld_specialist_agenda",
+      "modified": 1736708110000,
+      "created": 1736708110000,
+      "url": "{{ _.base_url }}/api/specialists/me/appointments?businessId=business-id-here&page=1&limit=10&date=2025-01-15",
+      "name": "Mi Agenda del Día",
+      "description": "Obtener citas del especialista para el día actual",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708110000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_specialists_update_appointment_status",
+      "parentId": "fld_specialist_agenda",
+      "modified": 1736708120000,
+      "created": 1736708120000,
+      "url": "{{ _.base_url }}/api/specialists/me/appointments/appointment-id/status?businessId=business-id-here",
+      "name": "Actualizar Estado de Cita",
+      "description": "Cambiar estado de cita (CONFIRMED, IN_PROGRESS, COMPLETED, NO_SHOW)",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"IN_PROGRESS\",\n  \"notes\": \"Cliente llegó a tiempo, iniciando procedimiento\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708120000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_specialists_my_history",
+      "parentId": "fld_specialist_agenda",
+      "modified": 1736708130000,
+      "created": 1736708130000,
+      "url": "{{ _.base_url }}/api/specialists/me/history?businessId=business-id-here&page=1&limit=20&startDate=2025-01-01&endDate=2025-01-31",
+      "name": "Mi Historial de Procedimientos",
+      "description": "Historial de procedimientos completados por el especialista",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708130000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_specialists_my_commissions",
+      "parentId": "fld_specialist_agenda",
+      "modified": 1736708140000,
+      "created": 1736708140000,
+      "url": "{{ _.base_url }}/api/specialists/me/commissions?businessId=business-id-here&month=1&year=2025",
+      "name": "Mis Comisiones",
+      "description": "Reporte de comisiones del especialista",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708140000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_specialists_my_profile",
+      "parentId": "fld_specialist_agenda",
+      "modified": 1736708150000,
+      "created": 1736708150000,
+      "url": "{{ _.base_url }}/api/specialists/me/profile?businessId=business-id-here",
+      "name": "Mi Perfil",
+      "description": "Obtener y actualizar perfil personal del especialista",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708150000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_specialists_update_profile",
+      "parentId": "fld_specialist_agenda",
+      "modified": 1736708160000,
+      "created": 1736708160000,
+      "url": "{{ _.base_url }}/api/specialists/me/profile",
+      "name": "Actualizar Mi Perfil",
+      "description": "Actualizar información personal del especialista",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": \"business-id-here\",\n  \"biography\": \"Especialista en tratamientos faciales con 5 años de experiencia\",\n  \"skills\": [\"Limpieza facial\", \"Microdermoabrasión\", \"Hidrafacial\"],\n  \"languages\": [\"Español\", \"Inglés\"],\n  \"phoneExtension\": \"101\",\n  \"preferences\": {\n    \"notifications\": true,\n    \"emailReminders\": true\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708160000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_appointments",
+      "parentId": "fld_specialists",
+      "modified": 1736708200000,
+      "created": 1736708200000,
+      "name": "📋 Gestión de Citas",
+      "description": "CRUD de citas para especialistas y recepcionistas",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736708200000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_appointments_list",
+      "parentId": "fld_appointments",
+      "modified": 1736708210000,
+      "created": 1736708210000,
+      "url": "{{ _.base_url }}/api/appointments?businessId=business-id-here&specialistId=specialist-id&page=1&limit=10&status=PENDING&date=2025-01-15",
+      "name": "Listar Citas",
+      "description": "Lista citas según el rol del usuario",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708210000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointments_create",
+      "parentId": "fld_appointments",
+      "modified": 1736708220000,
+      "created": 1736708220000,
+      "url": "{{ _.base_url }}/api/appointments",
+      "name": "Crear Nueva Cita",
+      "description": "Crear nueva cita (solo recepcionistas)",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": \"business-id-here\",\n  \"clientId\": \"client-id-here\",\n  \"specialistId\": \"specialist-id-here\",\n  \"serviceId\": \"service-id-here\",\n  \"startTime\": \"2025-01-15T14:00:00.000Z\",\n  \"endTime\": \"2025-01-15T15:30:00.000Z\",\n  \"notes\": \"Primera sesión de limpieza facial\",\n  \"clientNotes\": \"Cliente alérgica a productos con retinol\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708220000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointments_detail",
+      "parentId": "fld_appointments",
+      "modified": 1736708230000,
+      "created": 1736708230000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id?businessId=business-id-here",
+      "name": "Detalle de Cita",
+      "description": "Obtener información completa de una cita",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708230000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointments_update_status",
+      "parentId": "fld_appointments",
+      "modified": 1736708240000,
+      "created": 1736708240000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/status?businessId=business-id-here",
+      "name": "Actualizar Estado",
+      "description": "Cambiar estado de cita",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"COMPLETED\",\n  \"notes\": \"Procedimiento completado exitosamente\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708240000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointments_cancel",
+      "parentId": "fld_appointments",
+      "modified": 1736708250000,
+      "created": 1736708250000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id?businessId=business-id-here",
+      "name": "Cancelar Cita",
+      "description": "Cancelar una cita",
+      "method": "DELETE",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cancelReason\": \"Cliente no puede asistir por motivos personales\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708250000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_appointment_media",
+      "parentId": "fld_specialists",
+      "modified": 1736708300000,
+      "created": 1736708300000,
+      "name": "📸 Evidencias y Consentimientos",
+      "description": "Gestión de medios de citas",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736708300000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_appointment_upload_evidence",
+      "parentId": "fld_appointment_media",
+      "modified": 1736708310000,
+      "created": 1736708310000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/media",
+      "name": "Subir Evidencia",
+      "description": "Subir fotos/videos del procedimiento",
+      "method": "POST",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "businessId",
+            "value": "business-id-here",
+            "type": "text"
+          },
+          {
+            "name": "type",
+            "value": "after",
+            "type": "text"
+          },
+          {
+            "name": "notes",
+            "value": "Resultado después del tratamiento",
+            "type": "text"
+          },
+          {
+            "name": "files",
+            "value": "",
+            "type": "file"
+          }
+        ]
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708310000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointment_get_media",
+      "parentId": "fld_appointment_media",
+      "modified": 1736708320000,
+      "created": 1736708320000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/media?businessId=business-id-here",
+      "name": "Ver Medios de Cita",
+      "description": "Obtener todas las evidencias de una cita",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708320000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointment_upload_consent",
+      "parentId": "fld_appointment_media",
+      "modified": 1736708330000,
+      "created": 1736708330000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/consent",
+      "name": "Subir Consentimiento",
+      "description": "Subir consentimiento informado (PDF)",
+      "method": "POST",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "businessId",
+            "value": "business-id-here",
+            "type": "text"
+          },
+          {
+            "name": "file",
+            "value": "",
+            "type": "file"
+          }
+        ]
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708330000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointment_delete_evidence",
+      "parentId": "fld_appointment_media",
+      "modified": 1736708340000,
+      "created": 1736708340000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/media/media-id?businessId=business-id-here",
+      "name": "Eliminar Evidencia",
+      "description": "Eliminar una evidencia específica",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708340000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointment_validate_completion",
+      "parentId": "fld_appointment_media",
+      "modified": 1736708350000,
+      "created": 1736708350000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/validate-completion?businessId=business-id-here",
+      "name": "Validar Completación",
+      "description": "Verificar si la cita puede ser completada",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708350000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_appointment_payments",
+      "parentId": "fld_specialists",
+      "modified": 1736708400000,
+      "created": 1736708400000,
+      "name": "💰 Pagos de Citas",
+      "description": "Gestión de pagos y comprobantes",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736708400000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_appointment_record_payment",
+      "parentId": "fld_appointment_payments",
+      "modified": 1736708410000,
+      "created": 1736708410000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/payment",
+      "name": "Registrar Pago",
+      "description": "Registrar pago de procedimiento",
+      "method": "POST",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "businessId",
+            "value": "business-id-here",
+            "type": "text"
+          },
+          {
+            "name": "paymentMethod",
+            "value": "CASH",
+            "type": "text"
+          },
+          {
+            "name": "amount",
+            "value": "150000",
+            "type": "text"
+          },
+          {
+            "name": "currency",
+            "value": "COP",
+            "type": "text"
+          },
+          {
+            "name": "notes",
+            "value": "Pago completo del tratamiento facial",
+            "type": "text"
+          },
+          {
+            "name": "file",
+            "value": "",
+            "type": "file"
+          }
+        ]
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708410000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointment_payment_history",
+      "parentId": "fld_appointment_payments",
+      "modified": 1736708420000,
+      "created": 1736708420000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/payments?businessId=business-id-here",
+      "name": "Historial de Pagos",
+      "description": "Ver historial de pagos de una cita",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708420000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointment_update_payment",
+      "parentId": "fld_appointment_payments",
+      "modified": 1736708430000,
+      "created": 1736708430000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/payments/0",
+      "name": "Actualizar Pago",
+      "description": "Actualizar información de un pago",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": \"business-id-here\",\n  \"notes\": \"Pago verificado y confirmado\",\n  \"transactionId\": \"TXN-12345\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708430000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_specialists_payment_report",
+      "parentId": "fld_appointment_payments",
+      "modified": 1736708440000,
+      "created": 1736708440000,
+      "url": "{{ _.base_url }}/api/specialists/me/payments?businessId=business-id-here&month=1&year=2025",
+      "name": "Mi Reporte de Pagos",
+      "description": "Reporte de pagos del especialista",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708440000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_appointment_products",
+      "parentId": "fld_specialists",
+      "modified": 1736708500000,
+      "created": 1736708500000,
+      "name": "🧴 Productos Utilizados",
+      "description": "Gestión de productos en procedimientos",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736708500000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_appointment_record_products",
+      "parentId": "fld_appointment_products",
+      "modified": 1736708510000,
+      "created": 1736708510000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/used-products",
+      "name": "Registrar Productos Utilizados",
+      "description": "Registrar productos utilizados en el procedimiento",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": \"business-id-here\",\n  \"products\": [\n    {\n      \"productId\": \"product-id-1\",\n      \"quantity\": 2,\n      \"unit\": \"ml\",\n      \"notes\": \"Sérum hidratante aplicado durante el tratamiento\"\n    },\n    {\n      \"productId\": \"product-id-2\",\n      \"quantity\": 1,\n      \"unit\": \"unidades\",\n      \"notes\": \"Mascarilla facial\"\n    }\n  ],\n  \"notes\": \"Productos aplicados según protocolo estándar\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708510000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointment_get_used_products",
+      "parentId": "fld_appointment_products",
+      "modified": 1736708520000,
+      "created": 1736708520000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/used-products?businessId=business-id-here",
+      "name": "Ver Productos Utilizados",
+      "description": "Obtener productos utilizados en una cita",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708520000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointment_available_products",
+      "parentId": "fld_appointment_products",
+      "modified": 1736708530000,
+      "created": 1736708530000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/available-products?businessId=business-id-here&category=FACIAL&onlyInStock=true",
+      "name": "Productos Disponibles",
+      "description": "Ver productos disponibles para usar",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708530000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointment_update_used_product",
+      "parentId": "fld_appointment_products",
+      "modified": 1736708540000,
+      "created": 1736708540000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/used-products/0",
+      "name": "Actualizar Producto Utilizado",
+      "description": "Actualizar cantidad o notas de producto utilizado",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": \"business-id-here\",\n  \"quantity\": 3,\n  \"notes\": \"Se aplicó cantidad adicional por recomendación médica\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708540000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_specialist_sales",
+      "parentId": "fld_specialists",
+      "modified": 1736708600000,
+      "created": 1736708600000,
+      "name": "🛒 Ventas Directas",
+      "description": "Ventas directas de productos por especialistas",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736708600000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_specialist_create_sale",
+      "parentId": "fld_specialist_sales",
+      "modified": 1736708610000,
+      "created": 1736708610000,
+      "url": "{{ _.base_url }}/api/sales",
+      "name": "Crear Venta Directa",
+      "description": "Registrar venta directa de productos",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": \"business-id-here\",\n  \"clientId\": \"client-id-here\",\n  \"products\": [\n    {\n      \"productId\": \"product-id-1\",\n      \"quantity\": 2,\n      \"customPrice\": 45000\n    },\n    {\n      \"productId\": \"product-id-2\",\n      \"quantity\": 1\n    }\n  ],\n  \"paymentMethod\": \"CASH\",\n  \"discountAmount\": 5000,\n  \"discountReason\": \"Cliente frecuente\",\n  \"notes\": \"Venta de productos para rutina de cuidado en casa\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708610000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_specialist_my_sales",
+      "parentId": "fld_specialist_sales",
+      "modified": 1736708620000,
+      "created": 1736708620000,
+      "url": "{{ _.base_url }}/api/specialists/me/sales?businessId=business-id-here&page=1&limit=10&startDate=2025-01-01&endDate=2025-01-31",
+      "name": "Mis Ventas",
+      "description": "Historial de ventas del especialista",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708620000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_specialist_available_products",
+      "parentId": "fld_specialist_sales",
+      "modified": 1736708630000,
+      "created": 1736708630000,
+      "url": "{{ _.base_url }}/api/specialists/me/products?businessId=business-id-here&category=SKINCARE&onlyInStock=true&search=serum",
+      "name": "Productos Disponibles para Venta",
+      "description": "Ver catálogo de productos disponibles",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708630000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_specialist_sales_report",
+      "parentId": "fld_specialist_sales",
+      "modified": 1736708640000,
+      "created": 1736708640000,
+      "url": "{{ _.base_url }}/api/specialists/me/sales/report?businessId=business-id-here&startDate=2025-01-01&endDate=2025-01-31&groupBy=week",
+      "name": "Reporte de Ventas",
+      "description": "Reporte detallado de ventas y comisiones",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708640000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_advance_payments",
+      "parentId": "fld_specialists",
+      "modified": 1736708700000,
+      "created": 1736708700000,
+      "name": "💳 Pagos Adelantados (Wompi)",
+      "description": "Gestión de depósitos y pagos adelantados con Wompi",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736708700000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_check_advance_payment",
+      "parentId": "fld_advance_payments",
+      "modified": 1736708710000,
+      "created": 1736708710000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/advance-payment/check?businessId=business-id-here",
+      "name": "Verificar Pago Adelantado Requerido",
+      "description": "Verificar si la cita requiere depósito y configuración",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708710000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_initiate_advance_payment",
+      "parentId": "fld_advance_payments",
+      "modified": 1736708720000,
+      "created": 1736708720000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/advance-payment/initiate",
+      "name": "Iniciar Pago Adelantado",
+      "description": "Crear transacción de pago adelantado en Wompi",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": \"business-id-here\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708720000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_advance_payment_status",
+      "parentId": "fld_advance_payments",
+      "modified": 1736708730000,
+      "created": 1736708730000,
+      "url": "{{ _.base_url }}/api/appointments/appointment-id/advance-payment/status?businessId=business-id-here",
+      "name": "Estado de Pago Adelantado",
+      "description": "Consultar estado actual del depósito",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708730000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_advance_payment_webhook",
+      "parentId": "fld_advance_payments",
+      "modified": 1736708740000,
+      "created": 1736708740000,
+      "url": "{{ _.base_url }}/api/appointments/advance-payment/wompi-webhook",
+      "name": "Webhook Wompi - Pagos Adelantados",
+      "description": "Endpoint para confirmaciones de pago desde Wompi",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"data\": {\n    \"reference\": \"APT_12345678_1736708000000\",\n    \"status\": \"APPROVED\",\n    \"amount_in_cents\": 50000,\n    \"currency\": \"COP\"\n  },\n  \"timestamp\": \"1736708000\",\n  \"signature\": \"webhook_signature_here\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736708740000,
+      "isPrivate": false,
+      "_type": "request"
     }
   ]
 }
