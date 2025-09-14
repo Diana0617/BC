@@ -267,6 +267,7 @@ class OwnerPlanController {
       const createdPlan = await SubscriptionPlan.findByPk(newPlan.id, {
         include: [{
           model: Module,
+          as: 'modules',
           through: {
             model: PlanModule,
             attributes: ['isIncluded', 'limitQuantity', 'additionalPrice', 'configuration']
@@ -281,7 +282,10 @@ class OwnerPlanController {
       });
 
     } catch (error) {
-      await transaction.rollback();
+      // Solo hacer rollback si la transacción no ha sido committeada
+      if (!transaction.finished) {
+        await transaction.rollback();
+      }
       console.error('Error creando plan:', error);
       res.status(500).json({
         success: false,

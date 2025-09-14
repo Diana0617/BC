@@ -13,6 +13,9 @@ import OwnerDashboardPage from './pages/owner/OwnerDashboardPage'
 import OwnerPlansPage from './pages/owner/OwnerPlansPage'
 import OwnerModulesPage from './pages/owner/OwnerModulesPage'
 
+// Test Components (temporal)
+import ReduxPlansTest from './components/test/ReduxPlansTest'
+
 function AppLayout() {
   const dispatch = useDispatch()
   const { isAuthenticated, isLoading, user } = useSelector(state => state.auth)
@@ -53,6 +56,7 @@ function AppLayout() {
             <Route path="dashboard" element={<OwnerDashboardPage />} />
             <Route path="plans" element={<OwnerPlansPage />} />
             <Route path="modules" element={<OwnerModulesPage />} />
+            <Route path="test-redux" element={<ReduxPlansTest />} />
             {/* TODO: Agregar más rutas de Owner */}
             <Route path="businesses" element={<div>Negocios - En desarrollo</div>} />
             <Route path="reports" element={<div>Reportes - En desarrollo</div>} />

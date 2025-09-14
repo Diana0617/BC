@@ -1,6 +1,7 @@
 const { SubscriptionPlan, Module, PlanModule, BusinessSubscription } = require('../models');
 const PaginationService = require('../services/PaginationService');
-const { Op, sequelize } = require('sequelize');
+const { Op } = require('sequelize');
+const { sequelize } = require('../config/database');
 
 class SubscriptionPlanController {
   
@@ -455,6 +456,43 @@ class SubscriptionPlanController {
       
     } catch (error) {
       console.error('Error al actualizar estado del plan:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Toggle del estado del plan (ACTIVE <-> INACTIVE)
+   * PATCH /api/plans/:id/toggle-status
+   */
+  static async togglePlanStatus(req, res) {
+    try {
+      const { id } = req.params;
+      
+      const plan = await SubscriptionPlan.findByPk(id);
+      if (!plan) {
+        return res.status(404).json({
+          success: false,
+          message: 'Plan de suscripción no encontrado'
+        });
+      }
+      
+      // Toggle entre ACTIVE e INACTIVE
+      const newStatus = plan.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+      
+      await plan.update({ status: newStatus });
+      
+      res.status(200).json({
+        success: true,
+        data: plan,
+        message: `Estado del plan cambiado de ${plan.status} a ${newStatus}`
+      });
+      
+    } catch (error) {
+      console.error('Error al cambiar estado del plan:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',
