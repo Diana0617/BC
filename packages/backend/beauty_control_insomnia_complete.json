@@ -2467,6 +2467,338 @@
       "metaSortKey": -1736706700000,
       "isPrivate": false,
       "_type": "request"
+    },
+    {
+      "_id": "fld_business_config",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736707000000,
+      "created": 1736707000000,
+      "name": "⚙️ Business Configuration",
+      "description": "Configuración completa del negocio: servicios, inventario, proveedores",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736707000000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_business_services",
+      "parentId": "fld_business_config",
+      "modified": 1736707100000,
+      "created": 1736707100000,
+      "name": "💅 Servicios del Negocio",
+      "description": "Gestión completa de servicios",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736707100000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_business_services_list",
+      "parentId": "fld_business_services",
+      "modified": 1736707110000,
+      "created": 1736707110000,
+      "name": "Listar Servicios",
+      "url": "{{ _.base_url }}/api/business/business-id/config/services?page=1&limit=10&category=CABELLO&status=ACTIVE",
+      "description": "Obtener lista de servicios del negocio con filtros",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736707110000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_services_create",
+      "parentId": "fld_business_services",
+      "modified": 1736707120000,
+      "created": 1736707120000,
+      "name": "Crear Servicio",
+      "url": "{{ _.base_url }}/api/business/business-id/config/services",
+      "description": "Crear un nuevo servicio",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Corte de Cabello\",\n  \"description\": \"Corte profesional de cabello\",\n  \"category\": \"CABELLO\",\n  \"subcategory\": \"CORTE\",\n  \"duration\": 60,\n  \"price\": 45000,\n  \"cost\": 20000,\n  \"isActive\": true,\n  \"requiresSpecialist\": true,\n  \"maxParticipants\": 1,\n  \"bookingSettings\": {\n    \"advanceBookingDays\": 30,\n    \"cancellationHours\": 24,\n    \"rescheduleHours\": 12\n  },\n  \"resources\": [\n    {\n      \"type\": \"EQUIPMENT\",\n      \"name\": \"Silla de peluquería\",\n      \"required\": true\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736707120000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_services_update",
+      "parentId": "fld_business_services",
+      "modified": 1736707130000,
+      "created": 1736707130000,
+      "name": "Actualizar Servicio",
+      "url": "{{ _.base_url }}/api/business/business-id/config/services/service-id",
+      "description": "Actualizar un servicio existente",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Corte de Cabello Premium\",\n  \"price\": 55000,\n  \"duration\": 75\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736707130000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_services_delete",
+      "parentId": "fld_business_services",
+      "modified": 1736707140000,
+      "created": 1736707140000,
+      "name": "Eliminar Servicio",
+      "url": "{{ _.base_url }}/api/business/business-id/config/services/service-id",
+      "description": "Eliminar un servicio",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736707140000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_business_inventory",
+      "parentId": "fld_business_config",
+      "modified": 1736707200000,
+      "created": 1736707200000,
+      "name": "📦 Inventario",
+      "description": "Gestión completa de productos e inventario",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736707200000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_business_inventory_products_list",
+      "parentId": "fld_business_inventory",
+      "modified": 1736707210000,
+      "created": 1736707210000,
+      "name": "Listar Productos",
+      "url": "{{ _.base_url }}/api/business/business-id/config/inventory/products?page=1&limit=10&category=CABELLO&status=ACTIVE",
+      "description": "Obtener lista de productos del inventario",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736707210000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_inventory_products_create",
+      "parentId": "fld_business_inventory",
+      "modified": 1736707220000,
+      "created": 1736707220000,
+      "name": "Crear Producto",
+      "url": "{{ _.base_url }}/api/business/business-id/config/inventory/products",
+      "description": "Crear un nuevo producto",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Shampoo Hidratante\",\n  \"description\": \"Shampoo para cabello seco\",\n  \"sku\": \"SH-HID-001\",\n  \"barcode\": \"7890123456789\",\n  \"category\": \"PRODUCTOS_CABELLO\",\n  \"subcategory\": \"SHAMPOO\",\n  \"brand\": \"Beauty Pro\",\n  \"supplier\": \"Proveedor ABC\",\n  \"costPrice\": 15000,\n  \"salePrice\": 25000,\n  \"stock\": 50,\n  \"minStock\": 10,\n  \"maxStock\": 100,\n  \"trackInventory\": true,\n  \"isActive\": true,\n  \"taxable\": true,\n  \"weight\": 500,\n  \"dimensions\": {\n    \"length\": 20,\n    \"width\": 8,\n    \"height\": 25\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736707220000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_inventory_adjust_stock",
+      "parentId": "fld_business_inventory",
+      "modified": 1736707230000,
+      "created": 1736707230000,
+      "name": "Ajustar Stock",
+      "url": "{{ _.base_url }}/api/business/business-id/config/inventory/products/product-id/adjust-stock",
+      "description": "Ajustar el stock de un producto",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"quantity\": 10,\n  \"reason\": \"Ajuste por inventario físico\",\n  \"notes\": \"Diferencia encontrada en conteo físico\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736707230000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_inventory_movements",
+      "parentId": "fld_business_inventory",
+      "modified": 1736707240000,
+      "created": 1736707240000,
+      "name": "Movimientos de Inventario",
+      "url": "{{ _.base_url }}/api/business/business-id/config/inventory/movements?page=1&limit=10&type=ADJUSTMENT",
+      "description": "Obtener historial de movimientos de inventario",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736707240000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_business_suppliers",
+      "parentId": "fld_business_config",
+      "modified": 1736707300000,
+      "created": 1736707300000,
+      "name": "🏭 Proveedores",
+      "description": "Gestión completa de proveedores",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736707300000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_business_suppliers_list",
+      "parentId": "fld_business_suppliers",
+      "modified": 1736707310000,
+      "created": 1736707310000,
+      "name": "Listar Proveedores",
+      "url": "{{ _.base_url }}/api/business/business-id/config/suppliers?page=1&limit=10&status=ACTIVE&type=PRODUCT",
+      "description": "Obtener lista de proveedores",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736707310000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_suppliers_create",
+      "parentId": "fld_business_suppliers",
+      "modified": 1736707320000,
+      "created": 1736707320000,
+      "name": "Crear Proveedor",
+      "url": "{{ _.base_url }}/api/business/business-id/config/suppliers",
+      "description": "Crear un nuevo proveedor",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Beauty Supply Co.\",\n  \"type\": \"PRODUCT\",\n  \"category\": \"COSMETICS\",\n  \"taxId\": \"12345678-9\",\n  \"email\": \"ventas@beautysupply.com\",\n  \"phone\": \"+57 300 123 4567\",\n  \"website\": \"https://beautysupply.com\",\n  \"address\": {\n    \"street\": \"Calle 123 #45-67\",\n    \"city\": \"Bogotá\",\n    \"state\": \"Cundinamarca\",\n    \"country\": \"Colombia\",\n    \"postalCode\": \"110111\"\n  },\n  \"paymentTerms\": {\n    \"type\": \"NET\",\n    \"days\": 30,\n    \"discountPercent\": 2,\n    \"discountDays\": 10\n  },\n  \"creditLimit\": 5000000,\n  \"isActive\": true\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736707320000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_suppliers_purchase_orders",
+      "parentId": "fld_business_suppliers",
+      "modified": 1736707330000,
+      "created": 1736707330000,
+      "name": "Crear Orden de Compra",
+      "url": "{{ _.base_url }}/api/business/business-id/config/suppliers/supplier-id/purchase-orders",
+      "description": "Crear una orden de compra",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"orderNumber\": \"PO-2025-001\",\n  \"expectedDeliveryDate\": \"2025-09-20\",\n  \"notes\": \"Entrega urgente\",\n  \"items\": [\n    {\n      \"productId\": \"product-id-1\",\n      \"quantity\": 50,\n      \"unitPrice\": 15000,\n      \"notes\": \"Shampoo hidratante\"\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736707330000,
+      "isPrivate": false,
+      "_type": "request"
     }
   ]
 }
