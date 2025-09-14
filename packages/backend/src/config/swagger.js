@@ -803,6 +803,1189 @@ const options = {
               description: 'Fecha de última actualización'
             }
           }
+        },
+        Service: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID único del servicio'
+            },
+            businessId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del negocio al que pertenece'
+            },
+            name: {
+              type: 'string',
+              minLength: 2,
+              maxLength: 100,
+              description: 'Nombre del servicio'
+            },
+            description: {
+              type: 'string',
+              nullable: true,
+              description: 'Descripción detallada del servicio'
+            },
+            category: {
+              type: 'string',
+              nullable: true,
+              description: 'Categoría del servicio'
+            },
+            price: {
+              type: 'number',
+              minimum: 0,
+              description: 'Precio del servicio'
+            },
+            duration: {
+              type: 'integer',
+              minimum: 1,
+              description: 'Duración del servicio en minutos'
+            },
+            requiresConsent: {
+              type: 'boolean',
+              default: false,
+              description: 'Si el servicio requiere consentimiento del cliente'
+            },
+            consentTemplate: {
+              type: 'string',
+              nullable: true,
+              description: 'Plantilla de consentimiento'
+            },
+            isActive: {
+              type: 'boolean',
+              default: true,
+              description: 'Estado activo del servicio'
+            },
+            color: {
+              type: 'string',
+              nullable: true,
+              pattern: '^#[0-9A-F]{6}$',
+              description: 'Color hexadecimal para identificación visual'
+            },
+            preparationTime: {
+              type: 'integer',
+              minimum: 0,
+              default: 0,
+              description: 'Tiempo de preparación en minutos antes del servicio'
+            },
+            cleanupTime: {
+              type: 'integer',
+              minimum: 0,
+              default: 0,
+              description: 'Tiempo de limpieza en minutos después del servicio'
+            },
+            maxConcurrent: {
+              type: 'integer',
+              minimum: 1,
+              default: 1,
+              description: 'Máximo número de servicios concurrentes'
+            },
+            requiresEquipment: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              default: [],
+              description: 'Lista de equipamiento requerido'
+            },
+            skillsRequired: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              default: [],
+              description: 'Lista de habilidades requeridas'
+            },
+            images: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  url: {
+                    type: 'string',
+                    format: 'uri'
+                  },
+                  description: {
+                    type: 'string'
+                  },
+                  order: {
+                    type: 'integer'
+                  }
+                }
+              },
+              default: [],
+              description: 'Lista de imágenes del servicio'
+            },
+            commission: {
+              type: 'object',
+              properties: {
+                type: {
+                  type: 'string',
+                  enum: ['PERCENTAGE', 'FIXED'],
+                  default: 'PERCENTAGE'
+                },
+                value: {
+                  type: 'number',
+                  default: 0
+                },
+                specialistPercentage: {
+                  type: 'number',
+                  minimum: 0,
+                  maximum: 100,
+                  default: 50
+                },
+                businessPercentage: {
+                  type: 'number',
+                  minimum: 0,
+                  maximum: 100,
+                  default: 50
+                }
+              },
+              description: 'Configuración de comisiones del servicio'
+            },
+            bookingSettings: {
+              type: 'object',
+              properties: {
+                onlineBookingEnabled: {
+                  type: 'boolean',
+                  default: true
+                },
+                advanceBookingDays: {
+                  type: 'integer',
+                  default: 30
+                },
+                requiresApproval: {
+                  type: 'boolean',
+                  default: false
+                },
+                allowWaitlist: {
+                  type: 'boolean',
+                  default: true
+                }
+              },
+              description: 'Configuración de reservas para el servicio'
+            },
+            tags: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              default: [],
+              description: 'Etiquetas del servicio'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de creación'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de última actualización'
+            }
+          }
+        },
+        Product: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID único del producto'
+            },
+            businessId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del negocio al que pertenece'
+            },
+            name: {
+              type: 'string',
+              description: 'Nombre del producto',
+              example: 'Shampoo Profesional'
+            },
+            description: {
+              type: 'string',
+              description: 'Descripción detallada del producto',
+              example: 'Shampoo profesional para cabello graso'
+            },
+            sku: {
+              type: 'string',
+              description: 'Código SKU único',
+              example: 'SHA0001'
+            },
+            barcode: {
+              type: 'string',
+              description: 'Código de barras',
+              example: '1234567890123'
+            },
+            category: {
+              type: 'string',
+              description: 'Categoría del producto',
+              example: 'Productos para Cabello',
+              enum: [
+                'Consumibles',
+                'Productos para Cabello',
+                'Productos para Piel',
+                'Cosméticos',
+                'Herramientas',
+                'Equipos',
+                'Suministros',
+                'Otros'
+              ]
+            },
+            brand: {
+              type: 'string',
+              description: 'Marca del producto',
+              example: 'L\'Oréal Professional'
+            },
+            price: {
+              type: 'number',
+              format: 'decimal',
+              minimum: 0,
+              description: 'Precio de venta',
+              example: 45000
+            },
+            cost: {
+              type: 'number',
+              format: 'decimal',
+              minimum: 0,
+              description: 'Costo de compra',
+              example: 25000
+            },
+            trackInventory: {
+              type: 'boolean',
+              default: true,
+              description: 'Si se rastrea el inventario de este producto'
+            },
+            currentStock: {
+              type: 'number',
+              format: 'decimal',
+              minimum: 0,
+              default: 0,
+              description: 'Stock actual disponible'
+            },
+            minStock: {
+              type: 'number',
+              format: 'decimal',
+              minimum: 0,
+              default: 5,
+              description: 'Stock mínimo para alertas'
+            },
+            maxStock: {
+              type: 'number',
+              format: 'decimal',
+              minimum: 0,
+              description: 'Stock máximo recomendado'
+            },
+            unit: {
+              type: 'string',
+              description: 'Unidad de medida',
+              example: 'ml',
+              enum: [
+                'unidad',
+                'ml',
+                'litro',
+                'gramo',
+                'kilogramo',
+                'onza',
+                'paquete'
+              ]
+            },
+            weight: {
+              type: 'number',
+              format: 'decimal',
+              minimum: 0,
+              description: 'Peso del producto en gramos'
+            },
+            dimensions: {
+              type: 'object',
+              properties: {
+                length: {
+                  type: 'number',
+                  description: 'Largo en cm'
+                },
+                width: {
+                  type: 'number',
+                  description: 'Ancho en cm'
+                },
+                height: {
+                  type: 'number',
+                  description: 'Alto en cm'
+                }
+              },
+              description: 'Dimensiones del producto'
+            },
+            taxable: {
+              type: 'boolean',
+              default: true,
+              description: 'Si el producto está sujeto a impuestos'
+            },
+            taxRate: {
+              type: 'number',
+              format: 'decimal',
+              minimum: 0,
+              maximum: 100,
+              description: 'Tasa de impuesto en porcentaje'
+            },
+            isActive: {
+              type: 'boolean',
+              default: true,
+              description: 'Si el producto está activo'
+            },
+            images: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  url: {
+                    type: 'string',
+                    description: 'URL de la imagen'
+                  },
+                  description: {
+                    type: 'string',
+                    description: 'Descripción de la imagen'
+                  },
+                  uploadedAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    description: 'Fecha de subida'
+                  }
+                }
+              },
+              description: 'Imágenes del producto'
+            },
+            supplier: {
+              type: 'object',
+              properties: {
+                name: {
+                  type: 'string',
+                  description: 'Nombre del proveedor'
+                },
+                contactInfo: {
+                  type: 'string',
+                  description: 'Información de contacto'
+                },
+                supplierCode: {
+                  type: 'string',
+                  description: 'Código del proveedor'
+                }
+              },
+              description: 'Información del proveedor principal'
+            },
+            tags: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              default: [],
+              description: 'Etiquetas del producto'
+            },
+            expirationTracking: {
+              type: 'boolean',
+              default: false,
+              description: 'Si se rastrea la fecha de vencimiento'
+            },
+            batchTracking: {
+              type: 'boolean',
+              default: false,
+              description: 'Si se rastrea por lotes'
+            },
+            serialTracking: {
+              type: 'boolean',
+              default: false,
+              description: 'Si se rastrea por número de serie'
+            },
+            variants: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  name: {
+                    type: 'string',
+                    description: 'Nombre de la variante'
+                  },
+                  value: {
+                    type: 'string',
+                    description: 'Valor de la variante'
+                  },
+                  sku: {
+                    type: 'string',
+                    description: 'SKU específico de la variante'
+                  },
+                  price: {
+                    type: 'number',
+                    description: 'Precio específico de la variante'
+                  },
+                  stock: {
+                    type: 'number',
+                    description: 'Stock específico de la variante'
+                  }
+                }
+              },
+              description: 'Variantes del producto (tallas, colores, etc.)'
+            },
+            lastMovementDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha del último movimiento de inventario'
+            },
+            stockStatus: {
+              type: 'string',
+              enum: ['IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK', 'OVERSTOCK', 'NO_TRACKED'],
+              description: 'Estado actual del stock'
+            },
+            totalValue: {
+              type: 'number',
+              format: 'decimal',
+              description: 'Valor total del inventario (stock * costo)'
+            },
+            retailValue: {
+              type: 'number',
+              format: 'decimal',
+              description: 'Valor de venta del inventario (stock * precio)'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de creación'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de última actualización'
+            }
+          }
+        },
+        InventoryMovement: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID único del movimiento'
+            },
+            businessId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del negocio'
+            },
+            productId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del producto'
+            },
+            movementType: {
+              type: 'string',
+              enum: [
+                'PURCHASE',
+                'SALE',
+                'ADJUSTMENT',
+                'TRANSFER',
+                'RETURN',
+                'DAMAGE',
+                'EXPIRED',
+                'INITIAL_STOCK'
+              ],
+              description: 'Tipo de movimiento de inventario'
+            },
+            quantity: {
+              type: 'number',
+              format: 'decimal',
+              description: 'Cantidad del movimiento (positiva para entradas, negativa para salidas)'
+            },
+            unitCost: {
+              type: 'number',
+              format: 'decimal',
+              minimum: 0,
+              description: 'Costo unitario en el momento del movimiento'
+            },
+            totalCost: {
+              type: 'number',
+              format: 'decimal',
+              description: 'Costo total del movimiento (quantity * unitCost)'
+            },
+            reason: {
+              type: 'string',
+              description: 'Razón del movimiento',
+              example: 'Compra a proveedor ABC'
+            },
+            notes: {
+              type: 'string',
+              description: 'Notas adicionales sobre el movimiento'
+            },
+            batchNumber: {
+              type: 'string',
+              description: 'Número de lote (si aplica)'
+            },
+            serialNumber: {
+              type: 'string',
+              description: 'Número de serie (si aplica)'
+            },
+            expirationDate: {
+              type: 'string',
+              format: 'date',
+              description: 'Fecha de vencimiento (si aplica)'
+            },
+            stockBefore: {
+              type: 'number',
+              format: 'decimal',
+              description: 'Stock antes del movimiento'
+            },
+            stockAfter: {
+              type: 'number',
+              format: 'decimal',
+              description: 'Stock después del movimiento'
+            },
+            supplierInfo: {
+              type: 'object',
+              properties: {
+                name: {
+                  type: 'string',
+                  description: 'Nombre del proveedor'
+                },
+                invoiceNumber: {
+                  type: 'string',
+                  description: 'Número de factura'
+                },
+                purchaseOrder: {
+                  type: 'string',
+                  description: 'Número de orden de compra'
+                }
+              },
+              description: 'Información del proveedor (para compras)'
+            },
+            relatedDocuments: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  type: {
+                    type: 'string',
+                    description: 'Tipo de documento'
+                  },
+                  url: {
+                    type: 'string',
+                    description: 'URL del documento'
+                  },
+                  description: {
+                    type: 'string',
+                    description: 'Descripción del documento'
+                  }
+                }
+              },
+              description: 'Documentos relacionados (facturas, recibos, etc.)'
+            },
+            product: {
+              $ref: '#/components/schemas/Product',
+              description: 'Información del producto relacionado'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de creación del movimiento'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de última actualización'
+            }
+          }
+        },
+        Pagination: {
+          type: 'object',
+          properties: {
+            page: {
+              type: 'integer',
+              minimum: 1,
+              description: 'Página actual'
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              description: 'Límite de resultados por página'
+            },
+            total: {
+              type: 'integer',
+              minimum: 0,
+              description: 'Total de registros'
+            },
+            pages: {
+              type: 'integer',
+              minimum: 0,
+              description: 'Total de páginas'
+            }
+          }
+        },
+
+        // ==================== SCHEMAS DE PROVEEDORES ====================
+        
+        Supplier: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID único del proveedor'
+            },
+            businessId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID del negocio'
+            },
+            name: {
+              type: 'string',
+              description: 'Nombre de la empresa proveedora',
+              example: 'Distribuidora Beauty Corp'
+            },
+            code: {
+              type: 'string',
+              description: 'Código único del proveedor',
+              example: 'DBC001'
+            },
+            type: {
+              type: 'string',
+              enum: ['DISTRIBUTOR', 'MANUFACTURER', 'WHOLESALER', 'RETAILER', 'SERVICE_PROVIDER', 'FREELANCER'],
+              description: 'Tipo de proveedor'
+            },
+            status: {
+              type: 'string',
+              enum: ['ACTIVE', 'INACTIVE', 'PENDING', 'BLOCKED', 'UNDER_REVIEW'],
+              description: 'Estado del proveedor'
+            },
+            taxId: {
+              type: 'string',
+              description: 'NIT o identificación fiscal',
+              example: '900123456-1'
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              description: 'Email principal del proveedor'
+            },
+            phone: {
+              type: 'string',
+              description: 'Teléfono principal',
+              example: '+57 300 123 4567'
+            },
+            website: {
+              type: 'string',
+              format: 'uri',
+              description: 'Sitio web del proveedor'
+            },
+            address: {
+              type: 'object',
+              properties: {
+                street: {
+                  type: 'string',
+                  description: 'Dirección de la calle'
+                },
+                city: {
+                  type: 'string',
+                  description: 'Ciudad'
+                },
+                state: {
+                  type: 'string',
+                  description: 'Estado o departamento'
+                },
+                country: {
+                  type: 'string',
+                  description: 'País'
+                },
+                postalCode: {
+                  type: 'string',
+                  description: 'Código postal'
+                }
+              },
+              description: 'Dirección completa del proveedor'
+            },
+            contactPerson: {
+              type: 'object',
+              properties: {
+                name: {
+                  type: 'string',
+                  description: 'Nombre del contacto principal'
+                },
+                position: {
+                  type: 'string',
+                  description: 'Cargo del contacto'
+                },
+                email: {
+                  type: 'string',
+                  format: 'email'
+                },
+                phone: {
+                  type: 'string'
+                }
+              },
+              description: 'Contacto principal del proveedor'
+            },
+            categories: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Categorías de productos que maneja'
+            },
+            paymentTerms: {
+              type: 'object',
+              properties: {
+                type: {
+                  type: 'string',
+                  enum: ['IMMEDIATE', 'NET_15', 'NET_30', 'NET_45', 'NET_60', 'NET_90', 'COD'],
+                  description: 'Tipo de término de pago'
+                },
+                creditLimit: {
+                  type: 'number',
+                  description: 'Límite de crédito'
+                },
+                currency: {
+                  type: 'string',
+                  default: 'COP'
+                }
+              },
+              description: 'Términos de pago del proveedor'
+            },
+            bankInfo: {
+              type: 'object',
+              properties: {
+                bankName: {
+                  type: 'string'
+                },
+                accountNumber: {
+                  type: 'string'
+                },
+                accountType: {
+                  type: 'string',
+                  enum: ['SAVINGS', 'CHECKING']
+                }
+              },
+              description: 'Información bancaria'
+            },
+            certifications: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  name: {
+                    type: 'string'
+                  },
+                  issuer: {
+                    type: 'string'
+                  },
+                  expirationDate: {
+                    type: 'string',
+                    format: 'date'
+                  }
+                }
+              },
+              description: 'Certificaciones del proveedor'
+            },
+            notes: {
+              type: 'string',
+              description: 'Notas adicionales sobre el proveedor'
+            },
+            stats: {
+              type: 'object',
+              properties: {
+                totalOrders: {
+                  type: 'integer',
+                  description: 'Total de órdenes realizadas'
+                },
+                totalSpent: {
+                  type: 'number',
+                  description: 'Total gastado en el proveedor'
+                },
+                pendingInvoices: {
+                  type: 'integer',
+                  description: 'Facturas pendientes'
+                },
+                averageRating: {
+                  type: 'number',
+                  description: 'Calificación promedio'
+                }
+              },
+              description: 'Estadísticas del proveedor'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time'
+            }
+          },
+          required: ['name', 'type']
+        },
+
+        SupplierContact: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid'
+            },
+            supplierId: {
+              type: 'string',
+              format: 'uuid'
+            },
+            name: {
+              type: 'string',
+              description: 'Nombre del contacto'
+            },
+            position: {
+              type: 'string',
+              description: 'Cargo o posición'
+            },
+            email: {
+              type: 'string',
+              format: 'email'
+            },
+            phone: {
+              type: 'string'
+            },
+            department: {
+              type: 'string',
+              description: 'Departamento'
+            },
+            isPrimary: {
+              type: 'boolean',
+              description: 'Si es el contacto principal'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time'
+            }
+          },
+          required: ['name', 'position']
+        },
+
+        PurchaseOrder: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid'
+            },
+            businessId: {
+              type: 'string',
+              format: 'uuid'
+            },
+            supplierId: {
+              type: 'string',
+              format: 'uuid'
+            },
+            orderNumber: {
+              type: 'string',
+              description: 'Número de orden de compra',
+              example: 'PO2024001'
+            },
+            status: {
+              type: 'string',
+              enum: ['DRAFT', 'SENT', 'CONFIRMED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'CANCELLED'],
+              description: 'Estado de la orden'
+            },
+            items: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  productName: {
+                    type: 'string'
+                  },
+                  quantity: {
+                    type: 'number'
+                  },
+                  unitPrice: {
+                    type: 'number'
+                  },
+                  total: {
+                    type: 'number'
+                  },
+                  unit: {
+                    type: 'string'
+                  },
+                  notes: {
+                    type: 'string'
+                  }
+                }
+              },
+              description: 'Items de la orden'
+            },
+            subtotal: {
+              type: 'number',
+              description: 'Subtotal de la orden'
+            },
+            tax: {
+              type: 'number',
+              description: 'Impuestos'
+            },
+            total: {
+              type: 'number',
+              description: 'Total de la orden'
+            },
+            notes: {
+              type: 'string',
+              description: 'Notas adicionales'
+            },
+            deliveryDate: {
+              type: 'string',
+              format: 'date',
+              description: 'Fecha de entrega esperada'
+            },
+            deliveryAddress: {
+              type: 'object',
+              description: 'Dirección de entrega'
+            },
+            supplier: {
+              $ref: '#/components/schemas/Supplier'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time'
+            }
+          },
+          required: ['supplierId', 'items']
+        },
+
+        SupplierInvoice: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid'
+            },
+            businessId: {
+              type: 'string',
+              format: 'uuid'
+            },
+            supplierId: {
+              type: 'string',
+              format: 'uuid'
+            },
+            purchaseOrderId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID de orden de compra relacionada'
+            },
+            invoiceNumber: {
+              type: 'string',
+              description: 'Número de factura del proveedor'
+            },
+            status: {
+              type: 'string',
+              enum: ['PENDING', 'APPROVED', 'PAID', 'OVERDUE', 'DISPUTED', 'CANCELLED'],
+              description: 'Estado de la factura'
+            },
+            issueDate: {
+              type: 'string',
+              format: 'date',
+              description: 'Fecha de emisión'
+            },
+            dueDate: {
+              type: 'string',
+              format: 'date',
+              description: 'Fecha de vencimiento'
+            },
+            items: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  description: {
+                    type: 'string'
+                  },
+                  quantity: {
+                    type: 'number'
+                  },
+                  unitPrice: {
+                    type: 'number'
+                  },
+                  total: {
+                    type: 'number'
+                  }
+                }
+              },
+              description: 'Items de la factura'
+            },
+            subtotal: {
+              type: 'number'
+            },
+            tax: {
+              type: 'number'
+            },
+            total: {
+              type: 'number'
+            },
+            currency: {
+              type: 'string',
+              default: 'COP'
+            },
+            notes: {
+              type: 'string'
+            },
+            supplier: {
+              $ref: '#/components/schemas/Supplier'
+            },
+            payments: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  amount: {
+                    type: 'number'
+                  },
+                  paymentDate: {
+                    type: 'string',
+                    format: 'date'
+                  },
+                  paymentMethod: {
+                    type: 'string'
+                  },
+                  reference: {
+                    type: 'string'
+                  }
+                }
+              },
+              description: 'Pagos realizados'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time'
+            }
+          },
+          required: ['supplierId', 'invoiceNumber', 'issueDate', 'dueDate', 'total']
+        },
+
+        SupplierEvaluation: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid'
+            },
+            supplierId: {
+              type: 'string',
+              format: 'uuid'
+            },
+            qualityScore: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 5,
+              description: 'Puntuación de calidad (1-5)'
+            },
+            deliveryScore: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 5,
+              description: 'Puntuación de entrega (1-5)'
+            },
+            serviceScore: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 5,
+              description: 'Puntuación de servicio (1-5)'
+            },
+            priceScore: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 5,
+              description: 'Puntuación de precio (1-5)'
+            },
+            averageScore: {
+              type: 'number',
+              description: 'Puntuación promedio calculada'
+            },
+            comments: {
+              type: 'string',
+              description: 'Comentarios sobre la evaluación'
+            },
+            period: {
+              type: 'string',
+              description: 'Período evaluado'
+            },
+            evaluatedBy: {
+              type: 'string',
+              format: 'uuid',
+              description: 'Usuario que realizó la evaluación'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time'
+            }
+          },
+          required: ['qualityScore', 'deliveryScore', 'serviceScore', 'priceScore']
+        },
+
+        SupplierCatalogItem: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid'
+            },
+            supplierId: {
+              type: 'string',
+              format: 'uuid'
+            },
+            supplierSku: {
+              type: 'string',
+              description: 'SKU del proveedor'
+            },
+            name: {
+              type: 'string',
+              description: 'Nombre del producto'
+            },
+            description: {
+              type: 'string',
+              description: 'Descripción del producto'
+            },
+            category: {
+              type: 'string',
+              description: 'Categoría del producto'
+            },
+            price: {
+              type: 'number',
+              description: 'Precio del proveedor'
+            },
+            currency: {
+              type: 'string',
+              default: 'COP'
+            },
+            unit: {
+              type: 'string',
+              description: 'Unidad de medida'
+            },
+            minimumOrder: {
+              type: 'number',
+              description: 'Cantidad mínima de pedido'
+            },
+            leadTime: {
+              type: 'integer',
+              description: 'Tiempo de entrega en días'
+            },
+            available: {
+              type: 'boolean',
+              description: 'Si está disponible',
+              default: true
+            },
+            lastUpdate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Última actualización del precio/disponibilidad'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time'
+            }
+          },
+          required: ['supplierSku', 'name', 'price']
         }
       }
     },
@@ -858,6 +2041,14 @@ const options = {
       {
         name: '📧 Invitaciones Públicas',
         description: 'Endpoints públicos para completar invitaciones'
+      },
+      {
+        name: 'Business Config - Services',
+        description: 'Gestión completa de servicios del negocio - CRUD, categorías, comisiones, imágenes y estadísticas'
+      },
+      {
+        name: 'Business Inventory',
+        description: 'Gestión completa de inventario - Productos, stock, movimientos, categorías, reportes y alertas'
       },
       {
         name: '🏪 Negocio',

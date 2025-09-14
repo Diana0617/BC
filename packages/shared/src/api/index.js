@@ -33,6 +33,10 @@ export { ownerExpensesApi } from './ownerExpensesApi';
 // OWNER trials management API
 export { default as ownerTrialsApi } from './ownerTrialsApi';
 
+// BUSINESS APIs - Para gestión interna del negocio
+export { default as businessSpecialistsApi } from './businessSpecialistsApi';
+export { default as businessServicesApi } from './businessServicesApi';
+
 // 🔄 NEW SYSTEM APIS
 export { autoRenewalApi } from './autoRenewalApi';
 export { ownerBusinessManagementApi } from './ownerBusinessManagementApi';
@@ -65,4 +69,10 @@ export const ownerApis = {
   // Rule Template APIs
   ruleTemplateApi,
   businessRuleApi
+};
+
+// Export all BUSINESS APIs as a group
+export const businessApis = {
+  businessSpecialistsApi,
+  businessServicesApi
 };

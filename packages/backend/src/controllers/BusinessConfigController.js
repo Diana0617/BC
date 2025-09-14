@@ -602,6 +602,317 @@ class BusinessConfigController {
     }
   }
 
+  // ==================== SERVICIOS ====================
+
+  /**
+   * Obtener lista de servicios
+   * GET /api/business/:businessId/config/services
+   */
+  async getServices(req, res) {
+    try {
+      const { businessId } = req.params;
+      const { isActive, category, search, page, limit, sortBy, sortOrder } = req.query;
+      
+      if (req.user.businessId !== businessId && req.user.role !== 'OWNER') {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para acceder a este negocio'
+        });
+      }
+
+      const filters = {
+        ...(isActive !== undefined && { isActive: isActive === 'true' }),
+        ...(category && { category }),
+        ...(search && { search }),
+        ...(page && { page }),
+        ...(limit && { limit }),
+        ...(sortBy && { sortBy }),
+        ...(sortOrder && { sortOrder })
+      };
+
+      const result = await BusinessConfigService.getServices(businessId, filters);
+
+      res.json({
+        success: true,
+        data: result.services,
+        pagination: result.pagination
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Obtener servicio específico
+   * GET /api/business/:businessId/config/services/:serviceId
+   */
+  async getService(req, res) {
+    try {
+      const { businessId, serviceId } = req.params;
+      
+      if (req.user.businessId !== businessId && req.user.role !== 'OWNER') {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para acceder a este negocio'
+        });
+      }
+
+      const service = await BusinessConfigService.getService(serviceId, businessId);
+
+      res.json({
+        success: true,
+        data: service
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Crear nuevo servicio
+   * POST /api/business/:businessId/config/services
+   */
+  async createService(req, res) {
+    try {
+      const { businessId } = req.params;
+      const serviceData = req.body;
+      
+      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para crear servicios en este negocio'
+        });
+      }
+
+      const service = await BusinessConfigService.createService(businessId, serviceData);
+
+      res.status(201).json({
+        success: true,
+        data: service,
+        message: 'Servicio creado exitosamente'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Actualizar servicio existente
+   * PUT /api/business/:businessId/config/services/:serviceId
+   */
+  async updateService(req, res) {
+    try {
+      const { businessId, serviceId } = req.params;
+      const serviceData = req.body;
+      
+      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para actualizar servicios en este negocio'
+        });
+      }
+
+      const service = await BusinessConfigService.updateService(serviceId, serviceData, businessId);
+
+      res.json({
+        success: true,
+        data: service,
+        message: 'Servicio actualizado exitosamente'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Eliminar servicio
+   * DELETE /api/business/:businessId/config/services/:serviceId
+   */
+  async deleteService(req, res) {
+    try {
+      const { businessId, serviceId } = req.params;
+      
+      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para eliminar servicios en este negocio'
+        });
+      }
+
+      const result = await BusinessConfigService.deleteService(serviceId, businessId);
+
+      res.json({
+        success: true,
+        message: result.message
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Activar/Desactivar servicio
+   * PATCH /api/business/:businessId/config/services/:serviceId/status
+   */
+  async toggleServiceStatus(req, res) {
+    try {
+      const { businessId, serviceId } = req.params;
+      const { isActive } = req.body;
+      
+      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para cambiar el estado de servicios en este negocio'
+        });
+      }
+
+      const service = await BusinessConfigService.toggleServiceStatus(serviceId, isActive, businessId);
+
+      res.json({
+        success: true,
+        data: service,
+        message: `Servicio ${isActive ? 'activado' : 'desactivado'} exitosamente`
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Obtener categorías de servicios
+   * GET /api/business/:businessId/config/services/categories
+   */
+  async getServiceCategories(req, res) {
+    try {
+      const { businessId } = req.params;
+      
+      if (req.user.businessId !== businessId && req.user.role !== 'OWNER') {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para acceder a este negocio'
+        });
+      }
+
+      const categories = await BusinessConfigService.getServiceCategories(businessId);
+
+      res.json({
+        success: true,
+        data: categories
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Actualizar imágenes del servicio
+   * POST /api/business/:businessId/config/services/:serviceId/images
+   */
+  async updateServiceImages(req, res) {
+    try {
+      const { businessId, serviceId } = req.params;
+      const { images } = req.body;
+      
+      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para actualizar imágenes en este negocio'
+        });
+      }
+
+      const service = await BusinessConfigService.updateServiceImages(serviceId, images, businessId);
+
+      res.json({
+        success: true,
+        data: service,
+        message: 'Imágenes del servicio actualizadas exitosamente'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Obtener estadísticas de servicios
+   * GET /api/business/:businessId/config/services/stats
+   */
+  async getServicesStats(req, res) {
+    try {
+      const { businessId } = req.params;
+      const { period, startDate, endDate } = req.query;
+      
+      if (req.user.businessId !== businessId && req.user.role !== 'OWNER') {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para acceder a este negocio'
+        });
+      }
+
+      const filters = {};
+      if (startDate && endDate) {
+        filters.startDate = startDate;
+        filters.endDate = endDate;
+      } else if (period) {
+        const now = new Date();
+        switch (period) {
+          case 'week':
+            filters.startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            filters.endDate = now;
+            break;
+          case 'month':
+            filters.startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            filters.endDate = now;
+            break;
+          case 'quarter':
+            const quarter = Math.floor(now.getMonth() / 3);
+            filters.startDate = new Date(now.getFullYear(), quarter * 3, 1);
+            filters.endDate = now;
+            break;
+          case 'year':
+            filters.startDate = new Date(now.getFullYear(), 0, 1);
+            filters.endDate = now;
+            break;
+        }
+      }
+
+      const stats = await BusinessConfigService.getServicesStats(businessId, filters);
+
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
   // ==================== MÉTODOS AUXILIARES ====================
 
   calculateCompletionPercentage(config) {

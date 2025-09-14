@@ -10,6 +10,14 @@ const User = require('./User');
 const Client = require('./Client');
 const Service = require('./Service');
 const Product = require('./Product');
+
+// Modelos de proveedores
+const Supplier = require('./Supplier');
+const SupplierContact = require('./SupplierContact');
+const PurchaseOrder = require('./PurchaseOrder');
+const SupplierInvoice = require('./SupplierInvoice');
+const SupplierEvaluation = require('./SupplierEvaluation');
+const SupplierCatalogItem = require('./SupplierCatalogItem');
 const Appointment = require('./Appointment');
 const PasswordResetToken = require('./PasswordResetToken');
 
@@ -28,6 +36,7 @@ const PlanModule = require('./PlanModule');
 const BusinessSubscription = require('./BusinessSubscription');
 const BusinessClient = require('./BusinessClient');
 const InventoryMovement = require('./InventoryMovement');
+
 const FinancialMovement = require('./FinancialMovement');
 const PaymentIntegration = require('./PaymentIntegration');
 
@@ -260,6 +269,102 @@ Product.hasMany(InventoryMovement, {
 User.hasMany(InventoryMovement, { 
   foreignKey: 'userId', 
   as: 'inventoryMovements' 
+});
+
+// ================================
+// SUPPLIER RELATIONSHIPS
+// ================================
+
+// Supplier relationships
+Business.hasMany(Supplier, { 
+  foreignKey: 'businessId', 
+  as: 'suppliers' 
+});
+Supplier.belongsTo(Business, { 
+  foreignKey: 'businessId', 
+  as: 'business' 
+});
+
+// SupplierContact relationships
+Supplier.hasMany(SupplierContact, { 
+  foreignKey: 'supplierId', 
+  as: 'contacts' 
+});
+SupplierContact.belongsTo(Supplier, { 
+  foreignKey: 'supplierId', 
+  as: 'supplier' 
+});
+
+// PurchaseOrder relationships
+Business.hasMany(PurchaseOrder, { 
+  foreignKey: 'businessId', 
+  as: 'purchaseOrders' 
+});
+Supplier.hasMany(PurchaseOrder, { 
+  foreignKey: 'supplierId', 
+  as: 'purchaseOrders' 
+});
+PurchaseOrder.belongsTo(Business, { 
+  foreignKey: 'businessId', 
+  as: 'business' 
+});
+PurchaseOrder.belongsTo(Supplier, { 
+  foreignKey: 'supplierId', 
+  as: 'supplier' 
+});
+
+// SupplierInvoice relationships
+Business.hasMany(SupplierInvoice, { 
+  foreignKey: 'businessId', 
+  as: 'supplierInvoices' 
+});
+Supplier.hasMany(SupplierInvoice, { 
+  foreignKey: 'supplierId', 
+  as: 'invoices' 
+});
+PurchaseOrder.hasMany(SupplierInvoice, { 
+  foreignKey: 'purchaseOrderId', 
+  as: 'invoices' 
+});
+SupplierInvoice.belongsTo(Business, { 
+  foreignKey: 'businessId', 
+  as: 'business' 
+});
+SupplierInvoice.belongsTo(Supplier, { 
+  foreignKey: 'supplierId', 
+  as: 'supplier' 
+});
+SupplierInvoice.belongsTo(PurchaseOrder, { 
+  foreignKey: 'purchaseOrderId', 
+  as: 'purchaseOrder' 
+});
+
+// SupplierEvaluation relationships
+Supplier.hasMany(SupplierEvaluation, { 
+  foreignKey: 'supplierId', 
+  as: 'evaluations' 
+});
+User.hasMany(SupplierEvaluation, { 
+  foreignKey: 'evaluatedBy', 
+  as: 'supplierEvaluations' 
+});
+SupplierEvaluation.belongsTo(Supplier, { 
+  foreignKey: 'supplierId', 
+  as: 'supplier' 
+});
+SupplierEvaluation.belongsTo(User, { 
+  foreignKey: 'evaluatedBy', 
+  as: 'evaluator' 
+});
+
+// SupplierCatalogItem relationships
+Supplier.hasMany(SupplierCatalogItem, { 
+  foreignKey: 'supplierId', 
+  as: 'catalogItems' 
+});
+SupplierCatalogItem.belongsTo(Supplier, { 
+  foreignKey: 'supplierId', 
+  as: 'supplier' 
 });
 
 // FinancialMovement relationships
@@ -759,6 +864,13 @@ module.exports = {
   Appointment,
   Product,
   InventoryMovement,
+  // Modelos de proveedores
+  Supplier,
+  SupplierContact,
+  PurchaseOrder,
+  SupplierInvoice,
+  SupplierEvaluation,
+  SupplierCatalogItem,
   FinancialMovement,
   PaymentIntegration,
   PasswordResetToken,
