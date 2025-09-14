@@ -12,41 +12,45 @@ const {
 } = require('../models');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
+const { dashboardCache, CACHE_CONFIG } = require('../utils/cache');
 
 class OwnerDashboardService {
 
   /**
-   * Obtener métricas principales del dashboard
+   * Obtener métricas principales del dashboard con cache
    */
   static async getMainMetrics(dateFilter = null) {
-    try {
-      const { startDate, endDate } = this.getDateRange(dateFilter);
+    const cacheKey = `dashboard_metrics_${dateFilter || 'default'}`;
+    
+    return await dashboardCache.wrap(cacheKey, async () => {
+      try {
+        const { startDate, endDate } = this.getDateRange(dateFilter);
 
-      const [
-        totalRevenue,
-        monthlyRevenue,
-        activeSubscriptions,
-        totalBusinesses,
-        newBusinessesThisMonth,
-        subscriptionsByStatus,
-        paymentsByMonth
-      ] = await Promise.all([
-        this.getTotalRevenue(),
-        this.getRevenueInPeriod(startDate, endDate),
-        this.getActiveSubscriptionsCount(),
-        this.getTotalBusinessesCount(),
-        this.getNewBusinessesInPeriod(startDate, endDate),
-        this.getSubscriptionsByStatus(),
-        this.getPaymentsByMonth(6) // últimos 6 meses
-      ]);
+        const [
+          totalRevenue,
+          monthlyRevenue,
+          activeSubscriptions,
+          totalBusinesses,
+          newBusinessesThisMonth,
+          subscriptionsByStatus,
+          paymentsByMonth
+        ] = await Promise.all([
+          this.getTotalRevenue(),
+          this.getRevenueInPeriod(startDate, endDate),
+          this.getActiveSubscriptionsCount(),
+          this.getTotalBusinessesCount(),
+          this.getNewBusinessesInPeriod(startDate, endDate),
+          this.getSubscriptionsByStatus(),
+          this.getPaymentsByMonth(6) // últimos 6 meses
+        ]);
 
-      return {
-        revenue: {
-          total: totalRevenue,
-          thisMonth: monthlyRevenue,
-          trend: await this.getRevenueTrend()
-        },
-        subscriptions: {
+        return {
+          revenue: {
+            total: totalRevenue,
+            thisMonth: monthlyRevenue,
+            trend: await this.getRevenueTrend()
+          },
+          subscriptions: {
           active: activeSubscriptions,
           byStatus: subscriptionsByStatus,
           conversionRate: await this.getTrialToActiveConversionRate()
@@ -62,10 +66,11 @@ class OwnerDashboardService {
         }
       };
 
-    } catch (error) {
-      console.error('Error obteniendo métricas principales:', error);
-      throw new Error('Error calculando métricas del dashboard');
-    }
+      } catch (error) {
+        console.error('Error obteniendo métricas principales:', error);
+        throw new Error('Error calculando métricas del dashboard');
+      }
+    }, CACHE_CONFIG.DASHBOARD_METRICS);
   }
 
   /**
@@ -75,7 +80,7 @@ class OwnerDashboardService {
     try {
       const result = await SubscriptionPayment.sum('amount', {
         where: {
-          status: 'CONFIRMED'
+          status: 'COMPLETED'
         }
       });
       return result || 0;
@@ -92,8 +97,8 @@ class OwnerDashboardService {
     try {
       const result = await SubscriptionPayment.sum('amount', {
         where: {
-          status: 'CONFIRMED',
-          paymentDate: {
+          status: 'COMPLETED',
+          paidAt: {
             [Op.between]: [startDate, endDate]
           }
         }
@@ -107,27 +112,32 @@ class OwnerDashboardService {
 
   /**
    * Obtener tendencia de ingresos (comparación con período anterior)
+   * Obtener tendencia de ingresos con cache
    */
   static async getRevenueTrend() {
-    try {
-      const now = new Date();
-      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+    const cacheKey = 'dashboard_revenue_trend';
+    
+    return await dashboardCache.wrap(cacheKey, async () => {
+      try {
+        const now = new Date();
+        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
-      const [currentMonth, lastMonth] = await Promise.all([
-        this.getRevenueInPeriod(currentMonthStart, now),
-        this.getRevenueInPeriod(lastMonthStart, lastMonthEnd)
-      ]);
+        const [currentMonth, lastMonth] = await Promise.all([
+          this.getRevenueInPeriod(currentMonthStart, now),
+          this.getRevenueInPeriod(lastMonthStart, lastMonthEnd)
+        ]);
 
-      if (lastMonth === 0) return 0;
-      
-      const trend = ((currentMonth - lastMonth) / lastMonth) * 100;
-      return parseFloat(trend.toFixed(2));
-    } catch (error) {
-      console.error('Error calculando tendencia de ingresos:', error);
-      return 0;
-    }
+        if (lastMonth === 0) return 0;
+        
+        const trend = ((currentMonth - lastMonth) / lastMonth) * 100;
+        return parseFloat(trend.toFixed(2));
+      } catch (error) {
+        console.error('Error calculando tendencia de ingresos:', error);
+        return 0;
+      }
+    }, CACHE_CONFIG.DASHBOARD_REVENUE);
   }
 
   /**
@@ -230,27 +240,25 @@ class OwnerDashboardService {
    */
   static async getTrialToActiveConversionRate() {
     try {
-      const [totalTrials, conversions] = await Promise.all([
+      // Temporal: usar un método simplificado sin previousStatus
+      const [totalTrials, activeSubscriptions] = await Promise.all([
         BusinessSubscription.count({
           where: {
-            [Op.or]: [
-              { status: 'TRIAL' },
-              { status: 'ACTIVE' },
-              { status: 'EXPIRED' }
-            ]
+            status: 'TRIAL'
           }
         }),
         BusinessSubscription.count({
           where: {
-            status: 'ACTIVE',
-            previousStatus: 'TRIAL'
+            status: 'ACTIVE'
           }
         })
       ]);
 
       if (totalTrials === 0) return 0;
       
-      const rate = (conversions / totalTrials) * 100;
+      // Temporal: calcular una tasa estimada basada en activos vs trials
+      const totalActiveAndTrial = totalTrials + activeSubscriptions;
+      const rate = totalActiveAndTrial === 0 ? 0 : (activeSubscriptions / totalActiveAndTrial) * 100;
       return parseFloat(rate.toFixed(2));
     } catch (error) {
       console.error('Error calculando tasa de conversión:', error);
@@ -259,74 +267,82 @@ class OwnerDashboardService {
   }
 
   /**
-   * Obtener pagos agrupados por mes para gráficos
+   * Obtener pagos agrupados por mes para gráficos con cache
    */
   static async getPaymentsByMonth(months = 6) {
-    try {
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - months);
+    const cacheKey = `dashboard_payments_by_month_${months}`;
+    
+    return await dashboardCache.wrap(cacheKey, async () => {
+      try {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - months);
 
-      const results = await SubscriptionPayment.findAll({
-        attributes: [
-          [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('paymentDate')), 'month'],
-          [sequelize.fn('SUM', sequelize.col('amount')), 'total'],
-          [sequelize.fn('COUNT', sequelize.col('id')), 'count']
-        ],
-        where: {
-          status: 'CONFIRMED',
-          paymentDate: {
-            [Op.between]: [startDate, endDate]
-          }
-        },
-        group: [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('paymentDate'))],
-        order: [[sequelize.fn('DATE_TRUNC', 'month', sequelize.col('paymentDate')), 'ASC']],
-        raw: true
-      });
+        const results = await SubscriptionPayment.findAll({
+          attributes: [
+            [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('paidAt')), 'month'],
+            [sequelize.fn('SUM', sequelize.col('amount')), 'total'],
+            [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+          ],
+          where: {
+            status: 'COMPLETED',
+            paidAt: {
+              [Op.between]: [startDate, endDate]
+            }
+          },
+          group: [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('paidAt'))],
+          order: [[sequelize.fn('DATE_TRUNC', 'month', sequelize.col('paidAt')), 'ASC']],
+          raw: true
+        });
 
-      return results.map(item => ({
-        month: item.month,
-        total: parseFloat(item.total || 0),
-        count: parseInt(item.count || 0)
-      }));
-    } catch (error) {
-      console.error('Error obteniendo pagos por mes:', error);
-      return [];
-    }
+        return results.map(item => ({
+          month: item.month,
+          total: parseFloat(item.total || 0),
+          count: parseInt(item.count || 0)
+        }));
+      } catch (error) {
+        console.error('Error obteniendo pagos por mes:', error);
+        return [];
+      }
+    }, CACHE_CONFIG.DASHBOARD_REVENUE);
   }
 
   /**
-   * Obtener distribución de planes para gráfico circular
+   * Obtener distribución de planes para gráfico circular con cache
    */
   static async getPlanDistribution() {
-    try {
-      const results = await BusinessSubscription.findAll({
-        attributes: [
-          [sequelize.col('SubscriptionPlan.name'), 'planName'],
-          [sequelize.fn('COUNT', sequelize.col('BusinessSubscription.id')), 'count']
-        ],
-        include: [
-          {
-            model: SubscriptionPlan,
-            as: 'plan',
-            attributes: []
-          }
-        ],
-        where: {
-          status: ['ACTIVE', 'TRIAL']
-        },
-        group: ['SubscriptionPlan.id', 'SubscriptionPlan.name'],
-        raw: true
-      });
+    const cacheKey = 'dashboard_plan_distribution';
+    
+    return await dashboardCache.wrap(cacheKey, async () => {
+      try {
+        const results = await BusinessSubscription.findAll({
+          attributes: [
+            [sequelize.col('plan.name'), 'planName'],
+            [sequelize.fn('COUNT', sequelize.col('BusinessSubscription.id')), 'count']
+          ],
+          include: [
+            {
+              model: SubscriptionPlan,
+              as: 'plan',
+              attributes: []
+            }
+          ],
+          where: {
+            status: ['ACTIVE', 'TRIAL']
+          },
+          group: ['plan.id', 'plan.name'],
+          raw: true
+        });
 
-      return results.map(item => ({
-        name: item.planName,
-        value: parseInt(item.count)
-      }));
-    } catch (error) {
-      console.error('Error obteniendo distribución de planes:', error);
-      return [];
-    }
+        return results.map(item => ({
+          name: item.planName,
+          value: parseInt(item.count)
+        }));
+      } catch (error) {
+        console.error('Error obteniendo distribución de planes:', error);
+        return [];
+      }
+    }, CACHE_CONFIG.DASHBOARD_PLANS);
   }
 
   /**

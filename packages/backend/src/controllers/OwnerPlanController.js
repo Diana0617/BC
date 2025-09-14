@@ -29,36 +29,47 @@ class OwnerPlanController {
         whereClause.status = status.toUpperCase();
       }
 
+      // Primero obtenemos los planes básicos
       const plans = await SubscriptionPlan.findAndCountAll({
         where: whereClause,
-        include: [
-          {
-            model: BusinessSubscription,
-            as: 'subscriptions',
-            attributes: [
-              [sequelize.fn('COUNT', sequelize.col('subscriptions.id')), 'totalSubscriptions'],
-              [sequelize.fn('COUNT', sequelize.literal('CASE WHEN subscriptions.status = \'ACTIVE\' THEN 1 END')), 'activeSubscriptions']
-            ],
-            required: false
-          }
-        ],
         order: [[sortBy, sortOrder]],
         limit: parseInt(limit),
-        offset: parseInt(offset),
-        group: ['SubscriptionPlan.id'],
-        subQuery: false
+        offset: parseInt(offset)
       });
+
+      // Luego obtenemos las estadísticas de suscripciones para cada plan
+      const plansWithSubscriptionStats = await Promise.all(
+        plans.rows.map(async (plan) => {
+          const [totalSubscriptions, activeSubscriptions] = await Promise.all([
+            BusinessSubscription.count({
+              where: { subscriptionPlanId: plan.id }
+            }),
+            BusinessSubscription.count({
+              where: { 
+                subscriptionPlanId: plan.id,
+                status: 'ACTIVE'
+              }
+            })
+          ]);
+
+          return {
+            ...plan.toJSON(),
+            totalSubscriptions,
+            activeSubscriptions
+          };
+        })
+      );
 
       // Calcular estadísticas adicionales para cada plan
       const plansWithStats = await Promise.all(
-        plans.rows.map(async (plan) => {
+        plansWithSubscriptionStats.map(async (plan) => {
           const [revenue, conversionRate] = await Promise.all([
             this.getPlanRevenue(plan.id),
             this.getPlanConversionRate(plan.id)
           ]);
 
           return {
-            ...plan.toJSON(),
+            ...plan,
             statistics: {
               revenue,
               conversionRate,
@@ -479,8 +490,8 @@ class OwnerPlanController {
       const result = await sequelize.query(`
         SELECT COALESCE(SUM(sp.amount), 0) as revenue
         FROM subscription_payments sp
-        JOIN business_subscriptions bs ON sp.subscription_id = bs.id
-        WHERE bs.plan_id = :planId AND sp.status = 'CONFIRMED'
+        JOIN business_subscriptions bs ON sp."businessSubscriptionId" = bs.id
+        WHERE bs."subscriptionPlanId" = :planId AND sp.status = 'COMPLETED'
       `, {
         replacements: { planId },
         type: sequelize.QueryTypes.SELECT
@@ -498,18 +509,18 @@ class OwnerPlanController {
    */
   static async getPlanConversionRate(planId) {
     try {
+      // Temporal: usar un método simplificado sin previousStatus
       const [total, converted] = await Promise.all([
         BusinessSubscription.count({
           where: {
-            planId,
+            subscriptionPlanId: planId,
             status: { [Op.in]: ['TRIAL', 'ACTIVE', 'EXPIRED'] }
           }
         }),
         BusinessSubscription.count({
           where: {
-            planId,
-            status: 'ACTIVE',
-            previousStatus: 'TRIAL'
+            subscriptionPlanId: planId,
+            status: 'ACTIVE'
           }
         })
       ]);
@@ -533,7 +544,7 @@ class OwnerPlanController {
           COUNT(bs.id) as subscription_count,
           RANK() OVER (ORDER BY COUNT(bs.id) DESC) as rank
         FROM subscription_plans sp
-        LEFT JOIN business_subscriptions bs ON sp.id = bs.plan_id
+        LEFT JOIN business_subscriptions bs ON sp.id = bs."subscriptionPlanId"
         WHERE sp.status = 'ACTIVE'
         GROUP BY sp.id, sp.name
         ORDER BY subscription_count DESC

@@ -150,8 +150,8 @@ const initialState = {
   // UI State
   ui: {
     selectedWidget: null,
-    autoRefresh: true,
-    refreshInterval: 30000, // 30 seconds
+    autoRefresh: false, // Desactivado por defecto para evitar sobrecarga
+    refreshInterval: 300000, // 5 minutes (más conservador)
     lastRefresh: null,
     showExportModal: false,
     selectedExportFormat: 'json',
