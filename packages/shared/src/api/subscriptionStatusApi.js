@@ -3,7 +3,7 @@
  * Endpoints para validar acceso, límites y uso de suscripciones
  */
 
-import { apiClient } from './client';
+import { apiClient } from './client.js';
 
 /**
  * API para gestión y verificación de estados de suscripción

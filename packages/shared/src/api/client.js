@@ -1,4 +1,5 @@
-import { API_CONFIG, REQUEST_CONFIG } from '../constants/api.js';
+import { API_CONFIG, REQUEST_CONFIG, STORAGE_KEYS } from '../constants/api.js';
+import { StorageHelper } from '../utils/storage.js';
 
 // Base API class
 class ApiClient {
@@ -10,8 +11,7 @@ class ApiClient {
   // Get auth token from storage
   getAuthToken() {
     if (typeof window !== 'undefined') {
-      // Web environment - use localStorage
-      return localStorage.getItem('auth_token') || localStorage.getItem('AUTH_TOKEN');
+      return StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
     } else {
       // React Native environment - TODO: implement AsyncStorage
       return null;

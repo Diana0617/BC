@@ -1,4 +1,5 @@
-import apiClient from './client';
+import { apiClient } from './client.js';
+
 
 // ================================
 // OWNER TRIAL MANAGEMENT API

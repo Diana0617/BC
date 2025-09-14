@@ -1,5 +1,4 @@
-import apiClient from './client';
-
+import { apiClient } from './client.js';
 // ================================
 // BUSINESS SPECIALISTS MANAGEMENT API
 // ================================

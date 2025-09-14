@@ -42,6 +42,10 @@ build/Release
 node_modules/
 jspm_packages/
 
+# Package files (if you want to ignore them)
+package-lock.json
+**/package-lock.json
+
 # Optional npm cache directory
 .npm
 

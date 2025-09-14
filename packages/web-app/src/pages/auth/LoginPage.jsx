@@ -28,8 +28,14 @@ const LoginPage = () => {
         credentials, 
         rememberMe: false 
       })).unwrap()
+git       
       if (result.token) {
-        navigate('/dashboard')
+        // Redirigir según el rol del usuario
+        if (result.user?.role === 'OWNER') {
+          navigate('/owner/dashboard')
+        } else {
+          navigate('/dashboard')
+        }
       }
     } catch (error) {
       console.error('Login failed:', error)
@@ -41,10 +47,10 @@ const LoginPage = () => {
       <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-10 w-full max-w-md shadow-2xl border border-white/20">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2 bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-            Beauty Control
+            Business Control
           </h1>
           <p className="text-gray-600 text-lg">
-            Gestiona tu salón de belleza
+            Gestiona tu negocio de manera inteligente
           </p>
         </div>
 

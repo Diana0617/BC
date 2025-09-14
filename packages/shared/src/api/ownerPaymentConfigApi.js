@@ -1,4 +1,4 @@
-import apiClient from './client';
+import { apiClient } from './client.js';
 
 /**
  * API para configuración de pagos del Owner

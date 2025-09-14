@@ -12,7 +12,7 @@ export const ownerDashboardApi = {
    * @returns {Promise} Métricas principales
    */
   getMainMetrics: async (period = 'thisMonth') => {
-    const response = await api.get('/owner/dashboard/metrics', {
+    const response = await api.get('/api/owner/dashboard/metrics', {
       params: { period }
     });
     return response.data.data;
@@ -24,7 +24,7 @@ export const ownerDashboardApi = {
    * @returns {Promise} Datos del gráfico de ingresos
    */
   getRevenueChart: async (months = 6) => {
-    const response = await api.get('/owner/dashboard/revenue-chart', {
+    const response = await api.get('/api/owner/dashboard/revenue-chart', {
       params: { months }
     });
     return response.data.data;
@@ -35,7 +35,7 @@ export const ownerDashboardApi = {
    * @returns {Promise} Distribución de planes
    */
   getPlanDistribution: async () => {
-    const response = await api.get('/owner/dashboard/plan-distribution');
+    const response = await api.get('/api/owner/dashboard/plan-distribution');
     return response.data.data;
   },
 
@@ -45,7 +45,7 @@ export const ownerDashboardApi = {
    * @returns {Promise} Lista de top negocios
    */
   getTopBusinesses: async (limit = 10) => {
-    const response = await api.get('/owner/dashboard/top-businesses', {
+    const response = await api.get('/api/owner/dashboard/top-businesses', {
       params: { limit }
     });
     return response.data.data;
@@ -57,7 +57,7 @@ export const ownerDashboardApi = {
    * @returns {Promise} Estadísticas de crecimiento
    */
   getGrowthStats: async (period = 'thisMonth') => {
-    const response = await api.get('/owner/dashboard/growth-stats', {
+    const response = await api.get('/api/owner/dashboard/growth-stats', {
       params: { period }
     });
     return response.data.data;
@@ -68,7 +68,7 @@ export const ownerDashboardApi = {
    * @returns {Promise} Resumen rápido con widgets
    */
   getQuickSummary: async () => {
-    const response = await api.get('/owner/dashboard/quick-summary');
+    const response = await api.get('/api/owner/dashboard/summary');
     return response.data.data;
   },
 
@@ -79,7 +79,7 @@ export const ownerDashboardApi = {
    * @returns {Promise} Datos exportados
    */
   exportData: async (format = 'json', period = 'thisMonth') => {
-    const response = await api.get('/owner/dashboard/export', {
+    const response = await api.get('/api/owner/dashboard/export', {
       params: { format, period }
     });
     return response.data.data;
@@ -90,7 +90,7 @@ export const ownerDashboardApi = {
    * @returns {Promise} Estadísticas globales de la plataforma
    */
   getPlatformStats: async () => {
-    const response = await api.get('/owner/stats/platform');
+    const response = await api.get('/api/owner/stats/platform');
     return response.data.data;
   }
 };
