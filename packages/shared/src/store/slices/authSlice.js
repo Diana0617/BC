@@ -21,7 +21,8 @@ export const loginUser = createAsyncThunk(
   async ({ credentials, rememberMe }, { rejectWithValue }) => {
     try {
       const response = await authAPI.login(credentials);
-      const { token, user } = response.data;
+      const { user, tokens } = response.data.data; // Acceder correctamente a la estructura de respuesta
+      const token = tokens.accessToken;
 
       // Store token and user data
       if (typeof window !== 'undefined') {
@@ -45,7 +46,7 @@ export const getUserProfile = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await authAPI.getProfile();
-      return response.data;
+      return response.data.data.user; // Acceder correctamente a la estructura de respuesta
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -137,7 +138,9 @@ const getInitialAuthState = () => {
     try {
       user = JSON.parse(userDataStr);
     } catch (error) {
-      console.warn('Failed to parse user data from storage');
+      console.warn('Failed to parse user data from storage - clearing invalid data');
+      // Limpiar datos inválidos
+      StorageHelper.removeItem(STORAGE_KEYS.USER_DATA);
     }
   }
 

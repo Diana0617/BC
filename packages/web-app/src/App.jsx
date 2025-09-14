@@ -1,16 +1,21 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { checkExistingSession } from '../../shared/src/index.js'
+import { checkExistingSession, OwnerOnlyRoute } from '../../shared/src/index.js'
 
 // Pages
 import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 
-// Layout component
+// Owner Pages
+import OwnerLayout from './layouts/OwnerLayout'
+import OwnerDashboardPage from './pages/owner/OwnerDashboardPage'
+import OwnerPlansPage from './pages/owner/OwnerPlansPage'
+import OwnerModulesPage from './pages/owner/OwnerModulesPage'
+
 function AppLayout() {
   const dispatch = useDispatch()
-  const { isAuthenticated, isLoading } = useSelector(state => state.auth)
+  const { isAuthenticated, isLoading, user } = useSelector(state => state.auth)
 
   useEffect(() => {
     // Check for existing session on app load
@@ -36,25 +41,49 @@ function AppLayout() {
           {/* Public routes */}
           <Route 
             path="/login" 
-            element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" />} 
+            element={!isAuthenticated ? <LoginPage /> : <Navigate to={user?.role === 'OWNER' ? "/owner/dashboard" : "/dashboard"} />} 
           />
           
-          {/* Protected routes */}
+          {/* Owner routes - Protected */}
+          <Route path="/owner" element={
+            <OwnerOnlyRoute>
+              <OwnerLayout />
+            </OwnerOnlyRoute>
+          }>
+            <Route path="dashboard" element={<OwnerDashboardPage />} />
+            <Route path="plans" element={<OwnerPlansPage />} />
+            <Route path="modules" element={<OwnerModulesPage />} />
+            {/* TODO: Agregar más rutas de Owner */}
+            <Route path="businesses" element={<div>Negocios - En desarrollo</div>} />
+            <Route path="reports" element={<div>Reportes - En desarrollo</div>} />
+            <Route path="payments" element={<div>Pagos - En desarrollo</div>} />
+            <Route path="settings" element={<div>Configuración - En desarrollo</div>} />
+          </Route>
+          
+          {/* Regular user routes */}
           <Route 
             path="/dashboard" 
-            element={isAuthenticated ? <DashboardPage /> : <Navigate to="/login" />} 
+            element={isAuthenticated && user?.role !== 'OWNER' ? <DashboardPage /> : <Navigate to="/login" />} 
           />
           
           {/* Root redirect */}
           <Route 
             path="/" 
-            element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} 
+            element={<Navigate to={
+              isAuthenticated 
+                ? (user?.role === 'OWNER' ? "/owner/dashboard" : "/dashboard")
+                : "/login"
+            } />} 
           />
           
           {/* Catch all route */}
           <Route 
             path="*" 
-            element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} 
+            element={<Navigate to={
+              isAuthenticated 
+                ? (user?.role === 'OWNER' ? "/owner/dashboard" : "/dashboard")
+                : "/login"
+            } />} 
           />
         </Routes>
       </div>

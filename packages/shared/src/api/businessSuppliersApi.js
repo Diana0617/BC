@@ -12,7 +12,7 @@
  * - Reportes de compras y rendimiento
  */
 
-import { apiClient } from './apiClient';
+import { apiClient } from './client.js';
 
 // ================================
 // CONSTANTES Y CONFIGURACIONES

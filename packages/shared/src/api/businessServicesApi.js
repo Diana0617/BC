@@ -10,7 +10,7 @@
  * - Estadísticas y reportes
  */
 
-import { apiClient } from './apiClient';
+import { apiClient } from './client.js';
 
 // ================================
 // CONSTANTES Y CONFIGURACIONES

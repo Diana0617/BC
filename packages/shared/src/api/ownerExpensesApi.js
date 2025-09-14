@@ -3,7 +3,7 @@
  * Endpoints para crear, gestionar y reportar gastos con comprobantes en Cloudinary
  */
 
-import { apiClient } from './client';
+import { apiClient } from './client.js';
 
 const EXPENSES_ENDPOINTS = {
   CREATE: '/owner/expenses',

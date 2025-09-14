@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from './client.js';
 
 // ================================
 // OWNER RULE TEMPLATE API
