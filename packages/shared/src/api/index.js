@@ -48,6 +48,10 @@ export { subscriptionStatusApi } from './subscriptionStatusApi';
 export { ruleTemplateApi } from './ruleTemplateApi';
 export { businessRuleApi } from './businessRuleApi';
 
+// 💳 ADVANCE PAYMENTS & BUSINESS VALIDATION APIS
+export { default as advancePaymentApi } from './advancePaymentApi';
+export { default as businessValidationApi } from './businessValidationApi';
+
 // Export all OWNER APIs as a group
 export const ownerApis = {
   ownerApi,

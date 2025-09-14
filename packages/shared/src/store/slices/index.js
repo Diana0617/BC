@@ -27,6 +27,11 @@ export { default as publicInvitationSlice } from './publicInvitationSlice';
 export { default as ownerPaymentConfigSlice } from './ownerPaymentConfigSlice';
 export { default as ownerFinancialReportsSlice } from './ownerFinancialReportsSlice';
 
+// 💳 ADVANCE PAYMENTS & BUSINESS VALIDATION SLICES
+export { default as advancePaymentSlice } from './advancePaymentSlice';
+export { default as businessValidationSlice } from './businessValidationSlice';
+export { default as businessRuleSlice } from './businessRuleSlice';
+
 // Export all OWNER slices as a group
 export const ownerSlices = {
   ownerStatsSlice,

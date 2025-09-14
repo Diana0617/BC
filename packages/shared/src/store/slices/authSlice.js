@@ -9,9 +9,17 @@ export const registerUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await authAPI.register(userData);
-      return response.data;
+      // Extract user and tokens from nested structure
+      const { user, tokens } = response.data.data;
+      const { accessToken, refreshToken } = tokens;
+      
+      return {
+        user,
+        token: accessToken,
+        refreshToken
+      };
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -21,21 +29,28 @@ export const loginUser = createAsyncThunk(
   async ({ credentials, rememberMe }, { rejectWithValue }) => {
     try {
       const response = await authAPI.login(credentials);
-      const { token, user } = response.data;
+      
+      // Extract user and token from the new response structure
+      const { user, tokens } = response.data.data;
+      const token = tokens.accessToken;
+      const refreshToken = tokens.refreshToken;
 
       // Store token and user data
       if (typeof window !== 'undefined') {
         StorageHelper.setItem(STORAGE_KEYS.AUTH_TOKEN, token, rememberMe);
         StorageHelper.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user), rememberMe);
         
+        // Store refresh token
+        StorageHelper.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken, rememberMe);
+        
         if (rememberMe) {
           StorageHelper.setItem(STORAGE_KEYS.REMEMBER_EMAIL, credentials.email, true);
         }
       }
 
-      return { token, user };
+      return { token, user, refreshToken, expiresIn: tokens.expiresIn };
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -109,6 +124,7 @@ export const checkExistingSession = createAsyncThunk(
       }
       
       const token = StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      const refreshToken = StorageHelper.getItem(STORAGE_KEYS.REFRESH_TOKEN);
       const userDataStr = StorageHelper.getItem(STORAGE_KEYS.USER_DATA);
       
       if (!token || !userDataStr) {
@@ -116,7 +132,7 @@ export const checkExistingSession = createAsyncThunk(
       }
       
       const user = JSON.parse(userDataStr);
-      return { token, user };
+      return { token, refreshToken, user };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -126,10 +142,11 @@ export const checkExistingSession = createAsyncThunk(
 // Helper function to get initial state from storage
 const getInitialAuthState = () => {
   if (typeof window === 'undefined') {
-    return { token: null, user: null };
+    return { token: null, refreshToken: null, user: null };
   }
 
   const token = StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
+  const refreshToken = StorageHelper.getItem(STORAGE_KEYS.REFRESH_TOKEN);
   const userDataStr = StorageHelper.getItem(STORAGE_KEYS.USER_DATA);
   
   let user = null;
@@ -141,13 +158,14 @@ const getInitialAuthState = () => {
     }
   }
 
-  return { token, user };
+  return { token, refreshToken, user };
 };
 
 const initialState = {
   // Auth state
   isAuthenticated: false,
   token: null,
+  refreshToken: null,
   user: null,
   
   // Loading states
@@ -214,12 +232,14 @@ const authSlice = createSlice({
     logout: (state) => {
       state.isAuthenticated = false;
       state.token = null;
+      state.refreshToken = null;
       state.user = null;
       state.error = null;
       
       // Clear storage
       if (typeof window !== 'undefined') {
         StorageHelper.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+        StorageHelper.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
         StorageHelper.removeItem(STORAGE_KEYS.USER_DATA);
       }
     },
@@ -264,6 +284,7 @@ const authSlice = createSlice({
         state.isLoggingIn = false;
         state.isAuthenticated = true;
         state.token = action.payload.token;
+        state.refreshToken = action.payload.refreshToken;
         state.user = action.payload.user;
       })
       .addCase(loginUser.rejected, (state, action) => {
@@ -364,10 +385,12 @@ const authSlice = createSlice({
         if (action.payload) {
           state.isAuthenticated = true;
           state.token = action.payload.token;
+          state.refreshToken = action.payload.refreshToken;
           state.user = action.payload.user;
         } else {
           state.isAuthenticated = false;
           state.token = null;
+          state.refreshToken = null;
           state.user = null;
         }
       })
@@ -375,6 +398,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isAuthenticated = false;
         state.token = null;
+        state.refreshToken = null;
         state.user = null;
       });
   }

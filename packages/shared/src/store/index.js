@@ -21,6 +21,9 @@ import ownerPaymentConfigReducer from './slices/ownerPaymentConfigSlice';
 // 🔧 RULE TEMPLATE SYSTEM REDUCERS
 import ruleTemplateReducer from './slices/ruleTemplateSlice';
 import businessRuleReducer from './slices/businessRuleSlice';
+// 💳 ADVANCE PAYMENTS & BUSINESS VALIDATION REDUCERS
+import advancePaymentReducer from './slices/advancePaymentSlice';
+import businessValidationReducer from './slices/businessValidationSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -47,7 +50,10 @@ export const createStore = (preloadedState = {}) => {
       ownerPaymentConfig: ownerPaymentConfigReducer,
       // 🔧 RULE TEMPLATE SYSTEM REDUCERS
       ruleTemplate: ruleTemplateReducer,
-      businessRule: businessRuleReducer
+      businessRule: businessRuleReducer,
+      // 💳 ADVANCE PAYMENTS & BUSINESS VALIDATION REDUCERS
+      advancePayment: advancePaymentReducer,
+      businessValidation: businessValidationReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>
