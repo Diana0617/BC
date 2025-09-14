@@ -36,6 +36,11 @@ export { default as advancePaymentSlice } from './advancePaymentSlice';
 // 🔐 BUSINESS VALIDATION SYSTEM SLICES
 export { default as businessValidationSlice } from './businessValidationSlice';
 
+// 💳 ADVANCE PAYMENTS & BUSINESS VALIDATION SLICES
+export { default as advancePaymentSlice } from './advancePaymentSlice';
+export { default as businessValidationSlice } from './businessValidationSlice';
+export { default as businessRuleSlice } from './businessRuleSlice';
+
 // Export all OWNER slices as a group
 export const ownerSlices = {
   ownerStatsSlice,

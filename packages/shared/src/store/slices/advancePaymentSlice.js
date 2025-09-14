@@ -1,328 +1,442 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import advancePaymentApi from '../../api/advancePaymentApi';
 
-// 🎯 ASYNC THUNKS
+// ================================
+// ASYNC THUNKS - Advance Payment Management
+// ================================
 
-// Verificar si una cita requiere pago adelantado
+/**
+ * Verificar si se requiere pago adelantado para una cita
+ */
 export const checkAdvancePaymentRequired = createAsyncThunk(
-  'advancePayment/checkRequired',
-  async ({ appointmentId, businessId }, { rejectWithValue }) => {
+  'advancePayment/checkAdvancePaymentRequired',
+  async ({ businessId, serviceId, appointmentDate }, { rejectWithValue }) => {
     try {
-      const response = await advancePaymentApi.checkAdvancePaymentRequired(appointmentId, businessId);
+      const response = await advancePaymentApi.checkAdvancePaymentRequired({
+        businessId,
+        serviceId,
+        appointmentDate
+      });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || 'Error verificando pago adelantado requerido'
+      );
     }
   }
 );
 
-// Iniciar proceso de pago adelantado con Wompi
+/**
+ * Iniciar proceso de pago adelantado con Wompi
+ */
 export const initiateAdvancePayment = createAsyncThunk(
-  'advancePayment/initiate',
-  async ({ appointmentId, businessId, customerData }, { rejectWithValue }) => {
+  'advancePayment/initiateAdvancePayment',
+  async (paymentData, { rejectWithValue }) => {
     try {
-      const response = await advancePaymentApi.initiateAdvancePayment(appointmentId, businessId, customerData);
+      const response = await advancePaymentApi.initiateAdvancePayment(paymentData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || 'Error iniciando pago adelantado'
+      );
     }
   }
 );
 
-// Consultar estado del pago adelantado
+/**
+ * Confirmar pago adelantado (webhook o manual)
+ */
+export const confirmAdvancePayment = createAsyncThunk(
+  'advancePayment/confirmAdvancePayment',
+  async ({ transactionId, wompiData }, { rejectWithValue }) => {
+    try {
+      const response = await advancePaymentApi.confirmAdvancePayment({
+        transactionId,
+        wompiData
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Error confirmando pago adelantado'
+      );
+    }
+  }
+);
+
+/**
+ * Verificar estado de transacción de pago adelantado
+ */
 export const checkAdvancePaymentStatus = createAsyncThunk(
-  'advancePayment/checkStatus',
-  async ({ appointmentId, businessId }, { rejectWithValue }) => {
+  'advancePayment/checkAdvancePaymentStatus',
+  async (transactionId, { rejectWithValue }) => {
     try {
-      const response = await advancePaymentApi.checkAdvancePaymentStatus(appointmentId, businessId);
+      const response = await advancePaymentApi.checkAdvancePaymentStatus(transactionId);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || 'Error verificando estado de pago'
+      );
     }
   }
 );
 
-// Obtener configuración de pagos adelantados del negocio
-export const getBusinessAdvancePaymentConfig = createAsyncThunk(
-  'advancePayment/getBusinessConfig',
-  async ({ businessId }, { rejectWithValue }) => {
-    try {
-      const response = await advancePaymentApi.getBusinessAdvancePaymentConfig(businessId);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
+// ================================
+// INITIAL STATE
+// ================================
 
-// 🏪 INITIAL STATE
 const initialState = {
-  // Estados de carga
+  // Payment requirement check
+  paymentRequired: false,
+  paymentRequiredLoaded: false,
+  requirementDetails: null,
+  
+  // Payment process
+  currentPayment: null,
+  paymentUrl: null,
+  transactionId: null,
+  
+  // Payment status
+  paymentStatus: null, // 'pending', 'approved', 'declined', 'error'
+  paymentConfirmed: false,
+  
+  // Wompi integration
+  wompiData: null,
+  publicKey: null,
+  
+  // UI State
   loading: {
-    checkingRequired: false,
-    initiating: false,
-    checkingStatus: false,
-    loadingConfig: false
+    checkRequired: false,
+    initiate: false,
+    confirm: false,
+    status: false
   },
   
-  // Errores
+  // Errors
   errors: {
     checkRequired: null,
     initiate: null,
-    checkStatus: null,
-    config: null
+    confirm: null,
+    status: null
   },
   
-  // Datos de pago adelantado actual
-  currentPayment: {
-    appointmentId: null,
-    required: false,
+  // Success messages
+  success: {
+    initiate: null,
+    confirm: null
+  },
+  
+  // Modal states
+  modals: {
+    paymentRequired: false,
+    paymentProcess: false,
+    paymentConfirmation: false
+  },
+  
+  // Flow control
+  canProceedWithAppointment: false,
+  paymentStep: 'check', // 'check', 'required', 'process', 'confirm', 'complete'
+  
+  // Payment details for current transaction
+  paymentDetails: {
     amount: 0,
-    percentage: 0,
-    status: 'NOT_REQUIRED', // NOT_REQUIRED, PENDING, PAID, FAILED, REFUNDED
-    wompiReference: null,
-    paymentLink: null,
-    wompiPublicKey: null,
-    paidAt: null,
-    transactionData: null
-  },
-  
-  // Configuración del negocio
-  businessConfig: {
-    requireDeposit: false,
-    depositPercentage: 50,
-    depositMinAmount: 20000,
-    allowPartialPayments: true,
-    autoRefundCancellations: false
-  },
-  
-  // Historial de pagos (para caché)
-  paymentsHistory: {},
-  
-  // Estado de la UI
-  ui: {
-    showPaymentModal: false,
-    selectedAppointmentId: null,
-    paymentInProgress: false
+    currency: 'COP',
+    description: '',
+    reference: '',
+    businessId: null,
+    serviceId: null,
+    appointmentDate: null
   }
 };
 
-// 🍰 SLICE
+// ================================
+// SLICE
+// ================================
+
 const advancePaymentSlice = createSlice({
   name: 'advancePayment',
   initialState,
   reducers: {
-    // Limpiar errores
-    clearErrors: (state) => {
-      state.errors = {
-        checkRequired: null,
-        initiate: null,
-        checkStatus: null,
-        config: null
-      };
-    },
-    
-    // Limpiar pago actual
-    clearCurrentPayment: (state) => {
-      state.currentPayment = initialState.currentPayment;
-    },
-    
     // UI Actions
-    showPaymentModal: (state, action) => {
-      state.ui.showPaymentModal = true;
-      state.ui.selectedAppointmentId = action.payload.appointmentId;
+    setPaymentStep: (state, action) => {
+      state.paymentStep = action.payload;
     },
     
-    hidePaymentModal: (state) => {
-      state.ui.showPaymentModal = false;
-      state.ui.selectedAppointmentId = null;
-      state.ui.paymentInProgress = false;
+    setCanProceedWithAppointment: (state, action) => {
+      state.canProceedWithAppointment = action.payload;
     },
     
-    setPaymentInProgress: (state, action) => {
-      state.ui.paymentInProgress = action.payload;
+    updatePaymentDetails: (state, action) => {
+      state.paymentDetails = { ...state.paymentDetails, ...action.payload };
     },
     
-    // Actualizar estado desde webhook (para cuando llegue confirmación)
-    updatePaymentFromWebhook: (state, action) => {
-      const { appointmentId, status, transactionData, paidAt } = action.payload;
+    clearPaymentDetails: (state) => {
+      state.paymentDetails = initialState.paymentDetails;
+    },
+    
+    // Modal actions
+    openModal: (state, action) => {
+      const { modal, data } = action.payload;
+      state.modals[modal] = true;
       
-      // Actualizar pago actual si coincide
-      if (state.currentPayment.appointmentId === appointmentId) {
-        state.currentPayment.status = status;
-        state.currentPayment.transactionData = transactionData;
-        state.currentPayment.paidAt = paidAt;
-      }
-      
-      // Actualizar en historial
-      if (state.paymentsHistory[appointmentId]) {
-        state.paymentsHistory[appointmentId] = {
-          ...state.paymentsHistory[appointmentId],
-          status,
-          transactionData,
-          paidAt
-        };
+      if (modal === 'paymentRequired' && data) {
+        state.requirementDetails = data;
+      } else if (modal === 'paymentProcess' && data) {
+        state.currentPayment = data;
       }
     },
     
-    // Cachear información de pago
-    cachePaymentInfo: (state, action) => {
-      const { appointmentId, paymentInfo } = action.payload;
-      state.paymentsHistory[appointmentId] = paymentInfo;
+    closeModal: (state, action) => {
+      const modal = action.payload;
+      state.modals[modal] = false;
+      
+      if (modal === 'paymentRequired') {
+        state.requirementDetails = null;
+      } else if (modal === 'paymentProcess') {
+        state.currentPayment = null;
+      }
+    },
+    
+    closeAllModals: (state) => {
+      Object.keys(state.modals).forEach(modal => {
+        state.modals[modal] = false;
+      });
+      state.requirementDetails = null;
+      state.currentPayment = null;
+    },
+    
+    // Payment flow actions
+    resetPaymentFlow: (state) => {
+      state.paymentRequired = false;
+      state.paymentRequiredLoaded = false;
+      state.requirementDetails = null;
+      state.currentPayment = null;
+      state.paymentUrl = null;
+      state.transactionId = null;
+      state.paymentStatus = null;
+      state.paymentConfirmed = false;
+      state.wompiData = null;
+      state.canProceedWithAppointment = false;
+      state.paymentStep = 'check';
+      state.paymentDetails = initialState.paymentDetails;
+    },
+    
+    setWompiData: (state, action) => {
+      state.wompiData = action.payload;
+    },
+    
+    setPublicKey: (state, action) => {
+      state.publicKey = action.payload;
+    },
+    
+    updatePaymentStatus: (state, action) => {
+      state.paymentStatus = action.payload;
+    },
+    
+    // Clear messages
+    clearErrors: (state) => {
+      Object.keys(state.errors).forEach(key => {
+        state.errors[key] = null;
+      });
+    },
+    
+    clearSuccess: (state) => {
+      Object.keys(state.success).forEach(key => {
+        state.success[key] = null;
+      });
+    },
+    
+    clearMessages: (state) => {
+      Object.keys(state.errors).forEach(key => {
+        state.errors[key] = null;
+      });
+      Object.keys(state.success).forEach(key => {
+        state.success[key] = null;
+      });
     }
   },
   
   extraReducers: (builder) => {
-    // 🔍 CHECK ADVANCE PAYMENT REQUIRED
+    // Check Advance Payment Required
     builder
       .addCase(checkAdvancePaymentRequired.pending, (state) => {
-        state.loading.checkingRequired = true;
+        state.loading.checkRequired = true;
         state.errors.checkRequired = null;
       })
       .addCase(checkAdvancePaymentRequired.fulfilled, (state, action) => {
-        state.loading.checkingRequired = false;
-        state.currentPayment = {
-          ...state.currentPayment,
-          appointmentId: action.meta.arg.appointmentId,
-          required: action.payload.required,
-          amount: action.payload.amount,
-          percentage: action.payload.percentage,
-          status: action.payload.currentStatus || 'NOT_REQUIRED'
-        };
+        state.loading.checkRequired = false;
+        state.paymentRequired = action.payload.required;
+        state.paymentRequiredLoaded = true;
+        state.requirementDetails = action.payload;
         
-        // Cachear información
-        state.paymentsHistory[action.meta.arg.appointmentId] = action.payload;
+        if (!action.payload.required) {
+          state.canProceedWithAppointment = true;
+          state.paymentStep = 'complete';
+        } else {
+          state.paymentStep = 'required';
+        }
       })
       .addCase(checkAdvancePaymentRequired.rejected, (state, action) => {
-        state.loading.checkingRequired = false;
+        state.loading.checkRequired = false;
         state.errors.checkRequired = action.payload;
+        state.paymentRequiredLoaded = true;
       });
     
-    // 🚀 INITIATE ADVANCE PAYMENT
+    // Initiate Advance Payment
     builder
       .addCase(initiateAdvancePayment.pending, (state) => {
-        state.loading.initiating = true;
+        state.loading.initiate = true;
         state.errors.initiate = null;
-        state.ui.paymentInProgress = true;
+        state.success.initiate = null;
       })
       .addCase(initiateAdvancePayment.fulfilled, (state, action) => {
-        state.loading.initiating = false;
-        state.currentPayment = {
-          ...state.currentPayment,
-          status: 'PENDING',
-          wompiReference: action.payload.wompiReference,
-          paymentLink: action.payload.paymentLink,
-          wompiPublicKey: action.payload.wompiPublicKey
-        };
-        
-        // Actualizar historial
-        const appointmentId = action.meta.arg.appointmentId;
-        state.paymentsHistory[appointmentId] = {
-          ...state.paymentsHistory[appointmentId],
-          ...action.payload
-        };
+        state.loading.initiate = false;
+        state.currentPayment = action.payload.payment;
+        state.paymentUrl = action.payload.paymentUrl;
+        state.transactionId = action.payload.transactionId;
+        state.publicKey = action.payload.publicKey;
+        state.success.initiate = action.payload.message;
+        state.paymentStep = 'process';
       })
       .addCase(initiateAdvancePayment.rejected, (state, action) => {
-        state.loading.initiating = false;
+        state.loading.initiate = false;
         state.errors.initiate = action.payload;
-        state.ui.paymentInProgress = false;
       });
     
-    // ✅ CHECK ADVANCE PAYMENT STATUS
+    // Confirm Advance Payment
+    builder
+      .addCase(confirmAdvancePayment.pending, (state) => {
+        state.loading.confirm = true;
+        state.errors.confirm = null;
+        state.success.confirm = null;
+      })
+      .addCase(confirmAdvancePayment.fulfilled, (state, action) => {
+        state.loading.confirm = false;
+        state.paymentConfirmed = true;
+        state.paymentStatus = action.payload.status;
+        state.canProceedWithAppointment = action.payload.status === 'approved';
+        state.success.confirm = action.payload.message;
+        state.paymentStep = action.payload.status === 'approved' ? 'complete' : 'error';
+      })
+      .addCase(confirmAdvancePayment.rejected, (state, action) => {
+        state.loading.confirm = false;
+        state.errors.confirm = action.payload;
+        state.paymentStep = 'error';
+      });
+    
+    // Check Advance Payment Status
     builder
       .addCase(checkAdvancePaymentStatus.pending, (state) => {
-        state.loading.checkingStatus = true;
-        state.errors.checkStatus = null;
+        state.loading.status = true;
+        state.errors.status = null;
       })
       .addCase(checkAdvancePaymentStatus.fulfilled, (state, action) => {
-        state.loading.checkingStatus = false;
+        state.loading.status = false;
+        state.paymentStatus = action.payload.status;
+        state.currentPayment = action.payload.payment;
         
-        const appointmentId = action.meta.arg.appointmentId;
-        const statusData = action.payload;
-        
-        // Actualizar pago actual si coincide
-        if (state.currentPayment.appointmentId === appointmentId) {
-          state.currentPayment = {
-            ...state.currentPayment,
-            status: statusData.status,
-            paidAt: statusData.paidAt,
-            transactionData: statusData.transactionData
-          };
+        if (action.payload.status === 'approved') {
+          state.paymentConfirmed = true;
+          state.canProceedWithAppointment = true;
+          state.paymentStep = 'complete';
+        } else if (action.payload.status === 'declined' || action.payload.status === 'error') {
+          state.paymentStep = 'error';
         }
-        
-        // Actualizar historial
-        state.paymentsHistory[appointmentId] = {
-          ...state.paymentsHistory[appointmentId],
-          ...statusData
-        };
       })
       .addCase(checkAdvancePaymentStatus.rejected, (state, action) => {
-        state.loading.checkingStatus = false;
-        state.errors.checkStatus = action.payload;
-      });
-    
-    // ⚙️ GET BUSINESS ADVANCE PAYMENT CONFIG
-    builder
-      .addCase(getBusinessAdvancePaymentConfig.pending, (state) => {
-        state.loading.loadingConfig = true;
-        state.errors.config = null;
-      })
-      .addCase(getBusinessAdvancePaymentConfig.fulfilled, (state, action) => {
-        state.loading.loadingConfig = false;
-        state.businessConfig = action.payload.depositSettings;
-      })
-      .addCase(getBusinessAdvancePaymentConfig.rejected, (state, action) => {
-        state.loading.loadingConfig = false;
-        state.errors.config = action.payload;
+        state.loading.status = false;
+        state.errors.status = action.payload;
       });
   }
 });
 
-// 📤 ACTIONS EXPORT
+// ================================
+// ACTIONS
+// ================================
+
 export const {
+  setPaymentStep,
+  setCanProceedWithAppointment,
+  updatePaymentDetails,
+  clearPaymentDetails,
+  openModal,
+  closeModal,
+  closeAllModals,
+  resetPaymentFlow,
+  setWompiData,
+  setPublicKey,
+  updatePaymentStatus,
   clearErrors,
-  clearCurrentPayment,
-  showPaymentModal,
-  hidePaymentModal,
-  setPaymentInProgress,
-  updatePaymentFromWebhook,
-  cachePaymentInfo
+  clearSuccess,
+  clearMessages
 } = advancePaymentSlice.actions;
 
-// 🎯 SELECTORS
-export const selectAdvancePaymentState = (state) => state.advancePayment;
-export const selectAdvancePaymentLoading = (state) => state.advancePayment.loading;
-export const selectAdvancePaymentErrors = (state) => state.advancePayment.errors;
+// ================================
+// SELECTORS
+// ================================
+
+// Basic selectors
+export const selectPaymentRequired = (state) => state.advancePayment.paymentRequired;
+export const selectPaymentRequiredLoaded = (state) => state.advancePayment.paymentRequiredLoaded;
+export const selectRequirementDetails = (state) => state.advancePayment.requirementDetails;
 export const selectCurrentPayment = (state) => state.advancePayment.currentPayment;
-export const selectBusinessConfig = (state) => state.advancePayment.businessConfig;
-export const selectPaymentsHistory = (state) => state.advancePayment.paymentsHistory;
-export const selectAdvancePaymentUI = (state) => state.advancePayment.ui;
+export const selectPaymentUrl = (state) => state.advancePayment.paymentUrl;
+export const selectTransactionId = (state) => state.advancePayment.transactionId;
+export const selectPaymentStatus = (state) => state.advancePayment.paymentStatus;
+export const selectPaymentConfirmed = (state) => state.advancePayment.paymentConfirmed;
+export const selectWompiData = (state) => state.advancePayment.wompiData;
+export const selectPublicKey = (state) => state.advancePayment.publicKey;
+export const selectCanProceedWithAppointment = (state) => state.advancePayment.canProceedWithAppointment;
+export const selectPaymentStep = (state) => state.advancePayment.paymentStep;
+export const selectPaymentDetails = (state) => state.advancePayment.paymentDetails;
 
-// Selector para obtener información de pago de una cita específica
-export const selectPaymentForAppointment = (appointmentId) => (state) => {
-  if (state.advancePayment.currentPayment.appointmentId === appointmentId) {
-    return state.advancePayment.currentPayment;
-  }
-  return state.advancePayment.paymentsHistory[appointmentId] || null;
+// Loading selectors
+export const selectCheckRequiredLoading = (state) => state.advancePayment.loading.checkRequired;
+export const selectInitiateLoading = (state) => state.advancePayment.loading.initiate;
+export const selectConfirmLoading = (state) => state.advancePayment.loading.confirm;
+export const selectStatusLoading = (state) => state.advancePayment.loading.status;
+
+// Error selectors
+export const selectCheckRequiredError = (state) => state.advancePayment.errors.checkRequired;
+export const selectInitiateError = (state) => state.advancePayment.errors.initiate;
+export const selectConfirmError = (state) => state.advancePayment.errors.confirm;
+export const selectStatusError = (state) => state.advancePayment.errors.status;
+
+// Success selectors
+export const selectInitiateSuccess = (state) => state.advancePayment.success.initiate;
+export const selectConfirmSuccess = (state) => state.advancePayment.success.confirm;
+
+// Modal selectors
+export const selectModals = (state) => state.advancePayment.modals;
+export const selectPaymentRequiredModalOpen = (state) => state.advancePayment.modals.paymentRequired;
+export const selectPaymentProcessModalOpen = (state) => state.advancePayment.modals.paymentProcess;
+export const selectPaymentConfirmationModalOpen = (state) => state.advancePayment.modals.paymentConfirmation;
+
+// Computed selectors
+export const selectIsPaymentInProgress = (state) => {
+  const step = selectPaymentStep(state);
+  return ['required', 'process', 'confirm'].includes(step);
 };
 
-// Selector para verificar si una cita tiene pago requerido
-export const selectIsPaymentRequired = (appointmentId) => (state) => {
-  const payment = selectPaymentForAppointment(appointmentId)(state);
-  return payment?.required || false;
+export const selectIsPaymentComplete = (state) => {
+  return selectPaymentStep(state) === 'complete' && selectCanProceedWithAppointment(state);
 };
 
-// Selector para verificar si una cita está pagada
-export const selectIsPaymentPaid = (appointmentId) => (state) => {
-  const payment = selectPaymentForAppointment(appointmentId)(state);
-  return payment?.status === 'PAID';
+export const selectHasPaymentError = (state) => {
+  return selectPaymentStep(state) === 'error' || Object.values(state.advancePayment.errors).some(error => error !== null);
 };
 
-// Selector para verificar si se puede proceder con una cita
-export const selectCanProceedWithAppointment = (appointmentId) => (state) => {
-  const payment = selectPaymentForAppointment(appointmentId)(state);
-  if (!payment?.required) return true; // No requiere pago, se puede proceder
-  return payment?.status === 'PAID'; // Requiere pago y está pagado
+export const selectPaymentSummary = (state) => {
+  const details = selectPaymentDetails(state);
+  const currentPayment = selectCurrentPayment(state);
+  const status = selectPaymentStatus(state);
+  
+  return {
+    amount: details.amount || currentPayment?.amount || 0,
+    currency: details.currency || 'COP',
+    description: details.description || currentPayment?.description || '',
+    status: status || 'pending',
+    canProceed: selectCanProceedWithAppointment(state)
+  };
 };
 
 export default advancePaymentSlice.reducer;

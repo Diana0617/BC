@@ -1,382 +1,512 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import businessValidationApi from '../../api/businessValidationApi';
 
-// 🎯 ASYNC THUNKS
+// ================================
+// ASYNC THUNKS - Business Validation Management
+// ================================
 
-// Validar acceso a un business específico
+/**
+ * Validar acceso a un negocio específico
+ */
 export const validateBusinessAccess = createAsyncThunk(
-  'businessValidation/validateAccess',
-  async ({ businessId, userId }, { rejectWithValue }) => {
+  'businessValidation/validateBusinessAccess',
+  async ({ businessId, userId, moduleId }, { rejectWithValue }) => {
     try {
-      const response = await businessValidationApi.validateBusinessAccess(businessId, userId);
+      const response = await businessValidationApi.validateBusinessAccess({
+        businessId,
+        userId,
+        moduleId
+      });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || 'Error validando acceso al negocio'
+      );
     }
   }
 );
 
-// Obtener businesses accesibles para el usuario actual
-export const getAccessibleBusinesses = createAsyncThunk(
-  'businessValidation/getAccessible',
-  async (_, { rejectWithValue }) => {
+/**
+ * Obtener negocios disponibles para el usuario
+ */
+export const getAvailableBusinesses = createAsyncThunk(
+  'businessValidation/getAvailableBusinesses',
+  async (userId, { rejectWithValue }) => {
     try {
-      const response = await businessValidationApi.getAccessibleBusinesses();
+      const response = await businessValidationApi.getAvailableBusinesses(userId);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || 'Error obteniendo negocios disponibles'
+      );
     }
   }
 );
 
-// Cambiar business activo
+/**
+ * Cambiar negocio activo
+ */
 export const switchActiveBusiness = createAsyncThunk(
-  'businessValidation/switchActive',
-  async ({ businessId }, { rejectWithValue, getState }) => {
+  'businessValidation/switchActiveBusiness',
+  async (businessId, { rejectWithValue }) => {
     try {
-      // Primero validar acceso
-      const state = getState();
-      const userId = state.auth.user?.id;
-      
-      const response = await businessValidationApi.validateBusinessAccess(businessId, userId);
-      
-      if (response.data.hasAccess) {
-        return {
-          businessId,
-          businessData: response.data.businessData,
-          permissions: response.data.permissions
-        };
-      } else {
-        return rejectWithValue('No tienes acceso a este negocio');
-      }
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-
-// Verificar permisos específicos en el business actual
-export const checkBusinessPermission = createAsyncThunk(
-  'businessValidation/checkPermission',
-  async ({ permission, businessId }, { rejectWithValue }) => {
-    try {
-      const response = await businessValidationApi.checkBusinessPermission(businessId, permission);
+      const response = await businessValidationApi.switchActiveBusiness(businessId);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || 'Error cambiando negocio activo'
+      );
     }
   }
 );
 
-// 🏪 INITIAL STATE
-const initialState = {
-  // Estados de carga
-  loading: {
-    validatingAccess: false,
-    loadingBusinesses: false,
-    switchingBusiness: false,
-    checkingPermission: false
-  },
-  
-  // Errores
-  errors: {
-    validation: null,
-    businesses: null,
-    switching: null,
-    permission: null
-  },
-  
-  // Business activo
-  activeBusiness: {
-    id: null,
-    name: null,
-    hasAccess: false,
-    permissions: [],
-    role: null, // 'OWNER', 'ADMIN', 'SPECIALIST', 'RECEPTIONIST'
-    isOwner: false
-  },
-  
-  // Lista de businesses accesibles
-  accessibleBusinesses: [],
-  
-  // Caché de validaciones
-  validationCache: {},
-  
-  // Configuración de multitenancy
-  multitenancy: {
-    enabled: true,
-    strictValidation: true,
-    allowCrossBusiness: false
-  },
-  
-  // Estado de la UI
-  ui: {
-    showBusinessSelector: false,
-    businessSelectorLoading: false,
-    selectedBusinessId: null
+/**
+ * Verificar permisos específicos en un módulo
+ */
+export const checkModulePermissions = createAsyncThunk(
+  'businessValidation/checkModulePermissions',
+  async ({ businessId, moduleId, permissions }, { rejectWithValue }) => {
+    try {
+      const response = await businessValidationApi.checkModulePermissions({
+        businessId,
+        moduleId,
+        permissions
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Error verificando permisos del módulo'
+      );
+    }
   }
+);
+
+// ================================
+// INITIAL STATE
+// ================================
+
+const initialState = {
+  // Current business context
+  activeBusiness: null,
+  activeBusinessId: null,
+  
+  // Available businesses
+  availableBusinesses: [],
+  availableBusinessesLoaded: false,
+  
+  // Access validation
+  hasBusinessAccess: false,
+  accessValidated: false,
+  accessDetails: null,
+  
+  // Module permissions
+  modulePermissions: {},
+  permissionsLoaded: {},
+  
+  // Business switching
+  switchingBusiness: false,
+  
+  // Validation cache
+  validationCache: {},
+  cacheExpiry: {},
+  
+  // UI State
+  loading: {
+    validateAccess: false,
+    availableBusinesses: false,
+    switchBusiness: false,
+    modulePermissions: false
+  },
+  
+  // Errors
+  errors: {
+    validateAccess: null,
+    availableBusinesses: null,
+    switchBusiness: null,
+    modulePermissions: null
+  },
+  
+  // Success messages
+  success: {
+    validateAccess: null,
+    switchBusiness: null
+  },
+  
+  // Modal states
+  modals: {
+    businessSelector: false,
+    accessDenied: false,
+    permissionsRequired: false
+  },
+  
+  // Validation settings
+  autoValidate: true,
+  cacheTimeout: 300000, // 5 minutes
+  
+  // User context
+  userRole: null,
+  userBusinessId: null,
+  userPermissions: []
 };
 
-// 🍰 SLICE
+// ================================
+// SLICE
+// ================================
+
 const businessValidationSlice = createSlice({
   name: 'businessValidation',
   initialState,
   reducers: {
-    // Limpiar errores
-    clearErrors: (state) => {
-      state.errors = {
-        validation: null,
-        businesses: null,
-        switching: null,
-        permission: null
-      };
+    // Business context actions
+    setActiveBusiness: (state, action) => {
+      state.activeBusiness = action.payload;
+      state.activeBusinessId = action.payload?.id || null;
     },
     
-    // Limpiar caché de validaciones
-    clearValidationCache: (state) => {
-      state.validationCache = {};
+    setActiveBusinessId: (state, action) => {
+      state.activeBusinessId = action.payload;
     },
     
-    // Limpiar business activo (logout)
     clearActiveBusiness: (state) => {
-      state.activeBusiness = initialState.activeBusiness;
-      state.accessibleBusinesses = [];
+      state.activeBusiness = null;
+      state.activeBusinessId = null;
+      state.hasBusinessAccess = false;
+      state.accessValidated = false;
+    },
+    
+    // User context actions
+    setUserContext: (state, action) => {
+      const { role, businessId, permissions } = action.payload;
+      state.userRole = role;
+      state.userBusinessId = businessId;
+      state.userPermissions = permissions || [];
+    },
+    
+    clearUserContext: (state) => {
+      state.userRole = null;
+      state.userBusinessId = null;
+      state.userPermissions = [];
+    },
+    
+    // Access validation actions
+    setBusinessAccess: (state, action) => {
+      state.hasBusinessAccess = action.payload;
+      state.accessValidated = true;
+    },
+    
+    clearBusinessAccess: (state) => {
+      state.hasBusinessAccess = false;
+      state.accessValidated = false;
+      state.accessDetails = null;
+    },
+    
+    // Module permissions actions
+    setModulePermissions: (state, action) => {
+      const { moduleId, permissions } = action.payload;
+      state.modulePermissions[moduleId] = permissions;
+      state.permissionsLoaded[moduleId] = true;
+    },
+    
+    clearModulePermissions: (state, action) => {
+      const moduleId = action.payload;
+      delete state.modulePermissions[moduleId];
+      delete state.permissionsLoaded[moduleId];
+    },
+    
+    clearAllModulePermissions: (state) => {
+      state.modulePermissions = {};
+      state.permissionsLoaded = {};
+    },
+    
+    // Cache management
+    setCacheData: (state, action) => {
+      const { key, data, expiry } = action.payload;
+      state.validationCache[key] = data;
+      state.cacheExpiry[key] = expiry || Date.now() + state.cacheTimeout;
+    },
+    
+    clearCacheData: (state, action) => {
+      const key = action.payload;
+      delete state.validationCache[key];
+      delete state.cacheExpiry[key];
+    },
+    
+    clearAllCache: (state) => {
       state.validationCache = {};
+      state.cacheExpiry = {};
     },
     
-    // UI Actions
-    showBusinessSelector: (state) => {
-      state.ui.showBusinessSelector = true;
+    // Settings actions
+    setAutoValidate: (state, action) => {
+      state.autoValidate = action.payload;
     },
     
-    hideBusinessSelector: (state) => {
-      state.ui.showBusinessSelector = false;
-      state.ui.selectedBusinessId = null;
+    setCacheTimeout: (state, action) => {
+      state.cacheTimeout = action.payload;
     },
     
-    selectBusinessForSwitch: (state, action) => {
-      state.ui.selectedBusinessId = action.payload;
-    },
-    
-    // Configurar multitenancy
-    updateMultitenancyConfig: (state, action) => {
-      state.multitenancy = {
-        ...state.multitenancy,
-        ...action.payload
-      };
-    },
-    
-    // Cachear resultado de validación
-    cacheValidationResult: (state, action) => {
-      const { businessId, userId, result } = action.payload;
-      const cacheKey = `${businessId}-${userId}`;
-      state.validationCache[cacheKey] = {
-        ...result,
-        cachedAt: Date.now()
-      };
-    },
-    
-    // Obtener validación desde caché
-    getCachedValidation: (state, action) => {
-      const { businessId, userId } = action.payload;
-      const cacheKey = `${businessId}-${userId}`;
-      const cached = state.validationCache[cacheKey];
+    // Modal actions
+    openModal: (state, action) => {
+      const { modal, data } = action.payload;
+      state.modals[modal] = true;
       
-      if (cached && (Date.now() - cached.cachedAt) < 5 * 60 * 1000) { // 5 minutos de caché
-        return cached;
+      if (modal === 'accessDenied' && data) {
+        state.accessDetails = data;
       }
-      return null;
     },
     
-    // Invalidar caché específico
-    invalidateBusinessCache: (state, action) => {
-      const { businessId } = action.payload;
-      Object.keys(state.validationCache).forEach(key => {
-        if (key.startsWith(`${businessId}-`)) {
-          delete state.validationCache[key];
-        }
+    closeModal: (state, action) => {
+      const modal = action.payload;
+      state.modals[modal] = false;
+      
+      if (modal === 'accessDenied') {
+        state.accessDetails = null;
+      }
+    },
+    
+    closeAllModals: (state) => {
+      Object.keys(state.modals).forEach(modal => {
+        state.modals[modal] = false;
       });
+      state.accessDetails = null;
+    },
+    
+    // Clear messages
+    clearErrors: (state) => {
+      Object.keys(state.errors).forEach(key => {
+        state.errors[key] = null;
+      });
+    },
+    
+    clearSuccess: (state) => {
+      Object.keys(state.success).forEach(key => {
+        state.success[key] = null;
+      });
+    },
+    
+    clearMessages: (state) => {
+      Object.keys(state.errors).forEach(key => {
+        state.errors[key] = null;
+      });
+      Object.keys(state.success).forEach(key => {
+        state.success[key] = null;
+      });
+    },
+    
+    // Reset actions
+    resetValidation: (state) => {
+      state.hasBusinessAccess = false;
+      state.accessValidated = false;
+      state.accessDetails = null;
+      state.modulePermissions = {};
+      state.permissionsLoaded = {};
+      state.validationCache = {};
+      state.cacheExpiry = {};
     }
   },
   
   extraReducers: (builder) => {
-    // 🔍 VALIDATE BUSINESS ACCESS
+    // Validate Business Access
     builder
       .addCase(validateBusinessAccess.pending, (state) => {
-        state.loading.validatingAccess = true;
-        state.errors.validation = null;
+        state.loading.validateAccess = true;
+        state.errors.validateAccess = null;
+        state.success.validateAccess = null;
       })
       .addCase(validateBusinessAccess.fulfilled, (state, action) => {
-        state.loading.validatingAccess = false;
-        const { businessId, userId } = action.meta.arg;
-        const result = action.payload;
+        state.loading.validateAccess = false;
+        state.hasBusinessAccess = action.payload.hasAccess;
+        state.accessValidated = true;
+        state.accessDetails = action.payload;
+        state.success.validateAccess = action.payload.message;
         
-        // Actualizar business activo si es el que se está validando
-        if (businessId === state.activeBusiness.id || !state.activeBusiness.id) {
-          state.activeBusiness = {
-            id: businessId,
-            name: result.businessData?.name || '',
-            hasAccess: result.hasAccess,
-            permissions: result.permissions || [],
-            role: result.userRole,
-            isOwner: result.userRole === 'OWNER'
-          };
-        }
-        
-        // Cachear resultado
-        const cacheKey = `${businessId}-${userId}`;
-        state.validationCache[cacheKey] = {
-          ...result,
-          cachedAt: Date.now()
-        };
+        // Cache the validation result
+        const cacheKey = `access_${action.payload.businessId}_${action.payload.userId}`;
+        state.validationCache[cacheKey] = action.payload;
+        state.cacheExpiry[cacheKey] = Date.now() + state.cacheTimeout;
       })
       .addCase(validateBusinessAccess.rejected, (state, action) => {
-        state.loading.validatingAccess = false;
-        state.errors.validation = action.payload;
-        
-        // Si falló la validación, limpiar acceso
-        state.activeBusiness.hasAccess = false;
+        state.loading.validateAccess = false;
+        state.errors.validateAccess = action.payload;
+        state.hasBusinessAccess = false;
+        state.accessValidated = true;
       });
     
-    // 🏢 GET ACCESSIBLE BUSINESSES
+    // Get Available Businesses
     builder
-      .addCase(getAccessibleBusinesses.pending, (state) => {
-        state.loading.loadingBusinesses = true;
-        state.errors.businesses = null;
+      .addCase(getAvailableBusinesses.pending, (state) => {
+        state.loading.availableBusinesses = true;
+        state.errors.availableBusinesses = null;
       })
-      .addCase(getAccessibleBusinesses.fulfilled, (state, action) => {
-        state.loading.loadingBusinesses = false;
-        state.accessibleBusinesses = action.payload.businesses || [];
-        
-        // Si no hay business activo y hay businesses disponibles, seleccionar el primero
-        if (!state.activeBusiness.id && state.accessibleBusinesses.length > 0) {
-          const firstBusiness = state.accessibleBusinesses[0];
-          state.activeBusiness = {
-            id: firstBusiness.id,
-            name: firstBusiness.name,
-            hasAccess: true,
-            permissions: firstBusiness.permissions || [],
-            role: firstBusiness.role,
-            isOwner: firstBusiness.role === 'OWNER'
-          };
-        }
+      .addCase(getAvailableBusinesses.fulfilled, (state, action) => {
+        state.loading.availableBusinesses = false;
+        state.availableBusinesses = action.payload;
+        state.availableBusinessesLoaded = true;
       })
-      .addCase(getAccessibleBusinesses.rejected, (state, action) => {
-        state.loading.loadingBusinesses = false;
-        state.errors.businesses = action.payload;
+      .addCase(getAvailableBusinesses.rejected, (state, action) => {
+        state.loading.availableBusinesses = false;
+        state.errors.availableBusinesses = action.payload;
+        state.availableBusinessesLoaded = true;
       });
     
-    // 🔄 SWITCH ACTIVE BUSINESS
+    // Switch Active Business
     builder
       .addCase(switchActiveBusiness.pending, (state) => {
-        state.loading.switchingBusiness = true;
-        state.errors.switching = null;
-        state.ui.businessSelectorLoading = true;
+        state.loading.switchBusiness = true;
+        state.errors.switchBusiness = null;
+        state.success.switchBusiness = null;
+        state.switchingBusiness = true;
       })
       .addCase(switchActiveBusiness.fulfilled, (state, action) => {
-        state.loading.switchingBusiness = false;
-        state.ui.businessSelectorLoading = false;
-        state.ui.showBusinessSelector = false;
+        state.loading.switchBusiness = false;
+        state.switchingBusiness = false;
+        state.activeBusiness = action.payload.business;
+        state.activeBusinessId = action.payload.business.id;
+        state.success.switchBusiness = action.payload.message;
         
-        const { businessId, businessData, permissions } = action.payload;
-        
-        state.activeBusiness = {
-          id: businessId,
-          name: businessData?.name || '',
-          hasAccess: true,
-          permissions: permissions || [],
-          role: businessData?.userRole,
-          isOwner: businessData?.userRole === 'OWNER'
-        };
+        // Clear previous validation data
+        state.hasBusinessAccess = true;
+        state.accessValidated = true;
+        state.modulePermissions = {};
+        state.permissionsLoaded = {};
       })
       .addCase(switchActiveBusiness.rejected, (state, action) => {
-        state.loading.switchingBusiness = false;
-        state.ui.businessSelectorLoading = false;
-        state.errors.switching = action.payload;
+        state.loading.switchBusiness = false;
+        state.switchingBusiness = false;
+        state.errors.switchBusiness = action.payload;
       });
     
-    // ✅ CHECK BUSINESS PERMISSION
+    // Check Module Permissions
     builder
-      .addCase(checkBusinessPermission.pending, (state) => {
-        state.loading.checkingPermission = true;
-        state.errors.permission = null;
+      .addCase(checkModulePermissions.pending, (state) => {
+        state.loading.modulePermissions = true;
+        state.errors.modulePermissions = null;
       })
-      .addCase(checkBusinessPermission.fulfilled, (state, action) => {
-        state.loading.checkingPermission = false;
-        // Los permisos se manejan en el resultado de la acción
+      .addCase(checkModulePermissions.fulfilled, (state, action) => {
+        state.loading.modulePermissions = false;
+        const { moduleId, permissions } = action.payload;
+        state.modulePermissions[moduleId] = permissions;
+        state.permissionsLoaded[moduleId] = true;
+        
+        // Cache the permissions result
+        const cacheKey = `permissions_${state.activeBusinessId}_${moduleId}`;
+        state.validationCache[cacheKey] = action.payload;
+        state.cacheExpiry[cacheKey] = Date.now() + state.cacheTimeout;
       })
-      .addCase(checkBusinessPermission.rejected, (state, action) => {
-        state.loading.checkingPermission = false;
-        state.errors.permission = action.payload;
+      .addCase(checkModulePermissions.rejected, (state, action) => {
+        state.loading.modulePermissions = false;
+        state.errors.modulePermissions = action.payload;
       });
   }
 });
 
-// 📤 ACTIONS EXPORT
+// ================================
+// ACTIONS
+// ================================
+
 export const {
-  clearErrors,
-  clearValidationCache,
+  setActiveBusiness,
+  setActiveBusinessId,
   clearActiveBusiness,
-  showBusinessSelector,
-  hideBusinessSelector,
-  selectBusinessForSwitch,
-  updateMultitenancyConfig,
-  cacheValidationResult,
-  getCachedValidation,
-  invalidateBusinessCache
+  setUserContext,
+  clearUserContext,
+  setBusinessAccess,
+  clearBusinessAccess,
+  setModulePermissions,
+  clearModulePermissions,
+  clearAllModulePermissions,
+  setCacheData,
+  clearCacheData,
+  clearAllCache,
+  setAutoValidate,
+  setCacheTimeout,
+  openModal,
+  closeModal,
+  closeAllModals,
+  clearErrors,
+  clearSuccess,
+  clearMessages,
+  resetValidation
 } = businessValidationSlice.actions;
 
-// 🎯 SELECTORS
-export const selectBusinessValidationState = (state) => state.businessValidation;
-export const selectBusinessValidationLoading = (state) => state.businessValidation.loading;
-export const selectBusinessValidationErrors = (state) => state.businessValidation.errors;
+// ================================
+// SELECTORS
+// ================================
+
+// Basic selectors
 export const selectActiveBusiness = (state) => state.businessValidation.activeBusiness;
-export const selectAccessibleBusinesses = (state) => state.businessValidation.accessibleBusinesses;
-export const selectValidationCache = (state) => state.businessValidation.validationCache;
-export const selectMultitenancyConfig = (state) => state.businessValidation.multitenancy;
-export const selectBusinessValidationUI = (state) => state.businessValidation.ui;
+export const selectActiveBusinessId = (state) => state.businessValidation.activeBusinessId;
+export const selectAvailableBusinesses = (state) => state.businessValidation.availableBusinesses;
+export const selectAvailableBusinessesLoaded = (state) => state.businessValidation.availableBusinessesLoaded;
+export const selectHasBusinessAccess = (state) => state.businessValidation.hasBusinessAccess;
+export const selectAccessValidated = (state) => state.businessValidation.accessValidated;
+export const selectAccessDetails = (state) => state.businessValidation.accessDetails;
+export const selectModulePermissions = (state) => state.businessValidation.modulePermissions;
+export const selectPermissionsLoaded = (state) => state.businessValidation.permissionsLoaded;
+export const selectSwitchingBusiness = (state) => state.businessValidation.switchingBusiness;
+export const selectUserRole = (state) => state.businessValidation.userRole;
+export const selectUserBusinessId = (state) => state.businessValidation.userBusinessId;
+export const selectUserPermissions = (state) => state.businessValidation.userPermissions;
 
-// Selector para verificar si el usuario tiene acceso al business actual
-export const selectHasBusinessAccess = (state) => {
-  return state.businessValidation.activeBusiness.hasAccess;
-};
+// Loading selectors
+export const selectValidateAccessLoading = (state) => state.businessValidation.loading.validateAccess;
+export const selectAvailableBusinessesLoading = (state) => state.businessValidation.loading.availableBusinesses;
+export const selectSwitchBusinessLoading = (state) => state.businessValidation.loading.switchBusiness;
+export const selectModulePermissionsLoading = (state) => state.businessValidation.loading.modulePermissions;
 
-// Selector para verificar si el usuario es owner del business actual
-export const selectIsBusinessOwner = (state) => {
-  return state.businessValidation.activeBusiness.isOwner;
-};
+// Error selectors
+export const selectValidateAccessError = (state) => state.businessValidation.errors.validateAccess;
+export const selectAvailableBusinessesError = (state) => state.businessValidation.errors.availableBusinesses;
+export const selectSwitchBusinessError = (state) => state.businessValidation.errors.switchBusiness;
+export const selectModulePermissionsError = (state) => state.businessValidation.errors.modulePermissions;
 
-// Selector para obtener el ID del business activo
-export const selectActiveBusinessId = (state) => {
-  return state.businessValidation.activeBusiness.id;
-};
+// Success selectors
+export const selectValidateAccessSuccess = (state) => state.businessValidation.success.validateAccess;
+export const selectSwitchBusinessSuccess = (state) => state.businessValidation.success.switchBusiness;
 
-// Selector para verificar si el usuario tiene un permiso específico
-export const selectHasBusinessPermission = (permission) => (state) => {
-  const permissions = state.businessValidation.activeBusiness.permissions;
-  return permissions.includes(permission) || state.businessValidation.activeBusiness.isOwner;
-};
+// Modal selectors
+export const selectModals = (state) => state.businessValidation.modals;
+export const selectBusinessSelectorModalOpen = (state) => state.businessValidation.modals.businessSelector;
+export const selectAccessDeniedModalOpen = (state) => state.businessValidation.modals.accessDenied;
+export const selectPermissionsRequiredModalOpen = (state) => state.businessValidation.modals.permissionsRequired;
 
-// Selector para verificar si el usuario puede acceder a múltiples businesses
-export const selectCanAccessMultipleBusinesses = (state) => {
-  return state.businessValidation.accessibleBusinesses.length > 1;
-};
-
-// Selector para obtener validación cacheada
-export const selectCachedValidation = (businessId, userId) => (state) => {
-  const cacheKey = `${businessId}-${userId}`;
-  const cached = state.businessValidation.validationCache[cacheKey];
+// Computed selectors
+export const selectHasBusinessPermission = (state) => (moduleId, permission) => {
+  const modulePermissions = state.businessValidation.modulePermissions[moduleId];
+  if (!modulePermissions) return false;
   
-  if (cached && (Date.now() - cached.cachedAt) < 5 * 60 * 1000) { // 5 minutos
-    return cached;
-  }
-  return null;
+  return modulePermissions.includes(permission) || 
+         state.businessValidation.userPermissions.includes(permission) ||
+         ['OWNER', 'BUSINESS'].includes(state.businessValidation.userRole);
 };
 
-// Selector para verificar si se necesita cambiar de business
-export const selectNeedsBusinessSwitch = (targetBusinessId) => (state) => {
-  const currentBusinessId = state.businessValidation.activeBusiness.id;
-  return currentBusinessId !== targetBusinessId;
+export const selectCanAccessModule = (state) => (moduleId) => {
+  if (!state.businessValidation.hasBusinessAccess) return false;
+  if (!state.businessValidation.accessValidated) return false;
+  
+  const permissions = state.businessValidation.modulePermissions[moduleId];
+  return permissions && permissions.length > 0;
+};
+
+export const selectBusinessOptions = (state) => {
+  return state.businessValidation.availableBusinesses.map(business => ({
+    value: business.id,
+    label: business.name,
+    disabled: business.status !== 'ACTIVE'
+  }));
+};
+
+export const selectValidationCacheStatus = (state) => (key) => {
+  const cached = state.businessValidation.validationCache[key];
+  const expiry = state.businessValidation.cacheExpiry[key];
+  
+  if (!cached || !expiry) return { cached: false, expired: true };
+  
+  return {
+    cached: true,
+    expired: Date.now() > expiry,
+    data: cached
+  };
 };
 
 export default businessValidationSlice.reducer;

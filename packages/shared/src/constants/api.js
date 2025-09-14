@@ -50,6 +50,7 @@ export const REQUEST_CONFIG = {
 // Storage keys
 export const STORAGE_KEYS = {
   AUTH_TOKEN: 'bc_auth_token',
+  REFRESH_TOKEN: 'bc_refresh_token',
   USER_DATA: 'bc_user_data',
   REMEMBER_EMAIL: 'bc_remember_email'
 };
