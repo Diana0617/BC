@@ -2894,6 +2894,38 @@ class BusinessConfigService {
     
     return { subtotal, tax, total };
   }
+
+  // ==================== MÉTODOS AUXILIARES PARA CONFIGURACIONES ====================
+
+  /**
+   * Obtener negocio por ID
+   */
+  async getBusiness(businessId) {
+    try {
+      return await Business.findByPk(businessId);
+    } catch (error) {
+      console.error('Error fetching business:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Actualizar configuraciones del negocio
+   */
+  async updateBusinessSettings(businessId, settings) {
+    try {
+      const business = await Business.findByPk(businessId);
+      if (!business) {
+        throw new Error('Negocio no encontrado');
+      }
+
+      await business.update({ settings });
+      return business;
+    } catch (error) {
+      console.error('Error updating business settings:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new BusinessConfigService();

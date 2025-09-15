@@ -41,7 +41,9 @@ async function startServer() {
         OwnerFinancialReport,
         // Nuevos modelos de Rule Templates
         BusinessRuleTemplate,
-        BusinessRuleAssignment
+        BusinessRuleAssignment,
+        // Nuevo modelo de recibos
+        Receipt
       } = require('./src/models');
 
       // Configuración de sincronización - cambiar FORCE_SYNC_DB=true para recrear toda la base

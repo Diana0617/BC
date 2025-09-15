@@ -6,10 +6,14 @@ import { useSelector } from 'react-redux';
 import { selectIsAuthenticated } from '../../../shared/src/store/reactNativeStore.js';
 
 // Importar screens
+import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
+import RoleSelectionScreen from '../screens/auth/RoleSelectionScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
+import BusinessDashboard from '../screens/dashboards/BusinessDashboard';
+import SpecialistDashboard from '../screens/dashboards/SpecialistDashboard';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 
@@ -28,9 +32,15 @@ function AuthStack() {
         cardStyle: { backgroundColor: '#ffffff' }
       }}
     >
+      <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      {/* Dashboards específicos por rol */}
+      <Stack.Screen name="DashboardBusiness" component={BusinessDashboard} />
+      <Stack.Screen name="DashboardSpecialist" component={SpecialistDashboard} />
+      <Stack.Screen name="DashboardReceptionist" component={DashboardScreen} />
     </Stack.Navigator>
   );
 }
