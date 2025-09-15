@@ -63,7 +63,7 @@ const OwnerModulesPage = () => {
 
   // Mapeo de categorías y estados para traducción
   const categoryLabels = {
-    'CORE': 'Núcleo',
+    'CORE': 'Inicial',
     'APPOINTMENTS': 'Citas',
     'PAYMENTS': 'Pagos',
     'INVENTORY': 'Inventario',
@@ -374,7 +374,7 @@ const OwnerModulesPage = () => {
 const ModuleCard = ({ module, helpers, loading }) => {
   // Mapeo de traducciones locales
   const categoryLabels = {
-    'CORE': 'Núcleo',
+    'CORE': 'Inicial',
     'APPOINTMENTS': 'Citas',
     'PAYMENTS': 'Pagos',
     'INVENTORY': 'Inventario',
@@ -564,7 +564,7 @@ const CreateModuleModal = ({ onClose, loading }) => {
 
   // Mapeo de categorías a español
   const categoryLabels = {
-    'CORE': 'Núcleo',
+    'CORE': 'Inicial',
     'APPOINTMENTS': 'Citas',
     'PAYMENTS': 'Pagos',
     'INVENTORY': 'Inventario',
@@ -961,7 +961,7 @@ const EditModuleModal = ({ module, onClose, loading }) => {
 
   // Mapeo de categorías a español
   const categoryLabels = {
-    'CORE': 'Núcleo',
+    'CORE': 'Inicial',
     'APPOINTMENTS': 'Citas',
     'PAYMENTS': 'Pagos',
     'INVENTORY': 'Inventario',
@@ -1464,7 +1464,7 @@ const DeleteModuleModal = ({ module, onClose, loading }) => {
 const ViewModuleModal = ({ module, onClose }) => {
   // Mapeo de categorías y estados para traducción
   const categoryLabels = {
-    'CORE': 'Núcleo',
+    'CORE': 'Inicial',
     'APPOINTMENTS': 'Citas',
     'PAYMENTS': 'Pagos',
     'INVENTORY': 'Inventario',
