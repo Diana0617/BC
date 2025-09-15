@@ -163,11 +163,13 @@ const businessConfigRoutes = require('./routes/businessConfig');
 const ruleTemplateRoutes = require('./routes/ruleTemplate');
 const ownerExpenseRoutes = require('./routes/ownerExpenses');
 const cacheRoutes = require('./routes/cache');
+const receiptRoutes = require('./routes/receipts');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/business', businessConfigRoutes); // Rutas de configuración del negocio
 app.use('/api', ruleTemplateRoutes); // Rutas de plantillas de reglas
+app.use('/api/receipts', receiptRoutes); // Rutas de recibos
 app.use('/api/plans', plansRoutes);
 app.use('/api/modules', moduleRoutes);
 app.use('/api/clients', clientRoutes);

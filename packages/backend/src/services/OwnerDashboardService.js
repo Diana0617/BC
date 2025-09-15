@@ -363,8 +363,8 @@ class OwnerDashboardService {
         include: [
           {
             model: BusinessSubscription,
-            as: 'subscription',
-            attributes: ['status', 'currentPeriodEnd'],
+            as: 'subscriptions',
+            attributes: ['status', 'endDate'],
             where: {
               status: 'ACTIVE'
             }
@@ -381,7 +381,7 @@ class OwnerDashboardService {
         email: business.email,
         subdomain: business.subdomain,
         lastActivity: business.updatedAt,
-        subscriptionStatus: business.subscription?.status
+        subscriptionStatus: business.subscriptions?.[0]?.status
       }));
     } catch (error) {
       console.error('Error obteniendo negocios activos:', error);

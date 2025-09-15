@@ -46,6 +46,9 @@ const SpecialistCommission = require('./SpecialistCommission');
 const CommissionPaymentRequest = require('./CommissionPaymentRequest');
 const CommissionDetail = require('./CommissionDetail');
 
+// Modelo de recibos
+const Receipt = require('./Receipt');
+
 // Nuevos modelos de pagos OWNER
 const OwnerPaymentConfiguration = require('./OwnerPaymentConfiguration');
 const SubscriptionPayment = require('./SubscriptionPayment');
@@ -232,6 +235,45 @@ User.hasMany(Appointment, {
 Service.hasMany(Appointment, { 
   foreignKey: 'serviceId', 
   as: 'appointments' 
+});
+
+// Receipt relationships
+Receipt.belongsTo(Business, { 
+  foreignKey: 'businessId', 
+  as: 'business' 
+});
+Receipt.belongsTo(Appointment, { 
+  foreignKey: 'appointmentId', 
+  as: 'appointment' 
+});
+Receipt.belongsTo(User, { 
+  foreignKey: 'specialistId', 
+  as: 'specialist' 
+});
+Receipt.belongsTo(User, { 
+  foreignKey: 'userId', 
+  as: 'user' 
+});
+Receipt.belongsTo(User, { 
+  foreignKey: 'createdBy', 
+  as: 'creator' 
+});
+
+Business.hasMany(Receipt, { 
+  foreignKey: 'businessId', 
+  as: 'receipts' 
+});
+Appointment.hasOne(Receipt, { 
+  foreignKey: 'appointmentId', 
+  as: 'receipt' 
+});
+User.hasMany(Receipt, { 
+  foreignKey: 'specialistId', 
+  as: 'specialistReceipts' 
+});
+User.hasMany(Receipt, { 
+  foreignKey: 'userId', 
+  as: 'clientReceipts' 
 });
 
 // Product relationships
@@ -879,6 +921,8 @@ module.exports = {
   SpecialistCommission,
   CommissionPaymentRequest,
   CommissionDetail,
+  // Modelo de recibos
+  Receipt,
   // Modelos de configuración del negocio
   SpecialistProfile,
   Schedule,

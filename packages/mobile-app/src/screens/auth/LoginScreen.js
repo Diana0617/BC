@@ -4,309 +4,260 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { 
-  loginUser,
-  selectIsLoggingIn, 
-  selectLoginError,
-  selectRememberedEmail 
-} from '../../../../shared/src/store/reactNativeStore.js';
+import { loginUser } from '../../../../shared/src/store/slices/authSlice';
 
-function LoginScreen({ navigation }) {
+const ROLE_CONFIG = {
+  business: {
+    title: 'Business / Propietario',
+    icon: 'business',
+    gradient: ['#8b5cf6', '#7c3aed'],
+  },
+  specialist: {
+    title: 'Especialista',
+    icon: 'cut',
+    gradient: ['#ec4899', '#db2777'],
+  },
+  receptionist: {
+    title: 'Recepcionista',
+    icon: 'desktop',
+    gradient: ['#06b6d4', '#0891b2'],
+  },
+};
+
+export default function LoginScreen({ navigation, route }) {
   const dispatch = useDispatch();
-  const isLoading = useSelector(selectIsLoggingIn);
-  const error = useSelector(selectLoginError);
-  const rememberedEmail = useSelector(selectRememberedEmail);
+  const { loading, error } = useSelector((state) => state.auth);
+  
+  const selectedRole = route?.params?.role;
+  const roleConfig = selectedRole ? ROLE_CONFIG[selectedRole.id] : ROLE_CONFIG.business;
 
   const [formData, setFormData] = useState({
-    email: rememberedEmail || '',
+    email: '',
     password: '',
+    subdomain: '',
   });
-  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    if (!formData.email || !formData.password) {
+    if (!formData.email || !formData.password || !formData.subdomain) {
       Alert.alert('Error', 'Por favor completa todos los campos');
       return;
     }
 
     try {
-      await dispatch(loginUser({ 
-        credentials: formData, 
-        rememberMe 
+      const credentials = {
+        email: formData.email,
+        password: formData.password,
+        subdomain: formData.subdomain,
+        role: selectedRole?.id || 'business'
+      };
+
+      const result = await dispatch(loginUser({ 
+        credentials, 
+        rememberMe: false 
       })).unwrap();
-      // El usuario será redirigido automáticamente por el estado de autenticación
+
+      if (result) {
+        // Navegación exitosa basada en el rol
+        const dashboardRoute = `Dashboard${selectedRole?.id === 'business' ? 'Business' : 
+                               selectedRole?.id === 'specialist' ? 'Specialist' : 'Receptionist'}`;
+        navigation.navigate(dashboardRoute);
+      }
     } catch (error) {
-      Alert.alert('Error de inicio de sesión', error);
+      Alert.alert('Error de Login', error || 'Ha ocurrido un error al iniciar sesión');
     }
   };
 
+  const handleGoBack = () => {
+    navigation.goBack();
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+    <SafeAreaView className="flex-1">
+      <LinearGradient 
+        colors={['#f8fafc', '#e2e8f0']} 
+        className="flex-1"
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
+        >
           {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.logo}>
-              <Text style={styles.logoText}>BC</Text>
-            </View>
-            <Text style={styles.title}>Beauty Control</Text>
-            <Text style={styles.subtitle}>Gestión de Negocios de Belleza</Text>
+          <View className="flex-row items-center justify-between px-5 py-4 border-b border-black/5">
+            <TouchableOpacity 
+              onPress={handleGoBack} 
+              className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm"
+            >
+              <Ionicons name="chevron-back" size={24} color="#374151" />
+            </TouchableOpacity>
+            <Text className="text-lg font-semibold text-gray-800">
+              Iniciar Sesión
+            </Text>
+            <View className="w-10" />
           </View>
 
-          {/* Form */}
-          <View style={styles.form}>
-            <Text style={styles.formTitle}>Iniciar Sesión</Text>
+          <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+            <View className="px-5 pb-10">
+              {/* Role Header */}
+              {selectedRole && (
+                <View className="mt-5 mb-8">
+                  <LinearGradient
+                    colors={roleConfig.gradient}
+                    className="flex-row items-center p-5 rounded-2xl shadow-lg"
+                  >
+                    <View className="w-15 h-15 rounded-full bg-white/20 items-center justify-center mr-4">
+                      <Ionicons name={roleConfig.icon} size={32} color="#ffffff" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-lg font-bold text-white mb-1">
+                        {roleConfig.title}
+                      </Text>
+                      <Text className="text-sm text-white/80">
+                        Acceso especializado
+                      </Text>
+                    </View>
+                  </LinearGradient>
+                </View>
+              )}
 
-            {/* Email Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="tucorreo@example.com"
-                value={formData.email}
-                onChangeText={(text) => setFormData({ ...formData, email: text })}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
-
-            {/* Password Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Contraseña</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Tu contraseña"
-                value={formData.password}
-                onChangeText={(text) => setFormData({ ...formData, password: text })}
-                secureTextEntry
-                autoCapitalize="none"
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
-
-            {/* Remember Me */}
-            <TouchableOpacity 
-              style={styles.checkboxContainer}
-              onPress={() => setRememberMe(!rememberMe)}
-            >
-              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                {rememberMe && <Text style={styles.checkmark}>✓</Text>}
-              </View>
-              <Text style={styles.checkboxLabel}>Recordar mi email</Text>
-            </TouchableOpacity>
-
-            {/* Login Button */}
-            <TouchableOpacity 
-              style={[styles.loginButton, isLoading && styles.buttonDisabled]}
-              onPress={handleLogin}
-              disabled={isLoading}
-            >
-              <Text style={styles.loginButtonText}>
-                {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Error Message */}
-            {error && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
-
-            {/* Links */}
-            <View style={styles.linksContainer}>
-              <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                <Text style={styles.linkText}>¿Olvidaste tu contraseña?</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.registerText}>
-                  ¿No tienes cuenta? <Text style={styles.linkText}>Regístrate</Text>
+              {/* Welcome Text */}
+              <View className="items-center mb-10">
+                <Text className="text-3xl font-bold text-gray-800 text-center mb-2">
+                  ¡Bienvenido de nuevo!
                 </Text>
-              </TouchableOpacity>
+                <Text className="text-base text-gray-600 text-center leading-6">
+                  Ingresa tus credenciales para acceder a tu cuenta
+                </Text>
+              </View>
+
+              {/* Login Form */}
+              <View className="bg-white rounded-3xl p-6 shadow-lg">
+                {/* Subdomain Input */}
+                <View className="mb-5">
+                  <Text className="text-sm font-semibold text-gray-700 mb-2">
+                    Subdominio de tu salón
+                  </Text>
+                  <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-3 h-14">
+                    <Ionicons name="business" size={20} color="#6b7280" style={{ marginRight: 12 }} />
+                    <TextInput
+                      className="flex-1 text-base text-gray-800"
+                      placeholder="mi-salon"
+                      value={formData.subdomain}
+                      onChangeText={(text) => setFormData({ ...formData, subdomain: text.toLowerCase() })}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      placeholderTextColor="#9ca3af"
+                    />
+                    <Text className="text-sm text-gray-600" style={{ marginLeft: 8 }}>
+                      .beautycontrol.app
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Email Input */}
+                <View className="mb-5">
+                  <Text className="text-sm font-semibold text-gray-700 mb-2">
+                    Correo electrónico
+                  </Text>
+                  <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-3 h-14">
+                    <Ionicons name="mail" size={20} color="#6b7280" style={{ marginRight: 12 }} />
+                    <TextInput
+                      className="flex-1 text-base text-gray-800"
+                      placeholder="tucorreo@example.com"
+                      value={formData.email}
+                      onChangeText={(text) => setFormData({ ...formData, email: text })}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      placeholderTextColor="#9ca3af"
+                    />
+                  </View>
+                </View>
+
+                {/* Password Input */}
+                <View className="mb-6">
+                  <Text className="text-sm font-semibold text-gray-700 mb-2">
+                    Contraseña
+                  </Text>
+                  <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-3 h-14">
+                    <Ionicons name="lock-closed" size={20} color="#6b7280" style={{ marginRight: 12 }} />
+                    <TextInput
+                      className="flex-1 text-base text-gray-800"
+                      placeholder="Tu contraseña"
+                      value={formData.password}
+                      onChangeText={(text) => setFormData({ ...formData, password: text })}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      placeholderTextColor="#9ca3af"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      style={{ padding: 8, marginLeft: 8 }}
+                    >
+                      <Ionicons 
+                        name={showPassword ? "eye-off" : "eye"} 
+                        size={20} 
+                        color="#6b7280" 
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Error Message */}
+                {error && (
+                  <View className="mb-4 p-3 bg-red-50 rounded-xl border border-red-200">
+                    <Text className="text-sm text-red-600 text-center">
+                      {error}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Login Button */}
+                <TouchableOpacity
+                  onPress={handleLogin}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                  className="rounded-xl overflow-hidden shadow-lg mb-4"
+                >
+                  <LinearGradient
+                    colors={roleConfig.gradient}
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16 }}
+                  >
+                    {loading ? (
+                      <Text className="text-base font-semibold text-white">
+                        Iniciando sesión...
+                      </Text>
+                    ) : (
+                      <>
+                        <Text className="text-base font-semibold text-white" style={{ marginRight: 8 }}>
+                          Iniciar Sesión
+                        </Text>
+                        <Ionicons name="arrow-forward" size={20} color="#ffffff" />
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                {/* Forgot Password */}
+                <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                  <Text className="text-sm text-pink-500 font-medium text-center">
+                    ¿Olvidaste tu contraseña?
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fdf2f8', // bg-pink-50
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  header: {
-    alignItems: 'center',
-    paddingTop: 64,
-    paddingBottom: 32,
-    paddingHorizontal: 32,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    backgroundColor: '#ec4899', // bg-pink-500
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  logoText: {
-    color: '#ffffff',
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#1f2937', // text-gray-800
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280', // text-gray-600
-    textAlign: 'center',
-  },
-  form: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  formTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1f2937', // text-gray-800
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  inputContainer: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#374151', // text-gray-700
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#f9fafb', // bg-gray-50
-    borderWidth: 1,
-    borderColor: '#e5e7eb', // border-gray-200
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: '#1f2937', // text-gray-800
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderColor: '#d1d5db',
-    borderRadius: 4,
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: '#ec4899',
-    borderColor: '#ec4899',
-  },
-  checkmark: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  checkboxLabel: {
-    fontSize: 16,
-    color: '#374151',
-  },
-  loginButton: {
-    backgroundColor: '#ec4899', // bg-pink-500
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#ec4899',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  buttonDisabled: {
-    backgroundColor: '#9ca3af', // bg-gray-400
-    shadowOpacity: 0,
-  },
-  loginButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  errorContainer: {
-    backgroundColor: '#fef2f2', // bg-red-50
-    borderWidth: 1,
-    borderColor: '#fecaca', // border-red-200
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: '#dc2626', // text-red-600
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  linksContainer: {
-    alignItems: 'center',
-    paddingTop: 16,
-  },
-  linkText: {
-    color: '#ec4899', // text-pink-600
-    fontSize: 16,
-    fontWeight: '500',
-    marginVertical: 8,
-  },
-  registerText: {
-    fontSize: 16,
-    color: '#6b7280', // text-gray-600
-  },
-});
-
-export default LoginScreen;

@@ -4175,4 +4175,271 @@ router.post('/:businessId/config/suppliers/:id/documents', BusinessSupplierContr
  */
 router.delete('/:businessId/config/suppliers/:id/documents/:documentId', BusinessSupplierController.deleteSupplierDocument);
 
+// ==================== CONFIGURACIONES DE NUMERACIÓN ====================
+
+/**
+ * @swagger
+ * /api/business/{businessId}/config/numbering:
+ *   get:
+ *     summary: Obtener configuraciones de numeración del negocio
+ *     tags: [Business Config]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Configuraciones de numeración obtenidas exitosamente
+ *       403:
+ *         description: No tienes permisos para acceder
+ *       404:
+ *         description: Negocio no encontrado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/:businessId/config/numbering', BusinessConfigController.getNumberingSettings);
+
+/**
+ * @swagger
+ * /api/business/{businessId}/config/numbering:
+ *   put:
+ *     summary: Actualizar configuraciones de numeración del negocio
+ *     tags: [Business Config]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               receipts:
+ *                 type: object
+ *                 properties:
+ *                   enabled:
+ *                     type: boolean
+ *                   initialNumber:
+ *                     type: integer
+ *                     minimum: 1
+ *                   prefix:
+ *                     type: string
+ *                   format:
+ *                     type: string
+ *                   padLength:
+ *                     type: integer
+ *                     minimum: 1
+ *                     maximum: 10
+ *                   resetYearly:
+ *                     type: boolean
+ *               invoices:
+ *                 type: object
+ *                 properties:
+ *                   enabled:
+ *                     type: boolean
+ *                   initialNumber:
+ *                     type: integer
+ *                     minimum: 1
+ *                   prefix:
+ *                     type: string
+ *                   format:
+ *                     type: string
+ *                   padLength:
+ *                     type: integer
+ *                     minimum: 1
+ *                     maximum: 10
+ *                   resetYearly:
+ *                     type: boolean
+ *               fiscal:
+ *                 type: object
+ *                 properties:
+ *                   enabled:
+ *                     type: boolean
+ *                   taxxa_prefix:
+ *                     type: string
+ *                   tax_regime:
+ *                     type: string
+ *                     enum: [SIMPLIFIED, COMMON]
+ *                   resolution_number:
+ *                     type: string
+ *                   resolution_date:
+ *                     type: string
+ *                     format: date
+ *                   valid_from:
+ *                     type: string
+ *                     format: date
+ *                   valid_to:
+ *                     type: string
+ *                     format: date
+ *                   technical_key:
+ *                     type: string
+ *                   software_id:
+ *                     type: string
+ *     responses:
+ *       200:
+ *         description: Configuraciones actualizadas exitosamente
+ *       400:
+ *         description: Datos de entrada inválidos
+ *       403:
+ *         description: No tienes permisos para modificar
+ *       404:
+ *         description: Negocio no encontrado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.put('/:businessId/config/numbering', BusinessConfigController.updateNumberingSettings);
+
+/**
+ * @swagger
+ * /api/business/{businessId}/config/numbering/preview:
+ *   get:
+ *     summary: Previsualizar formato de numeración
+ *     tags: [Business Config]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: format
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: "REC-{YEAR}-{NUMBER}"
+ *       - in: query
+ *         name: prefix
+ *         schema:
+ *           type: string
+ *         example: "REC"
+ *       - in: query
+ *         name: padLength
+ *         schema:
+ *           type: integer
+ *         example: 5
+ *       - in: query
+ *         name: number
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Vista previa generada exitosamente
+ *       400:
+ *         description: Formato requerido
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/:businessId/config/numbering/preview', BusinessConfigController.previewNumberFormat);
+
+// ==================== CONFIGURACIONES DE COMUNICACIÓN ====================
+
+/**
+ * @swagger
+ * /api/business/{businessId}/config/communications:
+ *   get:
+ *     summary: Obtener configuraciones de comunicación del negocio
+ *     tags: [Business Config]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Configuraciones de comunicación obtenidas exitosamente
+ *       403:
+ *         description: No tienes permisos para acceder
+ *       404:
+ *         description: Negocio no encontrado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/:businessId/config/communications', BusinessConfigController.getCommunicationSettings);
+
+/**
+ * @swagger
+ * /api/business/{businessId}/config/communications:
+ *   put:
+ *     summary: Actualizar configuraciones de comunicación del negocio
+ *     tags: [Business Config]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               whatsapp:
+ *                 type: object
+ *                 properties:
+ *                   enabled:
+ *                     type: boolean
+ *                   phone_number:
+ *                     type: string
+ *                     pattern: '^\+?[1-9]\d{1,14}$'
+ *                   business_account_id:
+ *                     type: string
+ *                   access_token:
+ *                     type: string
+ *                   webhook_verify_token:
+ *                     type: string
+ *                   send_receipts:
+ *                     type: boolean
+ *                   send_appointments:
+ *                     type: boolean
+ *                   send_reminders:
+ *                     type: boolean
+ *               email:
+ *                 type: object
+ *                 properties:
+ *                   enabled:
+ *                     type: boolean
+ *                   smtp_host:
+ *                     type: string
+ *                   smtp_port:
+ *                     type: integer
+ *                     minimum: 1
+ *                     maximum: 65535
+ *                   smtp_user:
+ *                     type: string
+ *                   smtp_password:
+ *                     type: string
+ *                   from_email:
+ *                     type: string
+ *                     format: email
+ *                   from_name:
+ *                     type: string
+ *     responses:
+ *       200:
+ *         description: Configuraciones actualizadas exitosamente
+ *       400:
+ *         description: Datos de entrada inválidos
+ *       403:
+ *         description: No tienes permisos para modificar
+ *       404:
+ *         description: Negocio no encontrado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.put('/:businessId/config/communications', BusinessConfigController.updateCommunicationSettings);
+
 module.exports = router;

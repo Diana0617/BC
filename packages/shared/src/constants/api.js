@@ -4,8 +4,8 @@ const getApiUrl = () => {
   const isReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
   
   if (isReactNative) {
-    // React Native environment
-    return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
+    // React Native environment - hardcode for now until env vars are properly set up
+    return 'http://192.168.0.213:3001';
   } else if (typeof window !== 'undefined') {
     // Web browser environment
     // Try to get from window.__ENV__ or default
