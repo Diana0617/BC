@@ -28,7 +28,7 @@ const LoginPage = () => {
         credentials, 
         rememberMe: false 
       })).unwrap()
-git       
+       
       if (result.token) {
         // Redirigir según el rol del usuario
         if (result.user?.role === 'OWNER') {

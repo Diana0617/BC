@@ -204,12 +204,12 @@ const Appointment = sequelize.define('Appointment', {
   wompiPaymentReference: {
     type: DataTypes.STRING,
     allowNull: true,
-    unique: true,
+    // unique: true, // ⚠️ Comentado temporalmente para evitar error de migración
     comment: 'Referencia única del pago adelantado en Wompi'
   },
   // Estado específico del depósito/adelanto
   depositStatus: {
-    type: DataTypes.ENUM('NOT_REQUIRED', 'PENDING', 'PAID', 'FAILED', 'REFUNDED'),
+    type: DataTypes.STRING, // ⚠️ Cambiado temporalmente de ENUM a STRING
     allowNull: false,
     defaultValue: 'NOT_REQUIRED',
     comment: 'Estado del depósito requerido para agendar la cita'

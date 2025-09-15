@@ -102,8 +102,8 @@ class WompiSubscriptionService {
       if (status === 'APPROVED') {
         // Pago exitoso - activar suscripción
         await payment.update({
-          status: 'CONFIRMED',
-          paymentDate: new Date(),
+          status: 'COMPLETED',
+          paidAt: new Date(),
           externalTransactionId: data.id
         });
 

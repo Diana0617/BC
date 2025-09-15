@@ -557,6 +557,47 @@ router.put('/:id', ownerOnly, SubscriptionPlanController.updatePlan);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
+/**
+ * @swagger
+ * /api/plans/{id}/toggle-status:
+ *   patch:
+ *     summary: Alternar estado del plan (ACTIVE <-> INACTIVE)
+ *     description: Cambia el estado del plan entre ACTIVE e INACTIVE automáticamente
+ *     tags: [💎 Planes de Suscripción]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID del plan
+ *     responses:
+ *       200:
+ *         description: Estado del plan alternado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/SubscriptionPlan'
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Plan no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.patch('/:id/toggle-status', ownerOnly, SubscriptionPlanController.togglePlanStatus);
+
 router.patch('/:id/status', ownerOnly, SubscriptionPlanController.updatePlanStatus);
 
 /**
@@ -613,6 +654,45 @@ router.patch('/:id/status', ownerOnly, SubscriptionPlanController.updatePlanStat
  *               $ref: '#/components/schemas/Error'
  *       409:
  *         description: Plan en uso por suscripciones activas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+/**
+ * @swagger
+ * /api/plans/{id}/toggle-status:
+ *   patch:
+ *     summary: Alternar estado del plan (ACTIVE <-> INACTIVE)
+ *     description: Cambia el estado del plan entre ACTIVE e INACTIVE automáticamente
+ *     tags: [💎 Planes de Suscripción]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID del plan
+ *     responses:
+ *       200:
+ *         description: Estado del plan alternado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/SubscriptionPlan'
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Plan no encontrado
  *         content:
  *           application/json:
  *             schema:

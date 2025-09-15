@@ -277,7 +277,7 @@ class SubscriptionStatusService {
       }
 
       // Actualizar el pago como confirmado
-      await payment.update({ status: 'CONFIRMED' });
+      await payment.update({ status: 'COMPLETED' });
 
       // Extender la suscripción
       const subscription = payment.subscription;

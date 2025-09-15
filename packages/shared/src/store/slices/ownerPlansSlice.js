@@ -214,6 +214,18 @@ const ownerPlansSlice = createSlice({
     // Reset completo
     resetOwnerPlans: (state) => {
       return initialState;
+    },
+    
+    // Validar y reparar estado de plans
+    validatePlansState: (state) => {
+      if (!Array.isArray(state.plans)) {
+        console.warn('🔧 Repairing plans state from:', state.plans);
+        if (state.plans && typeof state.plans === 'object' && Array.isArray(state.plans.plans)) {
+          state.plans = state.plans.plans;
+        } else {
+          state.plans = [];
+        }
+      }
     }
   },
   extraReducers: (builder) => {
@@ -225,7 +237,21 @@ const ownerPlansSlice = createSlice({
       })
       .addCase(fetchOwnerPlans.fulfilled, (state, action) => {
         state.loading = false;
-        state.plans = action.payload.data || [];
+        
+        // Ensure we always store an array in state.plans
+        let plansData = action.payload.data || [];
+        
+        // Handle case where backend might send different structure
+        if (!Array.isArray(plansData)) {
+          console.warn('🚨 Backend sent non-array plans data:', plansData);
+          if (plansData && Array.isArray(plansData.plans)) {
+            plansData = plansData.plans;
+          } else {
+            plansData = [];
+          }
+        }
+        
+        state.plans = plansData;
         
         // Actualizar paginación si viene en la respuesta
         if (action.payload.pagination) {
@@ -259,6 +285,13 @@ const ownerPlansSlice = createSlice({
       })
       .addCase(createOwnerPlan.fulfilled, (state, action) => {
         state.createLoading = false;
+        
+        // Ensure state.plans is an array before trying to modify it
+        if (!Array.isArray(state.plans)) {
+          console.warn('🚨 state.plans is not an array in createOwnerPlan:', state.plans);
+          state.plans = [];
+        }
+        
         state.plans.unshift(action.payload.data); // Agregar al inicio
         state.totalPlans += 1;
         state.showCreateModal = false;
@@ -275,6 +308,12 @@ const ownerPlansSlice = createSlice({
       })
       .addCase(updateOwnerPlan.fulfilled, (state, action) => {
         state.updateLoading = false;
+        
+        // Ensure state.plans is an array before trying to modify it
+        if (!Array.isArray(state.plans)) {
+          console.warn('🚨 state.plans is not an array in updateOwnerPlan:', state.plans);
+          state.plans = [];
+        }
         
         // Actualizar en la lista
         const index = state.plans.findIndex(plan => plan.id === action.payload.data.id);
@@ -340,6 +379,12 @@ const ownerPlansSlice = createSlice({
       .addCase(deleteOwnerPlan.fulfilled, (state, action) => {
         state.deleteLoading = false;
         
+        // Ensure state.plans is an array before trying to modify it
+        if (!Array.isArray(state.plans)) {
+          console.warn('🚨 state.plans is not an array in deleteOwnerPlan:', state.plans);
+          state.plans = [];
+        }
+        
         // Remover de la lista
         state.plans = state.plans.filter(plan => plan.id !== action.payload);
         state.totalPlans -= 1;
@@ -370,7 +415,8 @@ export const {
   setEditingPlan,
   clearErrors,
   clearSelectedPlan,
-  resetOwnerPlans
+  resetOwnerPlans,
+  validatePlansState
 } = ownerPlansSlice.actions;
 
 export default ownerPlansSlice.reducer;

@@ -1,5 +1,5 @@
+import React, { useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useCallback } from 'react';
 import {
   fetchOwnerPlans,
   fetchOwnerPlanById,
@@ -18,7 +18,8 @@ import {
   setEditingPlan,
   clearErrors,
   clearSelectedPlan,
-  resetOwnerPlans
+  resetOwnerPlans,
+  validatePlansState
 } from '../store/slices/ownerPlansSlice';
 
 /**
@@ -53,6 +54,34 @@ export const useOwnerPlans = () => {
     editingPlan
   } = useSelector(state => state.ownerPlans);
 
+  // Auto-validate plans state and repair if needed
+  React.useEffect(() => {
+    if (plans && !Array.isArray(plans)) {
+      console.warn('🔧 Auto-repairing invalid plans state');
+      dispatch(validatePlansState());
+    }
+  }, [plans, dispatch]);
+
+  // Extract actual plans array from the object structure
+  // Handle case where plans might be {plans: Array, pagination: ...} or just Array
+  let actualPlans = [];
+  if (Array.isArray(plans)) {
+    actualPlans = plans;
+  } else if (plans && typeof plans === 'object' && Array.isArray(plans.plans)) {
+    actualPlans = plans.plans;
+    console.warn('🔧 Plans was an object, extracted array:', plans);
+  } else if (plans) {
+    console.warn('🚨 Unexpected plans structure:', plans, typeof plans);
+  }
+
+  // Ensure plans is always an array to prevent map errors
+  const safePlans = actualPlans || [];
+  
+  // Debug log to help identify when plans is not an array
+  if (process.env.NODE_ENV === 'development' && plans && !Array.isArray(plans)) {
+    console.warn('🚨 ownerPlans.plans is not an array:', plans, typeof plans);
+  }
+
   // Actions
   const actions = {
     // Fetch operations
@@ -81,12 +110,13 @@ export const useOwnerPlans = () => {
     // Cleanup
     clearErrors: useCallback(() => dispatch(clearErrors()), [dispatch]),
     clearSelectedPlan: useCallback(() => dispatch(clearSelectedPlan()), [dispatch]),
-    reset: useCallback(() => dispatch(resetOwnerPlans()), [dispatch])
+    reset: useCallback(() => dispatch(resetOwnerPlans()), [dispatch]),
+    validateState: useCallback(() => dispatch(validatePlansState()), [dispatch])
   };
 
   // Computed values
   const computed = {
-    hasPlans: plans.length > 0,
+    hasPlans: safePlans.length > 0,
     hasSelectedPlan: !!selectedPlan,
     hasErrors: !!(error || selectedPlanError || createError || updateError || deleteError || statsError),
     isAnyLoading: loading || selectedPlanLoading || createLoading || updateLoading || deleteLoading || statsLoading,
@@ -161,7 +191,7 @@ export const useOwnerPlans = () => {
 
   return {
     // State
-    plans,
+    plans: safePlans,
     totalPlans,
     selectedPlan,
     selectedPlanStats,
