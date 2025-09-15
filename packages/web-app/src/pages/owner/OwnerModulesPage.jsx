@@ -36,6 +36,12 @@ const OwnerModulesPage = () => {
     updateLoading,
     deleteLoading,
     
+    // Error states
+    error,
+    createError,
+    updateError,
+    deleteError,
+    
     // UI State
     showCreateModal,
     showEditModal,
@@ -54,10 +60,40 @@ const OwnerModulesPage = () => {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
+  // Mapeo de categorías y estados para traducción
+  const categoryLabels = {
+    'CORE': 'Núcleo',
+    'APPOINTMENTS': 'Citas',
+    'PAYMENTS': 'Pagos',
+    'INVENTORY': 'Inventario',
+    'REPORTS': 'Reportes',
+    'INTEGRATIONS': 'Integraciones',
+    'COMMUNICATIONS': 'Comunicaciones',
+    'ANALYTICS': 'Analíticas'
+  };
+
+  const statusLabels = {
+    'DEVELOPMENT': 'En Desarrollo',
+    'ACTIVE': 'Activo',
+    'INACTIVE': 'Inactivo',
+    'DEPRECATED': 'Obsoleto'
+  };
+
   // Cargar módulos al montar
   useEffect(() => {
+    console.log('🔄 OwnerModulesPage: Cargando módulos...');
     helpers.refresh();
   }, []);
+
+  // Debug: Log cuando cambien los módulos
+  useEffect(() => {
+    console.log('📊 OwnerModulesPage - Estado actual:', {
+      modules: modules,
+      modulesLength: modules?.length || 0,
+      loading,
+      error
+    });
+  }, [modules, loading, error]);
 
   // Filtrar en tiempo real
   const handleSearch = (value) => {
@@ -140,9 +176,9 @@ const OwnerModulesPage = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent appearance-none"
             >
               <option value="">Todas las categorías</option>
-              {categories.map((category) => (
-                <option key={category.value} value={category.value}>
-                  {category.label}
+              {Object.entries(categoryLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
                 </option>
               ))}
             </select>
@@ -156,9 +192,9 @@ const OwnerModulesPage = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent appearance-none"
             >
               <option value="">Todos los estados</option>
-              {statuses.map((status) => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
+              {Object.entries(statusLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
                 </option>
               ))}
             </select>
@@ -295,8 +331,6 @@ const OwnerModulesPage = () => {
         <CreateModuleModal 
           onClose={helpers.closeModals}
           loading={createLoading}
-          categories={categories}
-          statuses={statuses}
         />
       )}
       
@@ -305,8 +339,6 @@ const OwnerModulesPage = () => {
           module={editingModule}
           onClose={helpers.closeModals}
           loading={updateLoading}
-          categories={categories}
-          statuses={statuses}
         />
       )}
       
@@ -332,8 +364,26 @@ const OwnerModulesPage = () => {
  * Tarjeta de módulo individual
  */
 const ModuleCard = ({ module, helpers, loading }) => {
+  // Mapeo de traducciones locales
+  const categoryLabels = {
+    'CORE': 'Núcleo',
+    'APPOINTMENTS': 'Citas',
+    'PAYMENTS': 'Pagos',
+    'INVENTORY': 'Inventario',
+    'REPORTS': 'Reportes',
+    'INTEGRATIONS': 'Integraciones',
+    'COMMUNICATIONS': 'Comunicaciones',
+    'ANALYTICS': 'Analíticas'
+  };
+
+  const statusLabels = {
+    'DEVELOPMENT': 'En Desarrollo',
+    'ACTIVE': 'Activo',
+    'INACTIVE': 'Inactivo',
+    'DEPRECATED': 'Obsoleto'
+  };
+
   const getStatusBadge = (status) => {
-    const statusInfo = helpers.getStatusInfo(status);
     const statusConfig = {
       DEVELOPMENT: { color: 'yellow', icon: WrenchScrewdriverIcon },
       ACTIVE: { color: 'green', icon: CheckCircleIcon },
@@ -347,16 +397,15 @@ const ModuleCard = ({ module, helpers, loading }) => {
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${config.color}-100 text-${config.color}-800`}>
         <IconComponent className="h-3 w-3 mr-1" />
-        {statusInfo.label}
+        {statusLabels[status] || status}
       </span>
     );
   };
 
   const getCategoryBadge = (category) => {
-    const categoryInfo = helpers.getCategoryInfo(category);
     return (
       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-        {categoryInfo.label}
+        {categoryLabels[category] || category}
       </span>
     );
   };
@@ -492,46 +541,105 @@ const ModuleCard = ({ module, helpers, loading }) => {
 /**
  * Modal para crear módulo
  */
-const CreateModuleModal = ({ onClose, loading, categories, statuses }) => {
+const CreateModuleModal = ({ onClose, loading }) => {
   const [formData, setFormData] = useState({
-    name: '',
     displayName: '',
     category: '',
     price: '',
     description: '',
-    features: [''],
-    dependencies: [],
     status: 'DEVELOPMENT',
-    version: '1.0.0',
-    requiresConfiguration: false,
-    permissions: ['']
+    icon: ''
   });
 
   const [errors, setErrors] = useState({});
-  const [availableModules, setAvailableModules] = useState([]);
   const { actions } = useOwnerModules();
 
-  // Cargar módulos disponibles para dependencias
-  useEffect(() => {
-    const loadAvailableModules = async () => {
-      try {
-        // Usar la API directamente para no interferir con el estado principal
-        const { ownerModulesApi } = await import('../../../../shared/src/api/ownerModulesApi.js');
-        const response = await ownerModulesApi.getAllModules({ status: 'ACTIVE' });
-        setAvailableModules(response.data?.data || []);
-      } catch (error) {
-        console.error('Error loading available modules:', error);
-      }
-    };
-    loadAvailableModules();
-  }, []);
+  // Mapeo de categorías a español
+  const categoryLabels = {
+    'CORE': 'Núcleo',
+    'APPOINTMENTS': 'Citas',
+    'PAYMENTS': 'Pagos',
+    'INVENTORY': 'Inventario',
+    'REPORTS': 'Reportes',
+    'INTEGRATIONS': 'Integraciones',
+    'COMMUNICATIONS': 'Comunicaciones',
+    'ANALYTICS': 'Analíticas'
+  };
+
+  // Iconos por categoría
+  const iconsByCategory = {
+    'CORE': [
+      { value: 'cog-6-tooth', label: '⚙️ Configuración', icon: '⚙️' },
+      { value: 'squares-plus', label: '⊞ Módulos', icon: '⊞' },
+      { value: 'shield-check', label: '🛡️ Seguridad', icon: '🛡️' }
+    ],
+    'APPOINTMENTS': [
+      { value: 'calendar-days', label: '📅 Calendario', icon: '📅' },
+      { value: 'clock', label: '⏰ Horarios', icon: '⏰' },
+      { value: 'user-group', label: '👥 Citas', icon: '👥' }
+    ],
+    'PAYMENTS': [
+      { value: 'credit-card', label: '💳 Tarjetas', icon: '💳' },
+      { value: 'banknotes', label: '💵 Pagos', icon: '💵' },
+      { value: 'receipt-percent', label: '🧾 Facturas', icon: '🧾' }
+    ],
+    'INVENTORY': [
+      { value: 'cube', label: '📦 Productos', icon: '📦' },
+      { value: 'archive-box', label: '📋 Stock', icon: '📋' },
+      { value: 'truck', label: '🚛 Suministros', icon: '🚛' }
+    ],
+    'REPORTS': [
+      { value: 'chart-bar', label: '📊 Reportes', icon: '📊' },
+      { value: 'document-chart-bar', label: '📈 Análisis', icon: '📈' },
+      { value: 'clipboard-document-list', label: '📄 Informes', icon: '📄' }
+    ],
+    'INTEGRATIONS': [
+      { value: 'link', label: '🔗 Conectores', icon: '🔗' },
+      { value: 'globe-alt', label: '🌐 APIs', icon: '🌐' },
+      { value: 'arrows-right-left', label: '↔️ Sincronización', icon: '↔️' }
+    ],
+    'COMMUNICATIONS': [
+      { value: 'envelope', label: '📧 Email', icon: '📧' },
+      { value: 'chat-bubble-left-right', label: '💬 Chat', icon: '💬' },
+      { value: 'megaphone', label: '📢 Notificaciones', icon: '📢' }
+    ],
+    'ANALYTICS': [
+      { value: 'chart-pie', label: '📊 Gráficos', icon: '📊' },
+      { value: 'calculator', label: '🧮 Métricas', icon: '🧮' },
+      { value: 'light-bulb', label: '💡 Insights', icon: '💡' }
+    ]
+  };
+
+  // Generar name automáticamente desde displayName
+  const generateName = (displayName) => {
+    return displayName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remover acentos
+      .replace(/[^a-z0-9\s]/g, '') // Remover caracteres especiales
+      .trim()
+      .replace(/\s+/g, '_'); // Reemplazar espacios con guiones bajos
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    let newValue = type === 'checkbox' ? checked : value;
+    
+    setFormData(prev => {
+      const updatedData = { ...prev, [name]: newValue };
+      
+      // Auto-generar name cuando cambie displayName
+      if (name === 'displayName') {
+        updatedData.name = generateName(value);
+      }
+      
+      // Limpiar icon cuando cambie la categoría
+      if (name === 'category') {
+        updatedData.icon = '';
+      }
+      
+      return updatedData;
+    });
     
     // Limpiar error del campo
     if (errors[name]) {
@@ -562,26 +670,11 @@ const CreateModuleModal = ({ onClose, loading, categories, statuses }) => {
     }));
   };
 
-  const handleDependencyToggle = (moduleId) => {
-    setFormData(prev => ({
-      ...prev,
-      dependencies: prev.dependencies.includes(moduleId)
-        ? prev.dependencies.filter(id => id !== moduleId)
-        : [...prev.dependencies, moduleId]
-    }));
-  };
-
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.name.trim()) {
-      newErrors.name = 'El nombre es requerido';
-    } else if (!/^[a-z_][a-z0-9_]*$/.test(formData.name)) {
-      newErrors.name = 'El nombre debe ser snake_case (ej: appointment_management)';
-    }
-    
     if (!formData.displayName.trim()) {
-      newErrors.displayName = 'El nombre para mostrar es requerido';
+      newErrors.displayName = 'El nombre es requerido';
     }
     
     if (!formData.category) {
@@ -596,10 +689,8 @@ const CreateModuleModal = ({ onClose, loading, categories, statuses }) => {
       newErrors.description = 'La descripción es requerida';
     }
     
-    // Validar que al menos haya una característica no vacía
-    const validFeatures = formData.features.filter(f => f.trim());
-    if (validFeatures.length === 0) {
-      newErrors.features = 'Debe agregar al menos una característica';
+    if (!formData.icon) {
+      newErrors.icon = 'Debe seleccionar un icono';
     }
     
     setErrors(newErrors);
@@ -614,31 +705,51 @@ const CreateModuleModal = ({ onClose, loading, categories, statuses }) => {
     }
     
     try {
-      // Limpiar arrays de elementos vacíos
-      const cleanedData = {
-        ...formData,
-        price: parseFloat(formData.price),
-        features: formData.features.filter(f => f.trim()),
-        permissions: formData.permissions.filter(p => p.trim())
+      // Preparar datos para envío
+      const moduleData = {
+        name: generateName(formData.displayName),
+        displayName: formData.displayName,
+        category: formData.category,
+        description: formData.description,
+        icon: formData.icon,
+        pricing: {
+          type: parseFloat(formData.price) === 0 ? 'FREE' : 'PAID',
+          price: parseFloat(formData.price),
+          currency: 'COP'
+        },
+        status: formData.status,
+        version: '1.0.0',
+        requiresConfiguration: false,
+        permissions: [],
+        dependencies: []
       };
       
-      await actions.createModule(cleanedData);
+      console.log('🚀 Creando módulo:', moduleData);
+      
+      const result = await actions.createModule(moduleData);
+      console.log('✅ Módulo creado exitosamente:', result);
+      
+      // Refrescar la lista después de crear
+      actions.fetchModules();
+      
       onClose();
     } catch (error) {
-      console.error('Error creating module:', error);
+      console.error('❌ Error creating module:', error);
       setErrors({ general: 'Error al crear el módulo. Por favor, inténtalo de nuevo.' });
     }
   };
 
+  const availableIcons = iconsByCategory[formData.category] || [];
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
         <form onSubmit={handleSubmit}>
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-bold text-gray-900">Crear Nuevo Módulo</h2>
             <p className="text-sm text-gray-600 mt-1">
-              Complete todos los campos para crear un nuevo módulo del sistema
+              Complete la información para crear un nuevo módulo del sistema
             </p>
           </div>
 
@@ -652,33 +763,10 @@ const CreateModuleModal = ({ onClose, loading, categories, statuses }) => {
 
             {/* Información básica */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Nombre interno */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre interno *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="appointment_management"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
-                    errors.name ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                />
-                {errors.name && (
-                  <p className="text-sm text-red-600 mt-1">{errors.name}</p>
-                )}
-                <p className="text-xs text-gray-500 mt-1">
-                  Nombre único en formato snake_case
-                </p>
-              </div>
-
               {/* Nombre para mostrar */}
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre para mostrar *
+                  Nombre del módulo *
                 </label>
                 <input
                   type="text"
@@ -692,6 +780,11 @@ const CreateModuleModal = ({ onClose, loading, categories, statuses }) => {
                 />
                 {errors.displayName && (
                   <p className="text-sm text-red-600 mt-1">{errors.displayName}</p>
+                )}
+                {formData.displayName && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Nombre interno: <code>{generateName(formData.displayName)}</code>
+                  </p>
                 )}
               </div>
 
@@ -709,9 +802,9 @@ const CreateModuleModal = ({ onClose, loading, categories, statuses }) => {
                   }`}
                 >
                   <option value="">Seleccionar categoría</option>
-                  {categories.map((category) => (
-                    <option key={category.value} value={category.value}>
-                      {category.label}
+                  {Object.entries(categoryLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
                     </option>
                   ))}
                 </select>
@@ -741,41 +834,42 @@ const CreateModuleModal = ({ onClose, loading, categories, statuses }) => {
                   <p className="text-sm text-red-600 mt-1">{errors.price}</p>
                 )}
               </div>
-
-              {/* Versión */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Versión
-                </label>
-                <input
-                  type="text"
-                  name="version"
-                  value={formData.version}
-                  onChange={handleInputChange}
-                  placeholder="1.0.0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                />
-              </div>
-
-              {/* Estado */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estado inicial
-                </label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                >
-                  {statuses.map((status) => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
+
+            {/* Selector de icono */}
+            {formData.category && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Icono *
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {availableIcons.map((iconOption) => (
+                    <label
+                      key={iconOption.value}
+                      className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+                        formData.icon === iconOption.value
+                          ? 'border-pink-500 bg-pink-50'
+                          : 'border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="icon"
+                        value={iconOption.value}
+                        checked={formData.icon === iconOption.value}
+                        onChange={handleInputChange}
+                        className="sr-only"
+                      />
+                      <span className="text-2xl">{iconOption.icon}</span>
+                      <span className="text-sm text-gray-700">{iconOption.label}</span>
+                    </label>
+                  ))}
+                </div>
+                {errors.icon && (
+                  <p className="text-sm text-red-600 mt-1">{errors.icon}</p>
+                )}
+              </div>
+            )}
 
             {/* Descripción */}
             <div>
@@ -797,124 +891,21 @@ const CreateModuleModal = ({ onClose, loading, categories, statuses }) => {
               )}
             </div>
 
-            {/* Características */}
+            {/* Estado */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Características *
+                Estado inicial
               </label>
-              {formData.features.map((feature, index) => (
-                <div key={index} className="flex items-center space-x-2 mb-2">
-                  <input
-                    type="text"
-                    value={feature}
-                    onChange={(e) => handleArrayChange('features', index, e.target.value)}
-                    placeholder="Creación de citas"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
-                  {formData.features.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeArrayItem('features', index)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addArrayItem('features')}
-                className="text-pink-600 hover:text-pink-800 text-sm flex items-center"
-              >
-                <PlusIcon className="h-4 w-4 mr-1" />
-                Agregar característica
-              </button>
-              {errors.features && (
-                <p className="text-sm text-red-600 mt-1">{errors.features}</p>
-              )}
-            </div>
-
-            {/* Permisos */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Permisos requeridos
-              </label>
-              {formData.permissions.map((permission, index) => (
-                <div key={index} className="flex items-center space-x-2 mb-2">
-                  <input
-                    type="text"
-                    value={permission}
-                    onChange={(e) => handleArrayChange('permissions', index, e.target.value)}
-                    placeholder="appointments.create"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
-                  {formData.permissions.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeArrayItem('permissions', index)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addArrayItem('permissions')}
-                className="text-pink-600 hover:text-pink-800 text-sm flex items-center"
-              >
-                <PlusIcon className="h-4 w-4 mr-1" />
-                Agregar permiso
-              </button>
-            </div>
-
-            {/* Configuración requerida */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                name="requiresConfiguration"
-                checked={formData.requiresConfiguration}
+              <select
+                name="status"
+                value={formData.status}
                 onChange={handleInputChange}
-                className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
-              />
-              <label className="ml-2 block text-sm text-gray-900">
-                Requiere configuración adicional
-              </label>
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+              >
+                <option value="DEVELOPMENT">En Desarrollo</option>
+                <option value="ACTIVE">Activo</option>
+              </select>
             </div>
-
-            {/* Dependencias */}
-            {availableModules.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Dependencias (opcional)
-                </label>
-                <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md">
-                  {availableModules.map((module) => (
-                    <div key={module.id} className="flex items-center p-3 border-b border-gray-100 last:border-b-0">
-                      <input
-                        type="checkbox"
-                        checked={formData.dependencies.includes(module.id)}
-                        onChange={() => handleDependencyToggle(module.id)}
-                        className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
-                      />
-                      <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">
-                          {module.displayName}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {module.name} - {module.category}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Selecciona los módulos de los que depende este módulo
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Footer */}
@@ -947,67 +938,517 @@ const CreateModuleModal = ({ onClose, loading, categories, statuses }) => {
 /**
  * Modal para editar módulo (placeholder)
  */
-const EditModuleModal = ({ module, onClose, loading, categories, statuses }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div className="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
-      <div className="p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">
-          Editar Módulo: {module.displayName}
-        </h2>
-        <p className="text-gray-600 mb-4">
-          Modal de edición de módulo - Implementar formulario completo
-        </p>
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-          >
-            Cancelar
-          </button>
-          <button
-            disabled={loading}
-            className="px-4 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:bg-gray-400"
-          >
-            {loading ? 'Guardando...' : 'Guardar Cambios'}
-          </button>
-        </div>
+const EditModuleModal = ({ module, onClose, loading }) => {
+  const [formData, setFormData] = useState({
+    displayName: module?.displayName || '',
+    category: module?.category || '',
+    price: module?.pricing?.price || '',
+    description: module?.description || '',
+    status: module?.status || 'DEVELOPMENT',
+    icon: module?.icon || ''
+  });
+
+  const [errors, setErrors] = useState({});
+  const { actions } = useOwnerModules();
+
+  // Mapeo de categorías a español
+  const categoryLabels = {
+    'CORE': 'Núcleo',
+    'APPOINTMENTS': 'Citas',
+    'PAYMENTS': 'Pagos',
+    'INVENTORY': 'Inventario',
+    'REPORTS': 'Reportes',
+    'INTEGRATIONS': 'Integraciones',
+    'COMMUNICATIONS': 'Comunicaciones',
+    'ANALYTICS': 'Analíticas'
+  };
+
+  // Iconos por categoría (igual que en CreateModal)
+  const iconsByCategory = {
+    'CORE': [
+      { value: 'cog-6-tooth', label: '⚙️ Configuración', icon: '⚙️' },
+      { value: 'squares-plus', label: '⊞ Módulos', icon: '⊞' },
+      { value: 'shield-check', label: '🛡️ Seguridad', icon: '🛡️' }
+    ],
+    'APPOINTMENTS': [
+      { value: 'calendar-days', label: '📅 Calendario', icon: '📅' },
+      { value: 'clock', label: '⏰ Horarios', icon: '⏰' },
+      { value: 'user-group', label: '👥 Citas', icon: '👥' }
+    ],
+    'PAYMENTS': [
+      { value: 'credit-card', label: '💳 Tarjetas', icon: '💳' },
+      { value: 'banknotes', label: '💵 Pagos', icon: '💵' },
+      { value: 'receipt-percent', label: '🧾 Facturas', icon: '🧾' }
+    ],
+    'INVENTORY': [
+      { value: 'cube', label: '📦 Productos', icon: '📦' },
+      { value: 'archive-box', label: '📋 Stock', icon: '📋' },
+      { value: 'truck', label: '🚛 Suministros', icon: '🚛' }
+    ],
+    'REPORTS': [
+      { value: 'chart-bar', label: '📊 Reportes', icon: '📊' },
+      { value: 'document-chart-bar', label: '📈 Análisis', icon: '📈' },
+      { value: 'clipboard-document-list', label: '📄 Informes', icon: '📄' }
+    ],
+    'INTEGRATIONS': [
+      { value: 'link', label: '🔗 Conectores', icon: '🔗' },
+      { value: 'globe-alt', label: '🌐 APIs', icon: '🌐' },
+      { value: 'arrows-right-left', label: '↔️ Sincronización', icon: '↔️' }
+    ],
+    'COMMUNICATIONS': [
+      { value: 'envelope', label: '📧 Email', icon: '📧' },
+      { value: 'chat-bubble-left-right', label: '💬 Chat', icon: '💬' },
+      { value: 'megaphone', label: '📢 Notificaciones', icon: '📢' }
+    ],
+    'ANALYTICS': [
+      { value: 'chart-pie', label: '📊 Gráficos', icon: '📊' },
+      { value: 'calculator', label: '🧮 Métricas', icon: '🧮' },
+      { value: 'light-bulb', label: '💡 Insights', icon: '💡' }
+    ]
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => {
+      const updatedData = { ...prev, [name]: value };
+      
+      // Limpiar icon cuando cambie la categoría
+      if (name === 'category') {
+        updatedData.icon = '';
+      }
+      
+      return updatedData;
+    });
+    
+    // Limpiar error del campo
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleArrayChange = (arrayName, index, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [arrayName]: prev[arrayName].map((item, i) => 
+        i === index ? value : item
+      )
+    }));
+  };
+
+  const addArrayItem = (arrayName) => {
+    setFormData(prev => ({
+      ...prev,
+      [arrayName]: [...prev[arrayName], '']
+    }));
+  };
+
+  const removeArrayItem = (arrayName, index) => {
+    setFormData(prev => ({
+      ...prev,
+      [arrayName]: prev[arrayName].filter((_, i) => i !== index)
+    }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.displayName.trim()) {
+      newErrors.displayName = 'El nombre es requerido';
+    }
+    
+    if (!formData.category) {
+      newErrors.category = 'La categoría es requerida';
+    }
+    
+    if (!formData.price || parseFloat(formData.price) < 0) {
+      newErrors.price = 'El precio debe ser un número válido mayor o igual a 0';
+    }
+    
+    if (!formData.description.trim()) {
+      newErrors.description = 'La descripción es requerida';
+    }
+    
+    if (!formData.icon) {
+      newErrors.icon = 'Debe seleccionar un icono';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    try {
+      // Preparar datos para envío
+      const moduleData = {
+        displayName: formData.displayName,
+        category: formData.category,
+        description: formData.description,
+        icon: formData.icon,
+        pricing: {
+          type: parseFloat(formData.price) === 0 ? 'FREE' : 'PAID',
+          price: parseFloat(formData.price),
+          currency: 'COP'
+        },
+        status: formData.status
+      };
+      
+      await actions.updateModule(module.id, moduleData);
+      onClose();
+    } catch (error) {
+      console.error('Error updating module:', error);
+      setErrors({ general: 'Error al actualizar el módulo. Por favor, inténtalo de nuevo.' });
+    }
+  };
+
+  const availableIcons = iconsByCategory[formData.category] || [];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+        <form onSubmit={handleSubmit}>
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900">Editar Módulo</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Actualice la información del módulo: {module.displayName}
+            </p>
+          </div>
+
+          <div className="px-6 py-4 space-y-6">
+            {/* Error general */}
+            {errors.general && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <p className="text-sm text-red-600">{errors.general}</p>
+              </div>
+            )}
+
+            {/* Información básica */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Nombre para mostrar */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre del módulo *
+                </label>
+                <input
+                  type="text"
+                  name="displayName"
+                  value={formData.displayName}
+                  onChange={handleInputChange}
+                  placeholder="Gestión de Citas"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                    errors.displayName ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                />
+                {errors.displayName && (
+                  <p className="text-sm text-red-600 mt-1">{errors.displayName}</p>
+                )}
+              </div>
+
+              {/* Categoría */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Categoría *
+                </label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                    errors.category ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Seleccionar categoría</option>
+                  {Object.entries(categoryLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                {errors.category && (
+                  <p className="text-sm text-red-600 mt-1">{errors.category}</p>
+                )}
+              </div>
+
+              {/* Precio */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Precio (COP) *
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  placeholder="5000"
+                  min="0"
+                  step="100"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                    errors.price ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                />
+                {errors.price && (
+                  <p className="text-sm text-red-600 mt-1">{errors.price}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Selector de icono */}
+            {formData.category && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Icono *
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {availableIcons.map((iconOption) => (
+                    <label
+                      key={iconOption.value}
+                      className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+                        formData.icon === iconOption.value
+                          ? 'border-pink-500 bg-pink-50'
+                          : 'border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="icon"
+                        value={iconOption.value}
+                        checked={formData.icon === iconOption.value}
+                        onChange={handleInputChange}
+                        className="sr-only"
+                      />
+                      <span className="text-2xl">{iconOption.icon}</span>
+                      <span className="text-sm text-gray-700">{iconOption.label}</span>
+                    </label>
+                  ))}
+                </div>
+                {errors.icon && (
+                  <p className="text-sm text-red-600 mt-1">{errors.icon}</p>
+                )}
+              </div>
+            )}
+
+            {/* Descripción */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Descripción *
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                rows="3"
+                placeholder="Describa la funcionalidad principal del módulo..."
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                  errors.description ? 'border-red-300' : 'border-gray-300'
+                }`}
+              />
+              {errors.description && (
+                <p className="text-sm text-red-600 mt-1">{errors.description}</p>
+              )}
+            </div>
+
+            {/* Estado */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estado
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+              >
+                <option value="DEVELOPMENT">En Desarrollo</option>
+                <option value="ACTIVE">Activo</option>
+                <option value="INACTIVE">Inactivo</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:bg-gray-100"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:bg-gray-400 flex items-center"
+            >
+              {loading && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              )}
+              {loading ? 'Actualizando...' : 'Actualizar Módulo'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 /**
- * Modal para confirmar eliminación
+ * Modal para confirmar eliminación con opciones avanzadas
  */
-const DeleteModuleModal = ({ module, onClose, loading }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div className="bg-white rounded-lg max-w-md w-full">
-      <div className="p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Confirmar Eliminación</h2>
-        <p className="text-gray-600 mb-4">
-          ¿Estás seguro de que deseas eliminar el módulo "<strong>{module.displayName}</strong>"?
-        </p>
-        <p className="text-sm text-red-600 mb-6">
-          Esta acción marcará el módulo como deprecated.
-        </p>
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-          >
-            Cancelar
-          </button>
-          <button
-            disabled={loading}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400"
-          >
-            {loading ? 'Eliminando...' : 'Eliminar'}
-          </button>
+const DeleteModuleModal = ({ module, onClose, loading }) => {
+  const { actions } = useOwnerModules();
+  const [deleteType, setDeleteType] = useState('soft'); // 'soft' o 'permanent'
+  const [confirmText, setConfirmText] = useState('');
+  const [showConfirmInput, setShowConfirmInput] = useState(false);
+
+  const handleDeleteTypeChange = (type) => {
+    setDeleteType(type);
+    setShowConfirmInput(type === 'permanent');
+    setConfirmText('');
+  };
+
+  const handleDelete = async () => {
+    if (deleteType === 'permanent' && confirmText !== module.displayName) {
+      return;
+    }
+
+    try {
+      if (deleteType === 'permanent') {
+        await actions.deleteModulePermanently(module.id);
+      } else {
+        await actions.deleteModule(module.id);
+      }
+      onClose();
+    } catch (error) {
+      console.error('Error eliminando módulo:', error);
+    }
+  };
+
+  const canDelete = deleteType === 'soft' || (deleteType === 'permanent' && confirmText === module.displayName);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-lg w-full">
+        <div className="p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Eliminar Módulo</h2>
+          
+          <p className="text-gray-600 mb-6">
+            ¿Cómo deseas eliminar el módulo "<strong>{module.displayName}</strong>"?
+          </p>
+
+          {/* Opciones de eliminación */}
+          <div className="space-y-4 mb-6">
+            {/* Eliminación suave */}
+            <div className="border rounded-lg p-4">
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="deleteType"
+                  value="soft"
+                  checked={deleteType === 'soft'}
+                  onChange={() => handleDeleteTypeChange('soft')}
+                  className="mt-1 text-blue-600"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">Eliminación Suave</div>
+                  <div className="text-sm text-gray-500">
+                    Marca el módulo como <span className="font-mono text-orange-600">DEPRECATED</span>. 
+                    El módulo permanece en la base de datos pero no estará disponible para nuevos usos.
+                  </div>
+                  <div className="text-sm text-green-600 mt-1">✅ Reversible</div>
+                </div>
+              </label>
+            </div>
+
+            {/* Eliminación permanente */}
+            <div className="border rounded-lg p-4 border-red-200">
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="deleteType"
+                  value="permanent"
+                  checked={deleteType === 'permanent'}
+                  onChange={() => handleDeleteTypeChange('permanent')}
+                  className="mt-1 text-red-600"
+                />
+                <div>
+                  <div className="font-medium text-red-700">Eliminación Permanente</div>
+                  <div className="text-sm text-gray-500">
+                    Elimina completamente el módulo de la base de datos. 
+                    Esta acción <strong>NO se puede deshacer</strong>.
+                  </div>
+                  <div className="text-sm text-red-600 mt-1">⚠️ No reversible</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Campo de confirmación para eliminación permanente */}
+          {showConfirmInput && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <label className="block text-sm font-medium text-red-700 mb-2">
+                Para confirmar la eliminación permanente, escriba el nombre del módulo:
+              </label>
+              <input
+                type="text"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder={module.displayName}
+                className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              />
+              {confirmText && confirmText !== module.displayName && (
+                <p className="text-sm text-red-600 mt-1">
+                  El texto debe coincidir exactamente: "{module.displayName}"
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Información del módulo */}
+          <div className="mb-6 p-3 bg-gray-50 rounded-lg text-sm">
+            <div><strong>Versión:</strong> {module.version}</div>
+            <div><strong>Estado actual:</strong> <span className="font-mono">{module.status}</span></div>
+            <div><strong>Categoría:</strong> {module.category}</div>
+          </div>
+
+          {/* Botones */}
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={!canDelete || loading}
+              className={`px-4 py-2 text-white rounded-md disabled:opacity-50 ${
+                deleteType === 'permanent' 
+                  ? 'bg-red-600 hover:bg-red-700' 
+                  : 'bg-orange-600 hover:bg-orange-700'
+              }`}
+            >
+              {loading ? (
+                'Procesando...'
+              ) : deleteType === 'permanent' ? (
+                'Eliminar Permanentemente'
+              ) : (
+                'Marcar como Obsoleto'
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 /**
  * Modal para mostrar dependencias (placeholder)

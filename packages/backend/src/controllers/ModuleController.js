@@ -47,7 +47,7 @@ class ModuleController {
       
       res.status(200).json({
         success: true,
-        data: result.data,
+        data: result.data, // Los módulos van en result.data
         pagination: result.pagination,
         filters: {
           categories: await ModuleController._getAvailableCategories(),
@@ -77,8 +77,10 @@ class ModuleController {
         include: [
           {
             model: SubscriptionPlan,
-            as: 'subscriptionPlans',
-            through: { attributes: ['isIncluded'] }
+            as: 'plans', // Usar el alias correcto definido en las asociaciones
+            through: { 
+              attributes: ['isIncluded', 'limitQuantity', 'additionalPrice'] 
+            }
           }
         ]
       });
@@ -240,6 +242,19 @@ class ModuleController {
         }
       }
       
+      // Auto-incrementar versión cuando se actualiza el módulo
+      // (excepto si se está actualizando explícitamente la versión)
+      if (!updateData.version) {
+        const currentVersion = module.version || '1.0.0';
+        const versionParts = currentVersion.split('.').map(Number);
+        
+        // Incrementar versión patch (tercer número)
+        versionParts[2] = (versionParts[2] || 0) + 1;
+        updateData.version = versionParts.join('.');
+        
+        console.log(`📦 Auto-incrementando versión de ${currentVersion} a ${updateData.version}`);
+      }
+      
       await module.update(updateData);
       
       res.status(200).json({
@@ -271,10 +286,65 @@ class ModuleController {
   }
   
   /**
-   * Eliminar un módulo (soft delete)
+   * Eliminar un módulo (soft delete - marca como DEPRECATED)
    * DELETE /api/modules/:id
    */
   static async deleteModule(req, res) {
+    try {
+      const { id } = req.params;
+      const { permanent = false } = req.query; // Query param para eliminación permanente
+      
+      const module = await Module.findByPk(id);
+      if (!module) {
+        return res.status(404).json({
+          success: false,
+          message: 'Módulo no encontrado'
+        });
+      }
+      
+      // Si es eliminación permanente
+      if (permanent === 'true' || permanent === true) {
+        // Verificar si el módulo está siendo usado en algún plan
+        const planModules = await PlanModule.findAll({ where: { moduleId: id } });
+        if (planModules.length > 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'No se puede eliminar permanentemente el módulo porque está siendo usado en uno o más planes de suscripción'
+          });
+        }
+        
+        // Eliminar permanentemente
+        await module.destroy();
+        
+        return res.status(200).json({
+          success: true,
+          message: 'Módulo eliminado permanentemente'
+        });
+      }
+      
+      // Eliminación suave (soft delete) - marcar como DEPRECATED
+      await module.update({ status: 'DEPRECATED' });
+      
+      res.status(200).json({
+        success: true,
+        message: 'Módulo marcado como obsoleto exitosamente'
+      });
+      
+    } catch (error) {
+      console.error('Error al eliminar el módulo:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+  
+  /**
+   * Eliminar permanentemente un módulo
+   * DELETE /api/modules/:id/permanent
+   */
+  static async deleteModulePermanently(req, res) {
     try {
       const { id } = req.params;
       
@@ -291,20 +361,31 @@ class ModuleController {
       if (planModules.length > 0) {
         return res.status(400).json({
           success: false,
-          message: 'No se puede eliminar el módulo porque está siendo usado en uno o más planes de suscripción'
+          message: 'No se puede eliminar permanentemente el módulo porque está siendo usado en uno o más planes de suscripción',
+          affectedPlans: planModules.length
         });
       }
       
-      // Marcar como DEPRECATED en lugar de eliminar
-      await module.update({ status: 'DEPRECATED' });
+      // Guardar información del módulo antes de eliminarlo
+      const moduleInfo = {
+        name: module.name,
+        displayName: module.displayName,
+        version: module.version
+      };
+      
+      // Eliminar permanentemente
+      await module.destroy();
+      
+      console.log(`🗑️ Módulo eliminado permanentemente: ${moduleInfo.displayName} (${moduleInfo.name}) v${moduleInfo.version}`);
       
       res.status(200).json({
         success: true,
-        message: 'Módulo marcado como obsoleto exitosamente'
+        message: `Módulo "${moduleInfo.displayName}" eliminado permanentemente`,
+        deletedModule: moduleInfo
       });
       
     } catch (error) {
-      console.error('Error al eliminar el módulo:', error);
+      console.error('Error al eliminar permanentemente el módulo:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',

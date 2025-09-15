@@ -123,6 +123,21 @@ export const deleteOwnerModule = createAsyncThunk(
   }
 );
 
+/**
+ * Eliminar permanentemente un módulo
+ */
+export const deleteOwnerModulePermanently = createAsyncThunk(
+  'ownerModules/deleteModulePermanently',
+  async (moduleId, { rejectWithValue }) => {
+    try {
+      const response = await ownerModulesApi.deleteModulePermanently(moduleId);
+      return { moduleId, response: response.data };
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const initialState = {
   // Lista de módulos
   modules: [],
@@ -453,6 +468,46 @@ const ownerModulesSlice = createSlice({
       .addCase(deleteOwnerModule.rejected, (state, action) => {
         state.deleteLoading = false;
         state.deleteError = action.payload?.message || 'Error eliminando módulo';
+      })
+      
+      // === ELIMINACIÓN PERMANENTE ===
+      .addCase(deleteOwnerModulePermanently.pending, (state) => {
+        state.deleteLoading = true;
+        state.deleteError = null;
+      })
+      .addCase(deleteOwnerModulePermanently.fulfilled, (state, action) => {
+        state.deleteLoading = false;
+        state.deleteError = null;
+        
+        const { moduleId } = action.payload;
+        
+        // Eliminar completamente de la lista principal
+        state.modules = state.modules.filter(module => module.id !== moduleId);
+        state.totalModules = Math.max(0, state.totalModules - 1);
+        
+        // Eliminar de categorías
+        Object.keys(state.modulesByCategory).forEach(category => {
+          state.modulesByCategory[category] = state.modulesByCategory[category].filter(
+            module => module.id !== moduleId
+          );
+        });
+        
+        // Limpiar módulo seleccionado si es el mismo
+        if (state.selectedModule?.id === moduleId) {
+          state.selectedModule = null;
+          state.selectedModuleDependencies = null;
+        }
+        
+        // Limpiar módulo en edición si es el mismo
+        if (state.editingModule?.id === moduleId) {
+          state.editingModule = null;
+        }
+        
+        state.showDeleteModal = false;
+      })
+      .addCase(deleteOwnerModulePermanently.rejected, (state, action) => {
+        state.deleteLoading = false;
+        state.deleteError = action.payload?.message || 'Error eliminando módulo permanentemente';
       });
   }
 });

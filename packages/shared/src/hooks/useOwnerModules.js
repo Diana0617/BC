@@ -9,6 +9,7 @@ import {
   updateOwnerModuleStatus,
   fetchOwnerModuleDependencies,
   deleteOwnerModule,
+  deleteOwnerModulePermanently,
   setFilters,
   resetFilters,
   setSearch,
@@ -74,6 +75,7 @@ export const useOwnerModules = () => {
     createModule: useCallback((moduleData) => dispatch(createOwnerModule(moduleData)), [dispatch]),
     updateModule: useCallback((moduleId, moduleData) => dispatch(updateOwnerModule({ moduleId, moduleData })), [dispatch]),
     deleteModule: useCallback((moduleId) => dispatch(deleteOwnerModule(moduleId)), [dispatch]),
+    deleteModulePermanently: useCallback((moduleId) => dispatch(deleteOwnerModulePermanently(moduleId)), [dispatch]),
     updateModuleStatus: useCallback((moduleId, status) => dispatch(updateOwnerModuleStatus({ moduleId, status })), [dispatch]),
     
     // Filters and search

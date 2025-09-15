@@ -513,7 +513,7 @@ router.patch('/:id/status', ownerOnly, ModuleController.updateModuleStatus);
  * /api/modules/{id}:
  *   delete:
  *     summary: Eliminar módulo (deprecar)
- *     description: Marca un módulo como DEPRECATED (eliminación lógica) - Solo OWNER
+ *     description: Marca un módulo como DEPRECATED (eliminación lógica) - Solo OWNER. Use query param ?permanent=true para eliminación permanente.
  *     tags: [📦 Gestión de Módulos]
  *     security:
  *       - bearerAuth: []
@@ -526,9 +526,17 @@ router.patch('/:id/status', ownerOnly, ModuleController.updateModuleStatus);
  *           format: uuid
  *         description: ID único del módulo
  *         example: "123e4567-e89b-12d3-a456-426614174000"
+ *       - in: query
+ *         name: permanent
+ *         required: false
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Si es true, elimina permanentemente el módulo. Si es false, solo lo marca como DEPRECATED.
+ *         example: false
  *     responses:
  *       200:
- *         description: Módulo marcado como DEPRECATED exitosamente
+ *         description: Módulo eliminado o marcado como DEPRECATED exitosamente
  *         content:
  *           application/json:
  *             schema:
@@ -539,9 +547,20 @@ router.patch('/:id/status', ownerOnly, ModuleController.updateModuleStatus);
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: "Módulo marcado como DEPRECATED exitosamente"
- *                 module:
- *                   $ref: '#/components/schemas/Module'
+ *                   example: "Módulo marcado como obsoleto exitosamente"
+ *       400:
+ *         description: Error - Módulo en uso por planes activos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "No se puede eliminar permanentemente el módulo porque está siendo usado en uno o más planes de suscripción"
  *       404:
  *         description: Módulo no encontrado
  *         content:
@@ -560,13 +579,89 @@ router.patch('/:id/status', ownerOnly, ModuleController.updateModuleStatus);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       409:
- *         description: Módulo en uso por planes activos
+ */
+router.delete('/:id', ownerOnly, ModuleController.deleteModule);
+
+/**
+ * @swagger
+ * /api/modules/{id}/permanent:
+ *   delete:
+ *     summary: Eliminar módulo permanentemente
+ *     description: Elimina permanentemente un módulo de la base de datos (NO REVERSIBLE) - Solo OWNER
+ *     tags: [📦 Gestión de Módulos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID único del módulo
+ *         example: "123e4567-e89b-12d3-a456-426614174000"
+ *     responses:
+ *       200:
+ *         description: Módulo eliminado permanentemente exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Módulo \"Gestión de Citas\" eliminado permanentemente"
+ *                 deletedModule:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                       example: "appointment_management"
+ *                     displayName:
+ *                       type: string
+ *                       example: "Gestión de Citas"
+ *                     version:
+ *                       type: string
+ *                       example: "1.2.0"
+ *       400:
+ *         description: Error - Módulo en uso por planes activos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "No se puede eliminar permanentemente el módulo porque está siendo usado en uno o más planes de suscripción"
+ *                 affectedPlans:
+ *                   type: integer
+ *                   example: 3
+ *                   description: Número de planes que usan este módulo
+ *       404:
+ *         description: Módulo no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Sin permisos de OWNER
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete('/:id', ownerOnly, ModuleController.deleteModule);
+router.delete('/:id/permanent', ownerOnly, ModuleController.deleteModulePermanently);
 
 module.exports = router;

@@ -79,5 +79,12 @@ export const ownerModulesApi = {
    */
   deleteModule: async (moduleId) => {
     return apiClient.delete(`/api/modules/${moduleId}`);
+  },
+
+  /**
+   * Eliminar un módulo permanentemente
+   */
+  deleteModulePermanently: async (moduleId) => {
+    return apiClient.delete(`/api/modules/${moduleId}/permanent`);
   }
 };
