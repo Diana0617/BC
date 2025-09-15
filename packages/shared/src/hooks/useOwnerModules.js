@@ -19,6 +19,7 @@ import {
   setShowEditModal,
   setShowDeleteModal,
   setShowDependenciesModal,
+  setShowViewModal,
   setEditingModule,
   clearErrors,
   clearSelectedModule,
@@ -58,6 +59,7 @@ export const useOwnerModules = () => {
     showEditModal,
     showDeleteModal,
     showDependenciesModal,
+    showViewModal,
     editingModule,
     categories,
     statuses
@@ -90,6 +92,7 @@ export const useOwnerModules = () => {
     setShowEditModal: useCallback((show) => dispatch(setShowEditModal(show)), [dispatch]),
     setShowDeleteModal: useCallback((show) => dispatch(setShowDeleteModal(show)), [dispatch]),
     setShowDependenciesModal: useCallback((show) => dispatch(setShowDependenciesModal(show)), [dispatch]),
+    setShowViewModal: useCallback((show) => dispatch(setShowViewModal(show)), [dispatch]),
     setEditingModule: useCallback((module) => dispatch(setEditingModule(module)), [dispatch]),
     
     // Cleanup
@@ -116,11 +119,16 @@ export const useOwnerModules = () => {
     activeCategory: filters.category,
     
     // Estadísticas por categoría
-    categoryStats: categories.map(cat => ({
-      ...cat,
-      count: modulesByCategory[cat.value]?.length || 0,
-      activeCount: modulesByCategory[cat.value]?.filter(m => m.status === 'ACTIVE').length || 0
-    }))
+    categoryStats: categories.map(cat => {
+      const categoryModules = modules.filter(m => m.category === cat.value);
+      const activeModules = categoryModules.filter(m => m.status === 'ACTIVE');
+      
+      return {
+        ...cat,
+        count: categoryModules.length,
+        activeCount: activeModules.length
+      };
+    })
   };
 
   // Helper functions
@@ -180,12 +188,21 @@ export const useOwnerModules = () => {
       actions.setShowDependenciesModal(true);
     },
     
+    // Abrir modal de vista previa
+    openViewModal: (module) => {
+      actions.clearErrors();
+      actions.setEditingModule(module);
+      actions.fetchModuleById(module.id);
+      actions.setShowViewModal(true);
+    },
+    
     // Cerrar modales
     closeModals: () => {
       actions.setShowCreateModal(false);
       actions.setShowEditModal(false);
       actions.setShowDeleteModal(false);
       actions.setShowDependenciesModal(false);
+      actions.setShowViewModal(false);
       actions.setEditingModule(null);
       actions.clearErrors();
     },
@@ -200,9 +217,9 @@ export const useOwnerModules = () => {
       actions.fetchModulesByCategory(category, { status: 'ACTIVE' });
     },
     
-    // Seleccionar módulo y cargar detalles
-    selectModule: (moduleId) => {
-      actions.fetchModuleById(moduleId);
+    // Seleccionar módulo y abrir vista previa
+    selectModule: (module) => {
+      helpers.openViewModal(module);
     },
     
     // Cambiar estado de módulo con confirmación
@@ -276,6 +293,7 @@ export const useOwnerModules = () => {
     showEditModal,
     showDeleteModal,
     showDependenciesModal,
+    showViewModal,
     editingModule,
     
     // Actions

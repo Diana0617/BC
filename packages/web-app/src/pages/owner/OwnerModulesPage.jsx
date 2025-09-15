@@ -47,6 +47,7 @@ const OwnerModulesPage = () => {
     showEditModal,
     showDeleteModal,
     showDependenciesModal,
+    showViewModal,
     editingModule,
     
     // Helpers
@@ -356,6 +357,13 @@ const OwnerModulesPage = () => {
           onClose={helpers.closeModals}
         />
       )}
+
+      {showViewModal && editingModule && (
+        <ViewModuleModal 
+          module={editingModule}
+          onClose={helpers.closeModals}
+        />
+      )}
     </div>
   );
 };
@@ -495,7 +503,7 @@ const ModuleCard = ({ module, helpers, loading }) => {
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="flex space-x-2">
             <button
-              onClick={() => helpers.selectModule(module.id)}
+              onClick={() => helpers.openViewModal(module)}
               className="text-indigo-600 hover:text-indigo-900 text-sm"
               title="Ver detalles"
             >
@@ -742,30 +750,30 @@ const CreateModuleModal = ({ onClose, loading }) => {
   const availableIcons = iconsByCategory[formData.category] || [];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg w-full max-w-xs sm:max-w-lg md:max-w-2xl xl:max-w-4xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Crear Nuevo Módulo</h2>
-            <p className="text-sm text-gray-600 mt-1">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Crear Nuevo Módulo</h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
               Complete la información para crear un nuevo módulo del sistema
             </p>
           </div>
 
-          <div className="px-6 py-4 space-y-6">
+          <div className="px-4 sm:px-6 py-4 space-y-4 sm:space-y-6">
             {/* Error general */}
             {errors.general && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-4">
-                <p className="text-sm text-red-600">{errors.general}</p>
+              <div className="bg-red-50 border border-red-200 rounded-md p-3 sm:p-4">
+                <p className="text-xs sm:text-sm text-red-600">{errors.general}</p>
               </div>
             )}
 
             {/* Información básica */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Nombre para mostrar */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="lg:col-span-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Nombre del módulo *
                 </label>
                 <input
@@ -774,30 +782,30 @@ const CreateModuleModal = ({ onClose, loading }) => {
                   value={formData.displayName}
                   onChange={handleInputChange}
                   placeholder="Gestión de Citas"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                  className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
                     errors.displayName ? 'border-red-300' : 'border-gray-300'
                   }`}
                 />
                 {errors.displayName && (
-                  <p className="text-sm text-red-600 mt-1">{errors.displayName}</p>
+                  <p className="text-xs text-red-600 mt-1">{errors.displayName}</p>
                 )}
                 {formData.displayName && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Nombre interno: <code>{generateName(formData.displayName)}</code>
+                    Nombre interno: <code className="text-xs">{generateName(formData.displayName)}</code>
                   </p>
                 )}
               </div>
 
               {/* Categoría */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Categoría *
                 </label>
                 <select
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                  className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
                     errors.category ? 'border-red-300' : 'border-gray-300'
                   }`}
                 >
@@ -809,13 +817,13 @@ const CreateModuleModal = ({ onClose, loading }) => {
                   ))}
                 </select>
                 {errors.category && (
-                  <p className="text-sm text-red-600 mt-1">{errors.category}</p>
+                  <p className="text-xs text-red-600 mt-1">{errors.category}</p>
                 )}
               </div>
 
               {/* Precio */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Precio (COP) *
                 </label>
                 <input
@@ -826,12 +834,12 @@ const CreateModuleModal = ({ onClose, loading }) => {
                   placeholder="5000"
                   min="0"
                   step="100"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                  className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
                     errors.price ? 'border-red-300' : 'border-gray-300'
                   }`}
                 />
                 {errors.price && (
-                  <p className="text-sm text-red-600 mt-1">{errors.price}</p>
+                  <p className="text-xs text-red-600 mt-1">{errors.price}</p>
                 )}
               </div>
             </div>
@@ -839,14 +847,14 @@ const CreateModuleModal = ({ onClose, loading }) => {
             {/* Selector de icono */}
             {formData.category && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Icono *
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                   {availableIcons.map((iconOption) => (
                     <label
                       key={iconOption.value}
-                      className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+                      className={`flex items-center space-x-2 p-2 sm:p-3 border rounded-lg cursor-pointer transition-colors ${
                         formData.icon === iconOption.value
                           ? 'border-pink-500 bg-pink-50'
                           : 'border-gray-200 hover:bg-gray-50'
@@ -860,20 +868,20 @@ const CreateModuleModal = ({ onClose, loading }) => {
                         onChange={handleInputChange}
                         className="sr-only"
                       />
-                      <span className="text-2xl">{iconOption.icon}</span>
-                      <span className="text-sm text-gray-700">{iconOption.label}</span>
+                      <span className="text-lg sm:text-2xl">{iconOption.icon}</span>
+                      <span className="text-xs sm:text-sm text-gray-700 truncate">{iconOption.label}</span>
                     </label>
                   ))}
                 </div>
                 {errors.icon && (
-                  <p className="text-sm text-red-600 mt-1">{errors.icon}</p>
+                  <p className="text-xs text-red-600 mt-1">{errors.icon}</p>
                 )}
               </div>
             )}
 
             {/* Descripción */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 Descripción *
               </label>
               <textarea
@@ -882,25 +890,25 @@ const CreateModuleModal = ({ onClose, loading }) => {
                 onChange={handleInputChange}
                 rows="3"
                 placeholder="Describa la funcionalidad principal del módulo..."
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
                   errors.description ? 'border-red-300' : 'border-gray-300'
                 }`}
               />
               {errors.description && (
-                <p className="text-sm text-red-600 mt-1">{errors.description}</p>
+                <p className="text-xs text-red-600 mt-1">{errors.description}</p>
               )}
             </div>
 
             {/* Estado */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 Estado inicial
               </label>
               <select
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
               >
                 <option value="DEVELOPMENT">En Desarrollo</option>
                 <option value="ACTIVE">Activo</option>
@@ -909,19 +917,19 @@ const CreateModuleModal = ({ onClose, loading }) => {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+          <div className="px-4 sm:px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:bg-gray-100"
+              className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 order-2 sm:order-1"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:bg-gray-400 flex items-center"
+              className="w-full sm:w-auto px-6 py-2 bg-pink-600 text-white text-sm rounded-md hover:bg-pink-700 disabled:bg-gray-400 flex items-center justify-center order-1 sm:order-2"
             >
               {loading && (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -1109,30 +1117,30 @@ const EditModuleModal = ({ module, onClose, loading }) => {
   const availableIcons = iconsByCategory[formData.category] || [];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg w-full max-w-xs sm:max-w-lg md:max-w-2xl xl:max-w-4xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Editar Módulo</h2>
-            <p className="text-sm text-gray-600 mt-1">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Editar Módulo</h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
               Actualice la información del módulo: {module.displayName}
             </p>
           </div>
 
-          <div className="px-6 py-4 space-y-6">
+          <div className="px-4 sm:px-6 py-4 space-y-4 sm:space-y-6">
             {/* Error general */}
             {errors.general && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-4">
-                <p className="text-sm text-red-600">{errors.general}</p>
+              <div className="bg-red-50 border border-red-200 rounded-md p-3 sm:p-4">
+                <p className="text-xs sm:text-sm text-red-600">{errors.general}</p>
               </div>
             )}
 
             {/* Información básica */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Nombre para mostrar */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="lg:col-span-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Nombre del módulo *
                 </label>
                 <input
@@ -1141,25 +1149,25 @@ const EditModuleModal = ({ module, onClose, loading }) => {
                   value={formData.displayName}
                   onChange={handleInputChange}
                   placeholder="Gestión de Citas"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                  className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
                     errors.displayName ? 'border-red-300' : 'border-gray-300'
                   }`}
                 />
                 {errors.displayName && (
-                  <p className="text-sm text-red-600 mt-1">{errors.displayName}</p>
+                  <p className="text-xs text-red-600 mt-1">{errors.displayName}</p>
                 )}
               </div>
 
               {/* Categoría */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Categoría *
                 </label>
                 <select
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                  className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
                     errors.category ? 'border-red-300' : 'border-gray-300'
                   }`}
                 >
@@ -1171,13 +1179,13 @@ const EditModuleModal = ({ module, onClose, loading }) => {
                   ))}
                 </select>
                 {errors.category && (
-                  <p className="text-sm text-red-600 mt-1">{errors.category}</p>
+                  <p className="text-xs text-red-600 mt-1">{errors.category}</p>
                 )}
               </div>
 
               {/* Precio */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Precio (COP) *
                 </label>
                 <input
@@ -1188,12 +1196,12 @@ const EditModuleModal = ({ module, onClose, loading }) => {
                   placeholder="5000"
                   min="0"
                   step="100"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                  className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
                     errors.price ? 'border-red-300' : 'border-gray-300'
                   }`}
                 />
                 {errors.price && (
-                  <p className="text-sm text-red-600 mt-1">{errors.price}</p>
+                  <p className="text-xs text-red-600 mt-1">{errors.price}</p>
                 )}
               </div>
             </div>
@@ -1201,14 +1209,14 @@ const EditModuleModal = ({ module, onClose, loading }) => {
             {/* Selector de icono */}
             {formData.category && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Icono *
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                   {availableIcons.map((iconOption) => (
                     <label
                       key={iconOption.value}
-                      className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+                      className={`flex items-center space-x-2 p-2 sm:p-3 border rounded-lg cursor-pointer transition-colors ${
                         formData.icon === iconOption.value
                           ? 'border-pink-500 bg-pink-50'
                           : 'border-gray-200 hover:bg-gray-50'
@@ -1222,20 +1230,20 @@ const EditModuleModal = ({ module, onClose, loading }) => {
                         onChange={handleInputChange}
                         className="sr-only"
                       />
-                      <span className="text-2xl">{iconOption.icon}</span>
-                      <span className="text-sm text-gray-700">{iconOption.label}</span>
+                      <span className="text-lg sm:text-2xl">{iconOption.icon}</span>
+                      <span className="text-xs sm:text-sm text-gray-700 truncate">{iconOption.label}</span>
                     </label>
                   ))}
                 </div>
                 {errors.icon && (
-                  <p className="text-sm text-red-600 mt-1">{errors.icon}</p>
+                  <p className="text-xs text-red-600 mt-1">{errors.icon}</p>
                 )}
               </div>
             )}
 
             {/* Descripción */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 Descripción *
               </label>
               <textarea
@@ -1244,25 +1252,25 @@ const EditModuleModal = ({ module, onClose, loading }) => {
                 onChange={handleInputChange}
                 rows="3"
                 placeholder="Describa la funcionalidad principal del módulo..."
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
                   errors.description ? 'border-red-300' : 'border-gray-300'
                 }`}
               />
               {errors.description && (
-                <p className="text-sm text-red-600 mt-1">{errors.description}</p>
+                <p className="text-xs text-red-600 mt-1">{errors.description}</p>
               )}
             </div>
 
             {/* Estado */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 Estado
               </label>
               <select
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
               >
                 <option value="DEVELOPMENT">En Desarrollo</option>
                 <option value="ACTIVE">Activo</option>
@@ -1272,19 +1280,19 @@ const EditModuleModal = ({ module, onClose, loading }) => {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+          <div className="px-4 sm:px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:bg-gray-100"
+              className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 order-2 sm:order-1"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:bg-gray-400 flex items-center"
+              className="w-full sm:w-auto px-6 py-2 bg-pink-600 text-white text-sm rounded-md hover:bg-pink-700 disabled:bg-gray-400 flex items-center justify-center order-1 sm:order-2"
             >
               {loading && (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -1333,57 +1341,57 @@ const DeleteModuleModal = ({ module, onClose, loading }) => {
   const canDelete = deleteType === 'soft' || (deleteType === 'permanent' && confirmText === module.displayName);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-lg w-full">
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Eliminar Módulo</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg w-full max-w-xs sm:max-w-lg md:max-w-xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto">
+        <div className="p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Eliminar Módulo</h2>
           
-          <p className="text-gray-600 mb-6">
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
             ¿Cómo deseas eliminar el módulo "<strong>{module.displayName}</strong>"?
           </p>
 
           {/* Opciones de eliminación */}
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
             {/* Eliminación suave */}
-            <div className="border rounded-lg p-4">
-              <label className="flex items-start space-x-3 cursor-pointer">
+            <div className="border rounded-lg p-3 sm:p-4">
+              <label className="flex items-start space-x-2 sm:space-x-3 cursor-pointer">
                 <input
                   type="radio"
                   name="deleteType"
                   value="soft"
                   checked={deleteType === 'soft'}
                   onChange={() => handleDeleteTypeChange('soft')}
-                  className="mt-1 text-blue-600"
+                  className="mt-1 text-blue-600 flex-shrink-0"
                 />
-                <div>
-                  <div className="font-medium text-gray-900">Eliminación Suave</div>
-                  <div className="text-sm text-gray-500">
-                    Marca el módulo como <span className="font-mono text-orange-600">DEPRECATED</span>. 
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm sm:text-base font-medium text-gray-900">Eliminación Suave</div>
+                  <div className="text-xs sm:text-sm text-gray-500 mt-1">
+                    Marca el módulo como <span className="font-mono text-orange-600 text-xs">DEPRECATED</span>. 
                     El módulo permanece en la base de datos pero no estará disponible para nuevos usos.
                   </div>
-                  <div className="text-sm text-green-600 mt-1">✅ Reversible</div>
+                  <div className="text-xs sm:text-sm text-green-600 mt-1">✅ Reversible</div>
                 </div>
               </label>
             </div>
 
             {/* Eliminación permanente */}
-            <div className="border rounded-lg p-4 border-red-200">
-              <label className="flex items-start space-x-3 cursor-pointer">
+            <div className="border rounded-lg p-3 sm:p-4 border-red-200">
+              <label className="flex items-start space-x-2 sm:space-x-3 cursor-pointer">
                 <input
                   type="radio"
                   name="deleteType"
                   value="permanent"
                   checked={deleteType === 'permanent'}
                   onChange={() => handleDeleteTypeChange('permanent')}
-                  className="mt-1 text-red-600"
+                  className="mt-1 text-red-600 flex-shrink-0"
                 />
-                <div>
-                  <div className="font-medium text-red-700">Eliminación Permanente</div>
-                  <div className="text-sm text-gray-500">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm sm:text-base font-medium text-red-700">Eliminación Permanente</div>
+                  <div className="text-xs sm:text-sm text-gray-500 mt-1">
                     Elimina completamente el módulo de la base de datos. 
                     Esta acción <strong>NO se puede deshacer</strong>.
                   </div>
-                  <div className="text-sm text-red-600 mt-1">⚠️ No reversible</div>
+                  <div className="text-xs sm:text-sm text-red-600 mt-1">⚠️ No reversible</div>
                 </div>
               </label>
             </div>
@@ -1391,8 +1399,8 @@ const DeleteModuleModal = ({ module, onClose, loading }) => {
 
           {/* Campo de confirmación para eliminación permanente */}
           {showConfirmInput && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <label className="block text-sm font-medium text-red-700 mb-2">
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+              <label className="block text-xs sm:text-sm font-medium text-red-700 mb-2">
                 Para confirmar la eliminación permanente, escriba el nombre del módulo:
               </label>
               <input
@@ -1400,10 +1408,10 @@ const DeleteModuleModal = ({ module, onClose, loading }) => {
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder={module.displayName}
-                className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full px-3 py-2 text-sm border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
               />
               {confirmText && confirmText !== module.displayName && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   El texto debe coincidir exactamente: "{module.displayName}"
                 </p>
               )}
@@ -1411,25 +1419,25 @@ const DeleteModuleModal = ({ module, onClose, loading }) => {
           )}
 
           {/* Información del módulo */}
-          <div className="mb-6 p-3 bg-gray-50 rounded-lg text-sm">
+          <div className="mb-4 sm:mb-6 p-3 bg-gray-50 rounded-lg text-xs sm:text-sm">
             <div><strong>Versión:</strong> {module.version}</div>
-            <div><strong>Estado actual:</strong> <span className="font-mono">{module.status}</span></div>
+            <div><strong>Estado actual:</strong> <span className="font-mono text-xs">{module.status}</span></div>
             <div><strong>Categoría:</strong> {module.category}</div>
           </div>
 
           {/* Botones */}
-          <div className="flex justify-end space-x-3">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
             <button
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 order-2 sm:order-1"
             >
               Cancelar
             </button>
             <button
               onClick={handleDelete}
               disabled={!canDelete || loading}
-              className={`px-4 py-2 text-white rounded-md disabled:opacity-50 ${
+              className={`w-full sm:w-auto px-4 py-2 text-white text-sm rounded-md disabled:opacity-50 order-1 sm:order-2 ${
                 deleteType === 'permanent' 
                   ? 'bg-red-600 hover:bg-red-700' 
                   : 'bg-orange-600 hover:bg-orange-700'
@@ -1451,29 +1459,285 @@ const DeleteModuleModal = ({ module, onClose, loading }) => {
 };
 
 /**
- * Modal para mostrar dependencias (placeholder)
+ * Modal para vista previa detallada del módulo
+ */
+const ViewModuleModal = ({ module, onClose }) => {
+  // Mapeo de categorías y estados para traducción
+  const categoryLabels = {
+    'CORE': 'Núcleo',
+    'APPOINTMENTS': 'Citas',
+    'PAYMENTS': 'Pagos',
+    'INVENTORY': 'Inventario',
+    'REPORTS': 'Reportes',
+    'INTEGRATIONS': 'Integraciones',
+    'COMMUNICATIONS': 'Comunicaciones',
+    'ANALYTICS': 'Analíticas'
+  };
+
+  const statusLabels = {
+    'DEVELOPMENT': 'En Desarrollo',
+    'ACTIVE': 'Activo',
+    'INACTIVE': 'Inactivo',
+    'DEPRECATED': 'Obsoleto'
+  };
+
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      DEVELOPMENT: { color: 'yellow', icon: WrenchScrewdriverIcon },
+      ACTIVE: { color: 'green', icon: CheckCircleIcon },
+      INACTIVE: { color: 'gray', icon: ClockIcon },
+      DEPRECATED: { color: 'red', icon: XCircleIcon }
+    };
+    
+    const config = statusConfig[status] || statusConfig.INACTIVE;
+    const IconComponent = config.icon;
+    
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${config.color}-100 text-${config.color}-800`}>
+        <IconComponent className="h-3 w-3 mr-1" />
+        {statusLabels[status] || status}
+      </span>
+    );
+  };
+
+  const formatPrice = (pricing) => {
+    if (!pricing || pricing.type === 'FREE' || pricing.price === 0) {
+      return 'Gratuito';
+    }
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: pricing.currency || 'COP'
+    }).format(pricing.price);
+  };
+
+  const getIconEmoji = (iconName) => {
+    const iconMap = {
+      'cog-6-tooth': '⚙️',
+      'squares-plus': '⊞',
+      'shield-check': '🛡️',
+      'calendar-days': '📅',
+      'clock': '⏰',
+      'user-group': '👥',
+      'credit-card': '💳',
+      'banknotes': '💵',
+      'receipt-percent': '🧾',
+      'cube': '📦',
+      'archive-box': '📋',
+      'truck': '🚛',
+      'chart-bar': '📊',
+      'document-chart-bar': '📈',
+      'clipboard-document-list': '📄',
+      'link': '🔗',
+      'globe-alt': '🌐',
+      'arrows-right-left': '↔️',
+      'envelope': '📧',
+      'chat-bubble-left-right': '💬',
+      'megaphone': '📢',
+      'chart-pie': '📊',
+      'calculator': '🧮',
+      'light-bulb': '💡'
+    };
+    return iconMap[iconName] || '📦';
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg w-full max-w-xs sm:max-w-lg md:max-w-3xl xl:max-w-4xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto">
+        <div className="p-4 sm:p-6">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-pink-100 rounded-lg">
+                <span className="text-2xl">{getIconEmoji(module.icon)}</span>
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                  {module.displayName}
+                </h2>
+                <p className="text-sm text-gray-500 font-mono">{module.name}</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-end space-y-2">
+              {getStatusBadge(module.status)}
+              <span className="text-xs text-gray-500">v{module.version}</span>
+            </div>
+          </div>
+
+          {/* Descripción */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Descripción</h3>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+              {module.description || 'No hay descripción disponible.'}
+            </p>
+          </div>
+
+          {/* Grid de información */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Información básica */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
+                Información General
+              </h3>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Categoría:</span>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {categoryLabels[module.category] || module.category}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Precio:</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {formatPrice(module.pricing)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Configuración:</span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    module.requiresConfiguration 
+                      ? 'bg-yellow-100 text-yellow-800' 
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {module.requiresConfiguration ? 'Requerida' : 'No requerida'}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-gray-600">Creado:</span>
+                  <span className="text-sm text-gray-900">
+                    {new Date(module.createdAt).toLocaleDateString('es-CO')}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-gray-600">Actualizado:</span>
+                  <span className="text-sm text-gray-900">
+                    {new Date(module.updatedAt).toLocaleDateString('es-CO')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Información técnica */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
+                Información Técnica
+              </h3>
+              
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm text-gray-600 block mb-1">ID del Módulo:</span>
+                  <code className="text-xs bg-gray-100 p-1 rounded text-gray-800 break-all">
+                    {module.id}
+                  </code>
+                </div>
+                
+                {module.permissions && module.permissions.length > 0 && (
+                  <div>
+                    <span className="text-sm text-gray-600 block mb-2">Permisos:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {module.permissions.slice(0, 6).map((permission, index) => (
+                        <span 
+                          key={index}
+                          className="inline-block px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded"
+                        >
+                          {permission}
+                        </span>
+                      ))}
+                      {module.permissions.length > 6 && (
+                        <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                          +{module.permissions.length - 6} más
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {module.dependencies && module.dependencies.length > 0 && (
+                  <div>
+                    <span className="text-sm text-gray-600 block mb-2">Dependencias:</span>
+                    <div className="space-y-1">
+                      {module.dependencies.slice(0, 3).map((depId, index) => (
+                        <div key={index} className="text-xs bg-orange-50 text-orange-800 p-2 rounded border-l-2 border-orange-200">
+                          {depId}
+                        </div>
+                      ))}
+                      {module.dependencies.length > 3 && (
+                        <div className="text-xs text-gray-500 p-2">
+                          +{module.dependencies.length - 3} dependencias más
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Esquema de configuración si existe */}
+          {module.configurationSchema && Object.keys(module.configurationSchema).length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                Esquema de Configuración
+              </h3>
+              <div className="bg-gray-50 p-4 rounded-lg max-h-40 overflow-y-auto">
+                <pre className="text-xs text-gray-700 whitespace-pre-wrap">
+                  {JSON.stringify(module.configurationSchema, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0 pt-4 border-t border-gray-200">
+            <div className="text-xs text-gray-500">
+              Última actualización: {new Date(module.updatedAt).toLocaleString('es-CO')}
+            </div>
+            <button
+              onClick={onClose}
+              className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Modal para mostrar dependencias
  */
 const DependenciesModal = ({ module, onClose }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div className="bg-white rounded-lg max-w-lg w-full">
-      <div className="p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+    <div className="bg-white rounded-lg w-full max-w-xs sm:max-w-lg md:max-w-xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto">
+      <div className="p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
           Dependencias de {module.displayName}
         </h2>
-        <p className="text-gray-600 mb-4">
+        <p className="text-sm sm:text-base text-gray-600 mb-4">
           Este módulo depende de los siguientes módulos:
         </p>
-        <div className="space-y-2 mb-6">
+        <div className="space-y-2 mb-4 sm:mb-6 max-h-48 sm:max-h-64 overflow-y-auto">
           {module.dependencies?.map((depId) => (
-            <div key={depId} className="p-2 bg-gray-50 rounded">
+            <div key={depId} className="p-2 sm:p-3 bg-gray-50 rounded text-sm">
               Módulo ID: {depId}
             </div>
           ))}
+          {(!module.dependencies || module.dependencies.length === 0) && (
+            <div className="p-2 sm:p-3 bg-gray-50 rounded text-sm text-gray-500 text-center">
+              No hay dependencias
+            </div>
+          )}
         </div>
         <div className="flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+            className="w-full sm:w-auto px-4 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700"
           >
             Cerrar
           </button>

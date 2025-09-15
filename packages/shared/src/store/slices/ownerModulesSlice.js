@@ -147,10 +147,11 @@ const initialState = {
   modulesByCategory: {
     CORE: [],
     APPOINTMENTS: [],
-    CLIENTS: [],
-    FINANCIAL: [],
-    PREMIUM: [],
+    PAYMENTS: [],
+    INVENTORY: [],
+    REPORTS: [],
     INTEGRATIONS: [],
+    COMMUNICATIONS: [],
     ANALYTICS: []
   },
   
@@ -198,17 +199,19 @@ const initialState = {
   showEditModal: false,
   showDeleteModal: false,
   showDependenciesModal: false,
+  showViewModal: false,
   editingModule: null,
   
   // Categorías disponibles
   categories: [
-    { value: 'CORE', label: 'Core', description: 'Módulos fundamentales del sistema' },
+    { value: 'CORE', label: 'Núcleo', description: 'Módulos fundamentales del sistema' },
     { value: 'APPOINTMENTS', label: 'Citas', description: 'Gestión de citas y agenda' },
-    { value: 'CLIENTS', label: 'Clientes', description: 'Gestión de clientes' },
-    { value: 'FINANCIAL', label: 'Financiero', description: 'Módulos financieros y reportes' },
-    { value: 'PREMIUM', label: 'Premium', description: 'Funcionalidades premium' },
+    { value: 'PAYMENTS', label: 'Pagos', description: 'Gestión de pagos y facturación' },
+    { value: 'INVENTORY', label: 'Inventario', description: 'Gestión de productos e inventario' },
+    { value: 'REPORTS', label: 'Reportes', description: 'Módulos de reportes y análisis' },
     { value: 'INTEGRATIONS', label: 'Integraciones', description: 'Integraciones con terceros' },
-    { value: 'ANALYTICS', label: 'Analytics', description: 'Análisis y estadísticas' }
+    { value: 'COMMUNICATIONS', label: 'Comunicaciones', description: 'Módulos de comunicación' },
+    { value: 'ANALYTICS', label: 'Analíticas', description: 'Análisis y estadísticas avanzadas' }
   ],
   
   // Estados disponibles
@@ -258,6 +261,12 @@ const ownerModulesSlice = createSlice({
     },
     setShowDependenciesModal: (state, action) => {
       state.showDependenciesModal = action.payload;
+    },
+    setShowViewModal: (state, action) => {
+      state.showViewModal = action.payload;
+      if (!action.payload) {
+        state.selectedModule = null;
+      }
     },
     setEditingModule: (state, action) => {
       state.editingModule = action.payload;
@@ -522,6 +531,7 @@ export const {
   setShowEditModal,
   setShowDeleteModal,
   setShowDependenciesModal,
+  setShowViewModal,
   setEditingModule,
   clearErrors,
   clearSelectedModule,
