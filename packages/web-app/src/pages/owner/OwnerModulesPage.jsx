@@ -490,34 +490,459 @@ const ModuleCard = ({ module, helpers, loading }) => {
 };
 
 /**
- * Modal para crear módulo (placeholder)
+ * Modal para crear módulo
  */
-const CreateModuleModal = ({ onClose, loading, categories, statuses }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div className="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
-      <div className="p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Crear Nuevo Módulo</h2>
-        <p className="text-gray-600 mb-4">
-          Modal de creación de módulo - Implementar formulario completo
-        </p>
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-          >
-            Cancelar
-          </button>
-          <button
-            disabled={loading}
-            className="px-4 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:bg-gray-400"
-          >
-            {loading ? 'Creando...' : 'Crear Módulo'}
-          </button>
-        </div>
+const CreateModuleModal = ({ onClose, loading, categories, statuses }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    displayName: '',
+    category: '',
+    price: '',
+    description: '',
+    features: [''],
+    dependencies: [],
+    status: 'DEVELOPMENT',
+    version: '1.0.0',
+    requiresConfiguration: false,
+    permissions: ['']
+  });
+
+  const [errors, setErrors] = useState({});
+  const [availableModules, setAvailableModules] = useState([]);
+  const { actions } = useOwnerModules();
+
+  // Cargar módulos disponibles para dependencias
+  useEffect(() => {
+    const loadAvailableModules = async () => {
+      try {
+        // Usar la API directamente para no interferir con el estado principal
+        const { ownerModulesApi } = await import('../../../../shared/src/api/ownerModulesApi.js');
+        const response = await ownerModulesApi.getAllModules({ status: 'ACTIVE' });
+        setAvailableModules(response.data?.data || []);
+      } catch (error) {
+        console.error('Error loading available modules:', error);
+      }
+    };
+    loadAvailableModules();
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    
+    // Limpiar error del campo
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleArrayChange = (arrayName, index, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [arrayName]: prev[arrayName].map((item, i) => 
+        i === index ? value : item
+      )
+    }));
+  };
+
+  const addArrayItem = (arrayName) => {
+    setFormData(prev => ({
+      ...prev,
+      [arrayName]: [...prev[arrayName], '']
+    }));
+  };
+
+  const removeArrayItem = (arrayName, index) => {
+    setFormData(prev => ({
+      ...prev,
+      [arrayName]: prev[arrayName].filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleDependencyToggle = (moduleId) => {
+    setFormData(prev => ({
+      ...prev,
+      dependencies: prev.dependencies.includes(moduleId)
+        ? prev.dependencies.filter(id => id !== moduleId)
+        : [...prev.dependencies, moduleId]
+    }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'El nombre es requerido';
+    } else if (!/^[a-z_][a-z0-9_]*$/.test(formData.name)) {
+      newErrors.name = 'El nombre debe ser snake_case (ej: appointment_management)';
+    }
+    
+    if (!formData.displayName.trim()) {
+      newErrors.displayName = 'El nombre para mostrar es requerido';
+    }
+    
+    if (!formData.category) {
+      newErrors.category = 'La categoría es requerida';
+    }
+    
+    if (!formData.price || parseFloat(formData.price) < 0) {
+      newErrors.price = 'El precio debe ser un número válido mayor o igual a 0';
+    }
+    
+    if (!formData.description.trim()) {
+      newErrors.description = 'La descripción es requerida';
+    }
+    
+    // Validar que al menos haya una característica no vacía
+    const validFeatures = formData.features.filter(f => f.trim());
+    if (validFeatures.length === 0) {
+      newErrors.features = 'Debe agregar al menos una característica';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    try {
+      // Limpiar arrays de elementos vacíos
+      const cleanedData = {
+        ...formData,
+        price: parseFloat(formData.price),
+        features: formData.features.filter(f => f.trim()),
+        permissions: formData.permissions.filter(p => p.trim())
+      };
+      
+      await actions.createModule(cleanedData);
+      onClose();
+    } catch (error) {
+      console.error('Error creating module:', error);
+      setErrors({ general: 'Error al crear el módulo. Por favor, inténtalo de nuevo.' });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+        <form onSubmit={handleSubmit}>
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900">Crear Nuevo Módulo</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Complete todos los campos para crear un nuevo módulo del sistema
+            </p>
+          </div>
+
+          <div className="px-6 py-4 space-y-6">
+            {/* Error general */}
+            {errors.general && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <p className="text-sm text-red-600">{errors.general}</p>
+              </div>
+            )}
+
+            {/* Información básica */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Nombre interno */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre interno *
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="appointment_management"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                    errors.name ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                />
+                {errors.name && (
+                  <p className="text-sm text-red-600 mt-1">{errors.name}</p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Nombre único en formato snake_case
+                </p>
+              </div>
+
+              {/* Nombre para mostrar */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre para mostrar *
+                </label>
+                <input
+                  type="text"
+                  name="displayName"
+                  value={formData.displayName}
+                  onChange={handleInputChange}
+                  placeholder="Gestión de Citas"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                    errors.displayName ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                />
+                {errors.displayName && (
+                  <p className="text-sm text-red-600 mt-1">{errors.displayName}</p>
+                )}
+              </div>
+
+              {/* Categoría */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Categoría *
+                </label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                    errors.category ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Seleccionar categoría</option>
+                  {categories.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.category && (
+                  <p className="text-sm text-red-600 mt-1">{errors.category}</p>
+                )}
+              </div>
+
+              {/* Precio */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Precio (COP) *
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  placeholder="5000"
+                  min="0"
+                  step="100"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                    errors.price ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                />
+                {errors.price && (
+                  <p className="text-sm text-red-600 mt-1">{errors.price}</p>
+                )}
+              </div>
+
+              {/* Versión */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Versión
+                </label>
+                <input
+                  type="text"
+                  name="version"
+                  value={formData.version}
+                  onChange={handleInputChange}
+                  placeholder="1.0.0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+              </div>
+
+              {/* Estado */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Estado inicial
+                </label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                >
+                  {statuses.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Descripción */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Descripción *
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                rows="3"
+                placeholder="Describa la funcionalidad principal del módulo..."
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                  errors.description ? 'border-red-300' : 'border-gray-300'
+                }`}
+              />
+              {errors.description && (
+                <p className="text-sm text-red-600 mt-1">{errors.description}</p>
+              )}
+            </div>
+
+            {/* Características */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Características *
+              </label>
+              {formData.features.map((feature, index) => (
+                <div key={index} className="flex items-center space-x-2 mb-2">
+                  <input
+                    type="text"
+                    value={feature}
+                    onChange={(e) => handleArrayChange('features', index, e.target.value)}
+                    placeholder="Creación de citas"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  />
+                  {formData.features.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeArrayItem('features', index)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addArrayItem('features')}
+                className="text-pink-600 hover:text-pink-800 text-sm flex items-center"
+              >
+                <PlusIcon className="h-4 w-4 mr-1" />
+                Agregar característica
+              </button>
+              {errors.features && (
+                <p className="text-sm text-red-600 mt-1">{errors.features}</p>
+              )}
+            </div>
+
+            {/* Permisos */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Permisos requeridos
+              </label>
+              {formData.permissions.map((permission, index) => (
+                <div key={index} className="flex items-center space-x-2 mb-2">
+                  <input
+                    type="text"
+                    value={permission}
+                    onChange={(e) => handleArrayChange('permissions', index, e.target.value)}
+                    placeholder="appointments.create"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  />
+                  {formData.permissions.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeArrayItem('permissions', index)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addArrayItem('permissions')}
+                className="text-pink-600 hover:text-pink-800 text-sm flex items-center"
+              >
+                <PlusIcon className="h-4 w-4 mr-1" />
+                Agregar permiso
+              </button>
+            </div>
+
+            {/* Configuración requerida */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="requiresConfiguration"
+                checked={formData.requiresConfiguration}
+                onChange={handleInputChange}
+                className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+              />
+              <label className="ml-2 block text-sm text-gray-900">
+                Requiere configuración adicional
+              </label>
+            </div>
+
+            {/* Dependencias */}
+            {availableModules.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Dependencias (opcional)
+                </label>
+                <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md">
+                  {availableModules.map((module) => (
+                    <div key={module.id} className="flex items-center p-3 border-b border-gray-100 last:border-b-0">
+                      <input
+                        type="checkbox"
+                        checked={formData.dependencies.includes(module.id)}
+                        onChange={() => handleDependencyToggle(module.id)}
+                        className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                      />
+                      <div className="ml-3">
+                        <div className="text-sm font-medium text-gray-900">
+                          {module.displayName}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {module.name} - {module.category}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Selecciona los módulos de los que depende este módulo
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:bg-gray-100"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:bg-gray-400 flex items-center"
+            >
+              {loading && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              )}
+              {loading ? 'Creando...' : 'Crear Módulo'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 /**
  * Modal para editar módulo (placeholder)
