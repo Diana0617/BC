@@ -8,15 +8,22 @@ class SubscriptionPlanController {
   /**
    * Obtener todos los planes de suscripción con paginación y filtros
    * GET /api/plans
+   * Funciona tanto para rutas públicas como protegidas
    */
   static async getPlans(req, res) {
     try {
-      const { page = 1, limit = 10, status, search, includeModules = false } = req.query;
+      // Para peticiones públicas, incluir módulos por defecto
+      const defaultIncludeModules = !req.user ? 'true' : 'false';
+      const { page = 1, limit = 10, status, search, includeModules = defaultIncludeModules } = req.query;
       
       // Construir filtros dinámicos
       const where = {};
       
-      if (status) {
+      // Si la petición es pública (sin req.user), solo mostrar planes ACTIVOS
+      if (!req.user) {
+        where.status = 'ACTIVE';
+      } else if (status) {
+        // Si hay usuario autenticado, permitir filtrar por cualquier status
         where.status = status;
       }
       
@@ -57,8 +64,10 @@ class SubscriptionPlanController {
         success: true,
         data: result.data,
         pagination: result.pagination,
-        filters: {
+        filters: req.user ? {
           statuses: ['ACTIVE', 'INACTIVE', 'DEPRECATED']
+        } : {
+          statuses: ['ACTIVE'] // Solo ACTIVE para peticiones públicas
         }
       });
       
@@ -75,11 +84,14 @@ class SubscriptionPlanController {
   /**
    * Obtener un plan específico por ID
    * GET /api/plans/:id
+   * Funciona tanto para rutas públicas como protegidas
    */
   static async getPlanById(req, res) {
     try {
       const { id } = req.params;
-      const { includeModules = true } = req.query;
+      // Para peticiones públicas, incluir módulos por defecto
+      const defaultIncludeModules = !req.user ? 'true' : 'true';
+      const { includeModules = defaultIncludeModules } = req.query;
       
       const includeOptions = [];
       
@@ -94,16 +106,50 @@ class SubscriptionPlanController {
         });
       }
       
-      const plan = await SubscriptionPlan.findByPk(id, {
+      // DEBUGGING: Primero buscar el plan sin filtros para ver qué hay
+      const planWithoutFilter = await SubscriptionPlan.findByPk(id);
+      console.log(`🔍 [DEBUG] Plan sin filtros:`, planWithoutFilter ? {
+        id: planWithoutFilter.id,
+        name: planWithoutFilter.name,
+        status: planWithoutFilter.status
+      } : 'No encontrado');
+      
+      // Construir where clause basado en si es petición pública o no
+      const whereClause = { id };
+      
+      // Si es petición pública (sin req.user), solo permitir planes ACTIVOS
+      if (!req.user) {
+        whereClause.status = 'ACTIVE';
+        console.log(`🌐 [DEBUG] Petición pública - filtrando por status ACTIVE`);
+      } else {
+        console.log(`🔒 [DEBUG] Petición autenticada - sin filtro de status`);
+      }
+      
+      const plan = await SubscriptionPlan.findOne({
+        where: whereClause,
         include: includeOptions
       });
       
       if (!plan) {
+        console.log(`❌ [DEBUG] Plan no encontrado con filtros:`, whereClause);
         return res.status(404).json({
           success: false,
-          message: 'Plan de suscripción no encontrado'
+          message: !req.user 
+            ? 'Plan de suscripción no encontrado o no disponible públicamente'
+            : 'Plan de suscripción no encontrado',
+          debug: process.env.NODE_ENV === 'development' ? {
+            searchCriteria: whereClause,
+            planExistsWithoutFilter: !!planWithoutFilter,
+            planStatusWithoutFilter: planWithoutFilter?.status
+          } : undefined
         });
       }
+      
+      console.log(`✅ [DEBUG] Plan encontrado:`, {
+        id: plan.id,
+        name: plan.name,
+        status: plan.status
+      });
       
       res.status(200).json({
         success: true,

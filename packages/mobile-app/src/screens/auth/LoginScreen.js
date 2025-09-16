@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginUser } from '../../../../shared/src/store/slices/authSlice';
+import { loginUser } from '../../../../shared/src/store/reactNativeStore.js';
 
 const ROLE_CONFIG = {
   business: {

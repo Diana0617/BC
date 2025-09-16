@@ -4,20 +4,70 @@ const SubscriptionPlanController = require('../controllers/SubscriptionPlanContr
 const { authenticateToken } = require('../middleware/auth');
 const ownerOnly = require('../middleware/ownerOnly');
 
-// Middleware para autenticación en todas las rutas
-router.use(authenticateToken);
+// === DEBUG ROUTE - Ruta de prueba sin middleware ===
+router.get('/test-public', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Ruta pública funcionando correctamente',
+    timestamp: new Date().toISOString(),
+    hasUser: !!req.user
+  });
+});
 
-// === RUTAS PÚBLICAS (para usuarios autenticados) ===
+// === RUTAS PÚBLICAS (sin autenticación) ===
+// IMPORTANTE: Estas deben ir ANTES del middleware de autenticación
+
+/**
+ * @swagger
+ * /api/plans/{id}:
+ *   get:
+ *     summary: Obtener plan por ID (PÚBLICO)
+ *     description: Obtiene la información detallada de un plan específico de forma pública
+ *     tags: [💎 Planes de Suscripción]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID único del plan
+ *         example: "123e4567-e89b-12d3-a456-426614174000"
+ *       - in: query
+ *         name: includeModules
+ *         schema:
+ *           type: boolean
+ *           default: true
+ *         description: Incluir módulos en la respuesta
+ *     responses:
+ *       200:
+ *         description: Plan obtenido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 plan:
+ *                   $ref: '#/components/schemas/SubscriptionPlan'
+ *       404:
+ *         description: Plan no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/:id', SubscriptionPlanController.getPlanById);
 
 /**
  * @swagger
  * /api/plans:
  *   get:
- *     summary: Obtener todos los planes de suscripción
- *     description: Lista todos los planes disponibles con paginación y filtros
+ *     summary: Obtener todos los planes de suscripción (PÚBLICO)
+ *     description: Lista todos los planes disponibles públicamente con paginación y filtros
  *     tags: [💎 Planes de Suscripción]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -35,8 +85,9 @@ router.use(authenticateToken);
  *         name: status
  *         schema:
  *           type: string
- *           enum: [ACTIVE, INACTIVE, DEPRECATED]
- *         description: Filtrar por estado
+ *           enum: [ACTIVE]
+ *           default: ACTIVE
+ *         description: Solo planes activos en rutas públicas
  *       - in: query
  *         name: search
  *         schema:
@@ -84,14 +135,12 @@ router.use(authenticateToken);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: No autorizado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
 router.get('/', SubscriptionPlanController.getPlans);
+
+// === MIDDLEWARE DE AUTENTICACIÓN PARA RUTAS PROTEGIDAS ===
+// Todas las rutas debajo de esta línea requieren autenticación
+router.use(authenticateToken);
 
 /**
  * @swagger
@@ -237,58 +286,6 @@ router.get('/available-modules', ownerOnly, SubscriptionPlanController.getAvaila
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/calculate-price', ownerOnly, SubscriptionPlanController.calculatePlanPrice);
-
-/**
- * @swagger
- * /api/plans/{id}:
- *   get:
- *     summary: Obtener plan por ID
- *     description: Obtiene la información detallada de un plan específico
- *     tags: [💎 Planes de Suscripción]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: ID único del plan
- *         example: "123e4567-e89b-12d3-a456-426614174000"
- *       - in: query
- *         name: includeModules
- *         schema:
- *           type: boolean
- *           default: true
- *         description: Incluir módulos en la respuesta
- *     responses:
- *       200:
- *         description: Plan obtenido exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 plan:
- *                   $ref: '#/components/schemas/SubscriptionPlan'
- *       404:
- *         description: Plan no encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: No autorizado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.get('/:id', SubscriptionPlanController.getPlanById);
 
 // === RUTAS ADMINISTRATIVAS (solo para OWNER) ===
 

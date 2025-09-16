@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '../../../../shared/src/store/reactNativeStore.js';
 import WebView from 'react-native-webview';
 
 // Componentes de métricas
@@ -107,6 +108,24 @@ export default function BusinessDashboard({ navigation }) {
     setShowWebView(true);
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Cerrar Sesión',
+      '¿Estás seguro de que quieres cerrar sesión?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Cerrar Sesión',
+          style: 'destructive',
+          onPress: () => dispatch(logout()),
+        },
+      ]
+    );
+  };
+
   const getWebViewUrl = () => {
     const subdomain = user?.business?.subdomain || 'demo';
     const baseUrl = 'http://localhost:3000'; // FRONTEND_URL del .env
@@ -164,15 +183,26 @@ export default function BusinessDashboard({ navigation }) {
               Resumen de tu negocio
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={openWebApp}
-            className="bg-purple-600 px-4 py-2 rounded-xl flex-row items-center"
-          >
-            <Ionicons name="desktop" size={16} color="#ffffff" />
-            <Text className="text-white text-sm font-medium ml-2">
-              Panel Completo
-            </Text>
-          </TouchableOpacity>
+          <View className="flex-row items-center space-x-3">
+            <TouchableOpacity
+              onPress={openWebApp}
+              className="bg-purple-600 px-4 py-2 rounded-xl flex-row items-center"
+            >
+              <Ionicons name="desktop" size={16} color="#ffffff" />
+              <Text className="text-white text-sm font-medium ml-2">
+                Panel Completo
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleLogout}
+              className="bg-red-500 px-3 py-2 rounded-xl flex-row items-center"
+            >
+              <Ionicons name="log-out-outline" size={16} color="#ffffff" />
+              <Text className="text-white text-sm font-medium ml-1">
+                Salir
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
