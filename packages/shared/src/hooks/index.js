@@ -28,6 +28,9 @@ export { default as useOwnerPayments } from './useOwnerPayments';
 // OWNER financial reports
 export { default as useOwnerFinancialReports } from './useOwnerFinancialReports';
 
+// PUBLIC hooks for landing page
+export { default as usePublicPlans } from './usePublicPlans';
+
 // Export all OWNER hooks as a group
 export const ownerHooks = {
   useOwner,

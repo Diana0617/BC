@@ -13,6 +13,9 @@ import OwnerDashboardPage from './pages/owner/OwnerDashboardPage'
 import OwnerPlansPage from './pages/owner/plans/OwnerPlansPage'
 import OwnerModulesPage from './pages/owner/OwnerModulesPage'
 
+// Public Pages
+import LandingPage from './pages/public/LandingPage'
+
 // Test Components (temporal)
 import ReduxPlansTest from './components/test/ReduxPlansTest'
 
@@ -41,6 +44,9 @@ function AppLayout() {
     <Router>
       <div className="min-h-screen bg-gray-50">
         <Routes>
+          {/* Public routes - No authentication required */}
+          <Route path="/landing" element={<LandingPage />} />
+          
           {/* Public routes */}
           <Route 
             path="/login" 

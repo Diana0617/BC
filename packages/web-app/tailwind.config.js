@@ -33,12 +33,16 @@ export default {
         }
       },
       fontFamily: {
-        'sans': ['Inter', 'ui-sans-serif', 'system-ui'],
+        'sans': ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        'nunito': ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'beauty': '0 4px 14px 0 rgba(236, 72, 153, 0.39)',
         'beauty-lg': '0 8px 25px 0 rgba(236, 72, 153, 0.5)',
-      }
+      },
+      screens: {
+        'xs': '475px',
+      },
     },
   },
   plugins: [],
