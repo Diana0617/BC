@@ -141,24 +141,33 @@ export const checkExistingSession = createAsyncThunk(
 
 // Helper function to get initial state from storage
 const getInitialAuthState = () => {
-  if (typeof window === 'undefined') {
+  // Verificación más robusta para React Native
+  const isReactNative = typeof window === 'undefined' || 
+                       (typeof navigator !== 'undefined' && navigator.product === 'ReactNative');
+                       
+  if (isReactNative) {
     return { token: null, refreshToken: null, user: null };
   }
 
-  const token = StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
-  const refreshToken = StorageHelper.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-  const userDataStr = StorageHelper.getItem(STORAGE_KEYS.USER_DATA);
-  
-  let user = null;
-  if (userDataStr) {
-    try {
-      user = JSON.parse(userDataStr);
-    } catch (error) {
-      console.warn('Failed to parse user data from storage');
+  try {
+    const token = StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    const refreshToken = StorageHelper.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    const userDataStr = StorageHelper.getItem(STORAGE_KEYS.USER_DATA);
+    
+    let user = null;
+    if (userDataStr) {
+      try {
+        user = JSON.parse(userDataStr);
+      } catch (error) {
+        console.warn('Failed to parse user data from storage');
+      }
     }
-  }
 
-  return { token, refreshToken, user };
+    return { token, refreshToken, user };
+  } catch (error) {
+    console.warn('Error accessing storage during initialization:', error);
+    return { token: null, refreshToken: null, user: null };
+  }
 };
 
 const initialState = {
@@ -193,8 +202,18 @@ const initialState = {
   changePasswordSuccess: false,
   
   // Remember email
-  rememberedEmail: typeof window !== 'undefined' ? 
-    StorageHelper.getItem(STORAGE_KEYS.REMEMBER_EMAIL) : null,
+  rememberedEmail: (() => {
+    const isReactNative = typeof window === 'undefined' || 
+                         (typeof navigator !== 'undefined' && navigator.product === 'ReactNative');
+    if (isReactNative) return null;
+    
+    try {
+      return StorageHelper.getItem(STORAGE_KEYS.REMEMBER_EMAIL);
+    } catch (error) {
+      console.warn('Error getting remembered email:', error);
+      return null;
+    }
+  })(),
   
   // Initialize from storage
   ...getInitialAuthState()

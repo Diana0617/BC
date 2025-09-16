@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import useBusinessRules from '../hooks/useBusinessRules';
 import useAppointmentValidation from '../hooks/useAppointmentValidation';
+import { useAuthToken } from '../hooks/useAuth';
 
 const AppointmentClosureValidator = ({ 
   appointment, 
@@ -11,6 +12,7 @@ const AppointmentClosureValidator = ({
   onClose, 
   onValidationComplete 
 }) => {
+  const authToken = useAuthToken();
   const [currentStep, setCurrentStep] = useState(0);
   const [validationResults, setValidationResults] = useState({});
   const [isClosing, setIsClosing] = useState(false);
@@ -157,7 +159,7 @@ const AppointmentClosureValidator = ({
       const response = await fetch(`/api/appointments/${appointment.id}/close`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -184,7 +186,7 @@ const AppointmentClosureValidator = ({
       const response = await fetch(`/api/appointments/${appointment.id}/request-approval`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({

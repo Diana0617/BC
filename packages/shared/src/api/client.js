@@ -10,10 +10,17 @@ class ApiClient {
 
   // Get auth token from storage
   getAuthToken() {
-    if (typeof window !== 'undefined') {
+    const isReactNative = typeof window === 'undefined' || 
+                         (typeof navigator !== 'undefined' && navigator.product === 'ReactNative');
+    if (isReactNative) {
+      // React Native environment - no acceso síncrono a storage
+      return null;
+    }
+    
+    try {
       return StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
-    } else {
-      // React Native environment - TODO: implement AsyncStorage
+    } catch (error) {
+      console.warn('Error getting auth token:', error);
       return null;
     }
   }

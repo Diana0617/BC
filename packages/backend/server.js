@@ -126,7 +126,7 @@ async function startServer() {
 
     // Iniciar servidor en todas las interfaces de red
     const server = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Servidor Beauty Control corriendo en puerto ${PORT}`);
+      console.log(`🚀 Servidor Business Control corriendo en puerto ${PORT}`);
       console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
       console.log(`📱 Mobile access: http://192.168.0.213:${PORT}/health`);

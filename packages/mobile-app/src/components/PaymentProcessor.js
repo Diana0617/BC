@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
 import WhatsAppHelper from '../utils/WhatsAppHelper';
+import { useAuthToken } from '../hooks/useAuth';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -23,6 +24,7 @@ const PaymentProcessor = ({
   onPaymentComplete,
   onPaymentError
 }) => {
+  const authToken = useAuthToken();
   const [loading, setLoading] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
   const [webViewVisible, setWebViewVisible] = useState(false);
@@ -66,7 +68,7 @@ const PaymentProcessor = ({
         `/api/appointments/${appointment.id}/payment/check?businessId=${businessId}`, 
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           }
         }
@@ -115,7 +117,7 @@ const PaymentProcessor = ({
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -200,7 +202,7 @@ const PaymentProcessor = ({
         `/api/appointments/${appointment.id}/payment/verify?reference=${paymentData.paymentReference}`, 
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           }
         }
@@ -336,7 +338,7 @@ const PaymentProcessor = ({
       const response = await fetch(`/api/receipts/from-appointment/${appointmentData.id}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -369,7 +371,7 @@ const PaymentProcessor = ({
       await fetch(`/api/receipts/${receiptId}/sent-email`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });
@@ -386,7 +388,7 @@ const PaymentProcessor = ({
       await fetch(`/api/receipts/${receiptId}/sent-whatsapp`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });

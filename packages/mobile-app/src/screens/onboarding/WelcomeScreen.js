@@ -6,7 +6,8 @@ import {
   StyleSheet,
   Image,
   Dimensions,
-  Linking
+  Linking,
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,7 +21,7 @@ function WelcomeScreen({ navigation }) {
   };
 
   const handleDontHaveApp = async () => {
-    const webUrl = 'https://beautycontrol.app/plans'; // URL de tu web app
+    const webUrl = 'https://businesscontrol.app/plans'; // URL de tu web app
     try {
       await Linking.openURL(webUrl);
     } catch (error) {
@@ -34,92 +35,100 @@ function WelcomeScreen({ navigation }) {
         colors={['#f8fafc', '#e2e8f0']}
         style={styles.gradient}
       >
-        {/* Header con logo */}
+        {/* Header con logo - fijo */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
               <Ionicons name="cut" size={40} color="#ec4899" />
             </View>
-            <Text style={styles.logoText}>Beauty Control</Text>
+            <Text style={styles.logoText}>Business Control</Text>
             <Text style={styles.tagline}>Tu salón en la palma de tu mano</Text>
           </View>
         </View>
 
-        {/* Contenido principal */}
-        <View style={styles.content}>
-          <View style={styles.welcomeContainer}>
-            <Text style={styles.welcomeTitle}>¡Bienvenido!</Text>
-            <Text style={styles.welcomeSubtitle}>
-              Gestiona tu salón de belleza de manera profesional y eficiente
-            </Text>
-          </View>
+        {/* Contenido scrolleable */}
+        <ScrollView 
+          style={styles.scrollContainer}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+        >
+          {/* Contenido principal */}
+          <View style={styles.content}>
+            <View style={styles.welcomeContainer}>
+              <Text style={styles.welcomeTitle}>¡Bienvenido!</Text>
+              <Text style={styles.welcomeSubtitle}>
+                Gestiona tu salón de belleza de manera profesional y eficiente
+              </Text>
+            </View>
 
-          {/* Opciones principales */}
-          <View style={styles.optionsContainer}>
-            <TouchableOpacity
-              style={[styles.optionButton, styles.primaryButton]}
-              onPress={handleHaveApp}
-              activeOpacity={0.8}
-            >
-              <View style={styles.optionContent}>
-                <View style={styles.optionIconContainer}>
-                  <Ionicons name="person-circle" size={32} color="#ffffff" />
+            {/* Opciones principales */}
+            <View style={styles.optionsContainer}>
+              <TouchableOpacity
+                style={[styles.optionButton, styles.primaryButton]}
+                onPress={handleHaveApp}
+                activeOpacity={0.8}
+              >
+                <View style={styles.optionContent}>
+                  <View style={styles.optionIconContainer}>
+                    <Ionicons name="person-circle" size={32} color="#ffffff" />
+                  </View>
+                  <View style={styles.optionTextContainer}>
+                    <Text style={styles.optionTitle}>Ya tengo la aplicación</Text>
+                    <Text style={styles.optionSubtitle}>
+                      Inicia sesión con tu cuenta existente
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={24} color="#ffffff" />
                 </View>
-                <View style={styles.optionTextContainer}>
-                  <Text style={styles.optionTitle}>Ya tengo la aplicación</Text>
-                  <Text style={styles.optionSubtitle}>
-                    Inicia sesión con tu cuenta existente
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={24} color="#ffffff" />
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.optionButton, styles.secondaryButton]}
-              onPress={handleDontHaveApp}
-              activeOpacity={0.8}
-            >
-              <View style={styles.optionContent}>
-                <View style={[styles.optionIconContainer, styles.secondaryIconContainer]}>
-                  <Ionicons name="add-circle" size={32} color="#ec4899" />
+              <TouchableOpacity
+                style={[styles.optionButton, styles.secondaryButton]}
+                onPress={handleDontHaveApp}
+                activeOpacity={0.8}
+              >
+                <View style={styles.optionContent}>
+                  <View style={[styles.optionIconContainer, styles.secondaryIconContainer]}>
+                    <Ionicons name="add-circle" size={32} color="#ec4899" />
+                  </View>
+                  <View style={styles.optionTextContainer}>
+                    <Text style={[styles.optionTitle, styles.secondaryOptionTitle]}>
+                      No tengo la aplicación
+                    </Text>
+                    <Text style={[styles.optionSubtitle, styles.secondaryOptionSubtitle]}>
+                      Suscríbete y obtén tu dominio personalizado
+                    </Text>
+                  </View>
+                  <Ionicons name="open-outline" size={24} color="#ec4899" />
                 </View>
-                <View style={styles.optionTextContainer}>
-                  <Text style={[styles.optionTitle, styles.secondaryOptionTitle]}>
-                    No tengo la aplicación
-                  </Text>
-                  <Text style={[styles.optionSubtitle, styles.secondaryOptionSubtitle]}>
-                    Suscríbete y obtén tu dominio personalizado
-                  </Text>
-                </View>
-                <Ionicons name="open-outline" size={24} color="#ec4899" />
-              </View>
-            </TouchableOpacity>
-          </View>
+              </TouchableOpacity>
+            </View>
 
-          {/* Features destacados */}
-          <View style={styles.featuresContainer}>
-            <Text style={styles.featuresTitle}>¿Por qué Beauty Control?</Text>
-            <View style={styles.featuresGrid}>
-              <View style={styles.featureItem}>
-                <Ionicons name="calendar" size={24} color="#ec4899" />
-                <Text style={styles.featureText}>Gestión de citas</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="people" size={24} color="#ec4899" />
-                <Text style={styles.featureText}>Control de clientes</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="cash" size={24} color="#ec4899" />
-                <Text style={styles.featureText}>Facturación</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="analytics" size={24} color="#ec4899" />
-                <Text style={styles.featureText}>Reportes</Text>
+            {/* Features destacados */}
+            <View style={styles.featuresContainer}>
+              <Text style={styles.featuresTitle}>¿Por qué Business Control?</Text>
+              <View style={styles.featuresGrid}>
+                <View style={styles.featureItem}>
+                  <Ionicons name="calendar" size={24} color="#ec4899" />
+                  <Text style={styles.featureText}>Gestión de citas</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="people" size={24} color="#ec4899" />
+                  <Text style={styles.featureText}>Control de clientes</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="cash" size={24} color="#ec4899" />
+                  <Text style={styles.featureText}>Facturación</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="analytics" size={24} color="#ec4899" />
+                  <Text style={styles.featureText}>Reportes</Text>
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -133,9 +142,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    alignItems: 'center',
     paddingTop: 40,
     paddingBottom: 20,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   logoContainer: {
     alignItems: 'center',
@@ -169,14 +187,19 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
-  content: {
+  scrollContainer: {
     flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: 'space-between',
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   welcomeContainer: {
     alignItems: 'center',
-    marginTop: 20,
+    marginBottom: 30,
   },
   welcomeTitle: {
     fontSize: 32,
@@ -192,7 +215,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   optionsContainer: {
-    marginVertical: 40,
+    marginBottom: 40,
   },
   optionButton: {
     borderRadius: 16,

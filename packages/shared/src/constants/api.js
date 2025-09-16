@@ -4,15 +4,14 @@ const getApiUrl = () => {
   const isReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
   
   if (isReactNative) {
-    // React Native environment - hardcode for now until env vars are properly set up
+    // React Native environment - use hardcoded IP for now
     return 'http://192.168.0.213:3001';
   } else if (typeof window !== 'undefined') {
     // Web browser environment
-    // Try to get from window.__ENV__ or default
-    return window.__ENV__?.VITE_API_URL || 'http://localhost:3001';
+    return window.__BC_API_URL__ || 'http://localhost:3001';
   } else {
     // Node.js environment
-    return process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    return 'http://localhost:3001';
   }
 };
 

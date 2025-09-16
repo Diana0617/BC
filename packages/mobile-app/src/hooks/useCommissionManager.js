@@ -1,13 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Alert } from 'react-native';
+import { useAuthToken } from './useAuth';
 
 /**
  * Hook personalizado para gestionar comisiones de especialista
- * Maneja generación, seguimiento y solicitudes de pago de comisiones
+ * Maneja generación    } catch (error) {
+      console.error('Error canceling payment request:', error);
+      Alert.alert('Error', 'No se pudo cancelar la solicitud de pago');
+    }
+  }, [authToken, loadPaymentRequests, loadCommissions]);uimiento y solicitudes de pago de comisiones
  */
 export const useCommissionManager = (specialistId) => {
   const dispatch = useDispatch();
+  const authToken = useAuthToken();
   const [commissions, setCommissions] = useState([]);
   const [paymentRequests, setPaymentRequests] = useState([]);
   const [selectedCommissions, setSelectedCommissions] = useState(new Set());
@@ -25,13 +31,13 @@ export const useCommissionManager = (specialistId) => {
    * Cargar comisiones del especialista
    */
   const loadCommissions = useCallback(async () => {
-    if (!specialistId) return;
+    if (!specialistId || !authToken) return;
     
     setLoading(true);
     try {
       const response = await fetch(`/api/specialist-commissions/${specialistId}/commissions`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });
@@ -47,18 +53,18 @@ export const useCommissionManager = (specialistId) => {
     } finally {
       setLoading(false);
     }
-  }, [specialistId]);
+  }, [specialistId, authToken]);
 
   /**
    * Cargar solicitudes de pago
    */
   const loadPaymentRequests = useCallback(async () => {
-    if (!specialistId) return;
+    if (!specialistId || !authToken) return;
     
     try {
       const response = await fetch(`/api/specialist-commissions/${specialistId}/payment-requests`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });
@@ -70,7 +76,7 @@ export const useCommissionManager = (specialistId) => {
     } catch (error) {
       console.error('Error loading payment requests:', error);
     }
-  }, [specialistId]);
+  }, [specialistId, authToken]);
 
   /**
    * Calcular resumen de comisiones
@@ -111,11 +117,13 @@ export const useCommissionManager = (specialistId) => {
    * Generar comisión automáticamente al cerrar cita
    */
   const generateCommission = useCallback(async (appointmentId, serviceDetails) => {
+    if (!authToken) return;
+    
     try {
       const response = await fetch('/api/specialist-commissions/generate', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -141,7 +149,7 @@ export const useCommissionManager = (specialistId) => {
       Alert.alert('Error', 'No se pudo generar la comisión automáticamente');
       return null;
     }
-  }, [specialistId, loadCommissions]);
+  }, [authToken, specialistId, loadCommissions]);
 
   /**
    * Seleccionar/deseleccionar comisión para solicitud de pago
@@ -198,7 +206,7 @@ export const useCommissionManager = (specialistId) => {
       const response = await fetch('/api/commission-payment-requests', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -266,11 +274,13 @@ export const useCommissionManager = (specialistId) => {
    * Cancelar solicitud de pago (solo si está pendiente)
    */
   const cancelPaymentRequest = useCallback(async (requestId) => {
+    if (!authToken) return;
+    
     try {
       const response = await fetch(`/api/commission-payment-requests/${requestId}/cancel`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });

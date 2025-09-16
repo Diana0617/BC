@@ -1,4 +1,5 @@
 import React from 'react';
+import './global.css'; // Importar estilos de NativeWind
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
