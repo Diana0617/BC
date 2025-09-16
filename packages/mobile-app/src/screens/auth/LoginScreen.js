@@ -8,12 +8,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginUser } from '../../../../shared/src/store/slices/authSlice';
+import { loginUser } from '../../../../shared/src/store/reactNativeStore.js';
 
 const ROLE_CONFIG = {
   business: {
@@ -66,10 +67,34 @@ export default function LoginScreen({ navigation, route }) {
         rememberMe: false 
       })).unwrap();
 
-      if (result) {
-        // Navegación exitosa basada en el rol
-        const dashboardRoute = `Dashboard${selectedRole?.id === 'business' ? 'Business' : 
-                               selectedRole?.id === 'specialist' ? 'Specialist' : 'Receptionist'}`;
+      if (result && result.user) {
+        // 🔐 VALIDACIÓN DE ROLES: Usar el rol REAL del usuario autenticado
+        const userRole = result.user.role?.toLowerCase();
+        
+        // Mapear roles del backend a rutas de dashboard
+        const roleToRoute = {
+          'business': 'DashboardBusiness',
+          'specialist': 'DashboardSpecialist',
+          'receptionist': 'DashboardReceptionist'
+        };
+
+        const dashboardRoute = roleToRoute[userRole];
+        
+        if (!dashboardRoute) {
+          Alert.alert('Error', 'Rol de usuario no reconocido');
+          return;
+        }
+
+        // 🛡️ VALIDACIÓN ADICIONAL: Verificar que el rol seleccionado coincida con el real
+        const selectedRoleId = selectedRole?.id?.toLowerCase();
+        if (selectedRoleId !== userRole) {
+          Alert.alert(
+            'Acceso Denegado', 
+            `No puedes acceder como ${selectedRole?.title} con credenciales de ${userRole}. Serás redirigido a tu dashboard correspondiente.`
+          );
+        }
+
+        // Navegar al dashboard correcto basado en el rol REAL del usuario
         navigation.navigate(dashboardRoute);
       }
     } catch (error) {
@@ -82,178 +107,446 @@ export default function LoginScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView className="flex-1">
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f1f5f9' }}>
       <LinearGradient 
-        colors={['#f8fafc', '#e2e8f0']} 
-        className="flex-1"
+        colors={['#1e293b', '#334155', '#475569']} 
+        style={{ flex: 1 }}
       >
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          className="flex-1"
+          style={{ flex: 1 }}
         >
           {/* Header */}
-          <View className="flex-row items-center justify-between px-5 py-4 border-b border-black/5">
+          <View style={{ 
+            flexDirection: 'row', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            paddingHorizontal: 24, 
+            paddingVertical: 24, 
+            paddingTop: 40 
+          }}>
             <TouchableOpacity 
               onPress={handleGoBack} 
-              className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm"
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.2)'
+              }}
+              activeOpacity={0.8}
             >
-              <Ionicons name="chevron-back" size={24} color="#374151" />
+              <Ionicons name="chevron-back" size={24} color="#ffffff" />
             </TouchableOpacity>
-            <Text className="text-lg font-semibold text-gray-800">
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#ffffff' }}>
               Iniciar Sesión
             </Text>
-            <View className="w-10" />
+            <View style={{ width: 48 }} />
           </View>
 
-          <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-            <View className="px-5 pb-10">
+          <ScrollView 
+            style={{ flex: 1 }} 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 40 }}
+          >
+            <View style={{ paddingHorizontal: 24 }}>
+              {/* Business Control Logo */}
+              <View style={{ alignItems: 'center', marginTop: 32, marginBottom: 32 }}>
+                <LinearGradient
+                  colors={['#ec4899', '#8b5cf6']}
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 16,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 16,
+                    elevation: 16,
+                  }}
+                >
+                  <Ionicons name="business" size={40} color="#ffffff" />
+                </LinearGradient>
+                <Text style={{ 
+                  fontSize: 32, 
+                  fontWeight: 'bold', 
+                  color: '#ffffff', 
+                  marginBottom: 8,
+                  textAlign: 'center'
+                }}>
+                  Business Control
+                </Text>
+                <Text style={{ 
+                  fontSize: 18, 
+                  color: '#cbd5e1', 
+                  textAlign: 'center' 
+                }}>
+                  Gestiona tu negocio profesionalmente
+                </Text>
+              </View>
+
               {/* Role Header */}
               {selectedRole && (
-                <View className="mt-5 mb-8">
+                <View style={{ marginBottom: 32 }}>
                   <LinearGradient
                     colors={roleConfig.gradient}
-                    className="flex-row items-center p-5 rounded-2xl shadow-lg"
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      padding: 20,
+                      borderRadius: 16,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 8 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 16,
+                      elevation: 16,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255, 255, 255, 0.1)'
+                    }}
                   >
-                    <View className="w-15 h-15 rounded-full bg-white/20 items-center justify-center mr-4">
+                    <View style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 16
+                    }}>
                       <Ionicons name={roleConfig.icon} size={32} color="#ffffff" />
                     </View>
-                    <View className="flex-1">
-                      <Text className="text-lg font-bold text-white mb-1">
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ 
+                        fontSize: 20, 
+                        fontWeight: 'bold', 
+                        color: '#ffffff', 
+                        marginBottom: 4 
+                      }}>
                         {roleConfig.title}
                       </Text>
-                      <Text className="text-sm text-white/80">
-                        Acceso especializado
+                      <Text style={{ 
+                        fontSize: 16, 
+                        color: 'rgba(255, 255, 255, 0.8)' 
+                      }}>
+                        Acceso especializado para tu rol
                       </Text>
                     </View>
                   </LinearGradient>
                 </View>
               )}
 
-              {/* Welcome Text */}
-              <View className="items-center mb-10">
-                <Text className="text-3xl font-bold text-gray-800 text-center mb-2">
+              {/* Login Form Card */}
+              <View style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderRadius: 24,
+                padding: 24,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 20 },
+                shadowOpacity: 0.3,
+                shadowRadius: 30,
+                elevation: 20,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.2)'
+              }}>
+                <Text style={{ 
+                  fontSize: 24, 
+                  fontWeight: 'bold', 
+                  color: '#1e293b', 
+                  textAlign: 'center', 
+                  marginBottom: 8 
+                }}>
                   ¡Bienvenido de nuevo!
                 </Text>
-                <Text className="text-base text-gray-600 text-center leading-6">
-                  Ingresa tus credenciales para acceder a tu cuenta
-                </Text>
-              </View>
 
-              {/* Login Form */}
-              <View className="bg-white rounded-3xl p-6 shadow-lg">
-                {/* Subdomain Input */}
-                <View className="mb-5">
-                  <Text className="text-sm font-semibold text-gray-700 mb-2">
-                    Subdominio de tu salón
+                {/* Subdomain Input - Movido arriba */}
+                <View style={{ marginBottom: 24, marginTop: 16 }}>
+                  <Text style={{ 
+                    fontSize: 14, 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    marginBottom: 12, 
+                    marginLeft: 4 
+                  }}>
+                    Subdominio de tu negocio
                   </Text>
-                  <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-3 h-14">
-                    <Ionicons name="business" size={20} color="#6b7280" style={{ marginRight: 12 }} />
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: '#f8fafc',
+                    borderWidth: 2,
+                    borderColor: '#e2e8f0',
+                    borderRadius: 16,
+                    paddingHorizontal: 16,
+                    height: 64
+                  }}>
+                    <LinearGradient
+                      colors={['#ec4899', '#8b5cf6']}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 16
+                      }}
+                    >
+                      <Ionicons name="business" size={18} color="#ffffff" />
+                    </LinearGradient>
                     <TextInput
-                      className="flex-1 text-base text-gray-800"
+                      style={{
+                        flex: 1,
+                        fontSize: 16,
+                        fontWeight: '500',
+                        color: '#1e293b'
+                      }}
                       placeholder="mi-salon"
                       value={formData.subdomain}
                       onChangeText={(text) => setFormData({ ...formData, subdomain: text.toLowerCase() })}
                       autoCapitalize="none"
                       autoCorrect={false}
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#94a3b8"
                     />
-                    <Text className="text-sm text-gray-600" style={{ marginLeft: 8 }}>
-                      .beautycontrol.app
-                    </Text>
+                    <View style={{
+                      backgroundColor: '#e2e8f0',
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 8,
+                      marginLeft: 8
+                    }}>
+                      <Text style={{ 
+                        fontSize: 14, 
+                        fontWeight: '500', 
+                        color: '#64748b' 
+                      }}>
+                        .businesscontrol.app
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
+                {/* Error Message */}
+                {error && (
+                  <View style={{
+                    marginBottom: 24,
+                    padding: 16,
+                    backgroundColor: '#fef2f2',
+                    borderRadius: 16,
+                    borderLeftWidth: 4,
+                    borderLeftColor: '#ef4444'
+                  }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="alert-circle" size={20} color="#ef4444" />
+                      <Text style={{ 
+                        fontSize: 14, 
+                        color: '#dc2626', 
+                        marginLeft: 12, 
+                        flex: 1 
+                      }}>
+                        {error}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
                 {/* Email Input */}
-                <View className="mb-5">
-                  <Text className="text-sm font-semibold text-gray-700 mb-2">
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={{ 
+                    fontSize: 14, 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    marginBottom: 12, 
+                    marginLeft: 4 
+                  }}>
                     Correo electrónico
                   </Text>
-                  <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-3 h-14">
-                    <Ionicons name="mail" size={20} color="#6b7280" style={{ marginRight: 12 }} />
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: '#f8fafc',
+                    borderWidth: 2,
+                    borderColor: '#e2e8f0',
+                    borderRadius: 16,
+                    paddingHorizontal: 16,
+                    height: 64
+                  }}>
+                    <LinearGradient
+                      colors={['#3b82f6', '#06b6d4']}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 16
+                      }}
+                    >
+                      <Ionicons name="mail" size={18} color="#ffffff" />
+                    </LinearGradient>
                     <TextInput
-                      className="flex-1 text-base text-gray-800"
+                      style={{
+                        flex: 1,
+                        fontSize: 16,
+                        fontWeight: '500',
+                        color: '#1e293b'
+                      }}
                       placeholder="tucorreo@example.com"
                       value={formData.email}
                       onChangeText={(text) => setFormData({ ...formData, email: text })}
                       keyboardType="email-address"
                       autoCapitalize="none"
                       autoCorrect={false}
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#94a3b8"
                     />
                   </View>
                 </View>
 
                 {/* Password Input */}
-                <View className="mb-6">
-                  <Text className="text-sm font-semibold text-gray-700 mb-2">
+                <View style={{ marginBottom: 32 }}>
+                  <Text style={{ 
+                    fontSize: 14, 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    marginBottom: 12, 
+                    marginLeft: 4 
+                  }}>
                     Contraseña
                   </Text>
-                  <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-3 h-14">
-                    <Ionicons name="lock-closed" size={20} color="#6b7280" style={{ marginRight: 12 }} />
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: '#f8fafc',
+                    borderWidth: 2,
+                    borderColor: '#e2e8f0',
+                    borderRadius: 16,
+                    paddingHorizontal: 16,
+                    height: 64
+                  }}>
+                    <LinearGradient
+                      colors={['#10b981', '#14b8a6']}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 16
+                      }}
+                    >
+                      <Ionicons name="lock-closed" size={18} color="#ffffff" />
+                    </LinearGradient>
                     <TextInput
-                      className="flex-1 text-base text-gray-800"
+                      style={{
+                        flex: 1,
+                        fontSize: 16,
+                        fontWeight: '500',
+                        color: '#1e293b'
+                      }}
                       placeholder="Tu contraseña"
                       value={formData.password}
                       onChangeText={(text) => setFormData({ ...formData, password: text })}
                       secureTextEntry={!showPassword}
                       autoCapitalize="none"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#94a3b8"
                     />
                     <TouchableOpacity
                       onPress={() => setShowPassword(!showPassword)}
-                      style={{ padding: 8, marginLeft: 8 }}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginLeft: 8
+                      }}
+                      activeOpacity={0.7}
                     >
                       <Ionicons 
                         name={showPassword ? "eye-off" : "eye"} 
                         size={20} 
-                        color="#6b7280" 
+                        color="#64748b" 
                       />
                     </TouchableOpacity>
                   </View>
                 </View>
-
-                {/* Error Message */}
-                {error && (
-                  <View className="mb-4 p-3 bg-red-50 rounded-xl border border-red-200">
-                    <Text className="text-sm text-red-600 text-center">
-                      {error}
-                    </Text>
-                  </View>
-                )}
 
                 {/* Login Button */}
                 <TouchableOpacity
                   onPress={handleLogin}
                   disabled={loading}
                   activeOpacity={0.8}
-                  className="rounded-xl overflow-hidden shadow-lg mb-4"
+                  style={{
+                    borderRadius: 16,
+                    overflow: 'hidden',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 16,
+                    elevation: 8,
+                    marginBottom: 24
+                  }}
                 >
                   <LinearGradient
-                    colors={roleConfig.gradient}
-                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16 }}
+                    colors={loading ? ['#94a3b8', '#64748b'] : roleConfig.gradient}
+                    style={{ 
+                      flexDirection: 'row', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      paddingVertical: 18,
+                      minHeight: 64
+                    }}
                   >
                     {loading ? (
-                      <Text className="text-base font-semibold text-white">
-                        Iniciando sesión...
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ 
+                          fontSize: 18, 
+                          fontWeight: 'bold', 
+                          color: '#ffffff', 
+                          marginRight: 8 
+                        }}>
+                          Iniciando sesión...
+                        </Text>
+                        <Ionicons name="reload" size={22} color="#ffffff" />
+                      </View>
                     ) : (
-                      <>
-                        <Text className="text-base font-semibold text-white" style={{ marginRight: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ 
+                          fontSize: 18, 
+                          fontWeight: 'bold', 
+                          color: '#ffffff', 
+                          marginRight: 12 
+                        }}>
                           Iniciar Sesión
                         </Text>
-                        <Ionicons name="arrow-forward" size={20} color="#ffffff" />
-                      </>
+                        <Ionicons name="arrow-forward-circle" size={24} color="#ffffff" />
+                      </View>
                     )}
                   </LinearGradient>
                 </TouchableOpacity>
 
                 {/* Forgot Password */}
-                <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                  <Text className="text-sm text-pink-500 font-medium text-center">
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('ForgotPassword')}
+                  style={{ alignItems: 'center', paddingVertical: 12 }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ 
+                    fontSize: 16, 
+                    fontWeight: '600', 
+                    color: '#ec4899' 
+                  }}>
                     ¿Olvidaste tu contraseña?
                   </Text>
                 </TouchableOpacity>
               </View>
+
+              {/* Additional Space */}
+              <View style={{ height: 32 }} />
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

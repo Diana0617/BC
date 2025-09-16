@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, Switch } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { useAuthToken } from '../hooks/useAuth';
 
 /**
  * Componente para configurar numeración de recibos, facturas y configuración fiscal
  */
 const NumberingSettings = ({ businessId, onSave }) => {
+  const authToken = useAuthToken();
   const [settings, setSettings] = useState({
     receipts: {
       enabled: true,
@@ -60,7 +62,7 @@ const NumberingSettings = ({ businessId, onSave }) => {
       setLoading(true);
       const response = await fetch(`/api/business/${businessId}/config/numbering`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });
@@ -116,7 +118,7 @@ const NumberingSettings = ({ businessId, onSave }) => {
     try {
       const response = await fetch(`/api/business/${businessId}/config/numbering/preview?format=${encodeURIComponent(format)}&prefix=${prefix}&padLength=${padLength}&number=${number}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          'Authorization': `Bearer ${authToken}`
         }
       });
 
@@ -164,7 +166,7 @@ const NumberingSettings = ({ businessId, onSave }) => {
       const response = await fetch(`/api/business/${businessId}/config/numbering`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(settings)

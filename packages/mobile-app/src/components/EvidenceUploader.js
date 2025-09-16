@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import { useAuthToken } from '../hooks/useAuth';
 import { Video } from 'expo-av';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -24,6 +25,7 @@ const EvidenceUploader = ({
   onUploadError,
   existingEvidence = []
 }) => {
+  const authToken = useAuthToken();
   const [evidence, setEvidence] = useState(existingEvidence);
   const [uploading, setUploading] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
@@ -145,7 +147,7 @@ const EvidenceUploader = ({
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'multipart/form-data',
           },
           body: formData
@@ -211,7 +213,7 @@ const EvidenceUploader = ({
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json',
           }
         }

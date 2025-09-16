@@ -3,6 +3,7 @@ export * from './api/client.js';
 export * from './api/auth.js';
 export * from './api/ownerApi.js';
 export * from './api/plansApi.js';
+export * from './api/publicPlans.js'; // Public plans API (no auth required)
 export * from './api/ownerPlansApi.js';
 export * from './api/ownerModulesApi.js';
 // New OWNER APIs

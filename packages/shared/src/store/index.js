@@ -73,3 +73,6 @@ export const store = createStore();
 // Export types for TypeScript (if needed later)
 export const getStoreState = () => store.getState();
 export const getStoreDispatch = () => store.dispatch;
+
+// Export React Native specific store and functions
+export * from './reactNativeStore.js';

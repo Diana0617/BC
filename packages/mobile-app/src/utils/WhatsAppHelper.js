@@ -40,7 +40,7 @@ class WhatsAppHelper {
     if (receiptData.receipt) {
       const { receipt, appointment, business } = receiptData;
       
-      const businessName = business?.name || 'Beauty Control';
+      const businessName = business?.name || 'Business Control';
       const receiptNumber = receipt?.receiptNumber || 'N/A';
       const specialistName = receipt?.specialistName || appointment?.specialist?.name || 'N/A';
       const serviceName = receipt?.serviceName || appointment?.service?.name || 'Servicio';
@@ -127,7 +127,7 @@ class WhatsAppHelper {
     }
     
     message += `¡Esperamos verte pronto! 💖\n\n`;
-    message += `_Mensaje enviado desde Beauty Control_`;
+    message += `_Mensaje enviado desde Business Control_`;
 
     return message;
   }
@@ -175,7 +175,7 @@ class WhatsAppHelper {
     message += `⏰ *Recuerda llegar 10 minutos antes*\n\n`;
     message += `Si necesitas reagendar o cancelar, contáctanos lo antes posible.\n\n`;
     message += `¡Te esperamos! 💖\n\n`;
-    message += `_Mensaje enviado desde Beauty Control_`;
+    message += `_Mensaje enviado desde Business Control_`;
 
     return message;
   }

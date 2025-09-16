@@ -27,6 +27,61 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+// Public plans async thunks for React Native
+export const fetchPublicPlans = createAsyncThunk(
+  'publicPlans/fetchAll',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const API_URL = 'http://192.168.0.213:3001';
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `/api/plans?${queryString}` : '/api/plans';
+      
+      const response = await fetch(`${API_URL}${url}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch plans');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const fetchPublicPlanById = createAsyncThunk(
+  'publicPlans/fetchById',
+  async ({ planId, params = {} }, { rejectWithValue }) => {
+    try {
+      const API_URL = 'http://192.168.0.213:3001';
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `/api/plans/${planId}?${queryString}` : `/api/plans/${planId}`;
+      
+      const response = await fetch(`${API_URL}${url}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch plan');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // Auth slice for React Native
 const authSlice = createSlice({
   name: 'auth',
@@ -92,11 +147,65 @@ const authSlice = createSlice({
 // Export actions
 export const { loginStart, loginSuccess, loginFailure, logout, clearError } = authSlice.actions;
 
+// Public Plans slice for React Native
+const publicPlansSlice = createSlice({
+  name: 'publicPlans',
+  initialState: {
+    plans: [],
+    currentPlan: null,
+    isLoading: false,
+    error: null
+  },
+  reducers: {
+    clearPublicPlansError: (state) => {
+      state.error = null;
+    },
+    clearCurrentPlan: (state) => {
+      state.currentPlan = null;
+    }
+  },
+  extraReducers: (builder) => {
+    builder
+      // Fetch all public plans
+      .addCase(fetchPublicPlans.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchPublicPlans.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.plans = action.payload.data || action.payload;
+        state.error = null;
+      })
+      .addCase(fetchPublicPlans.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Fetch public plan by id
+      .addCase(fetchPublicPlanById.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchPublicPlanById.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.currentPlan = action.payload.data || action.payload;
+        state.error = null;
+      })
+      .addCase(fetchPublicPlanById.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      });
+  }
+});
+
+// Export public plans actions
+export const { clearPublicPlansError, clearCurrentPlan } = publicPlansSlice.actions;
+
 // Create React Native compatible store
 export const createReactNativeStore = () => {
   return configureStore({
     reducer: {
-      auth: authSlice.reducer
+      auth: authSlice.reducer,
+      publicPlans: publicPlansSlice.reducer
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
@@ -117,3 +226,9 @@ export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectUser = (state) => state.auth.user;
 export const selectToken = (state) => state.auth.token;
 export const selectRememberedEmail = (state) => state.auth.rememberedEmail;
+
+// Public Plans selectors
+export const selectPublicPlans = (state) => state.publicPlans.plans;
+export const selectCurrentPublicPlan = (state) => state.publicPlans.currentPlan;
+export const selectPublicPlansLoading = (state) => state.publicPlans.isLoading;
+export const selectPublicPlansError = (state) => state.publicPlans.error;

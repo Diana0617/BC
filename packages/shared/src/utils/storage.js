@@ -1,8 +1,16 @@
 // Storage adapter que funciona en web y React Native
 let AsyncStorage;
 
-// Detectar el entorno y usar el storage apropiado
-if (typeof window !== 'undefined') {
+// Detectar el entorno de manera más robusta
+const isReactNative = (() => {
+  // Verificaciones múltiples para React Native
+  if (typeof window === 'undefined') return true; // Node.js o React Native
+  if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') return true;
+  if (typeof global !== 'undefined' && global.HermesInternal) return true; // Hermes engine
+  return false;
+})();
+
+if (!isReactNative) {
   // Estamos en web - usar localStorage/sessionStorage
   AsyncStorage = {
     getItem: async (key) => {
@@ -38,13 +46,26 @@ if (typeof window !== 'undefined') {
     }
   };
 } else {
-  // Estamos en React Native - usar un mock para evitar errores
-  AsyncStorage = {
-    getItem: async () => null,
-    setItem: async () => {},
-    removeItem: async () => {},
-    clear: async () => {}
-  };
+  // Estamos en React Native - usar AsyncStorage
+  try {
+    // Importar AsyncStorage de la manera estándar
+    const AsyncStorageModule = require('@react-native-async-storage/async-storage');
+    AsyncStorage = AsyncStorageModule.default || AsyncStorageModule;
+    
+    // Verificar que AsyncStorage tiene los métodos necesarios
+    if (!AsyncStorage || typeof AsyncStorage.getItem !== 'function') {
+      throw new Error('AsyncStorage methods not available');
+    }
+  } catch (error) {
+    console.warn('AsyncStorage not available, using fallback');
+    // Usar fallback silencioso
+    AsyncStorage = {
+      getItem: async () => null,
+      setItem: async () => {},
+      removeItem: async () => {},
+      clear: async () => {}
+    };
+  }
 }
 
 export { AsyncStorage };
@@ -53,8 +74,9 @@ export { AsyncStorage };
 export const StorageHelper = {
   // Get item (compatible con código existente)
   getItem: (key) => {
-    // En React Native siempre devolver null - no hay storage síncrono
-    if (typeof window === 'undefined') {
+    // En React Native siempre devolver null para evitar localStorage
+    if (isReactNative) {
+      console.warn('StorageHelper.getItem called in React Native - use async version');
       return null;
     }
     
@@ -69,7 +91,7 @@ export const StorageHelper = {
   
   // Set item with option for session vs local storage
   setItem: (key, value, persistent = true) => {
-    if (typeof window === 'undefined') {
+    if (isReactNative) {
       // En React Native, usar AsyncStorage (no puede ser síncrono)
       AsyncStorage.setItem(key, value).catch(error => 
         console.warn('Error setting item in AsyncStorage:', error)
@@ -90,7 +112,7 @@ export const StorageHelper = {
   
   // Remove item from both storages
   removeItem: (key) => {
-    if (typeof window === 'undefined') {
+    if (isReactNative) {
       // En React Native
       AsyncStorage.removeItem(key).catch(error => 
         console.warn('Error removing item from AsyncStorage:', error)
@@ -108,7 +130,7 @@ export const StorageHelper = {
   
   // Clear all storage
   clear: () => {
-    if (typeof window === 'undefined') {
+    if (isReactNative) {
       // En React Native
       AsyncStorage.clear().catch(error => 
         console.warn('Error clearing AsyncStorage:', error)

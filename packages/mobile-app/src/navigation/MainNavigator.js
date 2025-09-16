@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSelector } from 'react-redux';
 import { selectIsAuthenticated } from '../../../shared/src/store/reactNativeStore.js';
@@ -9,7 +9,6 @@ import { selectIsAuthenticated } from '../../../shared/src/store/reactNativeStor
 import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
 import RoleSelectionScreen from '../screens/auth/RoleSelectionScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
-import RegisterScreen from '../screens/auth/RegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import BusinessDashboard from '../screens/dashboards/BusinessDashboard';
@@ -20,7 +19,7 @@ import SettingsScreen from '../screens/settings/SettingsScreen';
 // Iconos
 import { Ionicons } from '@expo/vector-icons';
 
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // Stack de autenticación
@@ -29,18 +28,34 @@ function AuthStack() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: '#ffffff' }
+        gestureEnabled: false,
       }}
     >
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// Stack principal autenticado con dashboards específicos
+function AuthenticatedStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: false,
+      }}
+    >
       {/* Dashboards específicos por rol */}
       <Stack.Screen name="DashboardBusiness" component={BusinessDashboard} />
       <Stack.Screen name="DashboardSpecialist" component={SpecialistDashboard} />
       <Stack.Screen name="DashboardReceptionist" component={DashboardScreen} />
+      {/* Otras pantallas principales */}
+      <Stack.Screen name="Tabs" component={MainTabs} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
     </Stack.Navigator>
   );
 }
@@ -69,7 +84,7 @@ function MainTabs() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#ec4899', // beauty.pink
+        tabBarActiveTintColor: '#ec4899', // business.pink
         tabBarInactiveTintColor: '#6b7280', // gray.500
         tabBarStyle: {
           backgroundColor: '#ffffff',
@@ -119,9 +134,14 @@ export default function MainNavigator() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator 
+        screenOptions={{ 
+          headerShown: false,
+          gestureEnabled: false,
+        }}
+      >
         {isAuthenticated ? (
-          <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen name="Authenticated" component={AuthenticatedStack} />
         ) : (
           <Stack.Screen name="Auth" component={AuthStack} />
         )}

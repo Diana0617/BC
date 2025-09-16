@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { plansApi } from '../../api/plansApi';
+import { publicPlansAPI } from '../../api/publicPlans.js';
 
-// AsyncThunks
+// AsyncThunks for authenticated requests
 export const fetchPlans = createAsyncThunk(
   'plans/fetchPlans',
   async (params = {}, { rejectWithValue }) => {
@@ -10,6 +11,31 @@ export const fetchPlans = createAsyncThunk(
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// AsyncThunks for public requests (no authentication required)
+export const fetchPublicPlans = createAsyncThunk(
+  'plans/fetchPublicPlans',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await publicPlansAPI.getPlans(params);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const fetchPublicPlanById = createAsyncThunk(
+  'plans/fetchPublicPlanById',
+  async ({ planId, params = {} }, { rejectWithValue }) => {
+    try {
+      const response = await publicPlansAPI.getPlanById(planId, params);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -137,7 +163,7 @@ const plansSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch Plans
+      // Fetch Plans (authenticated)
       .addCase(fetchPlans.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -153,7 +179,23 @@ const plansSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Fetch Plan by ID
+      // Fetch Public Plans (no authentication)
+      .addCase(fetchPublicPlans.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPublicPlans.fulfilled, (state, action) => {
+        state.loading = false;
+        state.plans = action.payload.data;
+        state.pagination = action.payload.pagination;
+        state.error = null;
+      })
+      .addCase(fetchPublicPlans.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Fetch Plan by ID (authenticated)
       .addCase(fetchPlanById.pending, (state) => {
         state.selectedPlanLoading = true;
         state.selectedPlanError = null;
@@ -164,6 +206,21 @@ const plansSlice = createSlice({
         state.selectedPlanError = null;
       })
       .addCase(fetchPlanById.rejected, (state, action) => {
+        state.selectedPlanLoading = false;
+        state.selectedPlanError = action.payload;
+      })
+
+      // Fetch Public Plan by ID (no authentication)
+      .addCase(fetchPublicPlanById.pending, (state) => {
+        state.selectedPlanLoading = true;
+        state.selectedPlanError = null;
+      })
+      .addCase(fetchPublicPlanById.fulfilled, (state, action) => {
+        state.selectedPlanLoading = false;
+        state.selectedPlan = action.payload.data;
+        state.selectedPlanError = null;
+      })
+      .addCase(fetchPublicPlanById.rejected, (state, action) => {
         state.selectedPlanLoading = false;
         state.selectedPlanError = action.payload;
       })

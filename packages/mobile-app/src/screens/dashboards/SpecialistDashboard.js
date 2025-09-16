@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '../../../../shared/src/store/reactNativeStore.js';
 
 // Hooks personalizados para el flujo del especialista
 import { useAppointmentValidation } from '../../hooks/useAppointmentValidation';
@@ -42,6 +43,39 @@ const SpecialistDashboard = ({ navigation }) => {
   // Redux selectors
   const { user, businessId } = useSelector(state => state.auth);
   const businessRules = useSelector(state => state.businessRule.assignedRules);
+  
+  // 🛡️ VALIDACIÓN DE ACCESO POR ROL
+  useEffect(() => {
+    if (user && user.role) {
+      const userRole = user.role.toLowerCase();
+      // Solo permitir acceso a specialists
+      if (userRole !== 'specialist') {
+        Alert.alert(
+          'Acceso Denegado',
+          'No tienes permisos para acceder a esta sección. Serás redirigido a tu dashboard.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Redirigir al dashboard correcto según el rol
+                const roleToRoute = {
+                  'business': 'DashboardBusiness',
+                  'receptionist': 'DashboardReceptionist'
+                };
+                const correctRoute = roleToRoute[userRole];
+                if (correctRoute) {
+                  navigation.replace(correctRoute);
+                } else {
+                  navigation.navigate('Welcome');
+                }
+              }
+            }
+          ]
+        );
+        return;
+      }
+    }
+  }, [user, navigation]);
   
   // Hooks personalizados
   const { validateAppointment, validationResult, isValidating } = useAppointmentValidation();
@@ -180,6 +214,24 @@ const SpecialistDashboard = ({ navigation }) => {
     setRefreshing(false);
   }, []);
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Cerrar Sesión',
+      '¿Estás seguro que quieres cerrar sesión?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Cerrar Sesión',
+          onPress: () => dispatch(logout()),
+          style: 'destructive',
+        },
+      ]
+    );
+  };
+
   // =====================================================
   // FUNCIONES DE MANEJO DE CITAS
   // =====================================================
@@ -314,12 +366,21 @@ const SpecialistDashboard = ({ navigation }) => {
           </Text>
         </View>
         
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('SpecialistProfile')}
-          className="w-12 h-12 bg-white/20 rounded-full items-center justify-center"
-        >
-          <Ionicons name="person" size={24} color="white" />
-        </TouchableOpacity>
+        <View className="flex-row items-center space-x-3">
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('SpecialistProfile')}
+            className="w-12 h-12 bg-white/20 rounded-full items-center justify-center"
+          >
+            <Ionicons name="person" size={24} color="white" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            onPress={handleLogout}
+            className="w-12 h-12 bg-red-500/20 rounded-full items-center justify-center"
+          >
+            <Ionicons name="log-out-outline" size={24} color="#ef4444" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Stats Cards */}

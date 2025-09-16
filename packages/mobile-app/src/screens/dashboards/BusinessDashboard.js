@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '../../../../shared/src/store/reactNativeStore.js';
 import WebView from 'react-native-webview';
 
 // Componentes de métricas
@@ -54,6 +55,39 @@ const FilterButton = ({ title, isActive, onPress }) => (
 export default function BusinessDashboard({ navigation }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  
+  // 🛡️ VALIDACIÓN DE ACCESO POR ROL
+  useEffect(() => {
+    if (user && user.role) {
+      const userRole = user.role.toLowerCase();
+      // Solo permitir acceso a business (propietario del negocio)
+      if (userRole !== 'business') {
+        Alert.alert(
+          'Acceso Denegado',
+          'No tienes permisos para acceder a esta sección. Serás redirigido a tu dashboard.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Redirigir al dashboard correcto según el rol
+                const roleToRoute = {
+                  'specialist': 'DashboardSpecialist',
+                  'receptionist': 'DashboardReceptionist'
+                };
+                const correctRoute = roleToRoute[userRole];
+                if (correctRoute) {
+                  navigation.replace(correctRoute);
+                } else {
+                  navigation.navigate('Welcome');
+                }
+              }
+            }
+          ]
+        );
+        return;
+      }
+    }
+  }, [user, navigation]);
   
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('today');
@@ -105,6 +139,24 @@ export default function BusinessDashboard({ navigation }) {
 
   const openWebApp = () => {
     setShowWebView(true);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Cerrar Sesión',
+      '¿Estás seguro de que quieres cerrar sesión?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Cerrar Sesión',
+          style: 'destructive',
+          onPress: () => dispatch(logout()),
+        },
+      ]
+    );
   };
 
   const getWebViewUrl = () => {
@@ -164,15 +216,26 @@ export default function BusinessDashboard({ navigation }) {
               Resumen de tu negocio
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={openWebApp}
-            className="bg-purple-600 px-4 py-2 rounded-xl flex-row items-center"
-          >
-            <Ionicons name="desktop" size={16} color="#ffffff" />
-            <Text className="text-white text-sm font-medium ml-2">
-              Panel Completo
-            </Text>
-          </TouchableOpacity>
+          <View className="flex-row items-center space-x-3">
+            <TouchableOpacity
+              onPress={openWebApp}
+              className="bg-purple-600 px-4 py-2 rounded-xl flex-row items-center"
+            >
+              <Ionicons name="desktop" size={16} color="#ffffff" />
+              <Text className="text-white text-sm font-medium ml-2">
+                Panel Completo
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleLogout}
+              className="bg-red-500 px-3 py-2 rounded-xl flex-row items-center"
+            >
+              <Ionicons name="log-out-outline" size={16} color="#ffffff" />
+              <Text className="text-white text-sm font-medium ml-1">
+                Salir
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 

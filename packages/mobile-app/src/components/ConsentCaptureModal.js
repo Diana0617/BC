@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuthToken } from '../hooks/useAuth';
 
 const ConsentCaptureModal = ({ 
   visible,
@@ -19,6 +20,7 @@ const ConsentCaptureModal = ({
   onClose,
   onConsentCaptured 
 }) => {
+  const authToken = useAuthToken();
   const [loading, setLoading] = useState(false);
   const [specialistSignature, setSpecialistSignature] = useState(null);
   const [clientConsent, setClientConsent] = useState({
@@ -47,7 +49,7 @@ const ConsentCaptureModal = ({
         `/api/specialist-documents/${specialistId}/signature`, 
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           }
         }
@@ -90,7 +92,7 @@ const ConsentCaptureModal = ({
         `/api/services/${appointment.service.id}/consent-template`, 
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           }
         }
@@ -194,7 +196,7 @@ const ConsentCaptureModal = ({
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(consentData)
