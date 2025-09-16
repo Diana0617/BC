@@ -56,6 +56,39 @@ export default function BusinessDashboard({ navigation }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   
+  // 🛡️ VALIDACIÓN DE ACCESO POR ROL
+  useEffect(() => {
+    if (user && user.role) {
+      const userRole = user.role.toLowerCase();
+      // Solo permitir acceso a business (propietario del negocio)
+      if (userRole !== 'business') {
+        Alert.alert(
+          'Acceso Denegado',
+          'No tienes permisos para acceder a esta sección. Serás redirigido a tu dashboard.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Redirigir al dashboard correcto según el rol
+                const roleToRoute = {
+                  'specialist': 'DashboardSpecialist',
+                  'receptionist': 'DashboardReceptionist'
+                };
+                const correctRoute = roleToRoute[userRole];
+                if (correctRoute) {
+                  navigation.replace(correctRoute);
+                } else {
+                  navigation.navigate('Welcome');
+                }
+              }
+            }
+          ]
+        );
+        return;
+      }
+    }
+  }, [user, navigation]);
+  
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('today');
   const [selectedSpecialist, setSelectedSpecialist] = useState('all');

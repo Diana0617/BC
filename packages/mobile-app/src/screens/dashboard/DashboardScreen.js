@@ -1,12 +1,45 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout, selectUser } from '../../../../shared/src/store/reactNativeStore.js';
 
-export default function DashboardScreen() {
+export default function DashboardScreen({ navigation }) {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
+
+  // 🛡️ VALIDACIÓN DE ACCESO POR ROL
+  useEffect(() => {
+    if (user && user.role) {
+      const userRole = user.role.toLowerCase();
+      // Solo permitir acceso a receptionists
+      if (userRole !== 'receptionist') {
+        Alert.alert(
+          'Acceso Denegado',
+          'No tienes permisos para acceder a esta sección. Serás redirigido a tu dashboard.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Redirigir al dashboard correcto según el rol
+                const roleToRoute = {
+                  'business': 'DashboardBusiness',
+                  'specialist': 'DashboardSpecialist'
+                };
+                const correctRoute = roleToRoute[userRole];
+                if (correctRoute) {
+                  navigation.replace(correctRoute);
+                } else {
+                  navigation.navigate('Welcome');
+                }
+              }
+            }
+          ]
+        );
+        return;
+      }
+    }
+  }, [user, navigation]);
 
   const handleLogout = () => {
     dispatch(logout());

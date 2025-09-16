@@ -35,10 +35,27 @@ function AuthStack() {
       <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// Stack principal autenticado con dashboards específicos
+function AuthenticatedStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: false,
+      }}
+    >
       {/* Dashboards específicos por rol */}
       <Stack.Screen name="DashboardBusiness" component={BusinessDashboard} />
       <Stack.Screen name="DashboardSpecialist" component={SpecialistDashboard} />
       <Stack.Screen name="DashboardReceptionist" component={DashboardScreen} />
+      {/* Otras pantallas principales */}
+      <Stack.Screen name="Tabs" component={MainTabs} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
     </Stack.Navigator>
   );
 }
@@ -124,7 +141,7 @@ export default function MainNavigator() {
         }}
       >
         {isAuthenticated ? (
-          <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen name="Authenticated" component={AuthenticatedStack} />
         ) : (
           <Stack.Screen name="Auth" component={AuthStack} />
         )}

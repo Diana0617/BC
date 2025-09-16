@@ -132,28 +132,191 @@ const options = {
             id: {
               type: 'string',
               format: 'uuid',
-              description: 'ID único del plan'
+              description: 'ID único del plan',
+              example: '123e4567-e89b-12d3-a456-426614174000'
             },
             name: {
               type: 'string',
-              description: 'Nombre del plan'
+              description: 'Nombre del plan',
+              example: 'Plan Básico'
+            },
+            description: {
+              type: 'string',
+              description: 'Descripción detallada del plan',
+              example: 'Plan ideal para negocios pequeños con funcionalidades básicas'
             },
             price: {
-              type: 'number',
-              description: 'Precio en centavos'
+              type: 'string',
+              description: 'Precio del plan en formato decimal',
+              example: '29.99'
+            },
+            currency: {
+              type: 'string',
+              description: 'Moneda del precio',
+              example: 'COP'
             },
             duration: {
               type: 'integer',
-              description: 'Duración en días'
+              description: 'Duración del plan',
+              example: 1
+            },
+            durationType: {
+              type: 'string',
+              enum: ['DAYS', 'WEEKS', 'MONTHS', 'YEARS'],
+              description: 'Tipo de duración del plan',
+              example: 'MONTHS'
+            },
+            maxUsers: {
+              type: 'integer',
+              description: 'Máximo número de usuarios permitidos',
+              example: 5
+            },
+            maxClients: {
+              type: 'integer',
+              description: 'Máximo número de clientes permitidos',
+              example: 100
+            },
+            maxAppointments: {
+              type: 'integer',
+              description: 'Máximo número de citas permitidas',
+              example: 500
+            },
+            storageLimit: {
+              type: 'string',
+              description: 'Límite de almacenamiento en MB',
+              example: '1000'
+            },
+            status: {
+              type: 'string',
+              enum: ['ACTIVE', 'INACTIVE', 'DEPRECATED'],
+              description: 'Estado del plan',
+              example: 'ACTIVE'
+            },
+            isPopular: {
+              type: 'boolean',
+              description: 'Indica si el plan es popular/destacado',
+              example: false
+            },
+            trialDays: {
+              type: 'integer',
+              description: 'Días de prueba gratuita',
+              example: 14
             },
             features: {
+              type: 'object',
+              description: 'Características booleanas del plan',
+              properties: {
+                reports: {
+                  type: 'boolean',
+                  example: true
+                },
+                customization: {
+                  type: 'boolean',
+                  example: false
+                },
+                notifications: {
+                  type: 'boolean',
+                  example: true
+                }
+              }
+            },
+            limitations: {
+              type: 'object',
+              description: 'Limitaciones específicas del plan',
+              properties: {
+                maxBranches: {
+                  type: 'integer',
+                  example: 1
+                },
+                supportLevel: {
+                  type: 'string',
+                  example: 'basic'
+                }
+              }
+            },
+            modules: {
               type: 'array',
+              description: 'Módulos incluidos en el plan (disponible en rutas públicas)',
               items: {
-                type: 'string'
-              },
-              description: 'Lista de características incluidas'
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    description: 'ID único del módulo'
+                  },
+                  name: {
+                    type: 'string',
+                    description: 'Nombre técnico del módulo',
+                    example: 'authentication'
+                  },
+                  displayName: {
+                    type: 'string',
+                    description: 'Nombre para mostrar del módulo',
+                    example: 'Autenticación'
+                  },
+                  icon: {
+                    type: 'string',
+                    description: 'Icono del módulo',
+                    example: 'mdi-shield-account'
+                  },
+                  category: {
+                    type: 'string',
+                    description: 'Categoría del módulo',
+                    example: 'core'
+                  },
+                  status: {
+                    type: 'string',
+                    enum: ['ACTIVE', 'INACTIVE'],
+                    description: 'Estado del módulo',
+                    example: 'ACTIVE'
+                  },
+                  pricing: {
+                    type: 'object',
+                    description: 'Información de precios del módulo'
+                  },
+                  PlanModule: {
+                    type: 'object',
+                    description: 'Configuración específica del módulo para este plan',
+                    properties: {
+                      isIncluded: {
+                        type: 'boolean',
+                        description: 'Si el módulo está incluido en el plan',
+                        example: true
+                      },
+                      limitQuantity: {
+                        type: 'integer',
+                        nullable: true,
+                        description: 'Cantidad límite del módulo',
+                        example: null
+                      },
+                      additionalPrice: {
+                        type: 'number',
+                        description: 'Precio adicional del módulo',
+                        example: 0
+                      },
+                      configuration: {
+                        type: 'object',
+                        description: 'Configuración específica del módulo',
+                        example: {}
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de creación del plan'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de última actualización del plan'
             }
-          }
+          },
+          required: ['id', 'name', 'price', 'currency', 'duration', 'durationType', 'status']
         },
         BusinessInvitation: {
           type: 'object',

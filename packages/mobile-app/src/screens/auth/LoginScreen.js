@@ -67,10 +67,34 @@ export default function LoginScreen({ navigation, route }) {
         rememberMe: false 
       })).unwrap();
 
-      if (result) {
-        // Navegación exitosa basada en el rol
-        const dashboardRoute = `Dashboard${selectedRole?.id === 'business' ? 'Business' : 
-                               selectedRole?.id === 'specialist' ? 'Specialist' : 'Receptionist'}`;
+      if (result && result.user) {
+        // 🔐 VALIDACIÓN DE ROLES: Usar el rol REAL del usuario autenticado
+        const userRole = result.user.role?.toLowerCase();
+        
+        // Mapear roles del backend a rutas de dashboard
+        const roleToRoute = {
+          'business': 'DashboardBusiness',
+          'specialist': 'DashboardSpecialist',
+          'receptionist': 'DashboardReceptionist'
+        };
+
+        const dashboardRoute = roleToRoute[userRole];
+        
+        if (!dashboardRoute) {
+          Alert.alert('Error', 'Rol de usuario no reconocido');
+          return;
+        }
+
+        // 🛡️ VALIDACIÓN ADICIONAL: Verificar que el rol seleccionado coincida con el real
+        const selectedRoleId = selectedRole?.id?.toLowerCase();
+        if (selectedRoleId !== userRole) {
+          Alert.alert(
+            'Acceso Denegado', 
+            `No puedes acceder como ${selectedRole?.title} con credenciales de ${userRole}. Serás redirigido a tu dashboard correspondiente.`
+          );
+        }
+
+        // Navegar al dashboard correcto basado en el rol REAL del usuario
         navigation.navigate(dashboardRoute);
       }
     } catch (error) {

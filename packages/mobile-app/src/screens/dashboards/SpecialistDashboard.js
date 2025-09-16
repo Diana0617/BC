@@ -44,6 +44,39 @@ const SpecialistDashboard = ({ navigation }) => {
   const { user, businessId } = useSelector(state => state.auth);
   const businessRules = useSelector(state => state.businessRule.assignedRules);
   
+  // 🛡️ VALIDACIÓN DE ACCESO POR ROL
+  useEffect(() => {
+    if (user && user.role) {
+      const userRole = user.role.toLowerCase();
+      // Solo permitir acceso a specialists
+      if (userRole !== 'specialist') {
+        Alert.alert(
+          'Acceso Denegado',
+          'No tienes permisos para acceder a esta sección. Serás redirigido a tu dashboard.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Redirigir al dashboard correcto según el rol
+                const roleToRoute = {
+                  'business': 'DashboardBusiness',
+                  'receptionist': 'DashboardReceptionist'
+                };
+                const correctRoute = roleToRoute[userRole];
+                if (correctRoute) {
+                  navigation.replace(correctRoute);
+                } else {
+                  navigation.navigate('Welcome');
+                }
+              }
+            }
+          ]
+        );
+        return;
+      }
+    }
+  }, [user, navigation]);
+  
   // Hooks personalizados
   const { validateAppointment, validationResult, isValidating } = useAppointmentValidation();
   const { checkBusinessRules, rulesLoaded, ruleChecks } = useBusinessRules(businessId);
