@@ -1,8 +1,8 @@
 import { configureStore, createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-// Temporal async thunk for login
-export const loginUser = createAsyncThunk(
-  'auth/loginUser',
+// Temporal async thunk for login (React Native specific)
+export const loginUserRN = createAsyncThunk(
+  'auth/loginUserRN',
   async ({ credentials, rememberMe }, { rejectWithValue }) => {
     try {
       // Use IP address instead of localhost for React Native
@@ -123,18 +123,18 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(loginUser.pending, (state) => {
+      .addCase(loginUserRN.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state, action) => {
+      .addCase(loginUserRN.fulfilled, (state, action) => {
         state.isAuthenticated = true;
         state.user = action.payload.user;
         state.token = action.payload.token;
         state.isLoading = false;
         state.error = null;
       })
-      .addCase(loginUser.rejected, (state, action) => {
+      .addCase(loginUserRN.rejected, (state, action) => {
         state.isAuthenticated = false;
         state.user = null;
         state.token = null;

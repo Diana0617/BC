@@ -74,5 +74,5 @@ export const store = createStore();
 export const getStoreState = () => store.getState();
 export const getStoreDispatch = () => store.dispatch;
 
-// Export React Native specific store and functions
-export * from './reactNativeStore.js';
+// Note: React Native specific store (reactNativeStore.js) is imported directly in mobile app
+// and not exported here to avoid conflicts with web app imports

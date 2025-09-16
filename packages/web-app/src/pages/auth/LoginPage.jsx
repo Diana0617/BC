@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { loginUser } from '../../../../shared/src/index.js'
+import { loginUser } from '../../../../shared/src/store/slices/authSlice.js'
 
 const LoginPage = () => {
   const dispatch = useDispatch()

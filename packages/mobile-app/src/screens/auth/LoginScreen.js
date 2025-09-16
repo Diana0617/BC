@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginUser } from '../../../../shared/src/store/reactNativeStore.js';
+import { loginUserRN } from '../../../../shared/src/store/reactNativeStore.js';
 
 const ROLE_CONFIG = {
   business: {
@@ -62,7 +62,7 @@ export default function LoginScreen({ navigation, route }) {
         role: selectedRole?.id || 'business'
       };
 
-      const result = await dispatch(loginUser({ 
+      const result = await dispatch(loginUserRN({ 
         credentials, 
         rememberMe: false 
       })).unwrap();
