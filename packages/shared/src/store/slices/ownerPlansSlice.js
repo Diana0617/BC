@@ -155,6 +155,7 @@ const initialState = {
   showCreateModal: false,
   showEditModal: false,
   showDeleteModal: false,
+  showViewModal: false,
   editingPlan: null
 };
 
@@ -189,6 +190,12 @@ const ownerPlansSlice = createSlice({
     },
     setShowDeleteModal: (state, action) => {
       state.showDeleteModal = action.payload;
+    },
+    setShowViewModal: (state, action) => {
+      state.showViewModal = action.payload;
+      if (!action.payload) {
+        state.selectedPlan = null;
+      }
     },
     setEditingPlan: (state, action) => {
       state.editingPlan = action.payload;
@@ -238,25 +245,24 @@ const ownerPlansSlice = createSlice({
       .addCase(fetchOwnerPlans.fulfilled, (state, action) => {
         state.loading = false;
         
-        // Ensure we always store an array in state.plans
+        // La respuesta del backend es: {success, data: Array, pagination, message}
+        // El array de planes está directamente en data
         let plansData = action.payload.data || [];
         
         // Handle case where backend might send different structure
         if (!Array.isArray(plansData)) {
           console.warn('🚨 Backend sent non-array plans data:', plansData);
-          if (plansData && Array.isArray(plansData.plans)) {
-            plansData = plansData.plans;
-          } else {
-            plansData = [];
-          }
+          console.warn('🔍 Full action payload:', action.payload);
+          plansData = [];
         }
         
         state.plans = plansData;
+        state.totalPlans = plansData.length;
         
         // Actualizar paginación si viene en la respuesta
         if (action.payload.pagination) {
           state.pagination = action.payload.pagination;
-          state.totalPlans = action.payload.pagination.totalItems;
+          // Mantener totalPlans como el número de planes visibles, no el total de páginas
         }
       })
       .addCase(fetchOwnerPlans.rejected, (state, action) => {
@@ -271,6 +277,7 @@ const ownerPlansSlice = createSlice({
       })
       .addCase(fetchOwnerPlanById.fulfilled, (state, action) => {
         state.selectedPlanLoading = false;
+        // La respuesta es: {success, data: planObject, message}
         state.selectedPlan = action.payload.data;
       })
       .addCase(fetchOwnerPlanById.rejected, (state, action) => {
@@ -412,6 +419,7 @@ export const {
   setShowCreateModal,
   setShowEditModal,
   setShowDeleteModal,
+  setShowViewModal,
   setEditingPlan,
   clearErrors,
   clearSelectedPlan,

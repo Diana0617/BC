@@ -10,7 +10,7 @@ import DashboardPage from './pages/dashboard/DashboardPage'
 // Owner Pages
 import OwnerLayout from './layouts/OwnerLayout'
 import OwnerDashboardPage from './pages/owner/OwnerDashboardPage'
-import OwnerPlansPage from './pages/owner/OwnerPlansPage'
+import OwnerPlansPage from './pages/owner/plans/OwnerPlansPage'
 import OwnerModulesPage from './pages/owner/OwnerModulesPage'
 
 // Test Components (temporal)

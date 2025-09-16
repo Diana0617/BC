@@ -2098,6 +2098,75 @@ router.put('/plans/:planId', OwnerPlanController.updatePlan);
 
 /**
  * @swagger
+ * /api/owner/plans/{planId}:
+ *   delete:
+ *     tags:
+ *       - Owner Plan Management
+ *     summary: Eliminar un plan de suscripción
+ *     description: Elimina permanentemente un plan de suscripción. Solo se pueden eliminar planes sin suscripciones asociadas.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: planId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID del plan a eliminar
+ *     responses:
+ *       200:
+ *         description: Plan eliminado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     deletedPlanId:
+ *                       type: string
+ *                       format: uuid
+ *                 message:
+ *                   type: string
+ *                   example: "Plan eliminado correctamente"
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       409:
+ *         description: Conflict - Plan tiene suscripciones asociadas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "No se puede eliminar un plan que tiene suscripciones asociadas"
+ *                 details:
+ *                   type: object
+ *                   properties:
+ *                     totalSubscriptions:
+ *                       type: integer
+ *                     suggestion:
+ *                       type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete('/plans/:planId', OwnerPlanController.deletePlan);
+
+/**
+ * @swagger
  * /api/owner/plans/{planId}/status:
  *   patch:
  *     tags:

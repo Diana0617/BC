@@ -15,6 +15,7 @@ import {
   setShowCreateModal,
   setShowEditModal,
   setShowDeleteModal,
+  setShowViewModal,
   setEditingPlan,
   clearErrors,
   clearSelectedPlan,
@@ -51,6 +52,7 @@ export const useOwnerPlans = () => {
     showCreateModal,
     showEditModal,
     showDeleteModal,
+    showViewModal,
     editingPlan
   } = useSelector(state => state.ownerPlans);
 
@@ -105,6 +107,7 @@ export const useOwnerPlans = () => {
     setShowCreateModal: useCallback((show) => dispatch(setShowCreateModal(show)), [dispatch]),
     setShowEditModal: useCallback((show) => dispatch(setShowEditModal(show)), [dispatch]),
     setShowDeleteModal: useCallback((show) => dispatch(setShowDeleteModal(show)), [dispatch]),
+    setShowViewModal: useCallback((show) => dispatch(setShowViewModal(show)), [dispatch]),
     setEditingPlan: useCallback((plan) => dispatch(setEditingPlan(plan)), [dispatch]),
     
     // Cleanup
@@ -168,11 +171,20 @@ export const useOwnerPlans = () => {
       actions.setShowDeleteModal(true);
     },
     
+    // Abrir modal de vista
+    openViewModal: (plan) => {
+      actions.clearErrors();
+      actions.fetchPlanById(plan.id);
+      actions.fetchPlanStats(plan.id);
+      actions.setShowViewModal(true);
+    },
+    
     // Cerrar modales
     closeModals: () => {
       actions.setShowCreateModal(false);
       actions.setShowEditModal(false);
       actions.setShowDeleteModal(false);
+      actions.setShowViewModal(false);
       actions.setEditingPlan(null);
       actions.clearErrors();
     },
@@ -184,8 +196,11 @@ export const useOwnerPlans = () => {
     
     // Seleccionar plan y cargar detalles
     selectPlan: (planId) => {
-      actions.fetchPlanById(planId);
-      actions.fetchPlanStats(planId);
+      // Buscar el plan en el array actual
+      const plan = safePlans.find(p => p.id === planId);
+      if (plan) {
+        helpers.openViewModal(plan);
+      }
     }
   };
 
@@ -218,6 +233,7 @@ export const useOwnerPlans = () => {
     showCreateModal,
     showEditModal,
     showDeleteModal,
+    showViewModal,
     editingPlan,
     
     // Actions

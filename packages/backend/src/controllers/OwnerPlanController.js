@@ -29,12 +29,25 @@ class OwnerPlanController {
         whereClause.status = status.toUpperCase();
       }
 
-      // Primero obtenemos los planes básicos
+      // Primero obtenemos los planes básicos con módulos incluidos
       const plans = await SubscriptionPlan.findAndCountAll({
         where: whereClause,
         order: [[sortBy, sortOrder]],
         limit: parseInt(limit),
-        offset: parseInt(offset)
+        offset: parseInt(offset),
+        include: [
+          {
+            model: PlanModule,
+            as: 'planModules',
+            include: [
+              {
+                model: Module,
+                as: 'module',
+                attributes: ['id', 'name', 'displayName', 'description', 'category', 'status', 'icon', 'version']
+              }
+            ]
+          }
+        ]
       });
 
       // Luego obtenemos las estadísticas de suscripciones para cada plan
@@ -64,8 +77,8 @@ class OwnerPlanController {
       const plansWithStats = await Promise.all(
         plansWithSubscriptionStats.map(async (plan) => {
           const [revenue, conversionRate] = await Promise.all([
-            this.getPlanRevenue(plan.id),
-            this.getPlanConversionRate(plan.id)
+            OwnerPlanController.getPlanRevenue(plan.id),
+            OwnerPlanController.getPlanConversionRate(plan.id)
           ]);
 
           return {
@@ -73,7 +86,7 @@ class OwnerPlanController {
             statistics: {
               revenue,
               conversionRate,
-              popularity: await this.getPlanPopularityRank(plan.id)
+              popularity: await OwnerPlanController.getPlanPopularityRank(plan.id)
             }
           };
         })
@@ -81,14 +94,19 @@ class OwnerPlanController {
 
       res.json({
         success: true,
-        data: {
-          plans: plansWithStats,
-          pagination: {
-            currentPage: parseInt(page),
-            totalPages: Math.ceil(plans.count.length / limit),
-            totalItems: plans.count.length,
-            itemsPerPage: parseInt(limit)
-          }
+        data: plansWithStats,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(plans.count / limit),
+          totalItems: plans.count,
+          itemsPerPage: parseInt(limit),
+          hasNextPage: parseInt(page) < Math.ceil(plans.count / limit),
+          hasPrevPage: parseInt(page) > 1,
+          nextPage: parseInt(page) < Math.ceil(plans.count / limit) ? parseInt(page) + 1 : null,
+          prevPage: parseInt(page) > 1 ? parseInt(page) - 1 : null
+        },
+        filters: {
+          statuses: ['ACTIVE', 'INACTIVE', 'DEPRECATED']
         },
         message: 'Planes obtenidos correctamente'
       });
@@ -122,6 +140,17 @@ class OwnerPlanController {
                 attributes: ['id', 'name', 'email']
               }
             ]
+          },
+          {
+            model: PlanModule,
+            as: 'planModules',
+            include: [
+              {
+                model: Module,
+                as: 'module',
+                attributes: ['id', 'name', 'displayName', 'description', 'category', 'status', 'icon', 'version']
+              }
+            ]
           }
         ]
       });
@@ -135,21 +164,31 @@ class OwnerPlanController {
 
       // Obtener estadísticas detalladas
       const [revenue, conversionRate, usage] = await Promise.all([
-        this.getPlanRevenue(planId),
-        this.getPlanConversionRate(planId),
-        this.getPlanUsageDetails(planId)
+        OwnerPlanController.getPlanRevenue(planId),
+        OwnerPlanController.getPlanConversionRate(planId),
+        OwnerPlanController.getPlanUsageDetails(planId)
       ]);
+
+      // Debug: verificar si planModules está presente
+      console.log('🔍 Plan encontrado:', plan.name);
+      console.log('🔍 planModules en objeto:', plan.planModules ? plan.planModules.length : 'undefined');
+      
+      // Incluir las estadísticas en el plan pero preservar las asociaciones
+      const planWithStats = {
+        ...plan.toJSON(),
+        statistics: {
+          revenue,
+          conversionRate,
+          usage
+        }
+      };
+
+      // Debug: verificar si planModules sobrevive al toJSON()
+      console.log('🔍 planModules después de toJSON:', planWithStats.planModules ? planWithStats.planModules.length : 'undefined');
 
       res.json({
         success: true,
-        data: {
-          plan: plan.toJSON(),
-          statistics: {
-            revenue,
-            conversionRate,
-            usage
-          }
-        },
+        data: planWithStats,
         message: 'Plan obtenido correctamente'
       });
 
@@ -287,9 +326,32 @@ class OwnerPlanController {
         await transaction.rollback();
       }
       console.error('Error creando plan:', error);
-      res.status(500).json({
+      
+      // Mejorar mensajes de error específicos
+      let errorMessage = 'Error creando plan de suscripción';
+      let statusCode = 500;
+      
+      if (error.name === 'SequelizeDatabaseError') {
+        // Error de desbordamiento numérico
+        if (error.original?.code === '22003') {
+          errorMessage = 'El precio especificado excede el límite máximo permitido ($99,999,999.99)';
+          statusCode = 400;
+        }
+        // Error de duplicado
+        else if (error.original?.code === '23505') {
+          errorMessage = 'Ya existe un plan con ese nombre';
+          statusCode = 409;
+        }
+        // Error de violación de restricción
+        else if (error.original?.code === '23502') {
+          errorMessage = 'Faltan campos requeridos para crear el plan';
+          statusCode = 400;
+        }
+      }
+      
+      res.status(statusCode).json({
         success: false,
-        message: 'Error creando plan de suscripción',
+        message: errorMessage,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
@@ -315,7 +377,7 @@ class OwnerPlanController {
       if (updateData.price && plan.price !== updateData.price) {
         const activeSubscriptions = await BusinessSubscription.count({
           where: {
-            planId,
+            subscriptionPlanId: planId,
             status: 'ACTIVE'
           }
         });
@@ -355,9 +417,82 @@ class OwnerPlanController {
 
     } catch (error) {
       console.error('Error actualizando plan:', error);
+      
+      // Mejorar mensajes de error específicos
+      let errorMessage = 'Error actualizando plan';
+      let statusCode = 500;
+      
+      if (error.name === 'SequelizeDatabaseError') {
+        // Error de desbordamiento numérico
+        if (error.original?.code === '22003') {
+          errorMessage = 'El precio especificado excede el límite máximo permitido ($99,999,999.99)';
+          statusCode = 400;
+        }
+        // Error de duplicado
+        else if (error.original?.code === '23505') {
+          errorMessage = 'Ya existe un plan con ese nombre';
+          statusCode = 409;
+        }
+      }
+      
+      res.status(statusCode).json({
+        success: false,
+        message: errorMessage,
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Eliminar un plan de suscripción
+   */
+  static async deletePlan(req, res) {
+    try {
+      const { planId } = req.params;
+
+      const plan = await SubscriptionPlan.findByPk(planId);
+      if (!plan) {
+        return res.status(404).json({
+          success: false,
+          message: 'Plan no encontrado'
+        });
+      }
+
+      // Verificar si el plan tiene suscripciones activas o históricas
+      const totalSubscriptions = await BusinessSubscription.count({
+        where: { subscriptionPlanId: planId }
+      });
+
+      if (totalSubscriptions > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'No se puede eliminar un plan que tiene suscripciones asociadas',
+          details: {
+            totalSubscriptions,
+            suggestion: 'Cambie el estado del plan a INACTIVE o DEPRECATED en su lugar'
+          }
+        });
+      }
+
+      // Eliminar asociaciones con módulos primero
+      await PlanModule.destroy({
+        where: { subscriptionPlanId: planId }
+      });
+
+      // Eliminar el plan
+      await plan.destroy();
+
+      res.json({
+        success: true,
+        data: { deletedPlanId: planId },
+        message: 'Plan eliminado correctamente'
+      });
+
+    } catch (error) {
+      console.error('Error eliminando plan:', error);
       res.status(500).json({
         success: false,
-        message: 'Error actualizando plan',
+        message: 'Error eliminando plan',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
@@ -390,7 +525,7 @@ class OwnerPlanController {
       if (status === 'INACTIVE' || status === 'DEPRECATED') {
         const activeSubscriptions = await BusinessSubscription.count({
           where: {
-            planId,
+            subscriptionPlanId: planId,
             status: 'ACTIVE'
           }
         });
@@ -446,11 +581,11 @@ class OwnerPlanController {
         conversionRate,
         usageDetails
       ] = await Promise.all([
-        BusinessSubscription.count({ where: { planId } }),
-        BusinessSubscription.count({ where: { planId, status: 'ACTIVE' } }),
-        this.getPlanRevenue(planId),
-        this.getPlanConversionRate(planId),
-        this.getPlanUsageDetails(planId)
+        BusinessSubscription.count({ where: { subscriptionPlanId: planId } }),
+        BusinessSubscription.count({ where: { subscriptionPlanId: planId, status: 'ACTIVE' } }),
+        OwnerPlanController.getPlanRevenue(planId),
+        OwnerPlanController.getPlanConversionRate(planId),
+        OwnerPlanController.getPlanUsageDetails(planId)
       ]);
 
       res.json({
@@ -572,12 +707,12 @@ class OwnerPlanController {
       // Esta función se puede expandir para incluir más detalles
       // Por ahora retorna información básica
       const activeSubscriptions = await BusinessSubscription.count({
-        where: { planId, status: 'ACTIVE' }
+        where: { subscriptionPlanId: planId, status: 'ACTIVE' }
       });
 
       return {
         activeSubscriptions,
-        lastSubscriptionDate: await this.getLastSubscriptionDate(planId)
+        lastSubscriptionDate: await OwnerPlanController.getLastSubscriptionDate(planId)
       };
     } catch (error) {
       console.error('Error obteniendo detalles de uso:', error);
@@ -591,7 +726,7 @@ class OwnerPlanController {
   static async getLastSubscriptionDate(planId) {
     try {
       const lastSubscription = await BusinessSubscription.findOne({
-        where: { planId },
+        where: { subscriptionPlanId: planId },
         order: [['createdAt', 'DESC']],
         attributes: ['createdAt']
       });
@@ -600,6 +735,70 @@ class OwnerPlanController {
     } catch (error) {
       console.error('Error obteniendo última fecha de suscripción:', error);
       return null;
+    }
+  }
+
+  /**
+   * Eliminar un plan de suscripción
+   */
+  static async deletePlan(req, res) {
+    const transaction = await sequelize.transaction();
+
+    try {
+      const { planId } = req.params;
+
+      // Buscar el plan (sin filtrar por ownerId ya que los planes son globales)
+      const plan = await SubscriptionPlan.findByPk(planId, { transaction });
+
+      if (!plan) {
+        await transaction.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Plan no encontrado'
+        });
+      }
+
+      // Verificar si hay suscripciones activas
+      const activeSubscriptions = await BusinessSubscription.count({
+        where: {
+          subscriptionPlanId: planId,
+          status: ['ACTIVE', 'PENDING']
+        },
+        transaction
+      });
+
+      if (activeSubscriptions > 0) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'No se puede eliminar un plan con suscripciones activas',
+          details: {
+            activeSubscriptions
+          }
+        });
+      }
+
+      // Eliminar el plan
+      await plan.destroy({ transaction });
+
+      await transaction.commit();
+
+      res.json({
+        success: true,
+        message: 'Plan eliminado correctamente',
+        data: {
+          deletedPlanId: planId
+        }
+      });
+
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Error eliminando plan:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error eliminando el plan',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   }
 }
