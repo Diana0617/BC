@@ -12,6 +12,11 @@ const AppointmentClosureValidator = ({
   onClose, 
   onValidationComplete 
 }) => {
+  // Validación de seguridad: si no hay appointment o no tiene id, no renderizar nada
+  if (!appointment?.id) {
+    return null;
+  }
+
   const authToken = useAuthToken();
   const [currentStep, setCurrentStep] = useState(0);
   const [validationResults, setValidationResults] = useState({});

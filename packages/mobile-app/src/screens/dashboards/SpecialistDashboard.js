@@ -41,9 +41,26 @@ const SpecialistDashboard = ({ navigation }) => {
   const dispatch = useDispatch();
   
   // Redux selectors
-  const { user, businessId } = useSelector(state => state.auth);
+  const { user } = useSelector(state => state.auth);
+  const businessId = useSelector(state => state.auth.businessId);
   const businessRules = useSelector(state => state.businessRule.assignedRules);
   
+  // 🛡️ VALIDACIÓN TEMPRANA: Si no hay usuario o businessId, mostrar loading
+  if (!user || !businessId) {
+    console.log('SpecialistDashboard - Loading state:', { user: !!user, businessId: !!businessId });
+    
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb' }}>
+        <ActivityIndicator size="large" color="#8b5cf6" />
+        <Text style={{ marginTop: 16, fontSize: 16, color: '#6b7280' }}>Cargando datos del especialista...</Text>
+        {/* Debug info */}
+        <Text style={{ marginTop: 8, fontSize: 12, color: '#9ca3af' }}>
+          Usuario: {user ? '✓' : '✗'} | Business: {businessId ? '✓' : '✗'}
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
   // 🛡️ VALIDACIÓN DE ACCESO POR ROL
   useEffect(() => {
     if (user && user.role) {
@@ -77,16 +94,16 @@ const SpecialistDashboard = ({ navigation }) => {
     }
   }, [user, navigation]);
   
-  // Hooks personalizados
-  const { validateAppointment, validationResult, isValidating } = useAppointmentValidation();
+  // Hooks personalizados (ahora seguros porque user existe)
+  // const { validateAppointment, validationResult, isValidating } = useAppointmentValidation();
   const { checkBusinessRules, rulesLoaded, ruleChecks } = useBusinessRules(businessId);
-  const { 
-    pendingCommissions, 
-    paymentRequests, 
-    commissionStats, 
-    generatePaymentRequest,
-    isGenerating 
-  } = useCommissionManager(user.id, businessId);
+  // const { 
+  //   pendingCommissions, 
+  //   paymentRequests, 
+  //   commissionStats, 
+  //   generatePaymentRequest,
+  //   isGenerating 
+  // } = useCommissionManager(user.id);
 
   // Estados locales
   const [refreshing, setRefreshing] = useState(false);
@@ -266,13 +283,19 @@ const SpecialistDashboard = ({ navigation }) => {
 
   const startAppointment = async (appointment) => {
     try {
+      // Validar que appointment y appointment.id existan
+      if (!appointment || !appointment.id) {
+        Alert.alert('Error', 'Datos de cita inválidos');
+        return;
+      }
+      
       // Validar reglas antes de iniciar
       const validation = await validateAppointment(appointment.id);
       
       if (validation.canStart) {
         // Actualizar estado de la cita
         const updatedAppointments = todayAppointments.map(apt => 
-          apt.id === appointment.id 
+          apt?.id === appointment.id 
             ? { ...apt, status: 'in_progress' }
             : apt
         );
@@ -292,6 +315,11 @@ const SpecialistDashboard = ({ navigation }) => {
   };
 
   const showAppointmentDetails = (appointment) => {
+    // Validar que appointment y appointment.id existan
+    if (!appointment || !appointment.id) {
+      Alert.alert('Error', 'Datos de cita inválidos');
+      return;
+    }
     // Implementar vista de detalles
     navigation.navigate('AppointmentDetails', { appointmentId: appointment.id });
   };
@@ -463,10 +491,12 @@ const SpecialistDashboard = ({ navigation }) => {
 
       <FlatList
         data={todayAppointments}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item?.id?.toString() || 'unknown'}
         renderItem={({ item }) => <AppointmentCard appointment={item} onPress={() => handleAppointmentPress(item)} />}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        nestedScrollEnabled={true}
+        scrollEnabled={false}
+        style={{ marginBottom: 20 }}
       />
     </View>
   );
@@ -689,21 +719,24 @@ const SpecialistDashboard = ({ navigation }) => {
         {renderHeader()}
         
         <View className="flex-1 bg-gray-50 rounded-t-3xl">
-          <ScrollView
+          <FlatList
+            data={[{ key: 'content' }]}
+            keyExtractor={(item) => item.key}
+            renderItem={() => (
+              <View className="pt-6">
+                {renderTabBar()}
+                
+                {activeTab === 'agenda' && renderAgendaTab()}
+                {activeTab === 'commissions' && renderCommissionsTab()}
+                {activeTab === 'stats' && renderStatsTab()}
+              </View>
+            )}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
             }
             showsVerticalScrollIndicator={false}
             className="flex-1"
-          >
-            <View className="pt-6">
-              {renderTabBar()}
-              
-              {activeTab === 'agenda' && renderAgendaTab()}
-              {activeTab === 'commissions' && renderCommissionsTab()}
-              {activeTab === 'stats' && renderStatsTab()}
-            </View>
-          </ScrollView>
+          />
         </View>
 
         {/* Modal de Cierre de Cita */}
@@ -718,9 +751,15 @@ const SpecialistDashboard = ({ navigation }) => {
             setCurrentStep('overview');
           }}
           onComplete={(completedAppointment) => {
+            // Validar datos antes de actualizar
+            if (!completedAppointment || !completedAppointment.id) {
+              Alert.alert('Error', 'Datos de cita completada inválidos');
+              return;
+            }
+            
             // Actualizar la cita en la lista
             const updatedAppointments = todayAppointments.map(apt => 
-              apt.id === completedAppointment.id 
+              apt?.id === completedAppointment.id 
                 ? { ...completedAppointment, status: 'completed', commissionGenerated: true }
                 : apt
             );

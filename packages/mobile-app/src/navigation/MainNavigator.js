@@ -39,6 +39,24 @@ function AuthStack() {
   );
 }
 
+// Componente que determina el dashboard inicial basado en el rol
+function InitialDashboard() {
+  const user = useSelector((state) => state.auth?.user);
+  const userRole = user?.role?.toLowerCase();
+  
+  // Determinar qué dashboard mostrar basado en el rol
+  switch (userRole) {
+    case 'business':
+      return <BusinessDashboard />;
+    case 'specialist':
+      return <SpecialistDashboard />;
+    case 'receptionist':
+      return <DashboardScreen />;
+    default:
+      return <BusinessDashboard />; // Default fallback
+  }
+}
+
 // Stack principal autenticado con dashboards específicos
 function AuthenticatedStack() {
   return (
@@ -48,7 +66,9 @@ function AuthenticatedStack() {
         gestureEnabled: false,
       }}
     >
-      {/* Dashboards específicos por rol */}
+      {/* Dashboard inicial basado en el rol del usuario */}
+      <Stack.Screen name="Dashboard" component={InitialDashboard} />
+      {/* Dashboards específicos por rol para navegación interna */}
       <Stack.Screen name="DashboardBusiness" component={BusinessDashboard} />
       <Stack.Screen name="DashboardSpecialist" component={SpecialistDashboard} />
       <Stack.Screen name="DashboardReceptionist" component={DashboardScreen} />
