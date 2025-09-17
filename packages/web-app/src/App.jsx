@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { checkExistingSession, OwnerOnlyRoute } from '../../shared/src/index.js'
 
 // Pages
-import LoginPage from './pages/auth/LoginPage'
+
 import DashboardPage from './pages/dashboard/DashboardPage'
 
 // Subscription Pages (Public)
@@ -48,13 +48,9 @@ function AppLayout() {
       <div className="min-h-screen bg-gray-50">
         <Routes>
           {/* Public routes - No authentication required */}
-          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/" element={<LandingPage />} />
           
-          {/* Public routes */}
-          <Route 
-            path="/login" 
-            element={!isAuthenticated ? <LoginPage /> : <Navigate to={user?.role === 'OWNER' ? "/owner/dashboard" : "/dashboard"} />} 
-          />
+         
           
           {/* Subscription routes (Public) */}
           <Route path="/subscribe" element={<SubscriptionPage />} />
