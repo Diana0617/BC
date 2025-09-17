@@ -43,6 +43,7 @@ const SpecialistDashboard = ({ navigation }) => {
   // Redux selectors
   const { user } = useSelector(state => state.auth);
   const businessId = useSelector(state => state.auth.businessId);
+  const authToken = useSelector(state => state.auth.token);
   const businessRules = useSelector(state => state.businessRule.assignedRules);
   
   // 🛡️ VALIDACIÓN TEMPRANA: Si no hay usuario o businessId, mostrar loading
@@ -197,8 +198,12 @@ const SpecialistDashboard = ({ navigation }) => {
   // =====================================================
 
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    // Solo cargar datos cuando tengamos user, businessId Y token
+    if (user && businessId && authToken) {
+      console.log('Auth state ready, loading initial data...');
+      loadInitialData();
+    }
+  }, [user, businessId, authToken]);
 
   useEffect(() => {
     if (rulesLoaded && businessRules.length > 0) {

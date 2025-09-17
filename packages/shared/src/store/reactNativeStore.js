@@ -1,4 +1,6 @@
 import { configureStore, createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { StorageHelper } from '../utils/storage.js';
+import { STORAGE_KEYS } from '../constants/api.js';
 // Import shared slices needed for React Native
 import businessRuleReducer from './slices/businessRuleSlice.js';
 
@@ -24,14 +26,30 @@ export const loginUserRN = createAsyncThunk(
       const data = await response.json();
       console.log('Login response data:', data); // Debug
       
-      const user = data?.data?.user;
-      const tokens = data?.data?.tokens;
+  const user = data?.data?.user;
+  const tokens = data?.data?.tokens;
       const businessId = user?.businessId || user?.Business?.id || data?.data?.businessId;
       
       console.log('Extracted values:', { user: !!user, tokens: !!tokens, businessId }); // Debug
       
+      // Persistir tokens y user en AsyncStorage para que el apiClient en RN los use
+      try {
+        if (tokens?.accessToken) {
+          await StorageHelper.setItemAsync(STORAGE_KEYS.AUTH_TOKEN, tokens.accessToken);
+        }
+        if (tokens?.refreshToken) {
+          await StorageHelper.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken);
+        }
+        if (user) {
+          await StorageHelper.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
+        }
+      } catch (storageError) {
+        console.warn('Error saving auth data in RN AsyncStorage:', storageError);
+      }
+
       return { 
         token: tokens?.accessToken, 
+        refreshToken: tokens?.refreshToken,
         user: user,
         businessId: businessId
       };

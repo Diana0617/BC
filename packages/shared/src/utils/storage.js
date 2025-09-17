@@ -148,11 +148,24 @@ export const StorageHelper = {
   
   // Async versions for consistency
   async getItemAsync(key) {
-    return await AsyncStorage.getItem(key);
+    try {
+      const value = await AsyncStorage.getItem(key);
+      console.log('StorageHelper.getItemAsync:', { key, hasValue: !!value, valuePreview: value ? `${value.substring(0, 20)}...` : null });
+      return value;
+    } catch (error) {
+      console.warn('Error in getItemAsync:', error);
+      return null;
+    }
   },
   
   async setItemAsync(key, value) {
-    return await AsyncStorage.setItem(key, value);
+    try {
+      const result = await AsyncStorage.setItem(key, value);
+      console.log('StorageHelper.setItemAsync:', { key, saved: true, valuePreview: value ? `${value.substring(0, 20)}...` : null });
+      return result;
+    } catch (error) {
+      console.warn('Error in setItemAsync:', error);
+    }
   },
   
   async removeItemAsync(key) {

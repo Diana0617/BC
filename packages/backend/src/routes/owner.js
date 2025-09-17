@@ -4424,6 +4424,51 @@ router.post('/subscriptions', OwnerController.createSubscription);
 
 /**
  * @swagger
+ * /api/owner/subscriptions/cash:
+ *   post:
+ *     tags:
+ *       - Owner Subscription Management  
+ *     summary: Crear suscripción con pago efectivo (solo desarrollo)
+ *     description: Permite al Owner crear suscripciones con pago efectivo para testing en desarrollo
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - businessId
+ *               - planId
+ *             properties:
+ *               businessId:
+ *                 type: string
+ *                 example: "5c4f4c1a-62d4-4c61-9a89-ee8e33585fc7"
+ *               planId:
+ *                 type: string
+ *                 example: "67508291234567890123456p"
+ *               months:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 12
+ *                 default: 1
+ *                 example: 3
+ *               notes:
+ *                 type: string
+ *                 example: "Suscripción de prueba para desarrollo"
+ *     responses:
+ *       201:
+ *         description: Suscripción creada exitosamente
+ *       403:
+ *         description: No autorizado o no disponible en producción
+ *       404:
+ *         description: Business o Plan no encontrado
+ */
+router.post('/subscriptions/cash', OwnerController.createCashSubscription);
+
+/**
+ * @swagger
  * /api/owner/subscriptions/{subscriptionId}/cancel:
  *   patch:
  *     tags:
@@ -4839,7 +4884,8 @@ router.use('/financial-reports', require('./ownerFinancialReports'));
  * Sub-rutas para verificación de estados de suscripciones
  * Incluye: monitoreo, verificación manual, confirmación de pagos
  */
-// router.use('/subscription-status', require('./ownerSubscriptionStatus')); // TODO: Implementar cuando esté disponible
+// Subscription Status Routes
+router.use('/subscription-status', require('./subscriptionStatus'));
 
 /**
  * Sub-rutas para gestión de trials del OWNER

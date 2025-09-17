@@ -17,9 +17,10 @@
 - **Permissions**: Full access to all features, business configuration, user management
 
 ### Specialist Account
-- **Email**: `specialist@salon-prueba.com`
-- **Password**: `Specialist123!`
+- **Email**: `specialist@test.com`
+- **Password**: `Password123!`
 - **Role**: Specialist
+- **BusinessId**: `5c4f4c1a-62d4-4c61-9a89-ee8e33585fc7`
 - **Permissions**: Appointment management, client services, commission tracking
 
 ### Receptionist Account

@@ -36,16 +36,28 @@ export const loginUser = createAsyncThunk(
       const refreshToken = tokens.refreshToken;
 
       // Store token and user data
-      if (typeof window !== 'undefined') {
-        StorageHelper.setItem(STORAGE_KEYS.AUTH_TOKEN, token, rememberMe);
-        StorageHelper.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user), rememberMe);
-        
-        // Store refresh token
-        StorageHelper.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken, rememberMe);
-        
-        if (rememberMe) {
-          StorageHelper.setItem(STORAGE_KEYS.REMEMBER_EMAIL, credentials.email, true);
+      const isReactNative = typeof window === 'undefined' || 
+                           (typeof navigator !== 'undefined' && navigator.product === 'ReactNative');
+
+      try {
+        if (isReactNative) {
+          // Use async storage helpers in React Native
+          await StorageHelper.setItemAsync(STORAGE_KEYS.AUTH_TOKEN, token);
+          await StorageHelper.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
+          await StorageHelper.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+          if (rememberMe) {
+            await StorageHelper.setItemAsync(STORAGE_KEYS.REMEMBER_EMAIL, credentials.email);
+          }
+        } else {
+          StorageHelper.setItem(STORAGE_KEYS.AUTH_TOKEN, token, rememberMe);
+          StorageHelper.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user), rememberMe);
+          StorageHelper.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken, rememberMe);
+          if (rememberMe) {
+            StorageHelper.setItem(STORAGE_KEYS.REMEMBER_EMAIL, credentials.email, true);
+          }
         }
+      } catch (storageError) {
+        console.warn('Error storing auth tokens:', storageError);
       }
 
       return { token, user, refreshToken, expiresIn: tokens.expiresIn };
@@ -119,18 +131,29 @@ export const checkExistingSession = createAsyncThunk(
   'auth/checkExistingSession',
   async (_, { rejectWithValue }) => {
     try {
-      if (typeof window === 'undefined') {
-        return null;
+      const isReactNative = typeof window === 'undefined' || 
+                           (typeof navigator !== 'undefined' && navigator.product === 'ReactNative');
+
+      if (isReactNative) {
+        // Try to read from async storage
+        const token = await StorageHelper.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+        const refreshToken = await StorageHelper.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+        const userDataStr = await StorageHelper.getItemAsync(STORAGE_KEYS.USER_DATA);
+
+        if (!token || !userDataStr) return null;
+
+        const user = JSON.parse(userDataStr);
+        return { token, refreshToken, user };
       }
-      
+
       const token = StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
       const refreshToken = StorageHelper.getItem(STORAGE_KEYS.REFRESH_TOKEN);
       const userDataStr = StorageHelper.getItem(STORAGE_KEYS.USER_DATA);
-      
+
       if (!token || !userDataStr) {
         return null;
       }
-      
+
       const user = JSON.parse(userDataStr);
       return { token, refreshToken, user };
     } catch (error) {

@@ -427,6 +427,159 @@ class OwnerController {
       });
     }
   }
+
+  /**
+   * 💰 CREAR SUSCRIPCIÓN CON PAGO EFECTIVO (SOLO OWNER EN DESARROLLO)
+   */
+  static async createCashSubscription(req, res) {
+    try {
+      const { businessId, planId, months = 1, notes } = req.body;
+
+      // Validar que el usuario sea Owner
+      if (req.user.role !== 'OWNER') {
+        return res.status(403).json({
+          success: false,
+          message: 'Solo el Owner puede crear suscripciones con pago efectivo'
+        });
+      }
+
+      // Validar en desarrollo (opcional para flexibilidad)
+      if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_CASH_PAYMENTS) {
+        return res.status(403).json({
+          success: false,
+          message: 'Método de pago efectivo no disponible en producción'
+        });
+      }
+
+      // Validar business
+      const business = await Business.findByPk(businessId);
+      if (!business) {
+        return res.status(404).json({
+          success: false,
+          message: 'Negocio no encontrado'
+        });
+      }
+
+      // Validar plan
+      const plan = await SubscriptionPlan.findByPk(planId);
+      if (!plan || plan.status !== 'ACTIVE') {
+        return res.status(404).json({
+          success: false,
+          message: 'Plan no encontrado o inactivo'
+        });
+      }
+
+      // Verificar si ya tiene una suscripción activa
+      const existingSubscription = await BusinessSubscription.findOne({
+        where: {
+          businessId: businessId,
+          status: 'ACTIVE'
+        }
+      });
+
+      if (existingSubscription) {
+        return res.status(409).json({
+          success: false,
+          message: 'El negocio ya tiene una suscripción activa. Cancele la existente primero.'
+        });
+      }
+
+      // Calcular fechas
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + months);
+
+      // Crear BusinessSubscription
+      const subscription = await BusinessSubscription.create({
+        businessId: businessId,
+        planId: planId,
+        status: 'ACTIVE',
+        startDate: startDate,
+        endDate: endDate,
+        autoRenewal: false, // No auto-renovar pagos efectivos
+        createdBy: req.user.id
+      });
+
+      // Crear SubscriptionPayment
+      const totalAmount = plan.price * months;
+      const { SubscriptionPayment } = require('../models');
+      
+      const payment = await SubscriptionPayment.create({
+        subscriptionId: subscription.id,
+        businessId: businessId,
+        amount: totalAmount,
+        currency: plan.currency || 'COP',
+        status: 'APPROVED',
+        paymentMethod: 'CASH',
+        wompiTransactionId: `CASH-${Date.now()}-${businessId.slice(-8)}`,
+        wompiReference: `CASH_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        paidAt: new Date(),
+        description: `Pago efectivo - ${months} mes(es) - Plan ${plan.name}`,
+        notes: notes || 'Pago efectivo creado por Owner para desarrollo'
+      });
+
+      // Obtener datos completos para respuesta
+      const fullSubscription = await BusinessSubscription.findByPk(subscription.id, {
+        include: [
+          {
+            model: Business,
+            as: 'business',
+            attributes: ['id', 'businessName', 'email']
+          },
+          {
+            model: SubscriptionPlan,
+            as: 'plan',
+            attributes: ['id', 'name', 'price', 'currency', 'features', 'limits']
+          }
+        ]
+      });
+
+      console.log(`💰 Suscripción efectivo creada: ${subscription.id} para ${business.businessName}`);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Suscripción con pago efectivo creada exitosamente',
+        data: {
+          subscription: {
+            id: subscription.id,
+            businessId: business.id,
+            businessName: business.businessName,
+            planId: plan.id,
+            planName: plan.name,
+            status: subscription.status,
+            startDate: subscription.startDate,
+            endDate: subscription.endDate,
+            months: months,
+            autoRenewal: subscription.autoRenewal,
+            createdBy: req.user.id
+          },
+          payment: {
+            id: payment.id,
+            amount: payment.amount,
+            currency: payment.currency,
+            method: payment.paymentMethod,
+            status: payment.status,
+            transactionId: payment.wompiTransactionId,
+            reference: payment.wompiReference,
+            paidAt: payment.paidAt
+          },
+          development: {
+            environment: process.env.NODE_ENV || 'development',
+            ownerCreated: true,
+            note: 'Funcionalidad disponible para Owner en desarrollo'
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error creando suscripción efectivo:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor'
+      });
+    }
+  }
 }
 
 module.exports = OwnerController;
