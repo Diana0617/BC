@@ -30,7 +30,26 @@ export default {
           700: '#6d28d9',
           800: '#5b21b6',
           900: '#4c1d95',
-        }
+        },
+        plancyan: {
+          DEFAULT: '#06b6d4',
+          light: '#67e8f9',
+          dark: '#0891b2',
+        },
+        planred: {
+          DEFAULT: '#f87171',
+          light: '#fca5a5',
+          dark: '#ef4444',
+        },
+        planyellow: {
+          DEFAULT: '#fde047',
+          light: '#fef9c3',
+          dark: '#facc15',
+        },
+        planbg: {
+          DEFAULT: '#fff',
+          dark: '#1e293b',
+        },
       },
       fontFamily: {
         'sans': ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -39,6 +58,8 @@ export default {
       boxShadow: {
         'beauty': '0 4px 14px 0 rgba(236, 72, 153, 0.39)',
         'beauty-lg': '0 8px 25px 0 rgba(236, 72, 153, 0.5)',
+        'plan': '0 4px 16px 0 rgba(6,182,212,0.12)',
+        'plan-lg': '0 8px 32px 0 rgba(248,113,113,0.18)',
       },
       screens: {
         'xs': '475px',
