@@ -21,7 +21,7 @@ function WelcomeScreen({ navigation }) {
   };
 
   const handleDontHaveApp = async () => {
-    const webUrl = 'https://businesscontrol.app/plans'; // URL de tu web app
+    const webUrl = 'http://localhost:3000/landing'; // URL de tu web app
     try {
       await Linking.openURL(webUrl);
     } catch (error) {

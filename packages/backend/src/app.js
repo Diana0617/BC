@@ -164,6 +164,7 @@ const ruleTemplateRoutes = require('./routes/ruleTemplate');
 const ownerExpenseRoutes = require('./routes/ownerExpenses');
 const cacheRoutes = require('./routes/cache');
 const receiptRoutes = require('./routes/receipts');
+const subscriptionRoutes = require('./routes/subscription');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
@@ -181,6 +182,7 @@ app.use('/api/owner', ownerRoutes);
 app.use('/api/owner/business', ownerBusinessManagementRoutes);
 app.use('/api/owner/expenses', ownerExpenseRoutes);
 app.use('/api/cache', cacheRoutes); // Rutas de gestión de cache
+app.use('/api/subscriptions', subscriptionRoutes); // Rutas de suscripciones
 app.use('/api/public', publicInvitationRoutes);
 app.use('/api/wompi', wompiPaymentRoutes);
 app.use('/api/test/auto-renewal', autoRenewalTestRoutes);

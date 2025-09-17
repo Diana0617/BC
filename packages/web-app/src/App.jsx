@@ -7,6 +7,9 @@ import { checkExistingSession, OwnerOnlyRoute } from '../../shared/src/index.js'
 import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 
+// Subscription Pages (Public)
+import SubscriptionPage from './pages/subscription/SubscriptionPage'
+
 // Owner Pages
 import OwnerLayout from './layouts/OwnerLayout'
 import OwnerDashboardPage from './pages/owner/OwnerDashboardPage'
@@ -46,6 +49,11 @@ function AppLayout() {
             path="/login" 
             element={!isAuthenticated ? <LoginPage /> : <Navigate to={user?.role === 'OWNER' ? "/owner/dashboard" : "/dashboard"} />} 
           />
+          
+          {/* Subscription routes (Public) */}
+          <Route path="/subscribe" element={<SubscriptionPage />} />
+          <Route path="/subscribe/:planId" element={<SubscriptionPage />} />
+          <Route path="/invitation/:token" element={<SubscriptionPage />} />
           
           {/* Owner routes - Protected */}
           <Route path="/owner" element={

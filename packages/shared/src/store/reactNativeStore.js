@@ -1,4 +1,6 @@
 import { configureStore, createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+// Import shared slices needed for React Native
+import businessRuleReducer from './slices/businessRuleSlice.js';
 
 // Temporal async thunk for login (React Native specific)
 export const loginUserRN = createAsyncThunk(
@@ -20,7 +22,19 @@ export const loginUserRN = createAsyncThunk(
       }
 
       const data = await response.json();
-      return { token: data.data.tokens.accessToken, user: data.data.user };
+      console.log('Login response data:', data); // Debug
+      
+      const user = data?.data?.user;
+      const tokens = data?.data?.tokens;
+      const businessId = user?.businessId || user?.Business?.id || data?.data?.businessId;
+      
+      console.log('Extracted values:', { user: !!user, tokens: !!tokens, businessId }); // Debug
+      
+      return { 
+        token: tokens?.accessToken, 
+        user: user,
+        businessId: businessId
+      };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -89,6 +103,7 @@ const authSlice = createSlice({
     isAuthenticated: false,
     user: null,
     token: null,
+    businessId: null,
     isLoading: false,
     error: null
   },
@@ -101,6 +116,7 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.user = action.payload.user;
       state.token = action.payload.token;
+      state.businessId = action.payload.businessId;
       state.isLoading = false;
       state.error = null;
     },
@@ -108,6 +124,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.user = null;
       state.token = null;
+      state.businessId = null;
       state.isLoading = false;
       state.error = action.payload;
     },
@@ -115,6 +132,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.user = null;
       state.token = null;
+      state.businessId = null;
       state.error = null;
     },
     clearError: (state) => {
@@ -128,9 +146,11 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(loginUserRN.fulfilled, (state, action) => {
+        console.log('loginUserRN.fulfilled payload:', action.payload); // Debug
         state.isAuthenticated = true;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+        state.user = action.payload?.user || null;
+        state.token = action.payload?.token || null;
+        state.businessId = action.payload?.businessId || null;
         state.isLoading = false;
         state.error = null;
       })
@@ -138,6 +158,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.user = null;
         state.token = null;
+        state.businessId = null;
         state.isLoading = false;
         state.error = action.payload;
       });
@@ -205,7 +226,8 @@ export const createReactNativeStore = () => {
   return configureStore({
     reducer: {
       auth: authSlice.reducer,
-      publicPlans: publicPlansSlice.reducer
+      publicPlans: publicPlansSlice.reducer,
+      businessRule: businessRuleReducer
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
@@ -225,6 +247,7 @@ export const selectLoginError = (state) => state.auth.error;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectUser = (state) => state.auth.user;
 export const selectToken = (state) => state.auth.token;
+export const selectBusinessId = (state) => state.auth.businessId;
 export const selectRememberedEmail = (state) => state.auth.rememberedEmail;
 
 // Public Plans selectors

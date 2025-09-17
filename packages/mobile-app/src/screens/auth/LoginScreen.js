@@ -71,20 +71,6 @@ export default function LoginScreen({ navigation, route }) {
         // 🔐 VALIDACIÓN DE ROLES: Usar el rol REAL del usuario autenticado
         const userRole = result.user.role?.toLowerCase();
         
-        // Mapear roles del backend a rutas de dashboard
-        const roleToRoute = {
-          'business': 'DashboardBusiness',
-          'specialist': 'DashboardSpecialist',
-          'receptionist': 'DashboardReceptionist'
-        };
-
-        const dashboardRoute = roleToRoute[userRole];
-        
-        if (!dashboardRoute) {
-          Alert.alert('Error', 'Rol de usuario no reconocido');
-          return;
-        }
-
         // 🛡️ VALIDACIÓN ADICIONAL: Verificar que el rol seleccionado coincida con el real
         const selectedRoleId = selectedRole?.id?.toLowerCase();
         if (selectedRoleId !== userRole) {
@@ -94,8 +80,8 @@ export default function LoginScreen({ navigation, route }) {
           );
         }
 
-        // Navegar al dashboard correcto basado en el rol REAL del usuario
-        navigation.navigate(dashboardRoute);
+        // ✅ El AuthenticatedStack se encargará de mostrar el dashboard correcto
+        // No navegamos manualmente - el cambio de isAuthenticated lo maneja automáticamente
       }
     } catch (error) {
       Alert.alert('Error de Login', error || 'Ha ocurrido un error al iniciar sesión');
