@@ -219,9 +219,7 @@ router.get('/payment-status/:reference',
  *     tags:
  *       - Wompi Payments
  *     summary: Obtener configuración pública de Wompi
- *     description: Proporciona la configuración necesaria para integrar Wompi en el frontend (clave pública, moneda, entorno)
- *     security:
- *       - bearerAuth: []
+ *     description: Proporciona la configuración necesaria para integrar Wompi en el frontend (clave pública, moneda, entorno). Endpoint público que no requiere autenticación.
  *     responses:
  *       200:
  *         description: Configuración de Wompi obtenida exitosamente
@@ -262,8 +260,61 @@ router.get('/payment-status/:reference',
  */
 
 router.get('/config', 
-  authenticateToken, 
   WompiPaymentController.getWompiConfig
+);
+
+/**
+ * @swagger
+ * /api/wompi/generate-signature:
+ *   post:
+ *     tags:
+ *       - Wompi Payments
+ *     summary: Generar firma de integridad para Wompi Widget
+ *     description: Genera la firma SHA256 requerida por Wompi para validar la integridad de las transacciones. Este endpoint es público para permitir la integración del widget.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - reference
+ *               - amountInCents
+ *               - currency
+ *             properties:
+ *               reference:
+ *                 type: string
+ *                 description: Referencia única de la transacción
+ *                 example: "BC_1234567890_plan_001"
+ *               amountInCents:
+ *                 type: integer
+ *                 description: Monto en centavos
+ *                 example: 4950000
+ *               currency:
+ *                 type: string
+ *                 description: Moneda de la transacción
+ *                 example: "COP"
+ *     responses:
+ *       200:
+ *         description: Firma generada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 signature:
+ *                   type: string
+ *                   example: "37c8407747e595535433ef8f6a811d853cd943046624a0ec04662b17bbf33bf5"
+ *       400:
+ *         description: Parámetros faltantes
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.post('/generate-signature', 
+  WompiPaymentController.generateSignature
 );
 
 /**
@@ -418,5 +469,80 @@ router.get('/config',
 
 // Webhook público (sin autenticación porque viene de Wompi)
 router.post('/webhook', WompiPaymentController.handleWebhook);
+
+/**
+ * @swagger
+ * /api/wompi/transaction/{transactionId}:
+ *   get:
+ *     tags:
+ *       - Wompi Payments
+ *     summary: Consultar estado de transacción
+ *     description: Consulta el estado actual de una transacción específica en Wompi usando su ID. Este endpoint es público para permitir la verificación del estado del pago desde el frontend.
+ *     parameters:
+ *       - in: path
+ *         name: transactionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID único de la transacción en Wompi
+ *         example: "01-1531231271-19365"
+ *     responses:
+ *       200:
+ *         description: Estado de la transacción obtenido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: "01-1531231271-19365"
+ *                     status:
+ *                       type: string
+ *                       enum: [APPROVED, DECLINED, PENDING, VOIDED]
+ *                       example: "APPROVED"
+ *                     reference:
+ *                       type: string
+ *                       example: "BC_1758121095353_xbcr8njdb"
+ *                     amount_in_cents:
+ *                       type: integer
+ *                       example: 8990000
+ *                     currency:
+ *                       type: string
+ *                       example: "COP"
+ *                     created_at:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2023-06-09T20:28:50.000Z"
+ *       400:
+ *         description: ID de transacción requerido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "ID de transacción requerido"
+ *       404:
+ *         description: Transacción no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "Error consultando transacción: Not Found"
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+
+// Endpoint público para consultar transacciones (sin autenticación)
+router.get('/transaction/:transactionId', WompiPaymentController.getTransactionStatus);
 
 module.exports = router;

@@ -9,6 +9,7 @@ import DashboardPage from './pages/dashboard/DashboardPage'
 
 // Subscription Pages (Public)
 import SubscriptionPage from './pages/subscription/SubscriptionPage'
+import PaymentSuccess from './pages/PaymentSuccess'
 
 // Owner Pages
 import OwnerLayout from './layouts/OwnerLayout'
@@ -21,6 +22,7 @@ import LandingPage from './pages/public/LandingPage'
 
 // Test Components (temporal)
 import ReduxPlansTest from './components/test/ReduxPlansTest'
+import TestPayment1000 from './components/payments/TestPayment1000'
 
 function AppLayout() {
   const dispatch = useDispatch()
@@ -56,6 +58,10 @@ function AppLayout() {
           <Route path="/subscribe" element={<SubscriptionPage />} />
           <Route path="/subscribe/:planId" element={<SubscriptionPage />} />
           <Route path="/invitation/:token" element={<SubscriptionPage />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          
+          {/* Test routes (Temporal) */}
+          <Route path="/test-payment-1000" element={<TestPayment1000 />} />
           
           {/* Owner routes - Protected */}
           <Route path="/owner" element={

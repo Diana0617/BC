@@ -12,8 +12,8 @@ class WompiSubscriptionService {
   constructor() {
     this.publicKey = process.env.WOMPI_PUBLIC_KEY;
     this.privateKey = process.env.WOMPI_PRIVATE_KEY;
-    this.baseURL = process.env.WOMPI_BASE_URL || 'https://production.wompi.co/v1';
-    this.integritySecret = process.env.WOMPI_INTEGRITY_SECRET;
+    this.baseURL = process.env.WOMPI_API_URL || 'https://production.wompi.co/v1';
+    this.eventSecret = process.env.WOMPI_EVENT_SECRET;
   }
 
   /**
@@ -80,15 +80,21 @@ class WompiSubscriptionService {
   /**
    * Procesar webhook de Wompi cuando el pago es exitoso
    */
-  async processWebhook(webhookData, signature) {
+  async processWebhook(webhookData) {
     try {
-      // Verificar integridad del webhook
-      if (!this.verifyWebhookSignature(webhookData, signature)) {
-        throw new Error('Webhook signature inválida');
+      const { event, data, environment } = webhookData;
+
+      console.log(`📨 Procesando evento Wompi: ${event} en ${environment}`);
+
+      if (event !== 'transaction.updated') {
+        console.log(`ℹ️ Evento ${event} no manejado`);
+        return { success: true, message: 'Evento no manejado' };
       }
 
-      const { data } = webhookData;
-      const { reference, status, amount_in_cents } = data;
+      const { transaction } = data;
+      const { reference, status, amount_in_cents, id: transactionId } = transaction;
+
+      console.log(`💳 Transacción ${transactionId}: ${status} - ${reference}`);
 
       // Buscar el pago en nuestra BD
       const payment = await SubscriptionPayment.findOne({
@@ -96,6 +102,7 @@ class WompiSubscriptionService {
       });
 
       if (!payment) {
+        console.error(`❌ Pago no encontrado para referencia: ${reference}`);
         throw new Error(`Pago no encontrado para referencia: ${reference}`);
       }
 
@@ -104,7 +111,7 @@ class WompiSubscriptionService {
         await payment.update({
           status: 'COMPLETED',
           paidAt: new Date(),
-          externalTransactionId: data.id
+          externalTransactionId: transactionId
         });
 
         // Extender suscripción usando nuestro servicio existente
@@ -112,17 +119,22 @@ class WompiSubscriptionService {
         await SubscriptionStatusService.processConfirmedPayment(payment.id);
 
         console.log(`✅ Suscripción activada para pago ${payment.id}`);
-        return { success: true, message: 'Suscripción activada' };
+        return { success: true, message: 'Suscripción activada', newStatus: 'ACTIVE' };
 
-      } else if (status === 'DECLINED') {
-        // Pago rechazado
+      } else if (status === 'DECLINED' || status === 'VOIDED' || status === 'ERROR') {
+        // Pago rechazado, anulado o con error
         await payment.update({
           status: 'REJECTED',
-          verificationNotes: 'Pago rechazado por Wompi'
+          verificationNotes: `Pago ${status.toLowerCase()} por Wompi`
         });
 
-        console.log(`❌ Pago rechazado para referencia ${reference}`);
-        return { success: false, message: 'Pago rechazado' };
+        console.log(`❌ Pago ${status.toLowerCase()} para referencia ${reference}`);
+        return { success: false, message: `Pago ${status.toLowerCase()}`, newStatus: 'REJECTED' };
+      
+      } else {
+        // Estados intermedios como PENDING
+        console.log(`⏳ Pago en estado ${status} para referencia ${reference}`);
+        return { success: true, message: `Pago en estado ${status}`, newStatus: status };
       }
 
     } catch (error) {
@@ -132,20 +144,75 @@ class WompiSubscriptionService {
   }
 
   /**
-   * Verificar firma del webhook para seguridad
+   * Verificar firma del webhook según documentación de Wompi
+   * Implementa el algoritmo SHA256 descrito en la documentación
    */
-  verifyWebhookSignature(payload, signature) {
+  verifyWebhookSignature(payload, receivedChecksum) {
     try {
-      const expectedSignature = crypto
-        .createHmac('sha256', this.integritySecret)
-        .update(JSON.stringify(payload))
-        .digest('hex');
+      if (!this.eventSecret) {
+        console.error('❌ WOMPI_EVENT_SECRET no configurado');
+        return false;
+      }
 
-      return signature === expectedSignature;
+      const { signature, timestamp } = payload;
+      
+      if (!signature || !signature.properties || !signature.checksum) {
+        console.error('❌ Estructura de firma inválida en el payload');
+        return false;
+      }
+
+      // Paso 1: Concatenar los valores de las propiedades especificadas
+      let concatenatedData = '';
+      
+      for (const property of signature.properties) {
+        const value = this.getNestedProperty(payload.data, property);
+        if (value !== undefined) {
+          concatenatedData += value;
+        }
+      }
+
+      // Paso 2: Concatenar el timestamp
+      concatenatedData += timestamp;
+
+      // Paso 3: Concatenar el secreto de eventos
+      concatenatedData += this.eventSecret;
+
+      // Paso 4: Generar checksum con SHA256
+      const calculatedChecksum = crypto
+        .createHash('sha256')
+        .update(concatenatedData)
+        .digest('hex')
+        .toUpperCase();
+
+      console.log('🔐 Verificación de firma:', {
+        properties: signature.properties,
+        timestamp,
+        concatenatedData: concatenatedData.substring(0, 100) + '...',
+        calculatedChecksum,
+        receivedChecksum,
+        payloadChecksum: signature.checksum,
+        match: calculatedChecksum === signature.checksum.toUpperCase()
+      });
+
+      // Comparar con el checksum recibido (puede venir del header o del payload)
+      const checksumToCompare = (receivedChecksum || signature.checksum).toUpperCase();
+      
+      return calculatedChecksum === checksumToCompare;
+
     } catch (error) {
       console.error('Error verificando firma webhook:', error);
       return false;
     }
+  }
+
+  /**
+   * Obtener valor de propiedad anidada usando dot notation
+   * Ejemplo: "transaction.id" -> payload.data.transaction.id
+   */
+  getNestedProperty(obj, path) {
+    return path.split('.').reduce((current, key) => {
+      return current && current[key] !== undefined ? current[key] : undefined;
+    }, obj);
   }
 
   /**

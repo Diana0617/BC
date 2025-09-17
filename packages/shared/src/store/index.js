@@ -24,6 +24,8 @@ import businessRuleReducer from './slices/businessRuleSlice';
 // 💳 ADVANCE PAYMENTS & BUSINESS VALIDATION REDUCERS
 import advancePaymentReducer from './slices/advancePaymentSlice';
 import businessValidationReducer from './slices/businessValidationSlice';
+// 💰 SUBSCRIPTION SYSTEM REDUCERS
+import subscriptionReducer from './slices/subscriptionSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -53,7 +55,9 @@ export const createStore = (preloadedState = {}) => {
       businessRule: businessRuleReducer,
       // 💳 ADVANCE PAYMENTS & BUSINESS VALIDATION REDUCERS
       advancePayment: advancePaymentReducer,
-      businessValidation: businessValidationReducer
+      businessValidation: businessValidationReducer,
+      // 💰 SUBSCRIPTION SYSTEM REDUCERS
+      subscription: subscriptionReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>

@@ -70,12 +70,20 @@ class WompiPaymentController {
   /**
    * Webhook para recibir notificaciones de Wompi
    */
-  static async handleWompiWebhook(req, res) {
+  static async handleWebhook(req, res) {
     try {
-      const signature = req.headers['x-signature'] || req.headers['signature'];
+      // Extraer firma del header correcto según documentación Wompi
+      const signature = req.headers['x-event-checksum'];
       const webhookData = req.body;
 
+      console.log('📨 Webhook recibido de Wompi:', {
+        event: webhookData.event,
+        signature: signature ? 'presente' : 'ausente',
+        timestamp: webhookData.timestamp
+      });
+
       if (!signature) {
+        console.error('❌ Firma del webhook ausente');
         return res.status(400).json({
           success: false,
           message: 'Firma del webhook requerida'
@@ -83,16 +91,30 @@ class WompiPaymentController {
       }
 
       const wompiService = new WompiSubscriptionService();
-      const result = await wompiService.processWebhook(webhookData, signature);
+      
+      // Verificar la autenticidad del webhook
+      if (!wompiService.verifyWebhookSignature(webhookData, signature)) {
+        console.error('❌ Firma del webhook inválida');
+        return res.status(401).json({
+          success: false,
+          message: 'Firma del webhook inválida'
+        });
+      }
 
-      res.json({
+      const result = await wompiService.processWebhook(webhookData);
+
+      // Responder con 200 para que Wompi no reintente
+      res.status(200).json({
         success: true,
         data: result
       });
 
     } catch (error) {
       console.error('Error procesando webhook Wompi:', error);
-      res.status(500).json({
+      
+      // Aún responder con 200 si es un error de nuestro lado
+      // Para evitar reintentos innecesarios
+      res.status(200).json({
         success: false,
         message: 'Error procesando webhook',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -168,14 +190,71 @@ class WompiPaymentController {
   }
 
   /**
+   * Generar firma de integridad para Wompi Widget
+   */
+  static async generateSignature(req, res) {
+    try {
+      const { reference, amountInCents, currency } = req.body;
+
+      if (!reference || !amountInCents || !currency) {
+        return res.status(400).json({
+          success: false,
+          message: 'Parámetros requeridos: reference, amountInCents, currency'
+        });
+      }
+
+      // Obtener el secreto de integridad desde variables de entorno
+      const integritySecret = process.env.WOMPI_INTEGRITY_SECRET;
+      
+      if (!integritySecret) {
+        console.error('WOMPI_INTEGRITY_SECRET no configurado');
+        return res.status(500).json({
+          success: false,
+          message: 'Configuración de pagos incompleta'
+        });
+      }
+
+      // Generar hash SHA256 según documentación de Wompi
+      // Formato: "<Referencia><Monto><Moneda><SecretoIntegridad>"
+      const crypto = require('crypto');
+      const concatenatedString = `${reference}${amountInCents}${currency}${integritySecret}`;
+      
+      console.log('🔐 Generando firma para:', { reference, amountInCents, currency });
+      
+      const signature = crypto
+        .createHash('sha256')
+        .update(concatenatedString)
+        .digest('hex');
+
+      res.json({
+        success: true,
+        signature: signature
+      });
+    } catch (error) {
+      console.error('Error generando firma Wompi:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno al generar firma'
+      });
+    }
+  }
+
+  /**
    * Obtener configuración pública de Wompi para el frontend
    */
   static async getWompiConfig(req, res) {
     try {
+      console.log('🔧 GET /api/wompi/config - IP:', req.ip, 'Time:', new Date().toISOString())
+      
+      const publicKey = process.env.WOMPI_PUBLIC_KEY;
+      // Extraer merchant ID de la public key (formato: pub_test_merchantId)
+      const merchantId = publicKey ? publicKey.split('_').pop() : null;
+      
       res.json({
         success: true,
         data: {
-          publicKey: process.env.WOMPI_PUBLIC_KEY,
+          publicKey: publicKey,
+          merchantId: merchantId,
           currency: 'COP',
           environment: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
         }
@@ -235,6 +314,62 @@ class WompiPaymentController {
       res.status(500).json({
         success: false,
         message: 'Error procesando webhook',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Consultar estado de una transacción específica
+   */
+  static async getTransactionStatus(req, res) {
+    try {
+      const { transactionId } = req.params;
+
+      if (!transactionId) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID de transacción requerido'
+        });
+      }
+
+      // Construir URL del API de Wompi
+      const apiUrl = process.env.WOMPI_API_URL || 'https://sandbox.wompi.co/v1';
+      const transactionUrl = `${apiUrl}/transactions/${transactionId}`;
+
+      console.log('🔍 Consultando transacción:', transactionId);
+      console.log('📡 URL:', transactionUrl);
+
+      // Hacer petición al API de Wompi
+      const response = await fetch(transactionUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.WOMPI_PRIVATE_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('❌ Error en API de Wompi:', response.status, response.statusText);
+        return res.status(response.status).json({
+          success: false,
+          message: `Error consultando transacción: ${response.statusText}`
+        });
+      }
+
+      const transactionData = await response.json();
+      console.log('✅ Datos de transacción recibidos:', transactionData);
+
+      res.json({
+        success: true,
+        data: transactionData.data
+      });
+
+    } catch (error) {
+      console.error('Error consultando transacción:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
