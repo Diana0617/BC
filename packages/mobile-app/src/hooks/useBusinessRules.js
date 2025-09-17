@@ -25,8 +25,14 @@ export const useBusinessRules = (businessId) => {
     if (!businessId) return;
     
     try {
+      // Add delay to ensure token is saved in AsyncStorage after login
+      console.log('checkBusinessRules: waiting for token to be available...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('checkBusinessRules: calling getBusinessAssignedRules...');
       await dispatch(getBusinessAssignedRules(false)).unwrap();
       setRulesLoaded(true);
+      console.log('checkBusinessRules: rules loaded successfully');
     } catch (error) {
       console.error('Error loading business rules:', error);
       setRulesLoaded(false);

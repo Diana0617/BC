@@ -545,4 +545,37 @@ router.post('/webhook', WompiPaymentController.handleWebhook);
 // Endpoint público para consultar transacciones (sin autenticación)
 router.get('/transaction/:transactionId', WompiPaymentController.getTransactionStatus);
 
+/**
+ * @swagger
+ * /api/wompi/confirm-payment/{transactionId}:
+ *   post:
+ *     summary: Confirmar pago manualmente
+ *     description: Confirma un pago consultando el estado en Wompi y procesando el resultado
+ *     tags: [Wompi Payments]
+ *     parameters:
+ *       - in: path
+ *         name: transactionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la transacción en Wompi
+ *     responses:
+ *       200:
+ *         description: Pago confirmado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 transaction:
+ *                   type: object
+ *                 processResult:
+ *                   type: object
+ */
+router.post('/confirm-payment/:transactionId', WompiPaymentController.confirmPayment);
+
 module.exports = router;

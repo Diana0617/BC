@@ -8,50 +8,68 @@ class ApiClient {
     this.timeout = REQUEST_CONFIG.TIMEOUT;
   }
 
-  // Get auth token from storage
-  getAuthToken() {
+  // Get auth token from storage (supports async retrieval for React Native)
+  async getAuthToken() {
     const isReactNative = typeof window === 'undefined' || 
-                         (typeof navigator !== 'undefined' && navigator.product === 'ReactNative');
-    if (isReactNative) {
-      // React Native environment - no acceso síncrono a storage
-      return null;
-    }
-    
+                         (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') ||
+                         (typeof global !== 'undefined' && !!global.HermesInternal);
+
     try {
-      return StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      let token;
+      if (isReactNative) {
+        token = await StorageHelper.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+      } else {
+        token = StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      }
+      
+      console.log('ApiClient getAuthToken:', { isReactNative, hasToken: !!token, tokenPreview: token ? `${token.substring(0, 20)}...` : null });
+      return token;
     } catch (error) {
       console.warn('Error getting auth token:', error);
       return null;
     }
   }
 
-  // Build headers with auth if available
-  buildHeaders(customHeaders = {}) {
+  // Build headers with auth if available (async to support RN storage)
+  async buildHeaders(customHeaders = {}) {
     const headers = { ...REQUEST_CONFIG.HEADERS, ...customHeaders };
-    const token = this.getAuthToken();
-    
+    const token = await this.getAuthToken();
+
     if (token) {
       headers.Authorization = `Bearer ${token}`;
+      console.log('ApiClient buildHeaders: Added Authorization header');
+    } else {
+      console.log('ApiClient buildHeaders: No token available');
     }
-    
+
     return headers;
   }
 
   // Generic request method
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    const headers = await this.buildHeaders(options.headers);
     const config = {
       timeout: this.timeout,
-      headers: this.buildHeaders(options.headers),
+      headers,
       ...options
     };
+
+    console.log('ApiClient request:', { 
+      url, 
+      method: config.method || 'GET',
+      hasAuthHeader: !!headers.Authorization,
+      authPreview: headers.Authorization ? `${headers.Authorization.substring(0, 20)}...` : null
+    });
 
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
       const response = await fetch(url, {
-        ...config,
+        method: config.method || 'GET',
+        headers: config.headers,
+        body: config.body,
         signal: controller.signal
       });
 

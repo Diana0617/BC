@@ -368,7 +368,7 @@ class RuleTemplateService {
           {
             model: User,
             as: 'assignedByUser',
-            attributes: ['id', 'name', 'email']
+            attributes: ['id', 'firstName', 'lastName', 'email']
           }
         ],
         order: [['priority', 'DESC'], [BusinessRuleTemplate, 'category', 'ASC']]

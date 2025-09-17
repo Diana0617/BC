@@ -28,8 +28,12 @@ class WompiSubscriptionService {
         throw new Error('Negocio o plan no encontrado');
       }
 
-      // Generar referencia única
-      const reference = `BC-SUB-${businessId}-${Date.now()}`;
+      // Generar referencia única compatible con Wompi
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(2, 10);
+      const reference = `BC_${timestamp}_${randomSuffix}`;
+
+      console.log('🔄 Creando transacción con referencia:', reference);
 
       const transactionData = {
         amount_in_cents: plan.price * 100, // Wompi maneja centavos
@@ -52,14 +56,35 @@ class WompiSubscriptionService {
         payment_source_id: null // Se genera en el frontend
       };
 
-      // Crear registro en BD antes de procesar
+      // Crear BusinessSubscription primero
+      const businessSubscription = await BusinessSubscription.create({
+        businessId: businessId,
+        planId: planId,
+        status: 'PENDING',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)), // 30 días
+        isAutoRenewal: false
+      });
+
+      // Crear registro de pago en BD antes de procesar
       const subscriptionPayment = await SubscriptionPayment.create({
-        businessSubscriptionId: business.id,
+        businessSubscriptionId: businessSubscription.id,
         amount: plan.price,
         paymentMethod: 'WOMPI_CARD',
         status: 'PENDING',
         externalReference: reference,
-        paymentProvider: 'WOMPI'
+        description: `Pago de suscripción ${plan.name} para ${business.name}`,
+        metadata: {
+          planId: planId,
+          businessId: businessId,
+          userEmail: userEmail
+        }
+      });
+
+      console.log('✅ Pago creado en BD:', {
+        id: subscriptionPayment.id,
+        reference: reference,
+        businessSubscriptionId: businessSubscription.id
       });
 
       return {
@@ -68,6 +93,7 @@ class WompiSubscriptionService {
         publicKey: this.publicKey,
         redirectUrl: transactionData.redirect_url,
         subscriptionPaymentId: subscriptionPayment.id,
+        businessSubscriptionId: businessSubscription.id,
         planName: plan.name
       };
 
@@ -98,13 +124,42 @@ class WompiSubscriptionService {
 
       // Buscar el pago en nuestra BD
       const payment = await SubscriptionPayment.findOne({
-        where: { externalReference: reference }
+        where: { externalReference: reference },
+        include: [{
+          model: BusinessSubscription,
+          as: 'subscription',
+          include: [{
+            model: Business,
+            as: 'business'
+          }]
+        }]
       });
 
       if (!payment) {
         console.error(`❌ Pago no encontrado para referencia: ${reference}`);
+        console.log('🔍 Buscando pagos existentes...');
+        
+        // Mostrar pagos existentes para debugging
+        const existingPayments = await SubscriptionPayment.findAll({
+          attributes: ['id', 'externalReference', 'status'],
+          limit: 5,
+          order: [['createdAt', 'DESC']]
+        });
+        
+        console.log('📋 Pagos recientes:', existingPayments.map(p => ({
+          id: p.id,
+          reference: p.externalReference,
+          status: p.status
+        })));
+        
         throw new Error(`Pago no encontrado para referencia: ${reference}`);
       }
+
+      console.log('✅ Pago encontrado:', {
+        id: payment.id,
+        status: payment.status,
+        businessId: payment.subscription?.businessId
+      });
 
       if (status === 'APPROVED') {
         // Pago exitoso - activar suscripción

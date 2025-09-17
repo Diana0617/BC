@@ -33,7 +33,12 @@ export const selectRememberedEmail = (state) => state.auth.rememberedEmail;
 
 // User role and permissions
 export const selectUserRole = (state) => state.auth.user?.role;
+export const selectIsOwner = (state) => state.auth.user?.role === 'OWNER';
 export const selectIsAdmin = (state) => state.auth.user?.role === 'ADMIN';
 export const selectIsBusinessOwner = (state) => state.auth.user?.role === 'BUSINESS_OWNER';
 export const selectIsEmployee = (state) => state.auth.user?.role === 'EMPLOYEE';
 export const selectIsClient = (state) => state.auth.user?.role === 'CLIENT';
+
+// Business-specific selectors for Owner
+export const selectCanManageAllBusiness = (state) => ['OWNER', 'ADMIN'].includes(state.auth.user?.role);
+export const selectCanCreateCashSubscriptions = (state) => state.auth.user?.role === 'OWNER';

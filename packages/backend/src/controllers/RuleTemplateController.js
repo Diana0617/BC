@@ -345,7 +345,7 @@ class RuleTemplateController {
    */
   static async getBusinessAssignedRules(req, res) {
     try {
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
       const includeInactive = req.query.includeInactive === 'true';
       
       const assignments = await RuleTemplateService.getBusinessAssignedRules(businessId, includeInactive);
