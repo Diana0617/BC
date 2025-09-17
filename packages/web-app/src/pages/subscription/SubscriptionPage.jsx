@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchPublicPlans } from '../../../../shared/src/store/slices/plansSlice'
+import { createSubscription } from '../../../../shared/src/store/slices/subscriptionSlice'
 import PlanSelection from '../../components/subscription/PlanSelection'
 import BusinessRegistration from '../../components/subscription/BusinessRegistration'
-import PaymentFlow from '../../components/subscription/PaymentFlow'
+import PaymentFlow from '../../components/subscription/PaymentFlowWompi'
 
 const SubscriptionPage = () => {
   const dispatch = useDispatch()
@@ -16,6 +17,7 @@ const SubscriptionPage = () => {
 
   // Redux state
   const { plans, loading } = useSelector(state => state.plans)
+  const { loading: subscriptionLoading, error: subscriptionError } = useSelector(state => state.subscription)
 
   // Debug: Ver el estado de los planes
   console.log('SubscriptionPage - Plans from Redux:', plans)
@@ -55,76 +57,68 @@ const SubscriptionPage = () => {
       invitation: invitationToken
     })
 
-    try {
-      // Preparar datos para envío al backend
-      const subscriptionData = {
-        // Plan seleccionado
-        planId: selectedPlan.id,
-        
-        // Datos del negocio (incluyendo businessCode que es el subdominio)
-        businessData: {
-          name: registrationData.businessName,
-          businessCode: registrationData.businessCode, // <- El subdominio
-          type: registrationData.businessType,
-          phone: registrationData.businessPhone,
-          email: registrationData.businessEmail,
-          address: registrationData.address,
-          city: registrationData.city,
-          country: registrationData.country
-        },
-        
-        // Datos del usuario administrador
-        userData: {
-          firstName: registrationData.firstName,
-          lastName: registrationData.lastName,
-          email: registrationData.email,
-          phone: registrationData.phone,
-          password: registrationData.password
-        },
-        
-        // Datos del pago
-        paymentData: {
-          transactionId: paymentData.transactionId,
-          method: paymentData.method,
-          amount: paymentData.amount,
-          currency: paymentData.currency,
-          status: paymentData.status || 'APPROVED'
-        },
-        
-        // Token de invitación si existe
-        invitationToken: invitationToken,
-        
-        // Aceptación de términos
-        acceptedTerms: {
-          terms: registrationData.acceptTerms,
-          privacy: registrationData.acceptPrivacy,
-          marketing: registrationData.acceptMarketing
-        }
+    // Preparar datos para envío al backend usando Redux
+    const subscriptionData = {
+      // Plan seleccionado
+      planId: selectedPlan.id,
+      
+      // Datos del negocio (incluyendo businessCode que es el subdominio)
+      businessData: {
+        name: registrationData.businessName,
+        businessCode: registrationData.businessCode, // <- El subdominio
+        type: registrationData.businessType,
+        phone: registrationData.businessPhone,
+        email: registrationData.businessEmail,
+        address: registrationData.address,
+        city: registrationData.city,
+        country: registrationData.country
+      },
+      
+      // Datos del usuario administrador
+      userData: {
+        firstName: registrationData.firstName,
+        lastName: registrationData.lastName,
+        email: registrationData.email,
+        phone: registrationData.phone,
+        password: registrationData.password
+      },
+      
+      // Datos del pago
+      paymentData: {
+        transactionId: paymentData.transactionId,
+        method: paymentData.method,
+        amount: paymentData.amount,
+        currency: paymentData.currency,
+        status: paymentData.status || 'APPROVED'
+      },
+      
+      // Token de invitación si existe
+      invitationToken: invitationToken,
+      
+      // Aceptación de términos
+      acceptedTerms: {
+        terms: registrationData.acceptTerms,
+        privacy: registrationData.acceptPrivacy,
+        marketing: registrationData.acceptMarketing
       }
+    }
 
-      console.log('Enviando al backend:', subscriptionData)
+    console.log('Enviando al backend via Redux:', subscriptionData)
 
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-      const response = await fetch(`${API_BASE_URL}/api/subscriptions/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(subscriptionData)
-      })
-
-      const result = await response.json()
-      console.log('Respuesta del backend:', result)
-
-      if (result.success) {
-        // TODO: Redirigir al dashboard del nuevo negocio o página de éxito
+    try {
+      // Usar Redux action en lugar de fetch directo
+      const result = await dispatch(createSubscription(subscriptionData))
+      
+      if (createSubscription.fulfilled.match(result)) {
+        console.log('Suscripción creada exitosamente:', result.payload)
         alert('¡Suscripción creada exitosamente!')
-      } else {
-        console.error('Error en la suscripción:', result.error)
-        alert('Error al crear la suscripción: ' + result.error)
+        // TODO: Redirigir al dashboard del nuevo negocio o página de éxito
+      } else if (createSubscription.rejected.match(result)) {
+        console.error('Error en la suscripción:', result.payload)
+        alert('Error al crear la suscripción: ' + result.payload)
       }
     } catch (error) {
-      console.error('Error al enviar suscripción:', error)
+      console.error('Error al crear suscripción via Redux:', error)
       alert('Error de conexión al crear la suscripción')
     }
   }
@@ -208,6 +202,27 @@ const SubscriptionPage = () => {
 
       {/* Main content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Show subscription error if any */}
+        {subscriptionError && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  Error al crear la suscripción
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  {subscriptionError}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {currentStep === 1 && (
           <PlanSelection
             plans={plans}
@@ -233,6 +248,7 @@ const SubscriptionPage = () => {
             invitationToken={invitationToken}
             onComplete={handlePaymentComplete}
             onBack={handleBackStep}
+            loading={subscriptionLoading}
           />
         )}
       </main>

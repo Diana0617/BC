@@ -36,7 +36,10 @@ export { default as advancePaymentSlice } from './advancePaymentSlice';
 // 🔐 BUSINESS VALIDATION SYSTEM SLICES
 export { default as businessValidationSlice } from './businessValidationSlice';
 
-// 💳 ADVANCE PAYMENTS & BUSINESS VALIDATION SLICES
+// � SUBSCRIPTION SYSTEM SLICES
+export { default as subscriptionSlice } from './subscriptionSlice';
+
+// �💳 ADVANCE PAYMENTS & BUSINESS VALIDATION SLICES
 export { default as advancePaymentSlice } from './advancePaymentSlice';
 export { default as businessValidationSlice } from './businessValidationSlice';
 export { default as businessRuleSlice } from './businessRuleSlice';
