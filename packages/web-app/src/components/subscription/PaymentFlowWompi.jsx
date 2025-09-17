@@ -54,9 +54,9 @@ const PaymentFlowWompi = ({ selectedPlan, businessData, onComplete, onBack }) =>
   // Render del paso de procesamiento
   if (paymentStep === 'processing') {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <div className="bg-white py-8 px-4 shadow-plan-lg rounded-3xl sm:px-10 border-2 border-yellow-400">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
                 <svg className="animate-spin h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24">
@@ -93,9 +93,9 @@ const PaymentFlowWompi = ({ selectedPlan, businessData, onComplete, onBack }) =>
   // Render del paso de éxito
   if (paymentStep === 'success') {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <div className="bg-white py-8 px-4 shadow-plan-lg rounded-3xl sm:px-10 border-2 border-green-400">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
                 <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,9 +131,9 @@ const PaymentFlowWompi = ({ selectedPlan, businessData, onComplete, onBack }) =>
   // Render del paso de error
   if (paymentStep === 'error') {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <div className="bg-white py-8 px-4 shadow-plan-lg rounded-3xl sm:px-10 border-2 border-red-400">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
                 <svg className="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,24 +169,24 @@ const PaymentFlowWompi = ({ selectedPlan, businessData, onComplete, onBack }) =>
 
   // Render principal del paso de pago
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col justify-center py-6 sm:py-12 px-2 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-md sm:max-w-2xl">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900">
+        <div className="text-center mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-3xl font-extrabold text-gray-900 mb-2 bg-gradient-to-r from-cyan-400 via-yellow-400 to-red-400 bg-clip-text text-transparent drop-shadow-lg">
             Finalizar Suscripción
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-xs sm:text-sm text-gray-700">
             Plan seleccionado: <strong>{selectedPlan.name}</strong>
           </p>
         </div>
 
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className="bg-white py-4 sm:py-8 px-2 sm:px-4 shadow-plan-lg rounded-2xl sm:rounded-3xl border-2 border-cyan-400">
           {/* Botón de volver */}
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <button
               onClick={handleGoBack}
-              className="flex items-center text-sm text-gray-600 hover:text-gray-900"
+              className="flex items-center text-xs sm:text-sm text-gray-600 hover:text-gray-900"
             >
               <ArrowLeftIcon className="h-4 w-4 mr-2" />
               Volver a selección de plan
@@ -194,33 +194,33 @@ const PaymentFlowWompi = ({ selectedPlan, businessData, onComplete, onBack }) =>
           </div>
 
           {/* Resumen del plan */}
-          <div className="bg-gray-50 rounded-lg p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-gray-50 rounded-lg p-3 sm:p-6 mb-4 sm:mb-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">
               Resumen del Plan
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Plan:</span>
-                <span className="text-sm font-medium text-gray-900">{selectedPlan.name}</span>
+                <span className="text-xs sm:text-sm text-gray-600">Plan:</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-900">{selectedPlan.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Duración:</span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-xs sm:text-sm text-gray-600">Duración:</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-900">
                   {selectedPlan.duration} {selectedPlan.durationType === 'monthly' ? 'mes' : 'año'}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Negocio:</span>
-                <span className="text-sm font-medium text-gray-900">{businessData?.businessName}</span>
+                <span className="text-xs sm:text-sm text-gray-600">Negocio:</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-900">{businessData?.businessName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Email:</span>
-                <span className="text-sm font-medium text-gray-900">{businessData?.email}</span>
+                <span className="text-xs sm:text-sm text-gray-600">Email:</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-900">{businessData?.email}</span>
               </div>
-              <div className="border-t pt-3">
+              <div className="border-t pt-2 sm:pt-3">
                 <div className="flex justify-between">
-                  <span className="text-base font-semibold text-gray-900">Total:</span>
-                  <span className="text-base font-bold text-purple-600">
+                  <span className="text-sm sm:text-base font-semibold text-gray-900">Total:</span>
+                  <span className="text-sm sm:text-base font-bold text-purple-600">
                     {formatPrice(selectedPlan.price, selectedPlan.currency)}
                   </span>
                 </div>
@@ -229,12 +229,11 @@ const PaymentFlowWompi = ({ selectedPlan, businessData, onComplete, onBack }) =>
           </div>
 
           {/* Widget de Wompi */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <div className="mb-4 sm:mb-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4 flex items-center">
               <ShieldCheckIcon className="h-5 w-5 mr-2 text-green-500" />
               Información de Pago
             </h3>
-            
             <WompiWidgetMinimal
               planName={selectedPlan.name}
               amount={selectedPlan.price}
@@ -244,18 +243,18 @@ const PaymentFlowWompi = ({ selectedPlan, businessData, onComplete, onBack }) =>
           </div>
 
           {/* Información adicional */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-4">
+            <div className="flex flex-col sm:flex-row">
+              <div className="flex-shrink-0 flex items-center justify-center">
                 <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
               </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800">
+              <div className="ml-0 sm:ml-3 mt-2 sm:mt-0">
+                <h3 className="text-xs sm:text-sm font-medium text-blue-800">
                   Información importante
                 </h3>
-                <div className="mt-2 text-sm text-blue-700">
+                <div className="mt-1 sm:mt-2 text-xs sm:text-sm text-blue-700">
                   <ul className="list-disc list-inside space-y-1">
                     <li>Tu suscripción se activará inmediatamente después del pago</li>
                     <li>Recibirás un email de confirmación con los detalles</li>

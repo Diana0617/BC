@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import logo from '../../../public/logo.png';
 import { useSearchParams } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchPublicPlans } from '../../../../shared/src/store/slices/plansSlice'
@@ -6,6 +7,7 @@ import { createSubscription } from '../../../../shared/src/store/slices/subscrip
 import PlanSelection from '../../components/subscription/PlanSelection'
 import BusinessRegistration from '../../components/subscription/BusinessRegistration'
 import PaymentFlow from '../../components/subscription/PaymentFlowWompi'
+import LoginModal from '../auth/LoginModal';
 
 const SubscriptionPage = () => {
   const dispatch = useDispatch()
@@ -129,68 +131,79 @@ const SubscriptionPage = () => {
     }
   }
 
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">
-                Beauty Control
+  <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-nunito overflow-x-hidden">
+      {/* Header estilo landing */}
+      <header className="bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 shadow-lg border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center h-auto sm:h-20 py-4 sm:py-0">
+            <div className="flex flex-col sm:flex-row items-center w-full sm:w-auto">
+              <div className="bg-cyan-400 rounded-full p-2 sm:mr-3 mb-2 sm:mb-0 flex items-center justify-center">
+                <img src={logo} alt="Logo" className="h-10 w-auto sm:h-8" />
+              </div>
+              <h1 className="text-lg sm:text-2xl font-bold text-white tracking-wide text-center sm:text-left">
+                Business Control
               </h1>
-              <span className="ml-2 px-2 py-1 text-xs bg-pink-100 text-pink-600 rounded-full">
+              <span className="ml-0 sm:ml-2 mt-2 sm:mt-0 px-2 py-1 text-xs bg-yellow-400 text-gray-900 rounded-full font-semibold shadow text-center sm:text-left">
                 Business
               </span>
             </div>
-            <div className="text-sm text-gray-500">
-              ¿Ya tienes cuenta? 
-              <a href="/login" className="ml-1 text-pink-600 hover:text-pink-500">
+            <div className="text-xs sm:text-sm text-gray-200 mt-4 sm:mt-0 w-full sm:w-auto text-center sm:text-right">
+              ¿Ya tienes cuenta?
+              <button
+                type="button"
+                className="ml-1 text-cyan-400 hover:text-cyan-300 font-bold bg-transparent border-none cursor-pointer"
+                onClick={() => setShowLoginModal(true)}
+              >
                 Inicia sesión
-              </a>
+              </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Progress indicator */}
-      <div className="bg-white border-b">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-8">
-                <div className={`flex items-center ${currentStep >= 1 ? 'text-pink-600' : 'text-gray-400'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                    currentStep >= 1 ? 'border-pink-600 bg-pink-600 text-white' : 'border-gray-300'
+      {/* Login Modal */}
+      {showLoginModal && (
+        <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+      )}
+
+      {/* Progress indicator estilo landing */}
+      <div className="bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 border-b border-gray-800">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="py-4 sm:py-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
+              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-8 w-full sm:w-auto">
+                <div className={`flex items-center ${currentStep >= 1 ? 'text-cyan-400' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 shadow-lg ${
+                    currentStep >= 1 ? 'border-cyan-400 bg-cyan-400 text-white' : 'border-gray-300 bg-gray-900 text-gray-400'
                   }`}>
                     1
                   </div>
-                  <span className="ml-2 font-medium">Seleccionar Plan</span>
+                  <span className="ml-2 font-semibold">Seleccionar Plan</span>
                 </div>
-                
-                <div className={`flex items-center ${currentStep >= 2 ? 'text-pink-600' : 'text-gray-400'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                    currentStep >= 2 ? 'border-pink-600 bg-pink-600 text-white' : 'border-gray-300'
+                <div className={`flex items-center ${currentStep >= 2 ? 'text-yellow-400' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 shadow-lg ${
+                    currentStep >= 2 ? 'border-yellow-400 bg-yellow-400 text-gray-900' : 'border-gray-300 bg-gray-900 text-gray-400'
                   }`}>
                     2
                   </div>
-                  <span className="ml-2 font-medium">Registro</span>
+                  <span className="ml-2 font-semibold">Registro</span>
                 </div>
-                
-                <div className={`flex items-center ${currentStep >= 3 ? 'text-pink-600' : 'text-gray-400'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                    currentStep >= 3 ? 'border-pink-600 bg-pink-600 text-white' : 'border-gray-300'
+                <div className={`flex items-center ${currentStep >= 3 ? 'text-red-400' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 shadow-lg ${
+                    currentStep >= 3 ? 'border-red-400 bg-red-400 text-white' : 'border-gray-300 bg-gray-900 text-gray-400'
                   }`}>
                     3
                   </div>
-                  <span className="ml-2 font-medium">Pago</span>
+                  <span className="ml-2 font-semibold">Pago</span>
                 </div>
               </div>
-              
               {currentStep > 1 && (
                 <button
                   onClick={handleBackStep}
-                  className="text-gray-600 hover:text-gray-900 flex items-center"
+                  className="text-gray-300 hover:text-white flex items-center font-semibold"
                 >
                   ← Volver
                 </button>
@@ -201,7 +214,7 @@ const SubscriptionPage = () => {
       </div>
 
       {/* Main content */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <main className="max-w-6xl mx-auto px-2 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Show subscription error if any */}
         {subscriptionError && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
@@ -223,6 +236,7 @@ const SubscriptionPage = () => {
           </div>
         )}
 
+        {/* Main content steps remain unchanged */}
         {currentStep === 1 && (
           <PlanSelection
             plans={plans}
@@ -251,24 +265,27 @@ const SubscriptionPage = () => {
             loading={subscriptionLoading}
           />
         )}
-      </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-500">
-            <p>Beauty Control © 2025. Sistema de gestión para salones de belleza.</p>
-            <div className="mt-2">
-              <a href="/terms" className="text-pink-600 hover:text-pink-500 mr-4">
-                Términos y Condiciones
-              </a>
-              <a href="/privacy" className="text-pink-600 hover:text-pink-500">
-                Política de Privacidad
-              </a>
+        {/* Darker lower texts and styled footer */}
+        {/* Solo la versión oscura y fuerte, sin repetición */}
+
+        {/* Footer con estilo oscuro */}
+        <footer className="bg-gradient-to-br from-gray-800 via-gray-900 to-gray-950 border-t mt-10 sm:mt-16">
+          <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="text-center">
+              <p className="text-xs sm:text-base text-gray-200 font-semibold">Business Control © 2025. Sistema de gestión para tu negocio.</p>
+              <div className="mt-2">
+                <a href="/terms" className="text-red-400 hover:text-red-300 mr-4 font-semibold text-xs sm:text-base">
+                  Términos y Condiciones
+                </a>
+                <a href="/privacy" className="text-red-400 hover:text-red-300 font-semibold text-xs sm:text-base">
+                  Política de Privacidad
+                </a>
+              </div>
             </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </main>
     </div>
   )
 }

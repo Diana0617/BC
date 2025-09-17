@@ -244,28 +244,27 @@ const BusinessRegistration = ({ selectedPlan, invitationToken, onComplete, onBac
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-2 sm:px-0">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+      <div className="text-center mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-4 bg-gradient-to-r from-cyan-400 via-yellow-400 to-red-400 bg-clip-text text-transparent drop-shadow-lg">
           Información de tu salón
         </h1>
-        <p className="text-gray-600">
+        <p className="text-sm sm:text-base text-gray-700">
           Completa la información para crear tu cuenta y comenzar tu suscripción
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
         {/* Form */}
         <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
             {/* Business Information */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">
+            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-plan-lg border-2 border-cyan-400 p-4 sm:p-8">
+              <h3 className="text-lg font-bold text-cyan-600 mb-6">
                 Información del Negocio
               </h3>
-              
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Nombre del Negocio *
@@ -335,7 +334,7 @@ const BusinessRegistration = ({ selectedPlan, invitationToken, onComplete, onBac
                 </div>
               </div>
 
-              <div className="mt-6">
+              <div className="mt-4 sm:mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tipo de Negocio
                 </label>
@@ -353,7 +352,7 @@ const BusinessRegistration = ({ selectedPlan, invitationToken, onComplete, onBac
                 </select>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6 mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email del Negocio *
@@ -448,12 +447,11 @@ const BusinessRegistration = ({ selectedPlan, invitationToken, onComplete, onBac
             </div>
 
             {/* User Information */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">
+            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-plan-lg border-2 border-yellow-400 p-4 sm:p-8">
+              <h3 className="text-lg font-bold text-yellow-600 mb-6">
                 Tu Información Personal
               </h3>
-              
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Nombre *
@@ -597,11 +595,10 @@ const BusinessRegistration = ({ selectedPlan, invitationToken, onComplete, onBac
             </div>
 
             {/* Legal */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">
+            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-plan-lg border-2 border-red-400 p-4 sm:p-8">
+              <h3 className="text-lg font-bold text-red-500 mb-6">
                 Términos y Condiciones
               </h3>
-              
               <div className="space-y-4">
                 <div className="flex items-start">
                   <input
@@ -665,18 +662,17 @@ const BusinessRegistration = ({ selectedPlan, invitationToken, onComplete, onBac
             </div>
 
             {/* Actions */}
-            <div className="flex justify-between">
+            <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-0">
               <button
                 type="button"
                 onClick={onBack}
-                className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                className="px-6 py-3 border-2 border-cyan-400 rounded-xl text-cyan-600 hover:bg-cyan-50 font-semibold"
               >
                 ← Volver a planes
               </button>
-              
               <button
                 type="submit"
-                className="px-8 py-3 bg-pink-500 text-white rounded-lg hover:bg-pink-600 font-semibold"
+                className="px-8 py-3 bg-yellow-400 text-gray-900 rounded-xl hover:bg-yellow-500 font-bold border-2 border-yellow-400"
               >
                 Continuar al pago
               </button>
@@ -685,12 +681,11 @@ const BusinessRegistration = ({ selectedPlan, invitationToken, onComplete, onBac
         </div>
 
         {/* Order summary */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm border p-6 sticky top-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="lg:col-span-1 mt-6 lg:mt-0">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-plan-lg border-2 border-yellow-400 p-4 sm:p-8 sticky top-6">
+            <h3 className="text-lg font-bold text-yellow-600 mb-4">
               Resumen del Pedido
             </h3>
-            
             <div className="space-y-4">
               <div className="flex justify-between">
                 <span className="text-gray-600">Plan seleccionado:</span>
