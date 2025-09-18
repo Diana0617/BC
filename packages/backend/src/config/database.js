@@ -9,7 +9,7 @@ const config = {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
-    logging: console.log
+    logging: false  // Deshabilitado para reducir ruido en desarrollo
   },
   test: {
     username: process.env.DB_USER || 'postgres',

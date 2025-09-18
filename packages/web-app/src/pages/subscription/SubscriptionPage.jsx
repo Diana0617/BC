@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchPublicPlans } from '../../../../shared/src/store/slices/plansSlice'
 import { createSubscription } from '../../../../shared/src/store/slices/subscriptionSlice'
+import { selectIsOwner, selectCanCreateCashSubscriptions, selectAuthToken } from '../../../../shared/src/store/selectors/authSelectors'
 import PlanSelection from '../../components/subscription/PlanSelection'
 import BusinessRegistration from '../../components/subscription/BusinessRegistration'
 import PaymentFlow from '../../components/subscription/PaymentFlowWompi'
@@ -20,6 +21,11 @@ const SubscriptionPage = () => {
   // Redux state
   const { plans, loading } = useSelector(state => state.plans)
   const { loading: subscriptionLoading, error: subscriptionError } = useSelector(state => state.subscription)
+  
+  // Owner permissions
+  const isOwner = useSelector(selectIsOwner)
+  const canCreateCashSubscriptions = useSelector(selectCanCreateCashSubscriptions)
+  const authToken = useSelector(selectAuthToken)
 
   // Debug: Ver el estado de los planes
   console.log('SubscriptionPage - Plans from Redux:', plans)
@@ -59,7 +65,58 @@ const SubscriptionPage = () => {
       invitation: invitationToken
     })
 
-    // Preparar datos para envío al backend usando Redux
+    // Si es pago efectivo (Owner), usar endpoint específico
+    if (paymentData.method === 'CASH' && isOwner && canCreateCashSubscriptions) {
+      try {
+        console.log('Procesando pago efectivo para Owner...')
+        
+        // Primero crear el negocio (si no existe)
+        const businessResponse = await fetch('http://localhost:3001/api/owner/businesses', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            businessName: registrationData.businessName,
+            businessEmail: registrationData.businessEmail,
+            businessPhone: registrationData.businessPhone,
+            address: registrationData.address,
+            city: registrationData.city,
+            country: registrationData.country,
+            ownerEmail: registrationData.email,
+            ownerFirstName: registrationData.firstName,
+            ownerLastName: registrationData.lastName,
+            ownerPhone: registrationData.phone,
+            ownerPassword: registrationData.password,
+            subscriptionPlanId: selectedPlan.id
+          })
+        });
+        
+        // Verificar si la respuesta es válida antes de parsear JSON
+        if (!businessResponse.ok) {
+          const errorText = await businessResponse.text();
+          throw new Error(`Error HTTP ${businessResponse.status}: ${errorText}`);
+        }
+        
+        const businessResult = await businessResponse.json();
+        if (!businessResult.success) {
+          throw new Error(businessResult.message || 'Error creando negocio');
+        }
+        
+        console.log('✅ Negocio y suscripción creados exitosamente:', businessResult.data);
+        alert('¡Suscripción con pago efectivo creada exitosamente!');
+        // TODO: Redirigir al dashboard o página de éxito
+        
+        return;
+      } catch (error) {
+        console.error('❌ Error con pago efectivo:', error);
+        alert('Error al crear suscripción efectivo: ' + error.message);
+        return;
+      }
+    }
+
+    // Preparar datos para envío al backend usando Redux (flujo normal Wompi)
     const subscriptionData = {
       // Plan seleccionado
       planId: selectedPlan.id,
@@ -263,6 +320,8 @@ const SubscriptionPage = () => {
             onComplete={handlePaymentComplete}
             onBack={handleBackStep}
             loading={subscriptionLoading}
+            isOwner={isOwner}
+            canCreateCashSubscriptions={canCreateCashSubscriptions}
           />
         )}
 

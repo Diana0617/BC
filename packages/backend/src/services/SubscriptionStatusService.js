@@ -243,7 +243,7 @@ class SubscriptionStatusService {
   static async sendStatusChangeNotification(subscription, oldStatus, newStatus) {
     // TODO: Implementar sistema de notificaciones
     // Por ahora solo log
-    console.log(`📧 Notificación ${subscription.business.name}: ${oldStatus} → ${newStatus}`);
+    // console.log('📧 Notificación ${subscription.business.name}: ${oldStatus} → ${newStatus}');
     
     const messages = {
       'ACTIVE_TO_PENDING': 'Su suscripción está próxima a vencer. Por favor, realice el pago.',
@@ -306,7 +306,7 @@ class SubscriptionStatusService {
         lastPaymentDate: new Date()
       });
 
-      console.log(`✅ Pago procesado: Suscripción ${subscription.id} extendida hasta ${newPaymentDate}`);
+      // console.log(`✅ Pago procesado: Suscripción ${subscription.id} extendida hasta ${newPaymentDate}`);
       return { success: true, newPaymentDate };
 
     } catch (error) {

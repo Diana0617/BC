@@ -126,12 +126,12 @@ class MemoryCache {
     // Intentar obtener del cache primero
     const cached = this.get(key);
     if (cached !== null) {
-      console.log(`📦 Cache HIT: ${key}`);
+      // console.log(`📦 Cache HIT: ${key}`);
       return cached;
     }
 
     // Ejecutar función y guardar resultado
-    console.log(`🔄 Cache MISS: ${key} - Ejecutando función...`);
+    // console.log(`🔄 Cache MISS: ${key} - Ejecutando función...`);
     const result = await fn();
     this.set(key, result, ttl);
     

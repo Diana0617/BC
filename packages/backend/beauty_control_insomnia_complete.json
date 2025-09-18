@@ -248,7 +248,7 @@
       "_type": "request"
     },
     {
-      "_id": "req_business_get",
+      "_id": "req_business_get_old",
       "parentId": "fld_business",
       "modified": 1736700220000,
       "created": 1736700220000,
@@ -295,6 +295,28 @@
       ],
       "authentication": {},
       "metaSortKey": -1736700230000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_business_get_current",
+      "parentId": "fld_business",
+      "modified": 1736700235000,
+      "created": 1736700235000,
+      "url": "{{ _.base_url }}/api/business/",
+      "name": "Obtener Negocio Actual",
+      "description": "Obtiene la información completa del negocio del usuario autenticado, incluyendo suscripciones y planes",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700235000,
       "isPrivate": false,
       "_type": "request"
     },
@@ -490,6 +512,35 @@
       "_type": "request"
     },
     {
+      "_id": "req_wompi_manual_confirm",
+      "parentId": "fld_wompi_payments",
+      "modified": 1736700435000,
+      "created": 1736700435000,
+      "url": "{{ _.base_url }}/api/wompi/manual-confirm",
+      "name": "Confirmar Pago Manualmente",
+      "description": "Confirma un pago manualmente para testing/desarrollo",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"reference\": \"REF_SUB_20240912_001\",\n  \"transactionId\": \"158187-1758138073-14951\",\n  \"status\": \"APPROVED\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700435000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
       "_id": "fld_owner_dashboard",
       "parentId": "wrk_beauty_control",
       "modified": 1736700500000,
@@ -652,6 +703,69 @@
       ],
       "authentication": {},
       "metaSortKey": -1736700570000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_owner_business_management",
+      "parentId": "wrk_beauty_control",
+      "modified": 1736700580000,
+      "created": 1736700580000,
+      "name": "👑 Owner - Gestión de Negocios",
+      "description": "Gestión de negocios y suscripciones para administradores",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1736700580000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_owner_businesses_list",
+      "parentId": "fld_owner_business_management",
+      "modified": 1736700581000,
+      "created": 1736700581000,
+      "url": "{{ _.base_url }}/api/owner/businesses",
+      "name": "Listar Negocios del Owner",
+      "description": "Obtiene todos los negocios creados por el owner con sus suscripciones",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700581000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_owner_create_cash_subscription",
+      "parentId": "fld_owner_business_management",
+      "modified": 1736700582000,
+      "created": 1736700582000,
+      "url": "{{ _.base_url }}/api/owner/subscriptions/cash",
+      "name": "Crear Suscripción Efectivo (Solo Owner)",
+      "description": "Crea una suscripción con pago en efectivo - Solo para usuarios Owner",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessName\": \"Salon Bella Vista\",\n  \"businessDescription\": \"Salon de belleza moderno\",\n  \"businessSlug\": \"salon-bella-vista\",\n  \"businessAddress\": \"Calle Principal 123\",\n  \"businessPhone\": \"+57 300 123 4567\",\n  \"businessCategory\": \"salon\",\n  \"userName\": \"Maria Garcia\",\n  \"userEmail\": \"maria@salonbellavista.com\",\n  \"userPhone\": \"+57 300 123 4567\",\n  \"ownerPassword\": \"password123\",\n  \"subscriptionPlanId\": \"01936a1e-96e7-7e7c-af3e-123456789abc\",\n  \"amount\": 99900,\n  \"notes\": \"Pago inicial en efectivo - negocio creado manualmente\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1736700582000,
       "isPrivate": false,
       "_type": "request"
     },
@@ -1212,7 +1326,7 @@
     },
     {
       "_id": "req_appointments_create",
-      "parentId": "fld_appointments",
+      "parentId": "fld_specialist_appointments",
       "modified": 1736701210000,
       "created": 1736701210000,
       "url": "{{ _.base_url }}/api/appointments",
@@ -1241,7 +1355,7 @@
     },
     {
       "_id": "req_appointments_list",
-      "parentId": "fld_appointments",
+      "parentId": "fld_specialist_appointments",
       "modified": 1736701220000,
       "created": 1736701220000,
       "url": "{{ _.base_url }}/api/appointments?date=2024-01-15&status=CONFIRMED&specialistId=specialist-uuid-789",
@@ -1263,7 +1377,7 @@
     },
     {
       "_id": "req_appointments_update_status",
-      "parentId": "fld_appointments",
+      "parentId": "fld_specialist_appointments",
       "modified": 1736701230000,
       "created": 1736701230000,
       "url": "{{ _.base_url }}/api/appointments/appointment-uuid-123/status",
@@ -2971,7 +3085,7 @@
       "_type": "request"
     },
     {
-      "_id": "fld_appointments",
+      "_id": "fld_specialist_appointments",
       "parentId": "fld_specialists",
       "modified": 1736708200000,
       "created": 1736708200000,
@@ -2984,7 +3098,7 @@
     },
     {
       "_id": "req_appointments_list",
-      "parentId": "fld_appointments",
+      "parentId": "fld_specialist_appointments",
       "modified": 1736708210000,
       "created": 1736708210000,
       "url": "{{ _.base_url }}/api/appointments?businessId=business-id-here&specialistId=specialist-id&page=1&limit=10&status=PENDING&date=2025-01-15",
@@ -3006,7 +3120,7 @@
     },
     {
       "_id": "req_appointments_create",
-      "parentId": "fld_appointments",
+      "parentId": "fld_specialist_appointments",
       "modified": 1736708220000,
       "created": 1736708220000,
       "url": "{{ _.base_url }}/api/appointments",
@@ -3035,7 +3149,7 @@
     },
     {
       "_id": "req_appointments_detail",
-      "parentId": "fld_appointments",
+      "parentId": "fld_specialist_appointments",
       "modified": 1736708230000,
       "created": 1736708230000,
       "url": "{{ _.base_url }}/api/appointments/appointment-id?businessId=business-id-here",
@@ -3057,7 +3171,7 @@
     },
     {
       "_id": "req_appointments_update_status",
-      "parentId": "fld_appointments",
+      "parentId": "fld_specialist_appointments",
       "modified": 1736708240000,
       "created": 1736708240000,
       "url": "{{ _.base_url }}/api/appointments/appointment-id/status?businessId=business-id-here",
@@ -3086,7 +3200,7 @@
     },
     {
       "_id": "req_appointments_cancel",
-      "parentId": "fld_appointments",
+      "parentId": "fld_specialist_appointments",
       "modified": 1736708250000,
       "created": 1736708250000,
       "url": "{{ _.base_url }}/api/appointments/appointment-id?businessId=business-id-here",

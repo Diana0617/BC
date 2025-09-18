@@ -2,9 +2,24 @@
  * Configuración de Cron Jobs para Beauty Control
  * 
  * Jobs programados:
- * - Verificación diaria de suscripciones (8:00 AM)
- * - Limpieza de tokens expirados (2:00 AM)
- * - Generación de reportes financieros (9:00 AM)
+ * - Verificación diaria de suscripciones (8:  static async runManualSubscriptionCheck() {
+    // console.log('🧘 Ejecutando verificación manual...');
+    try {
+      const result = await SubscriptionStatusService.runDailyStatusCheck();
+      const attention = await SubscriptionStatusService.getSubscriptionsRequiringAttention();)
+ * - Limpiez  static async runManualAutoRenewal() {
+    // console.log('🧘 Ejecutando auto-renovación manual...');
+    try {
+      const result = await AutoRenewalService.processAutoRenewals();
+      // console.log('✅ Auto-renovación manual completada:', result);tokens exp  static async runManualPaymentRetries() {
+    // console.log('🧘 Ejecutando reintentos manual...');
+    try {
+      await AutoRenewalService.processPaymentRetries();
+      // console.log('✅ Reintentos manuales completados');s (2:00 A  static async runManualNotifications() {
+    // console.log('🧘 Ejecutando notificaciones manual...');
+    try {
+      await AutoRenewalService.notifyUpcomingExpirations();
+      // console.log('✅ Notificaciones manuales enviadas');* - Generación de reportes financieros (9:00 AM)
  */
 
 const cron = require('node-cron');
@@ -14,14 +29,14 @@ const AutoRenewalService = require('../services/AutoRenewalService');
 class CronJobManager {
   
   static initializeJobs() {
-    console.log('🕒 Inicializando Cron Jobs...');
+    // console.log('🕒 Inicializando Cron Jobs...');
 
     // Verificación diaria de suscripciones - 8:00 AM todos los días
     cron.schedule('0 8 * * *', async () => {
-      console.log('🔄 Ejecutando verificación diaria de suscripciones...');
+      // console.log('🔄 Ejecutando verificación diaria de suscripciones...');
       try {
         const result = await SubscriptionStatusService.runDailyStatusCheck();
-        console.log('✅ Verificación completada:', result);
+        // console.log('✅ Verificación completada:', result);
       } catch (error) {
         console.error('❌ Error en verificación diaria:', error);
       }
@@ -45,7 +60,7 @@ class CronJobManager {
 
     // Limpieza de tokens expirados - 2:00 AM todos los días
     cron.schedule('0 2 * * *', async () => {
-      console.log('🧹 Limpiando tokens expirados...');
+      // console.log('🧹 Limpiando tokens expirados...');
       try {
         const { PasswordResetToken } = require('../models');
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -58,7 +73,7 @@ class CronJobManager {
           }
         });
         
-        console.log(`🗑️ Eliminados ${deleted} tokens expirados`);
+        // console.log(`🗑️ Eliminados ${deleted} tokens expirados`);
       } catch (error) {
         console.error('❌ Error limpiando tokens:', error);
       }
@@ -68,10 +83,10 @@ class CronJobManager {
 
     // Generación de reportes financieros - 9:00 AM todos los lunes
     cron.schedule('0 9 * * 1', async () => {
-      console.log('📊 Generando reportes financieros semanales...');
+      // console.log('📊 Generando reportes financieros semanales...');
       try {
         // TODO: Implementar generación automática de reportes
-        console.log('📈 Reportes financieros generados (pendiente implementación)');
+        // console.log('📈 Reportes financieros generados (pendiente implementación)');
       } catch (error) {
         console.error('❌ Error generando reportes:', error);
       }
@@ -85,10 +100,10 @@ class CronJobManager {
     
     // Procesar auto-renovaciones - 6:00 AM todos los días
     cron.schedule('0 6 * * *', async () => {
-      console.log('🔄 Ejecutando proceso de auto-renovación...');
+      // console.log('🔄 Ejecutando proceso de auto-renovación...');
       try {
         const result = await AutoRenewalService.processAutoRenewals();
-        console.log('✅ Auto-renovación completada:', result);
+        // console.log('✅ Auto-renovación completada:', result);
       } catch (error) {
         console.error('❌ Error en auto-renovación:', error);
       }
@@ -98,7 +113,7 @@ class CronJobManager {
 
     // Procesar reintentos de pagos fallidos - 10:00 AM y 3:00 PM
     cron.schedule('0 10,15 * * *', async () => {
-      console.log('🔄 Procesando reintentos de pagos...');
+      // console.log('🔄 Procesando reintentos de pagos...');
       try {
         await AutoRenewalService.processPaymentRetries();
       } catch (error) {
@@ -110,7 +125,7 @@ class CronJobManager {
 
     // Notificar próximos vencimientos - 9:00 AM todos los días
     cron.schedule('0 9 * * *', async () => {
-      console.log('📧 Enviando notificaciones de próximos vencimientos...');
+      // console.log('📧 Enviando notificaciones de próximos vencimientos...');
       try {
         await AutoRenewalService.notifyUpcomingExpirations();
       } catch (error) {
@@ -120,7 +135,7 @@ class CronJobManager {
       timezone: "America/Bogota"
     });
 
-    console.log('✅ Cron Jobs inicializados correctamente');
+    // console.log('✅ Cron Jobs inicializados correctamente');
   }
 
   /**
@@ -193,7 +208,7 @@ class CronJobManager {
     cron.getTasks().forEach(task => {
       task.stop();
     });
-    console.log('⏹️ Todos los Cron Jobs detenidos');
+    // console.log('⏹️ Todos los Cron Jobs detenidos');
   }
 }
 

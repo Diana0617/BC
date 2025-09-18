@@ -6,10 +6,12 @@
  */
 
 const { Op, Sequelize } = require('sequelize');
+const bcrypt = require('bcryptjs');
 const Business = require('../models/Business');
 const User = require('../models/User');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 const BusinessSubscription = require('../models/BusinessSubscription');
+const SubscriptionPayment = require('../models/SubscriptionPayment');
 const Module = require('../models/Module');
 const PaginationService = require('../services/PaginationService');
 
@@ -191,8 +193,16 @@ class OwnerController {
         ownerFirstName,
         ownerLastName,
         ownerPhone,
+        ownerPassword,
         subscriptionPlanId
       } = req.body;
+
+      console.log('📋 Datos recibidos para crear negocio:', {
+        businessName,
+        ownerEmail,
+        ownerPassword: ownerPassword ? '***PROVIDED***' : 'NOT_PROVIDED',
+        subscriptionPlanId
+      });
 
       // Verificar si el plan existe
       const plan = await SubscriptionPlan.findByPk(subscriptionPlanId);
@@ -203,21 +213,54 @@ class OwnerController {
         });
       }
 
+      console.log('📋 Plan encontrado:', {
+        id: plan.id,
+        name: plan.name,
+        price: plan.price,
+        currency: plan.currency
+      });
+
       // Verificar si ya existe un usuario con ese email
-      let owner = await User.findOne({ where: { email: ownerEmail } });
+      let owner = await User.findOne({ 
+        where: { email: ownerEmail },
+        include: [{ model: Business, as: 'business' }]
+      });
       
       if (owner) {
-        // Si existe, verificar que no tenga ya un negocio
-        if (owner.businessId) {
-          return res.status(400).json({
-            success: false,
-            message: 'El usuario ya tiene un negocio asociado'
-          });
+        console.log('👤 Usuario existente encontrado:', {
+          id: owner.id,
+          email: owner.email,
+          businessId: owner.businessId,
+          hasBusiness: !!owner.business
+        });
+        
+        // Si tiene negocio, permitir recreación (caso de testing/desarrollo)
+        if (owner.businessId && owner.business) {
+          console.log('⚠️ Usuario ya tiene negocio. En desarrollo, se permite recreación.');
+          // En desarrollo, limpiar la relación para permitir recreación
+          await owner.update({ businessId: null });
+        }
+        
+        // Actualizar contraseña si se proporciona
+        if (ownerPassword) {
+          console.log('🔐 Actualizando contraseña del usuario existente...');
+          const salt = await bcrypt.genSalt(12);
+          const hashedPassword = await bcrypt.hash(ownerPassword, salt);
+          await owner.update({ password: hashedPassword });
+          console.log('✅ Contraseña actualizada');
         }
         
         // Actualizar rol a BUSINESS
         await owner.update({ role: 'BUSINESS' });
       } else {
+        console.log('👤 Creando nuevo usuario...');
+        // Usar la contraseña del formulario o una temporal si no se proporciona
+        const passwordToUse = ownerPassword || 'TempPassword123!';
+        
+        // Hashear la contraseña antes de crear el usuario
+        const salt = await bcrypt.genSalt(12);
+        const hashedPassword = await bcrypt.hash(passwordToUse, salt);
+        
         // Crear nuevo usuario BUSINESS
         owner = await User.create({
           email: ownerEmail,
@@ -225,12 +268,14 @@ class OwnerController {
           lastName: ownerLastName,
           phone: ownerPhone,
           role: 'BUSINESS',
-          password: 'TempPassword123!', // Password temporal que debe cambiar
+          password: hashedPassword,
           emailVerified: false
         });
+        console.log('👤 Usuario creado:', owner.id);
       }
 
       // Crear el negocio
+      console.log('🏢 Creando negocio...');
       const business = await Business.create({
         name: businessName,
         email: businessEmail,
@@ -241,18 +286,50 @@ class OwnerController {
         ownerId: owner.id,
         status: 'ACTIVE'
       });
+      console.log('🏢 Negocio creado:', business.id);
 
       // Actualizar el usuario con el businessId
       await owner.update({ businessId: business.id });
+      console.log('👤 Usuario actualizado con businessId');
 
       // Crear la suscripción
+      console.log('📝 Creando suscripción con datos:', {
+        businessId: business.id,
+        subscriptionPlanId: subscriptionPlanId,
+        amount: plan.price,
+        currency: plan.currency
+      });
+      
       const subscription = await BusinessSubscription.create({
         businessId: business.id,
         subscriptionPlanId: subscriptionPlanId,
+        amount: plan.price,
+        currency: plan.currency,
         status: 'ACTIVE',
         startDate: new Date(),
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 días
       });
+      console.log('📝 Suscripción creada:', subscription.id);
+
+      // Crear el registro de pago para el pago efectivo
+      console.log('💰 Creando registro de pago...');
+      const payment = await SubscriptionPayment.create({
+        businessSubscriptionId: subscription.id,
+        amount: plan.price,
+        currency: plan.currency,
+        status: 'COMPLETED',
+        paymentMethod: 'CASH',
+        paidAt: new Date(),
+        dueDate: new Date(),
+        netAmount: plan.price,
+        commissionFee: 0,
+        description: `Pago efectivo para suscripción al plan ${plan.name}`,
+        notes: 'Pago creado manualmente por Owner desde panel administrativo',
+        paymentAttempts: 1,
+        lastAttemptAt: new Date(),
+        maxAttempts: 1
+      });
+      console.log('💰 Pago creado:', payment.id);
 
       res.status(201).json({
         success: true,
@@ -266,7 +343,8 @@ class OwnerController {
             lastName: owner.lastName,
             role: owner.role
           },
-          subscription
+          subscription,
+          payment
         }
       });
     } catch (error) {

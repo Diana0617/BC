@@ -17,7 +17,7 @@ class AutoRenewalService {
    * Verificar suscripciones próximas a vencer y procesar auto-renovación
    */
   static async processAutoRenewals() {
-    console.log('🔄 Iniciando proceso de auto-renovación...');
+    // console.log('🔄 Iniciando proceso de auto-renovación...');
     
     try {
       // Buscar suscripciones TRIAL que vencen en 1 día o menos

@@ -6,6 +6,8 @@
 const axios = require('axios');
 const crypto = require('crypto');
 const { Business, SubscriptionPlan, BusinessSubscription, SubscriptionPayment } = require('../models');
+const { sequelize } = require('../config/database');
+const { Op } = require('sequelize');
 
 class WompiSubscriptionService {
   
@@ -162,11 +164,12 @@ class WompiSubscriptionService {
       });
 
       if (status === 'APPROVED') {
-        // Pago exitoso - activar suscripción
-        await payment.update({
-          status: 'COMPLETED',
-          paidAt: new Date(),
-          externalTransactionId: transactionId
+        // Pago exitoso - usar el nuevo método del modelo
+        await payment.markAsSuccessful({
+          transactionId: transactionId,
+          amount: amount_in_cents / 100,
+          provider: 'WOMPI',
+          timestamp: new Date()
         });
 
         // Extender suscripción usando nuestro servicio existente
@@ -177,14 +180,38 @@ class WompiSubscriptionService {
         return { success: true, message: 'Suscripción activada', newStatus: 'ACTIVE' };
 
       } else if (status === 'DECLINED' || status === 'VOIDED' || status === 'ERROR') {
-        // Pago rechazado, anulado o con error
-        await payment.update({
-          status: 'REJECTED',
-          verificationNotes: `Pago ${status.toLowerCase()} por Wompi`
-        });
+        // Pago rechazado - usar el nuevo método de manejo de fallos
+        const failureReason = `Pago ${status.toLowerCase()} por Wompi`;
+        const errorDetails = {
+          wompiStatus: status,
+          transactionId: transactionId,
+          timestamp: new Date(),
+          provider: 'WOMPI'
+        };
+
+        await payment.markAttemptAsFailed(failureReason, errorDetails);
 
         console.log(`❌ Pago ${status.toLowerCase()} para referencia ${reference}`);
-        return { success: false, message: `Pago ${status.toLowerCase()}`, newStatus: 'REJECTED' };
+        console.log(`🔄 Intentos: ${payment.paymentAttempts}/${payment.maxAttempts}`);
+        
+        if (payment.canRetry()) {
+          console.log(`🔁 Se pueden realizar más intentos de pago`);
+          return { 
+            success: false, 
+            message: `Pago ${status.toLowerCase()} - Reintentos disponibles`, 
+            newStatus: 'ATTEMPT_FAILED',
+            canRetry: true,
+            remainingAttempts: payment.getRemainingAttempts()
+          };
+        } else {
+          console.log(`🚫 Máximo de intentos alcanzado - Pago marcado como FAILED`);
+          return { 
+            success: false, 
+            message: `Pago ${status.toLowerCase()} - Máximo de intentos alcanzado`, 
+            newStatus: 'FAILED',
+            canRetry: false
+          };
+        }
       
       } else {
         // Estados intermedios como PENDING
@@ -284,6 +311,98 @@ class WompiSubscriptionService {
       return response.data;
     } catch (error) {
       console.error('Error consultando estado en Wompi:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reintentar un pago fallido
+   * @param {string} subscriptionPaymentId - ID del pago fallido
+   * @param {string} userEmail - Email del usuario para el reintento
+   */
+  async retryFailedPayment(subscriptionPaymentId, userEmail) {
+    try {
+      const payment = await SubscriptionPayment.findByPk(subscriptionPaymentId, {
+        include: [{
+          model: BusinessSubscription,
+          as: 'subscription',
+          include: [{
+            model: Business,
+            as: 'business'
+          }, {
+            model: SubscriptionPlan,
+            as: 'plan'
+          }]
+        }]
+      });
+
+      if (!payment) {
+        throw new Error('Pago no encontrado');
+      }
+
+      if (!payment.canRetry()) {
+        throw new Error(`No se pueden realizar más intentos. Intentos: ${payment.paymentAttempts}/${payment.maxAttempts}`);
+      }
+
+      // Preparar para reintento
+      await payment.prepareForRetry();
+
+      // Crear nueva transacción en Wompi
+      const business = payment.subscription.business;
+      const plan = payment.subscription.plan;
+
+      const result = await this.createSubscriptionTransaction(
+        business.id,
+        plan.id,
+        userEmail
+      );
+
+      console.log(`🔄 Reintento de pago creado para ${payment.id}. Intento ${payment.paymentAttempts}/${payment.maxAttempts}`);
+
+      return {
+        ...result,
+        isRetry: true,
+        attemptNumber: payment.paymentAttempts,
+        maxAttempts: payment.maxAttempts
+      };
+
+    } catch (error) {
+      console.error('Error en reintento de pago:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener estadísticas de pagos fallidos
+   */
+  async getFailedPaymentStatistics() {
+    try {
+      const stats = await SubscriptionPayment.findAll({
+        attributes: [
+          'status',
+          [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+        ],
+        where: {
+          status: ['ATTEMPT_FAILED', 'FAILED']
+        },
+        group: ['status']
+      });
+
+      const paymentsWithRetries = await SubscriptionPayment.findAll({
+        where: {
+          paymentAttempts: { [Op.gt]: 1 }
+        },
+        attributes: ['id', 'paymentAttempts', 'maxAttempts', 'status', 'lastAttemptAt']
+      });
+
+      return {
+        failedPaymentsByStatus: stats,
+        paymentsWithRetries: paymentsWithRetries,
+        totalFailedPayments: stats.reduce((sum, stat) => sum + parseInt(stat.dataValues.count), 0)
+      };
+
+    } catch (error) {
+      console.error('Error obteniendo estadísticas de pagos fallidos:', error);
       throw error;
     }
   }

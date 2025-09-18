@@ -200,6 +200,9 @@ class BusinessController {
     try {
       const { businessId, role } = req.user;
 
+      // console.log('🔍 getBusiness - businessId:', businessId);
+      // console.log('🔍 getBusiness - role:', role);
+
       if (role === 'CLIENT') {
         return res.status(403).json({
           success: false,
@@ -216,9 +219,27 @@ class BusinessController {
           {
             model: SubscriptionPlan,
             as: 'currentPlan'
+          },
+          {
+            model: BusinessSubscription,
+            as: 'subscriptions',
+            include: [
+              {
+                model: SubscriptionPlan,
+                as: 'plan',
+                attributes: ['id', 'name', 'price', 'duration', 'durationType']
+              }
+            ]
           }
         ]
       });
+
+      // console.log('🔍 Business found:', !!business);
+      if (business) {
+        // console.log('🔍 Business subscriptions:', business.subscriptions?.length || 0);
+        // console.log('🔍 Business currentPlan:', !!business.currentPlan);
+        // console.log('🔍 Business rules:', !!business.rules);
+      }
 
       if (!business) {
         return res.status(404).json({

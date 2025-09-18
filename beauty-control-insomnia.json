@@ -1,0 +1,334 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-09-17T22:30:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "req_owner_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1694986200000,
+      "created": 1694986200000,
+      "url": "{{ _.base_url }}/api/auth/login",
+      "name": "1. Login Owner",
+      "description": "Login como OWNER para administración global",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"admin@beautycontrol.com\",\n  \"password\": \"Admin123!\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694986200000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_business_login_salon",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1694986300000,
+      "created": 1694986300000,
+      "url": "{{ _.base_url }}/api/auth/login",
+      "name": "2. Login Business (Salon Prueba)",
+      "description": "Login como BUSINESS - Salon de Prueba",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"owner@salon-prueba.com\",\n  \"password\": \"Owner123!\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694986300000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_business_login_mas3d",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1694986400000,
+      "created": 1694986400000,
+      "url": "{{ _.base_url }}/api/auth/login",
+      "name": "3. Login Business (mas3d)",
+      "description": "Login como BUSINESS - mas3d",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"mercedeslobeto@gmail.com\",\n  \"password\": \"TempPassword123!\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694986400000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_owner_get_all_businesses",
+      "_type": "request",
+      "parentId": "fld_owner",
+      "modified": 1694986500000,
+      "created": 1694986500000,
+      "url": "{{ _.base_url }}/api/owner/businesses",
+      "name": "Get All Businesses",
+      "description": "Listar todos los negocios (solo OWNER)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.owner_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694986500000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_owner_create_business",
+      "_type": "request",
+      "parentId": "fld_owner",
+      "modified": 1694986600000,
+      "created": 1694986600000,
+      "url": "{{ _.base_url }}/api/owner/subscriptions/cash",
+      "name": "Create Business (Cash Payment)",
+      "description": "Crear negocio con pago efectivo (solo OWNER)",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessName\": \"Nuevo Salon Test\",\n  \"businessEmail\": \"test@nuevosalon.com\",\n  \"businessPhone\": \"+573001234567\",\n  \"address\": \"Calle 123 #45-67\",\n  \"city\": \"Bogotá\",\n  \"country\": \"Colombia\",\n  \"ownerEmail\": \"owner@nuevosalon.com\",\n  \"ownerFirstName\": \"Test\",\n  \"ownerLastName\": \"Owner\",\n  \"ownerPhone\": \"+573001234567\",\n  \"ownerPassword\": \"TestPassword123!\",\n  \"subscriptionPlanId\": \"b656dcdd-51a6-440a-a0f6-d2b10b75b414\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.owner_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694986600000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_owner_subscription_status",
+      "_type": "request",
+      "parentId": "fld_owner",
+      "modified": 1694986700000,
+      "created": 1694986700000,
+      "url": "{{ _.base_url }}/api/owner/subscription-status/summary",
+      "name": "Get Subscription Status Summary",
+      "description": "Resumen de estados de suscripciones (solo OWNER)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.owner_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694986700000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_business_get_info",
+      "_type": "request",
+      "parentId": "fld_business",
+      "modified": 1694986800000,
+      "created": 1694986800000,
+      "url": "{{ _.base_url }}/api/business/",
+      "name": "Get My Business Info",
+      "description": "Obtener información completa del negocio propio (BUSINESS)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.business_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694986800000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_business_rules",
+      "_type": "request",
+      "parentId": "fld_business",
+      "modified": 1694986900000,
+      "created": 1694986900000,
+      "url": "{{ _.base_url }}/api/business/rule-assignments",
+      "name": "Get Business Rules",
+      "description": "Obtener reglas del negocio (BUSINESS)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.business_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1694986900000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694986000000,
+      "created": 1694986000000,
+      "name": "🔐 Authentication",
+      "description": "Endpoints de autenticación para diferentes roles",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1694986000000
+    },
+    {
+      "_id": "fld_owner",
+      "_type": "request_group",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694986100000,
+      "created": 1694986100000,
+      "name": "👑 Owner Endpoints",
+      "description": "Endpoints exclusivos para el rol OWNER",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1694986100000
+    },
+    {
+      "_id": "fld_business",
+      "_type": "request_group",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694986150000,
+      "created": 1694986150000,
+      "name": "🏢 Business Endpoints",
+      "description": "Endpoints para usuarios BUSINESS",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1694986150000
+    },
+    {
+      "_id": "wrk_beauty_control",
+      "_type": "workspace",
+      "parentId": null,
+      "modified": 1694985000000,
+      "created": 1694985000000,
+      "name": "Beauty Control API",
+      "description": "API completa para Beauty Control - Sistema de gestión de salones de belleza"
+    },
+    {
+      "_id": "env_beauty_control",
+      "_type": "environment",
+      "parentId": "wrk_beauty_control",
+      "modified": 1694985100000,
+      "created": 1694985100000,
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3001",
+        "owner_token": "",
+        "business_token": "",
+        "business_mas3d_token": ""
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url",
+          "owner_token", 
+          "business_token",
+          "business_mas3d_token"
+        ]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1694985100000
+    }
+  ]
+}

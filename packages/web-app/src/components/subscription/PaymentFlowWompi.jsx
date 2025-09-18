@@ -4,7 +4,14 @@ import { ArrowLeftIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
 import WompiWidgetMinimal from './WompiWidgetMinimal'
 import { resetSubscriptionFlow } from '@shared/store/slices/subscriptionSlice'
 
-const PaymentFlowWompi = ({ selectedPlan, businessData, onComplete, onBack }) => {
+const PaymentFlowWompi = ({ 
+  selectedPlan, 
+  businessData, 
+  onComplete, 
+  onBack,
+  isOwner = false,
+  canCreateCashSubscriptions = false
+}) => {
   const dispatch = useDispatch()
   const { paymentError } = useSelector(state => state.subscription)
   const [paymentStep, setPaymentStep] = useState('payment') // payment, processing, success, error
@@ -49,6 +56,38 @@ const PaymentFlowWompi = ({ selectedPlan, businessData, onComplete, onBack }) =>
   const handleGoBack = () => {
     dispatch(resetSubscriptionFlow())
     onBack()
+  }
+
+  // Handler para pago en efectivo (Solo Owner)
+  const handleCashPayment = () => {
+    setPaymentStep('processing')
+    
+    // Simular una pequeña demora para UX
+    setTimeout(() => {
+      setPaymentStep('success')
+      setPaymentResult({
+        id: `CASH-${Date.now()}`,
+        reference: `CASH-${businessData?.businessName || 'BUSINESS'}-${Date.now()}`,
+        method: 'CASH'
+      })
+      
+      // Llamar onComplete con método CASH para que SubscriptionPage maneje la creación
+      onComplete({
+        method: 'CASH',
+        planId: selectedPlan.id,
+        businessId: businessData?.businessId
+      })
+      
+      // Redirigir después de mostrar el éxito
+      setTimeout(() => {
+        onComplete({
+          method: 'CASH',
+          planId: selectedPlan.id,
+          businessId: businessData?.businessId,
+          redirect: true
+        })
+      }, 3000)
+    }, 1500)
   }
 
   // Render del paso de procesamiento
@@ -103,16 +142,21 @@ const PaymentFlowWompi = ({ selectedPlan, businessData, onComplete, onBack }) =>
                 </svg>
               </div>
               <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                ¡Pago Completado!
+                ¡{paymentResult?.method === 'CASH' ? 'Suscripción Creada' : 'Pago Completado'}!
               </h2>
               <p className="text-gray-600 mb-4">
-                Tu suscripción al plan <strong>{selectedPlan.name}</strong> ha sido activada exitosamente.
+                Tu suscripción al plan <strong>{selectedPlan.name}</strong> ha sido activada exitosamente{paymentResult?.method === 'CASH' ? ' (Pago en Efectivo)' : ''}.
               </p>
               {paymentResult && (
                 <div className="bg-gray-50 rounded-lg p-4 mb-4">
                   <p className="text-sm text-gray-700">
                     <strong>ID de transacción:</strong> {paymentResult.id}
                   </p>
+                  {paymentResult.method && (
+                    <p className="text-sm text-gray-700">
+                      <strong>Método:</strong> {paymentResult.method === 'CASH' ? 'Pago en Efectivo' : 'Wompi'}
+                    </p>
+                  )}
                   <p className="text-sm text-gray-700">
                     <strong>Monto:</strong> {formatPrice(selectedPlan.price, selectedPlan.currency)}
                   </p>
@@ -232,8 +276,40 @@ const PaymentFlowWompi = ({ selectedPlan, businessData, onComplete, onBack }) =>
           <div className="mb-4 sm:mb-6">
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4 flex items-center">
               <ShieldCheckIcon className="h-5 w-5 mr-2 text-green-500" />
-              Información de Pago
+              Método de Pago
             </h3>
+            
+            {/* Opciones de pago para Owner */}
+            {isOwner && canCreateCashSubscriptions && (
+              <div className="mb-4 sm:mb-6">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 mb-4">
+                  <div className="flex items-center">
+                    <svg className="h-5 w-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <h4 className="text-sm font-medium text-yellow-800">Modo de Desarrollo</h4>
+                      <p className="text-xs text-yellow-700 mt-1">Como Owner, puedes crear suscripciones sin procesar pago</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={handleCashPayment}
+                  className="w-full flex justify-center items-center py-3 px-4 border-2 border-green-500 rounded-lg shadow-sm text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 mb-4 transition-colors duration-200"
+                >
+                  <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                  </svg>
+                  Crear Suscripción (Pago en Efectivo)
+                </button>
+                
+                <div className="text-center text-xs text-gray-500 mb-4">
+                  <span>o</span>
+                </div>
+              </div>
+            )}
+            
             <WompiWidgetMinimal
               planName={selectedPlan.name}
               amount={selectedPlan.price}
