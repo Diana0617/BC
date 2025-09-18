@@ -6,16 +6,16 @@
 import { api } from './client';
 
 const SUBSCRIPTIONS_ENDPOINTS = {
-  GET_ALL: '/owner/subscriptions',
-  CREATE: '/owner/subscriptions',
-  CANCEL: (id) => `/owner/subscriptions/${id}/cancel`,
-  UPDATE_STATUS: (id) => `/owner/subscriptions/${id}/status`,
-  EXTEND: (id) => `/owner/subscriptions/${id}/extend`,
-  DETAILS: (id) => `/owner/subscriptions/${id}`,
-  RENEW: (id) => `/owner/subscriptions/${id}/renew`,
-  STATS: '/owner/subscriptions/stats',
-  EXPORT: '/owner/subscriptions/export',
-  BULK_ACTIONS: '/owner/subscriptions/bulk'
+  GET_ALL: '/api/owner/subscriptions',
+  CREATE: '/api/owner/subscriptions',
+  CANCEL: (id) => `/api/owner/subscriptions/${id}/cancel`,
+  UPDATE_STATUS: (id) => `/api/owner/subscriptions/${id}/status`,
+  EXTEND: (id) => `/api/owner/subscriptions/${id}/extend`,
+  DETAILS: (id) => `/api/owner/subscriptions/${id}`,
+  RENEW: (id) => `/api/owner/subscriptions/${id}/renew`,
+  STATS: '/api/owner/subscriptions/stats',
+  EXPORT: '/api/owner/subscriptions/export',
+  BULK_ACTIONS: '/api/owner/subscriptions/bulk'
 };
 
 export const ownerSubscriptionsApi = {

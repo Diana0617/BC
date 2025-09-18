@@ -569,13 +569,13 @@ export const {
 } = ownerSubscriptionSlice.actions;
 
 // ====== SELECTORS ======
-export const selectSubscriptions = (state) => state.ownerSubscriptions.subscriptions;
-export const selectSelectedSubscription = (state) => state.ownerSubscriptions.selectedSubscription;
-export const selectSubscriptionStats = (state) => state.ownerSubscriptions.subscriptionStats;
-export const selectSubscriptionsPagination = (state) => state.ownerSubscriptions.pagination;
-export const selectSubscriptionsFilters = (state) => state.ownerSubscriptions.filters;
-export const selectSubscriptionsLoading = (state) => state.ownerSubscriptions.loading;
-export const selectSubscriptionsErrors = (state) => state.ownerSubscriptions.errors;
-export const selectSubscriptionsUI = (state) => state.ownerSubscriptions.ui;
+export const selectSubscriptions = (state) => state.ownerSubscription.subscriptions;
+export const selectSelectedSubscription = (state) => state.ownerSubscription.selectedSubscription;
+export const selectSubscriptionStats = (state) => state.ownerSubscription.subscriptionStats;
+export const selectSubscriptionsPagination = (state) => state.ownerSubscription.pagination;
+export const selectSubscriptionsFilters = (state) => state.ownerSubscription.filters;
+export const selectSubscriptionsLoading = (state) => state.ownerSubscription.loading;
+export const selectSubscriptionsErrors = (state) => state.ownerSubscription.errors;
+export const selectSubscriptionsUI = (state) => state.ownerSubscription.ui;
 
 export default ownerSubscriptionSlice.reducer;

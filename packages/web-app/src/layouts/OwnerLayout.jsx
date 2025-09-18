@@ -14,7 +14,8 @@ import {
   XMarkIcon,
   UserIcon,
   ArrowRightOnRectangleIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  CreditCardIcon
 } from '@heroicons/react/24/outline';
 
 /**
@@ -57,6 +58,12 @@ const OwnerLayout = () => {
       href: '/owner/businesses',
       icon: BuildingOfficeIcon,
       current: location.pathname.startsWith('/owner/businesses')
+    },
+    {
+      name: 'Suscripciones',
+      href: '/owner/subscriptions',
+      icon: CreditCardIcon,
+      current: location.pathname.startsWith('/owner/subscriptions')
     },
     {
       name: 'Reportes',

@@ -432,13 +432,13 @@ export const {
 } = ownerBusinessesSlice.actions;
 
 // ====== SELECTORS ======
-export const selectBusinesses = (state) => state.ownerBusinesses.businesses;
-export const selectSelectedBusiness = (state) => state.ownerBusinesses.selectedBusiness;
-export const selectBusinessStats = (state) => state.ownerBusinesses.businessStats;
-export const selectBusinessesPagination = (state) => state.ownerBusinesses.pagination;
-export const selectBusinessesFilters = (state) => state.ownerBusinesses.filters;
-export const selectBusinessesLoading = (state) => state.ownerBusinesses.loading;
-export const selectBusinessesErrors = (state) => state.ownerBusinesses.errors;
-export const selectBusinessesUI = (state) => state.ownerBusinesses.ui;
+export const selectBusinesses = (state) => state.ownerBusiness.businesses;
+export const selectSelectedBusiness = (state) => state.ownerBusiness.selectedBusiness;
+export const selectBusinessStats = (state) => state.ownerBusiness.businessStats;
+export const selectBusinessesPagination = (state) => state.ownerBusiness.pagination;
+export const selectBusinessesFilters = (state) => state.ownerBusiness.filters;
+export const selectBusinessesLoading = (state) => state.ownerBusiness.loading;
+export const selectBusinessesErrors = (state) => state.ownerBusiness.errors;
+export const selectBusinessesUI = (state) => state.ownerBusiness.ui;
 
 export default ownerBusinessesSlice.reducer;

@@ -8,6 +8,10 @@ export default defineConfig({
   server: {
     port: 3000,
     strictPort: true,
+    fs: {
+      // Allow serving files from outside of the root directory
+      allow: ['..']
+    }
   },
   resolve: {
     alias: {

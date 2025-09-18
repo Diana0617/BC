@@ -18,6 +18,8 @@ import OwnerDashboardPage from './pages/owner/OwnerDashboardPage'
 import OwnerPlansPage from './pages/owner/plans/OwnerPlansPage'
 import OwnerModulesPage from './pages/owner/OwnerModulesPage'
 import RuleTemplatesPage from './pages/owner/RuleTemplates/RuleTemplatesPage'
+import OwnerSubscriptionsPage from './pages/OwnerSubscriptionsPage'
+import OwnerBusinessesPage from './pages/OwnerBusinessesPage'
 
 // Public Pages
 import LandingPage from './pages/public/LandingPage'
@@ -75,9 +77,10 @@ function AppLayout() {
             <Route path="plans" element={<OwnerPlansPage />} />
             <Route path="modules" element={<OwnerModulesPage />} />
             <Route path="rule-templates" element={<RuleTemplatesPage />} />
+            <Route path="subscriptions" element={<OwnerSubscriptionsPage />} />
+            <Route path="businesses" element={<OwnerBusinessesPage />} />
             <Route path="test-redux" element={<ReduxPlansTest />} />
             {/* TODO: Agregar más rutas de Owner */}
-            <Route path="businesses" element={<div>Negocios - En desarrollo</div>} />
             <Route path="reports" element={<div>Reportes - En desarrollo</div>} />
             <Route path="payments" element={<div>Pagos - En desarrollo</div>} />
             <Route path="settings" element={<div>Configuración - En desarrollo</div>} />
