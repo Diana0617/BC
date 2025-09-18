@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
+import { Toaster } from 'react-hot-toast'
 import { checkExistingSession, OwnerOnlyRoute } from '../../shared/src/index.js'
 
 // Pages
@@ -16,6 +17,7 @@ import OwnerLayout from './layouts/OwnerLayout'
 import OwnerDashboardPage from './pages/owner/OwnerDashboardPage'
 import OwnerPlansPage from './pages/owner/plans/OwnerPlansPage'
 import OwnerModulesPage from './pages/owner/OwnerModulesPage'
+import RuleTemplatesPage from './pages/owner/RuleTemplates/RuleTemplatesPage'
 
 // Public Pages
 import LandingPage from './pages/public/LandingPage'
@@ -72,6 +74,7 @@ function AppLayout() {
             <Route path="dashboard" element={<OwnerDashboardPage />} />
             <Route path="plans" element={<OwnerPlansPage />} />
             <Route path="modules" element={<OwnerModulesPage />} />
+            <Route path="rule-templates" element={<RuleTemplatesPage />} />
             <Route path="test-redux" element={<ReduxPlansTest />} />
             {/* TODO: Agregar más rutas de Owner */}
             <Route path="businesses" element={<div>Negocios - En desarrollo</div>} />
@@ -106,6 +109,32 @@ function AppLayout() {
             } />} 
           />
         </Routes>
+        
+        {/* Toast notifications */}
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              duration: 3000,
+              iconTheme: {
+                primary: '#4ade80',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              duration: 5000,
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
       </div>
     </Router>
   )

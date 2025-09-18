@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { ruleTemplateApi } from '../../api/ruleTemplateApi';
 
 // ================================
@@ -78,38 +78,38 @@ export const deleteRuleTemplate = createAsyncThunk(
 );
 
 /**
- * Obtener estadísticas de plantillas
+ * Obtener estadísticas de plantillas - NO IMPLEMENTADO EN BACKEND
  */
-export const getRuleTemplateStats = createAsyncThunk(
-  'ruleTemplate/getRuleTemplateStats',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await ruleTemplateApi.getRuleTemplateStats();
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Error al obtener estadísticas'
-      );
-    }
-  }
-);
+// export const getRuleTemplateStats = createAsyncThunk(
+//   'ruleTemplate/getRuleTemplateStats',
+//   async (_, { rejectWithValue }) => {
+//     try {
+//       const response = await ruleTemplateApi.getRuleTemplateStats();
+//       return response.data;
+//     } catch (error) {
+//       return rejectWithValue(
+//         error.response?.data?.message || 'Error al obtener estadísticas'
+//       );
+//     }
+//   }
+// );
 
 /**
- * Sincronizar reglas con plantillas
+ * Sincronizar reglas con plantillas - NO IMPLEMENTADO EN BACKEND
  */
-export const syncRulesWithTemplates = createAsyncThunk(
-  'ruleTemplate/syncRulesWithTemplates',
-  async (businessId = null, { rejectWithValue }) => {
-    try {
-      const response = await ruleTemplateApi.syncRulesWithTemplates(businessId);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Error al sincronizar reglas'
-      );
-    }
-  }
-);
+// export const syncRulesWithTemplates = createAsyncThunk(
+//   'ruleTemplate/syncRulesWithTemplates',
+//   async (businessId = null, { rejectWithValue }) => {
+//     try {
+//       const response = await ruleTemplateApi.syncRulesWithTemplates(businessId);
+//       return response.data;
+//     } catch (error) {
+//       return rejectWithValue(
+//         error.response?.data?.message || 'Error al sincronizar reglas'
+//       );
+//     }
+//   }
+// );
 
 // ================================
 // INITIAL STATE
@@ -280,8 +280,12 @@ const ruleTemplateSlice = createSlice({
       })
       .addCase(createRuleTemplate.fulfilled, (state, action) => {
         state.loading.create = false;
-        state.templates.unshift(action.payload.data);
-        state.success.create = action.payload.message;
+        // Handle response structure: { success: true, data: {...}, message: "..." }
+        const newTemplate = action.payload?.data || action.payload;
+        if (newTemplate) {
+          state.templates.unshift(newTemplate);
+        }
+        state.success.create = action.payload?.message || 'Plantilla creada exitosamente';
         state.modals.createTemplate = false;
       })
       .addCase(createRuleTemplate.rejected, (state, action) => {
@@ -297,7 +301,10 @@ const ruleTemplateSlice = createSlice({
       })
       .addCase(getOwnerRuleTemplates.fulfilled, (state, action) => {
         state.loading.templates = false;
-        state.templates = action.payload;
+        // Ensure we handle the response structure correctly
+        // Backend might return { success: true, data: [...] } or just [...]
+        const templates = action.payload?.data || action.payload;
+        state.templates = Array.isArray(templates) ? templates : [];
       })
       .addCase(getOwnerRuleTemplates.rejected, (state, action) => {
         state.loading.templates = false;
@@ -313,13 +320,16 @@ const ruleTemplateSlice = createSlice({
       })
       .addCase(updateRuleTemplate.fulfilled, (state, action) => {
         state.loading.update = false;
-        const updatedTemplate = action.payload.data;
-        const index = state.templates.findIndex(t => t.id === updatedTemplate.id);
-        if (index !== -1) {
-          state.templates[index] = updatedTemplate;
+        // Handle response structure: { success: true, data: {...}, message: "..." }
+        const updatedTemplate = action.payload?.data || action.payload;
+        if (updatedTemplate && updatedTemplate.id) {
+          const index = state.templates.findIndex(t => t.id === updatedTemplate.id);
+          if (index !== -1) {
+            state.templates[index] = updatedTemplate;
+          }
+          state.currentTemplate = updatedTemplate;
         }
-        state.currentTemplate = updatedTemplate;
-        state.success.update = action.payload.message;
+        state.success.update = action.payload?.message || 'Plantilla actualizada exitosamente';
         state.modals.editTemplate = false;
       })
       .addCase(updateRuleTemplate.rejected, (state, action) => {
@@ -347,36 +357,36 @@ const ruleTemplateSlice = createSlice({
         state.errors.delete = action.payload;
       });
     
-    // Get Rule Template Stats
-    builder
-      .addCase(getRuleTemplateStats.pending, (state) => {
-        state.loading.stats = true;
-        state.errors.stats = null;
-      })
-      .addCase(getRuleTemplateStats.fulfilled, (state, action) => {
-        state.loading.stats = false;
-        state.stats = action.payload;
-      })
-      .addCase(getRuleTemplateStats.rejected, (state, action) => {
-        state.loading.stats = false;
-        state.errors.stats = action.payload;
-      });
+    // Get Rule Template Stats - NO IMPLEMENTADO EN BACKEND
+    // builder
+    //   .addCase(getRuleTemplateStats.pending, (state) => {
+    //     state.loading.stats = true;
+    //     state.errors.stats = null;
+    //   })
+    //   .addCase(getRuleTemplateStats.fulfilled, (state, action) => {
+    //     state.loading.stats = false;
+    //     state.stats = action.payload;
+    //   })
+    //   .addCase(getRuleTemplateStats.rejected, (state, action) => {
+    //     state.loading.stats = false;
+    //     state.errors.stats = action.payload;
+    //   });
     
-    // Sync Rules with Templates
-    builder
-      .addCase(syncRulesWithTemplates.pending, (state) => {
-        state.loading.sync = true;
-        state.errors.sync = null;
-        state.success.sync = null;
-      })
-      .addCase(syncRulesWithTemplates.fulfilled, (state, action) => {
-        state.loading.sync = false;
-        state.success.sync = action.payload.message;
-      })
-      .addCase(syncRulesWithTemplates.rejected, (state, action) => {
-        state.loading.sync = false;
-        state.errors.sync = action.payload;
-      });
+    // Sync Rules with Templates - NO IMPLEMENTADO EN BACKEND
+    // builder
+    //   .addCase(syncRulesWithTemplates.pending, (state) => {
+    //     state.loading.sync = true;
+    //     state.errors.sync = null;
+    //     state.success.sync = null;
+    //   })
+    //   .addCase(syncRulesWithTemplates.fulfilled, (state, action) => {
+    //     state.loading.sync = false;
+    //     state.success.sync = action.payload.message;
+    //   })
+    //   .addCase(syncRulesWithTemplates.rejected, (state, action) => {
+    //     state.loading.sync = false;
+    //     state.errors.sync = action.payload;
+    //   });
   }
 });
 
@@ -407,7 +417,7 @@ export const {
 // Basic selectors
 export const selectRuleTemplates = (state) => state.ruleTemplate.templates;
 export const selectCurrentTemplate = (state) => state.ruleTemplate.currentTemplate;
-export const selectRuleTemplateStats = (state) => state.ruleTemplate.stats;
+// export const selectRuleTemplateStats = (state) => state.ruleTemplate.stats; // NO IMPLEMENTADO
 export const selectFilters = (state) => state.ruleTemplate.filters;
 export const selectPagination = (state) => state.ruleTemplate.pagination;
 
@@ -416,22 +426,22 @@ export const selectTemplatesLoading = (state) => state.ruleTemplate.loading.temp
 export const selectCreateLoading = (state) => state.ruleTemplate.loading.create;
 export const selectUpdateLoading = (state) => state.ruleTemplate.loading.update;
 export const selectDeleteLoading = (state) => state.ruleTemplate.loading.delete;
-export const selectStatsLoading = (state) => state.ruleTemplate.loading.stats;
-export const selectSyncLoading = (state) => state.ruleTemplate.loading.sync;
+// export const selectStatsLoading = (state) => state.ruleTemplate.loading.stats; // NO IMPLEMENTADO
+// export const selectSyncLoading = (state) => state.ruleTemplate.loading.sync; // NO IMPLEMENTADO
 
 // Error selectors
 export const selectTemplatesError = (state) => state.ruleTemplate.errors.templates;
 export const selectCreateError = (state) => state.ruleTemplate.errors.create;
 export const selectUpdateError = (state) => state.ruleTemplate.errors.update;
 export const selectDeleteError = (state) => state.ruleTemplate.errors.delete;
-export const selectStatsError = (state) => state.ruleTemplate.errors.stats;
-export const selectSyncError = (state) => state.ruleTemplate.errors.sync;
+// export const selectStatsError = (state) => state.ruleTemplate.errors.stats; // NO IMPLEMENTADO
+// export const selectSyncError = (state) => state.ruleTemplate.errors.sync; // NO IMPLEMENTADO
 
 // Success selectors
 export const selectCreateSuccess = (state) => state.ruleTemplate.success.create;
 export const selectUpdateSuccess = (state) => state.ruleTemplate.success.update;
 export const selectDeleteSuccess = (state) => state.ruleTemplate.success.delete;
-export const selectSyncSuccess = (state) => state.ruleTemplate.success.sync;
+// export const selectSyncSuccess = (state) => state.ruleTemplate.success.sync; // NO IMPLEMENTADO
 
 // Modal selectors
 export const selectModals = (state) => state.ruleTemplate.modals;
@@ -440,62 +450,85 @@ export const selectEditModalOpen = (state) => state.ruleTemplate.modals.editTemp
 export const selectDeleteModalOpen = (state) => state.ruleTemplate.modals.deleteTemplate;
 export const selectStatsModalOpen = (state) => state.ruleTemplate.modals.viewStats;
 
-// Computed selectors
-export const selectFilteredTemplates = (state) => {
-  const templates = selectRuleTemplates(state);
-  const filters = selectFilters(state);
-  
-  return templates.filter(template => {
-    // Category filter
-    if (filters.category && template.category !== filters.category) {
-      return false;
+// Computed selectors with memoization
+export const selectFilteredTemplates = createSelector(
+  [selectRuleTemplates, selectFilters],
+  (templates, filters) => {
+    // Ensure templates is an array
+    if (!Array.isArray(templates)) {
+      return [];
     }
     
-    // Active filter
-    if (filters.isActive !== null && template.isActive !== filters.isActive) {
-      return false;
-    }
-    
-    // Business type filter
-    if (filters.businessType && !template.businessTypes.includes(filters.businessType)) {
-      return false;
-    }
-    
-    // Search filter
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      return (
-        template.name.toLowerCase().includes(searchLower) ||
-        template.description.toLowerCase().includes(searchLower) ||
-        template.ruleKey.toLowerCase().includes(searchLower)
-      );
-    }
-    
-    return true;
-  });
-};
+    return templates.filter(template => {
+      // Category filter
+      if (filters.category && template.category !== filters.category) {
+        return false;
+      }
+      
+      // Active filter
+      if (filters.isActive !== null && template.isActive !== filters.isActive) {
+        return false;
+      }
+      
+      // Business type filter
+      if (filters.businessType && !template.businessTypes?.includes(filters.businessType)) {
+        return false;
+      }
+      
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        return (
+          template.name?.toLowerCase().includes(searchLower) ||
+          template.description?.toLowerCase().includes(searchLower) ||
+          template.ruleKey?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      return true;
+    });
+  }
+);
 
-export const selectTemplatesByCategory = (state) => {
-  const templates = selectRuleTemplates(state);
-  
-  return templates.reduce((acc, template) => {
-    const category = template.category;
-    if (!acc[category]) {
-      acc[category] = [];
+export const selectTemplatesByCategory = createSelector(
+  [selectRuleTemplates],
+  (templates) => {
+    // Ensure templates is an array
+    if (!Array.isArray(templates)) {
+      return {};
     }
-    acc[category].push(template);
-    return acc;
-  }, {});
-};
+    
+    return templates.reduce((acc, template) => {
+      const category = template.category;
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(template);
+      return acc;
+    }, {});
+  }
+);
 
-export const selectActiveTemplatesCount = (state) => {
-  const templates = selectRuleTemplates(state);
-  return templates.filter(t => t.isActive).length;
-};
+export const selectActiveTemplatesCount = createSelector(
+  [selectRuleTemplates],
+  (templates) => {
+    // Ensure templates is an array
+    if (!Array.isArray(templates)) {
+      return 0;
+    }
+    return templates.filter(t => t.isActive).length;
+  }
+);
 
-export const selectTotalUsageCount = (state) => {
-  const templates = selectRuleTemplates(state);
-  return templates.reduce((total, template) => total + (template.usageCount || 0), 0);
-};
+export const selectTotalUsageCount = createSelector(
+  [selectRuleTemplates],
+  (templates) => {
+    // Ensure templates is an array
+    if (!Array.isArray(templates)) {
+      return 0;
+    }
+    return templates.reduce((total, template) => total + (template.usageCount || 0), 0);
+  }
+);
 
 export default ruleTemplateSlice.reducer;

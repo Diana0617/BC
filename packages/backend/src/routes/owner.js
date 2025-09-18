@@ -4893,4 +4893,10 @@ router.use('/subscription-status', require('./subscriptionStatus'));
  */
 router.use('/trials', ownerTrialsRoutes);
 
+/**
+ * Sub-rutas para gestión de plantillas de reglas del OWNER
+ * Incluye: CRUD, vista previa, estadísticas y validación
+ */
+router.use('/rule-templates', require('./ruleTemplate'));
+
 module.exports = router;

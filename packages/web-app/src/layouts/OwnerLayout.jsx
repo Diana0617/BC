@@ -13,7 +13,8 @@ import {
   Bars3Icon,
   XMarkIcon,
   UserIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 
 /**
@@ -44,6 +45,12 @@ const OwnerLayout = () => {
       href: '/owner/modules',
       icon: CubeIcon,
       current: location.pathname.startsWith('/owner/modules')
+    },
+    {
+      name: 'Plantillas de Reglas',
+      href: '/owner/rule-templates',
+      icon: ClipboardDocumentListIcon,
+      current: location.pathname.startsWith('/owner/rule-templates')
     },
     {
       name: 'Negocios',

@@ -224,6 +224,98 @@ class RuleTemplateService {
     }
   }
 
+  /**
+   * Obtener detalles completos de una plantilla con estadísticas
+   */
+  static async getRuleTemplateById(ownerId, templateId) {
+    try {
+      const template = await BusinessRuleTemplate.findOne({
+        where: { 
+          id: templateId, 
+          createdBy: ownerId 
+        },
+        include: [
+          {
+            model: User,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email']
+          }
+        ]
+      });
+
+      if (!template) {
+        throw new Error('Plantilla no encontrada');
+      }
+
+      // Obtener estadísticas de uso
+      const stats = await this.getTemplateUsageStats(templateId);
+
+      return {
+        template,
+        stats
+      };
+    } catch (error) {
+      console.error('Error getting rule template by ID:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener estadísticas de uso de una plantilla
+   */
+  static async getTemplateUsageStats(templateId) {
+    try {
+      // Total de asignaciones
+      const totalAssignments = await BusinessRuleAssignment.count({
+        where: { ruleTemplateId: templateId }
+      });
+
+      // Asignaciones activas
+      const activeAssignments = await BusinessRuleAssignment.count({
+        where: { ruleTemplateId: templateId, isActive: true }
+      });
+
+      // Negocios únicos que usan la plantilla
+      const businessesUsingTemplate = await BusinessRuleAssignment.count({
+        where: { ruleTemplateId: templateId, isActive: true },
+        distinct: true,
+        col: 'businessId'
+      });
+
+      // Última vez que se usó (última asignación)
+      const lastAssignment = await BusinessRuleAssignment.findOne({
+        where: { ruleTemplateId: templateId },
+        order: [['createdAt', 'DESC']],
+        attributes: ['createdAt']
+      });
+
+      // Reglas efectivas creadas a partir de esta plantilla
+      const effectiveRules = await BusinessRules.count({
+        where: { ruleTemplateId: templateId }
+      });
+
+      // Promedio de prioridad de las asignaciones
+      const avgPriority = await BusinessRuleAssignment.findOne({
+        where: { ruleTemplateId: templateId },
+        attributes: [[dbSequelize.fn('AVG', dbSequelize.col('priority')), 'avgPriority']],
+        raw: true
+      });
+
+      return {
+        totalAssignments,
+        activeAssignments,
+        businessesUsingTemplate,
+        effectiveRules,
+        lastUsed: lastAssignment?.createdAt || null,
+        averagePriority: avgPriority?.avgPriority ? parseFloat(avgPriority.avgPriority).toFixed(1) : null,
+        usageRate: totalAssignments > 0 ? ((activeAssignments / totalAssignments) * 100).toFixed(1) : 0
+      };
+    } catch (error) {
+      console.error('Error getting template usage stats:', error);
+      throw error;
+    }
+  }
+
   // ================================
   // BUSINESS FUNCTIONS - Asignación y Uso de Reglas
   // ================================

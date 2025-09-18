@@ -187,6 +187,72 @@ class RuleTemplateController {
   /**
    * @swagger
    * /api/owner/rule-templates/{templateId}:
+   *   get:
+   *     tags: [Owner Rule Templates]
+   *     summary: Obtener detalles completos de una plantilla de regla
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: templateId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: ID de la plantilla
+   *     responses:
+   *       200:
+   *         description: Detalles de la plantilla con estadísticas
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     template:
+   *                       type: object
+   *                     stats:
+   *                       type: object
+   *                       properties:
+   *                         totalAssignments:
+   *                           type: integer
+   *                         activeAssignments:
+   *                           type: integer
+   *                         businessesUsingTemplate:
+   *                           type: integer
+   *                         lastUsed:
+   *                           type: string
+   *                           format: date-time
+   *       404:
+   *         description: Plantilla no encontrada
+   */
+  static async getRuleTemplateById(req, res) {
+    try {
+      const { templateId } = req.params;
+      const ownerId = req.user.id;
+      
+      const result = await RuleTemplateService.getRuleTemplateById(ownerId, templateId);
+      
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      console.error('Error in getRuleTemplateById:', error);
+      const statusCode = error.message.includes('no encontrada') ? 404 : 500;
+      res.status(statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/owner/rule-templates/{templateId}:
    *   delete:
    *     tags: [Owner Rule Templates]
    *     summary: Eliminar plantilla de regla

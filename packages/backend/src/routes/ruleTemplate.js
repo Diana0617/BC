@@ -212,6 +212,105 @@ router.get('/owner/templates',
 /**
  * @swagger
  * /api/rule-templates/owner/templates/{templateId}:
+ *   get:
+ *     summary: Obtener detalles completos de una plantilla para vista previa
+ *     description: Obtiene los detalles completos de una plantilla incluyendo estadísticas de uso para el owner
+ *     tags: [Owner Rule Templates]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID de la plantilla
+ *     responses:
+ *       200:
+ *         description: Detalles de la plantilla con estadísticas
+ *       404:
+ *         description: Plantilla no encontrada
+ *       403:
+ *         description: No tienes permisos para ver esta plantilla
+ */
+router.get('/owner/templates/:templateId', 
+  authenticateToken, 
+  roleCheck(['OWNER']),
+  RuleTemplateController.getRuleTemplateById
+);
+
+/**
+ * @swagger
+ * /api/owner/rule-templates/{templateId}:
+ *   get:
+ *     summary: Obtener detalles completos de una plantilla
+ *     description: Obtiene los detalles completos de una plantilla incluyendo estadísticas de uso
+ *     tags: [Owner Rule Templates]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID de la plantilla
+ *     responses:
+ *       200:
+ *         description: Detalles de la plantilla con estadísticas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     template:
+ *                       $ref: '#/components/schemas/RuleTemplate'
+ *                     stats:
+ *                       type: object
+ *                       properties:
+ *                         totalAssignments:
+ *                           type: integer
+ *                           description: Total de asignaciones de esta plantilla
+ *                         activeAssignments:
+ *                           type: integer
+ *                           description: Asignaciones actualmente activas
+ *                         businessesUsingTemplate:
+ *                           type: integer
+ *                           description: Número de negocios que usan esta plantilla
+ *                         effectiveRules:
+ *                           type: integer
+ *                           description: Reglas efectivas creadas a partir de esta plantilla
+ *                         lastUsed:
+ *                           type: string
+ *                           format: date-time
+ *                           description: Última vez que se asignó esta plantilla
+ *                         averagePriority:
+ *                           type: string
+ *                           description: Prioridad promedio de las asignaciones
+ *                         usageRate:
+ *                           type: string
+ *                           description: Porcentaje de uso (activas/total)
+ *       404:
+ *         description: Plantilla no encontrada
+ *       403:
+ *         description: No tienes permisos para ver esta plantilla
+ */
+router.get('/:templateId', 
+  authenticateToken, 
+  roleCheck(['OWNER']),
+  RuleTemplateController.getRuleTemplateById
+);
+
+/**
+ * @swagger
+ * /api/rule-templates/owner/templates/{templateId}:
  *   put:
  *     summary: Actualizar plantilla de regla
  *     description: Actualiza una plantilla de regla existente creada por el Owner
