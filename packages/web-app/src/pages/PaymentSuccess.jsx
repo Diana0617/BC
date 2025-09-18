@@ -56,8 +56,26 @@ const PaymentSuccess = () => {
       });
       
       const pendingBusinessData = localStorage.getItem('pendingBusinessCreation');
+      
+      // Si no hay datos en localStorage, verificar si es un flujo de Owner/Admin
       if (!pendingBusinessData) {
-        console.error('❌ No se encontraron datos del negocio en localStorage');
+        console.log('⚠️ No se encontraron datos en localStorage');
+        console.log('🔍 Verificando si es flujo de Owner (negocio ya creado)...');
+        
+        // Si la transacción existe y está aprobada, asumir que el negocio ya fue creado por Owner
+        if (transactionData && transactionData.status === 'APPROVED') {
+          console.log('✅ Transacción aprobada detectada - El negocio fue creado por Owner');
+          setBusinessCreated(true);
+          setError('El negocio fue creado exitosamente por el administrador.');
+          
+          // Redirigir después de un tiempo
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 3000);
+          return;
+        }
+        
+        console.error('❌ No se encontraron datos del negocio para crear la suscripción');
         setError('No se encontraron datos del negocio para crear la suscripción');
         return;
       }
@@ -357,9 +375,15 @@ const PaymentSuccess = () => {
                     <p className="text-green-700 font-semibold">
                       ✅ ¡Negocio y suscripción creados exitosamente!
                     </p>
-                    <p className="text-blue-600 text-xs">
-                      Redirigiendo al dashboard en unos segundos...
-                    </p>
+                    {error && error.includes('administrador') ? (
+                      <p className="text-blue-600 text-xs">
+                        💼 Creado por el administrador del sistema
+                      </p>
+                    ) : (
+                      <p className="text-blue-600 text-xs">
+                        Redirigiendo al dashboard en unos segundos...
+                      </p>
+                    )}
                   </div>
                 )}
                 {!businessCreating && !businessCreated && (

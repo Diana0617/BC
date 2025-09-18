@@ -9,6 +9,9 @@ const BusinessSubscription = require('../models/BusinessSubscription');
 const SubscriptionPayment = require('../models/SubscriptionPayment');
 const AuthController = require('./AuthController');
 
+// Cache temporal para prevenir creaciones duplicadas
+const pendingCreations = new Map();
+
 /**
  * Controlador de Negocios para Beauty Control
  * Maneja creación, actualización y gestión de negocios
@@ -17,9 +20,11 @@ class BusinessController {
   
   static async createBusiness(req, res) {
     const transaction = await sequelize.transaction();
+    const requestId = Math.random().toString(36).substr(2, 9);
     
     try {
-      console.log('🔄 Iniciando creación de negocio...');
+      console.log(`🔄 [${requestId}] Iniciando creación de negocio...`);
+      console.log(`📍 [${requestId}] IP: ${req.ip}, User-Agent: ${req.get('User-Agent')?.slice(0, 50)}`);
       const {
         // Datos del negocio
         name,
@@ -43,7 +48,30 @@ class BusinessController {
         paymentConfirmation
       } = req.body;
 
-      console.log('📝 Datos recibidos:', { name, email, userEmail, subscriptionPlanId });
+      console.log(`📝 [${requestId}] Datos recibidos:`, { name, email, userEmail, subscriptionPlanId });
+
+      // Crear una clave única para identificar esta creación
+      const creationKey = `${userEmail}-${email}-${name}`.toLowerCase();
+      
+      // Verificar si ya hay una creación en progreso para estos datos
+      if (pendingCreations.has(creationKey)) {
+        await transaction.rollback();
+        console.log(`⚠️ [${requestId}] Creación duplicada detectada y prevenida para:`, creationKey);
+        return res.status(409).json({
+          success: false,
+          error: 'Ya hay una creación de negocio en progreso con estos datos'
+        });
+      }
+
+      // Marcar esta creación como en progreso
+      pendingCreations.set(creationKey, requestId);
+      console.log(`🔒 [${requestId}] Marcando creación en progreso:`, creationKey);
+
+      // Limpiar la marca después de 30 segundos (timeout de seguridad)
+      setTimeout(() => {
+        pendingCreations.delete(creationKey);
+        console.log(`🗑️ [${requestId}] Limpiando marca de creación por timeout:`, creationKey);
+      }, 30000);
 
       // Validaciones básicas
       if (!name || !email || !subscriptionPlanId || !userEmail || !userPassword || !firstName || !lastName) {
@@ -99,21 +127,35 @@ class BusinessController {
       console.log('✅ Plan encontrado:', plan.name);
 
       // Verificar disponibilidad del subdominio si se proporciona
-      if (subdomain) {
-        console.log('🔍 Verificando subdominio...');
-        const { isSubdomainAvailable } = require('../middleware/subdomain');
-        const available = await isSubdomainAvailable(subdomain);
-        
-        if (!available) {
-          await transaction.rollback();
-          console.log('❌ Subdominio no disponible');
-          return res.status(409).json({
-            success: false,
-            error: 'El subdominio no está disponible'
-          });
-        }
-        console.log('✅ Subdominio disponible');
+      const finalSubdomain = subdomain || name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      console.log('🔍 Verificando subdominio...');
+      
+      // Verificar que el subdominio no exista en la base de datos
+      const existingSubdomain = await Business.findOne({
+        where: { subdomain: finalSubdomain }
+      });
+
+      if (existingSubdomain) {
+        await transaction.rollback();
+        console.log('❌ Subdominio ya existe:', finalSubdomain);
+        return res.status(409).json({
+          success: false,
+          error: `El subdominio '${finalSubdomain}' ya está en uso`
+        });
       }
+      
+      const { isSubdomainAvailable } = require('../middleware/subdomain');
+      const available = await isSubdomainAvailable(finalSubdomain);
+      
+      if (!available) {
+        await transaction.rollback();
+        console.log('❌ Subdominio no disponible');
+        return res.status(409).json({
+          success: false,
+          error: 'El subdominio no está disponible'
+        });
+      }
+      console.log('✅ Subdominio disponible');
 
       // TODO: Aquí validar el pago antes de continuar
       // if (!paymentConfirmation || !validatePayment(paymentConfirmation)) {
@@ -136,7 +178,7 @@ class BusinessController {
         country,
         zipCode,
         website,
-        subdomain,
+        subdomain: finalSubdomain,
         currentPlanId: subscriptionPlanId,
         status: 'TRIAL', // Inicia en trial
         trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 días
@@ -250,10 +292,40 @@ class BusinessController {
         }
       });
 
+      // Limpiar la marca de creación en progreso
+      pendingCreations.delete(creationKey);
+      console.log(`✅ [${requestId}] Creación exitosa, limpiando marca:`, creationKey);
+
     } catch (error) {
-      console.log('❌ Error en createBusiness, haciendo rollback...');
+      console.log(`❌ [${requestId}] Error en createBusiness, haciendo rollback...`);
       await transaction.rollback();
+      
+      // Limpiar la marca de creación en progreso
+      const creationKey = `${req.body.userEmail}-${req.body.email}-${req.body.name}`.toLowerCase();
+      pendingCreations.delete(creationKey);
+      console.log(`🗑️ [${requestId}] Error en creación, limpiando marca:`, creationKey);
+      
       console.error('Error creando negocio:', error);
+      
+      // Manejar errores específicos de unicidad
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        if (error.errors && error.errors.length > 0) {
+          const constraintError = error.errors[0];
+          let message = 'Ya existe un registro con los mismos datos';
+          
+          if (constraintError.path === 'subdomain') {
+            message = `El subdominio '${constraintError.value}' ya está en uso. Elige otro nombre para tu negocio.`;
+          } else if (constraintError.path === 'email') {
+            message = `El email '${constraintError.value}' ya está registrado.`;
+          }
+          
+          return res.status(409).json({
+            success: false,
+            error: message
+          });
+        }
+      }
+      
       res.status(500).json({
         success: false,
         error: 'Error interno del servidor'

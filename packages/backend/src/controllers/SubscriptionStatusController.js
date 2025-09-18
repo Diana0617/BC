@@ -256,6 +256,145 @@ class SubscriptionStatusController {
       });
     }
   }
+
+  /**
+   * Obtener todos los pagos de suscripciones (exitosos y fallidos)
+   */
+  static async getAllSubscriptionPayments(req, res) {
+    try {
+      const { 
+        page = 1, 
+        limit = 20, 
+        status, 
+        paymentMethod,
+        dateFrom,
+        dateTo,
+        businessId,
+        sortBy = 'createdAt',
+        sortOrder = 'DESC'
+      } = req.query;
+
+      const offset = (page - 1) * limit;
+      
+      // Construir filtros
+      const whereClause = {};
+      
+      if (status) {
+        whereClause.status = status;
+      }
+      
+      if (paymentMethod) {
+        whereClause.paymentMethod = paymentMethod;
+      }
+      
+      if (dateFrom || dateTo) {
+        whereClause.createdAt = {};
+        if (dateFrom) {
+          whereClause.createdAt[Op.gte] = new Date(dateFrom);
+        }
+        if (dateTo) {
+          whereClause.createdAt[Op.lte] = new Date(dateTo);
+        }
+      }
+
+      // Incluir modelos relacionados
+      const includeClause = [
+        {
+          model: BusinessSubscription,
+          as: 'subscription',
+          attributes: ['id', 'status', 'startDate', 'endDate'],
+          include: [
+            {
+              model: Business,
+              as: 'business',
+              attributes: ['id', 'name', 'email', 'subdomain', 'status'],
+              where: businessId ? { id: businessId } : undefined
+            },
+            {
+              model: SubscriptionPlan,
+              as: 'plan',
+              attributes: ['id', 'name', 'price', 'currency', 'duration']
+            }
+          ]
+        }
+      ];
+
+      const payments = await SubscriptionPayment.findAndCountAll({
+        where: whereClause,
+        include: includeClause,
+        order: [[sortBy, sortOrder.toUpperCase()]],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        distinct: true
+      });
+
+      // Calcular estadísticas básicas
+      const statusStats = await SubscriptionPayment.findAll({
+        attributes: [
+          'status',
+          [require('sequelize').fn('COUNT', require('sequelize').col('SubscriptionPayment.id')), 'count'],
+          [require('sequelize').fn('SUM', require('sequelize').col('SubscriptionPayment.amount')), 'totalAmount']
+        ],
+        include: [
+          {
+            model: BusinessSubscription,
+            as: 'subscription',
+            attributes: [],
+            include: [
+              {
+                model: Business,
+                as: 'business',
+                attributes: [],
+                where: businessId ? { id: businessId } : undefined
+              }
+            ]
+          }
+        ],
+        where: whereClause,
+        group: ['SubscriptionPayment.status'],
+        raw: true
+      });
+
+      const stats = statusStats.reduce((acc, stat) => {
+        acc[stat.status] = {
+          count: parseInt(stat.count),
+          totalAmount: parseFloat(stat.totalAmount) || 0
+        };
+        return acc;
+      }, {});
+
+      res.json({
+        success: true,
+        data: {
+          payments: payments.rows,
+          pagination: {
+            total: payments.count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(payments.count / limit)
+          },
+          stats: stats,
+          filters: {
+            status,
+            paymentMethod,
+            dateFrom,
+            dateTo,
+            businessId,
+            sortBy,
+            sortOrder
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error obteniendo pagos de suscripciones:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor.',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 }
 
 module.exports = SubscriptionStatusController;
