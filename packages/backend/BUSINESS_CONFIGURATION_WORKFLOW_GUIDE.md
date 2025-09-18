@@ -169,7 +169,7 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 
 #### 1.3.1 Owner Crea Plantillas de Reglas
 
-**POST** `/api/rule-templates/owner/rule-templates`
+**POST** `/api/rule-templates/owner/templates`
 
 > **Solo usuarios con rol OWNER pueden crear plantillas**
 
@@ -193,6 +193,10 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 }
 ```
 
+> **Nota**: Los campos `ownerId` y `ruleType` se asignan automáticamente en el servidor:
+> - `ownerId`: Se toma del usuario autenticado 
+> - `ruleType`: Se determina automáticamente según el tipo de `ruleValue` (OBJECT, BOOLEAN, STRING, NUMBER, ARRAY)
+
 **Categorías Disponibles:**
 - `PAYMENT_POLICY` - Políticas de pago
 - `CANCELLATION_POLICY` - Políticas de cancelación  
@@ -205,7 +209,7 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 
 #### 1.3.2 Owner Gestiona Sus Plantillas
 
-**GET** `/api/rule-templates/owner/rule-templates`
+**GET** `/api/rule-templates/owner/templates`
 
 **Query Parameters:**
 - `category` (opcional): Filtrar por categoría
@@ -213,7 +217,29 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 - `businessType` (opcional): Filtrar por tipo de negocio
 - `search` (opcional): Búsqueda por nombre o descripción
 
-**PUT** `/api/rule-templates/owner/rule-templates/{templateId}`
+**PUT** `/api/rule-templates/owner/templates/{templateId}`
+
+**Body de ejemplo para PUT:**
+```json
+{
+  "name": "Política de Cancelación Flexible - Actualizada",
+  "description": "Permite cancelaciones hasta 4 horas antes con reembolso del 90%",
+  "ruleValue": {
+    "enabled": true,
+    "hoursBeforeService": 4,
+    "refundPercentage": 90
+  },
+  "businessTypes": ["SALON", "SPA", "CLINIC"],
+  "planTypes": ["BASIC", "PREMIUM", "ENTERPRISE"],
+  "allowCustomization": true,
+  "priority": 150,
+  "tags": ["cancelacion", "flexible", "actualizado"]
+}
+```
+
+**DELETE** `/api/rule-templates/owner/templates/{templateId}`
+
+> **⚠️ Nota importante**: No se puede eliminar una plantilla que esté siendo utilizada por negocios. Primero deben desasignarse todas las reglas basadas en esta plantilla.
 
 #### 1.3.3 Ver Plantillas Disponibles (Business)
 **GET** `/api/rule-templates/business/rule-templates/available`
@@ -771,7 +797,7 @@ Crear un environment en Insomnia con las siguientes variables:
 
 #### Para Testing Avanzado (Rule Templates):
 1. **Autenticación Owner** - Token JWT como usuario OWNER
-2. **Crear Plantillas** - POST en `/api/rule-templates/owner/rule-templates`
+2. **Crear Plantillas** - POST en `/api/rule-templates/owner/templates`
 3. **Autenticación Business** - Token JWT como usuario BUSINESS
 4. **Ver Plantillas Disponibles** - GET en `/rule-templates/available`
 5. **Asignar Plantillas** - POST en `/rule-templates/{templateId}/assign`

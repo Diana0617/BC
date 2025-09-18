@@ -209,6 +209,126 @@ router.get('/owner/templates',
   RuleTemplateController.getOwnerRuleTemplates
 );
 
+/**
+ * @swagger
+ * /api/rule-templates/owner/templates/{templateId}:
+ *   put:
+ *     summary: Actualizar plantilla de regla
+ *     description: Actualiza una plantilla de regla existente creada por el Owner
+ *     tags: [Owner Rule Templates]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID de la plantilla a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Nombre de la plantilla
+ *               description:
+ *                 type: string
+ *                 description: Descripción de la plantilla
+ *               ruleValue:
+ *                 type: object
+ *                 description: Valor actualizado de la regla
+ *               businessTypes:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Tipos de negocio compatibles
+ *               planTypes:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Tipos de plan compatibles
+ *               allowCustomization:
+ *                 type: boolean
+ *                 description: Si permite personalización
+ *               priority:
+ *                 type: integer
+ *                 description: Prioridad de la plantilla
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Etiquetas de la plantilla
+ *     responses:
+ *       200:
+ *         description: Plantilla actualizada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/RuleTemplate'
+ *       404:
+ *         description: Plantilla no encontrada
+ *       403:
+ *         description: No tienes permisos para actualizar esta plantilla
+ */
+router.put('/owner/templates/:templateId', 
+  authenticateToken, 
+  roleCheck(['OWNER']),
+  RuleTemplateController.updateRuleTemplate
+);
+
+/**
+ * @swagger
+ * /api/rule-templates/owner/templates/{templateId}:
+ *   delete:
+ *     summary: Eliminar plantilla de regla
+ *     description: Elimina una plantilla de regla existente creada por el Owner
+ *     tags: [Owner Rule Templates]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID de la plantilla a eliminar
+ *     responses:
+ *       200:
+ *         description: Plantilla eliminada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                   example: "Plantilla eliminada exitosamente"
+ *       404:
+ *         description: Plantilla no encontrada
+ *       403:
+ *         description: No tienes permisos para eliminar esta plantilla
+ *       409:
+ *         description: No se puede eliminar - plantilla está siendo utilizada por negocios
+ */
+router.delete('/owner/templates/:templateId', 
+  authenticateToken, 
+  roleCheck(['OWNER']),
+  RuleTemplateController.deleteRuleTemplate
+);
+
 // ================================
 // BUSINESS RULE ASSIGNMENTS ROUTES
 // ================================

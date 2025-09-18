@@ -61,6 +61,17 @@ El sistema de **Rule Templates** permite al Owner crear plantillas de reglas de 
 - [`RULE_TEMPLATES_API.md`](./RULE_TEMPLATES_API.md) - Documentación completa de la API
 - [`RULE_TEMPLATES_EXAMPLES.md`](./RULE_TEMPLATES_EXAMPLES.md) - Ejemplos de uso
 - [`beauty_control_insomnia_complete.json`](./beauty_control_insomnia_complete.json) - Colección de Insomnia actualizada
+- [`BUSINESS_CONFIGURATION_WORKFLOW_GUIDE.md`](./BUSINESS_CONFIGURATION_WORKFLOW_GUIDE.md) - Guía completa de configuración
+
+### Endpoints Owner (Gestión de Plantillas)
+```http
+POST   /api/rule-templates/owner/templates           # Crear plantilla
+GET    /api/rule-templates/owner/templates           # Listar plantillas  
+PUT    /api/rule-templates/owner/templates/{id}      # Actualizar plantilla
+DELETE /api/rule-templates/owner/templates/{id}      # Eliminar plantilla
+```
+
+**Autenticación**: Requiere token JWT con rol `OWNER`
 - **Business**: Negocios suscriptores
 - **BusinessRules**: Reglas configurables por negocio
 - **Client**: Clientes finales

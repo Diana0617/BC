@@ -169,7 +169,7 @@ const subscriptionRoutes = require('./routes/subscription');
 app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/business', businessConfigRoutes); // Rutas de configuración del negocio
-app.use('/api', ruleTemplateRoutes); // Rutas de plantillas de reglas
+app.use('/api/rule-templates', ruleTemplateRoutes); // Rutas de plantillas de reglas
 app.use('/api/receipts', receiptRoutes); // Rutas de recibos
 app.use('/api/plans', plansRoutes);
 app.use('/api/modules', moduleRoutes);

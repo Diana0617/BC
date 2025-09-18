@@ -1,10 +1,8 @@
-const { 
-  BusinessRuleTemplate, 
-  BusinessRuleAssignment, 
-  BusinessRules, 
-  Business, 
-  User 
-} = require('../models');
+const BusinessRuleTemplate = require('../models/BusinessRuleTemplate');
+const BusinessRuleAssignment = require('../models/BusinessRuleAssignment');
+const BusinessRules = require('../models/BusinessRules');
+const Business = require('../models/Business');
+const User = require('../models/User');
 const { Op } = require('sequelize');
 const { sequelize: dbSequelize } = require('../config/database');
 
@@ -31,8 +29,13 @@ class RuleTemplateService {
       // Validar dependencias y conflictos
       await this.validateTemplateDependencies(templateData);
 
+      // Determinar el tipo de regla basado en el valor
+      const ruleType = this.determineRuleType(templateData.ruleValue);
+
       const template = await BusinessRuleTemplate.create({
         ...templateData,
+        ownerId: ownerId,
+        ruleType: ruleType,
         createdBy: ownerId,
         version: '1.0.0',
         usageCount: 0
@@ -209,7 +212,7 @@ class RuleTemplateService {
           {
             model: User,
             as: 'creator',
-            attributes: ['id', 'name', 'email']
+            attributes: ['id', 'firstName', 'lastName', 'email']
           }
         ]
       });
@@ -531,6 +534,25 @@ class RuleTemplateService {
     } catch (error) {
       console.error('Error syncing rules with templates:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Determinar el tipo de regla basado en su valor
+   */
+  static determineRuleType(ruleValue) {
+    if (typeof ruleValue === 'boolean') {
+      return 'BOOLEAN';
+    } else if (typeof ruleValue === 'string') {
+      return 'STRING';
+    } else if (typeof ruleValue === 'number') {
+      return 'NUMBER';
+    } else if (Array.isArray(ruleValue)) {
+      return 'ARRAY';
+    } else if (typeof ruleValue === 'object' && ruleValue !== null) {
+      return 'OBJECT';
+    } else {
+      return 'OBJECT'; // Por defecto
     }
   }
 }
