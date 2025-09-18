@@ -21,7 +21,10 @@ export const ownerBusinessesApi = {
     if (params.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
     
-    const response = await api.get(`/owner/businesses?${queryParams.toString()}`);
+    const queryString = queryParams.toString();
+    const url = queryString ? `/api/owner/businesses?${queryString}` : '/api/owner/businesses';
+    
+    const response = await api.get(url);
     return response.data.data;
   },
 
@@ -31,7 +34,7 @@ export const ownerBusinessesApi = {
    * @returns {Promise} Negocio creado
    */
   createBusinessManually: async (businessData) => {
-    const response = await api.post('/owner/businesses/create-manually', businessData);
+    const response = await api.post('/api/owner/businesses/create-manually', businessData);
     return response.data.data;
   },
 
@@ -43,7 +46,7 @@ export const ownerBusinessesApi = {
    * @returns {Promise} Negocio actualizado
    */
   toggleBusinessStatus: async (businessId, status, reason) => {
-    const response = await api.patch(`/owner/businesses/${businessId}/status`, {
+    const response = await api.patch(`/api/owner/businesses/${businessId}/status`, {
       status,
       reason
     });
@@ -56,7 +59,7 @@ export const ownerBusinessesApi = {
    * @returns {Promise} Detalles del negocio
    */
   getBusinessDetails: async (businessId) => {
-    const response = await api.get(`/owner/businesses/${businessId}/details`);
+    const response = await api.get(`/api/owner/businesses/${businessId}/details`);
     return response.data.data;
   },
 
@@ -67,7 +70,7 @@ export const ownerBusinessesApi = {
    * @returns {Promise} Negocio actualizado
    */
   updateBusinessInfo: async (businessId, updateData) => {
-    const response = await api.patch(`/owner/businesses/${businessId}`, updateData);
+    const response = await api.patch(`/api/owner/businesses/${businessId}`, updateData);
     return response.data.data;
   },
 
@@ -76,7 +79,7 @@ export const ownerBusinessesApi = {
    * @returns {Promise} Estadísticas de negocios
    */
   getBusinessStats: async () => {
-    const response = await api.get('/owner/businesses/stats');
+    const response = await api.get('/api/owner/stats/platform');
     return response.data.data;
   },
 
@@ -87,7 +90,7 @@ export const ownerBusinessesApi = {
    * @returns {Promise} Lista de actividades
    */
   getBusinessActivity: async (businessId, limit = 20) => {
-    const response = await api.get(`/owner/businesses/${businessId}/activity`, {
+    const response = await api.get(`/api/owner/businesses/${businessId}/activity`, {
       params: { limit }
     });
     return response.data.data;
@@ -99,7 +102,7 @@ export const ownerBusinessesApi = {
    * @returns {Promise} Lista de usuarios del negocio
    */
   getBusinessUsers: async (businessId) => {
-    const response = await api.get(`/owner/businesses/${businessId}/users`);
+    const response = await api.get(`/api/owner/businesses/${businessId}/users`);
     return response.data.data;
   },
 
@@ -109,7 +112,7 @@ export const ownerBusinessesApi = {
    * @returns {Promise} Lista de suscripciones del negocio
    */
   getBusinessSubscriptions: async (businessId) => {
-    const response = await api.get(`/owner/businesses/${businessId}/subscriptions`);
+    const response = await api.get(`/api/owner/businesses/${businessId}/subscriptions`);
     return response.data.data;
   },
 
@@ -120,7 +123,7 @@ export const ownerBusinessesApi = {
    * @returns {Promise} Confirmación de eliminación
    */
   deleteBusiness: async (businessId, reason) => {
-    const response = await api.delete(`/owner/businesses/${businessId}`, {
+    const response = await api.delete(`/api/owner/businesses/${businessId}`, {
       data: { reason }
     });
     return response.data.data;
@@ -139,7 +142,7 @@ export const ownerBusinessesApi = {
     if (filters.status) queryParams.append('status', filters.status);
     if (filters.limit) queryParams.append('limit', filters.limit);
     
-    const response = await api.get(`/owner/businesses/search?${queryParams.toString()}`);
+    const response = await api.get(`/api/owner/businesses/search?${queryParams.toString()}`);
     return response.data.data;
   },
 
@@ -157,7 +160,7 @@ export const ownerBusinessesApi = {
     if (filters.startDate) queryParams.append('startDate', filters.startDate);
     if (filters.endDate) queryParams.append('endDate', filters.endDate);
     
-    const response = await api.get(`/owner/businesses/export?${queryParams.toString()}`);
+    const response = await api.get(`/api/owner/businesses/export?${queryParams.toString()}`);
     return response.data.data;
   }
 };

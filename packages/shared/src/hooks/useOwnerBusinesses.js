@@ -62,6 +62,8 @@ export const useOwnerBusinesses = () => {
   const errors = useSelector(selectBusinessesErrors);
   const ui = useSelector(selectBusinessesUI);
 
+  // State selectors complete
+
   // ====== ACTIONS ======
   const actions = useMemo(() => ({
     // Data fetching
@@ -376,6 +378,20 @@ export const useOwnerBusinesses = () => {
       return businesses.filter(b => b.status === status);
     }
   }), [actions, pagination, filters, computed, errors, businesses, selectedBusiness]);
+
+  // ====== INITIAL DATA LOADING EFFECT ======
+  useEffect(() => {
+    // Load initial businesses data and stats
+    actions.fetchBusinesses()
+      .catch(error => {
+        console.error('useOwnerBusinesses: fetchBusinesses error:', error);
+      });
+    
+    actions.getStats()
+      .catch(error => {
+        console.error('useOwnerBusinesses: getStats error:', error);
+      });
+  }, []);
 
   // ====== AUTO REFRESH EFFECT ======
   useEffect(() => {
