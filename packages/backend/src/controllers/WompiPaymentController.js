@@ -634,6 +634,76 @@ class WompiPaymentController {
   }
 
   /**
+   * Buscar transacción por referencia de pago (método público)
+   */
+  static async getTransactionByReference(req, res) {
+    try {
+      const { reference } = req.params;
+
+      if (!reference) {
+        return res.status(400).json({
+          success: false,
+          message: 'Referencia de pago requerida'
+        });
+      }
+
+      console.log('🔍 Buscando transacción por referencia:', reference);
+
+      // Construir URL del API de Wompi para buscar transacciones
+      const apiUrl = process.env.WOMPI_API_URL || 'https://sandbox.wompi.co/v1';
+      const transactionsUrl = `${apiUrl}/transactions?reference=${encodeURIComponent(reference)}`;
+
+      console.log('📡 URL de búsqueda:', transactionsUrl);
+
+      // Hacer petición al API de Wompi
+      const response = await WompiPaymentController.fetchWompiAPI(transactionsUrl, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        console.error('❌ Error en API de Wompi:', response.status, response.statusText);
+        return res.status(response.status).json({
+          success: false,
+          message: `Error buscando transacción: ${response.statusText}`
+        });
+      }
+
+      const searchResult = await response.json();
+      console.log('📊 Resultado de búsqueda:', searchResult);
+
+      // Buscar la transacción con la referencia exacta
+      const transactions = searchResult.data || [];
+      const transaction = transactions.find(t => t.reference === reference);
+
+      if (!transaction) {
+        return res.status(404).json({
+          success: false,
+          message: 'Transacción no encontrada'
+        });
+      }
+
+      console.log('✅ Transacción encontrada:', {
+        id: transaction.id,
+        status: transaction.status,
+        reference: transaction.reference
+      });
+
+      res.json({
+        success: true,
+        data: transaction
+      });
+
+    } catch (error) {
+      console.error('Error buscando transacción por referencia:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
    * Extraer businessId de la referencia de pago
    * Por ahora usa un businessId de prueba, en producción se obtendría de metadata
    */

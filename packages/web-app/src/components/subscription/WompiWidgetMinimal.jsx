@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react'
 const WompiWidgetMinimal = ({ 
   planName = "Premium", 
   amount = 1200000,
+  businessData = null,
+  selectedPlan = null,
   onSuccess, 
   onError 
 }) => {
@@ -53,6 +55,18 @@ const WompiWidgetMinimal = ({
         publicKey: config.publicKey
       })
 
+      // Paso 2.5: Guardar datos del negocio en localStorage para payment-success
+      if (businessData && selectedPlan) {
+        const paymentData = {
+          businessData,
+          selectedPlan,
+          reference,
+          timestamp: Date.now()
+        }
+        localStorage.setItem('pendingBusinessCreation', JSON.stringify(paymentData))
+        console.log('💾 Datos del negocio guardados en localStorage:', paymentData)
+      }
+
       // Paso 3: Generar firma de integridad
       const signatureResponse = await fetch('http://localhost:3001/api/wompi/generate-signature', {
         method: 'POST',
@@ -78,7 +92,7 @@ const WompiWidgetMinimal = ({
         amountInCents: amountInCents,
         reference: reference,
         signature: signatureData.signature,
-        redirectUrl: 'http://localhost:3000/payment-success'
+        redirectUrl: `http://localhost:3000/payment-success?reference=${reference}`
       })
 
     } catch (err) {
