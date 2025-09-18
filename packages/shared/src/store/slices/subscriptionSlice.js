@@ -1,22 +1,51 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 
-// AsyncThunk para crear suscripción
+// AsyncThunk para crear suscripción y business completo
 export const createSubscription = createAsyncThunk(
   'subscription/createSubscription',
   async (subscriptionData, { rejectWithValue }) => {
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-      const response = await fetch(`${API_BASE_URL}/api/subscriptions/create`, {
+      
+      // Mapear los datos correctamente para el endpoint /api/business
+      const businessPayload = {
+        // Datos del business
+        name: subscriptionData.businessData.name,
+        email: subscriptionData.businessData.email,
+        phone: subscriptionData.businessData.phone,
+        address: subscriptionData.businessData.address,
+        city: subscriptionData.businessData.city,
+        country: subscriptionData.businessData.country,
+        description: subscriptionData.businessData.description || '',
+        subdomain: subscriptionData.businessData.businessCode,
+        
+        // Datos del usuario
+        firstName: subscriptionData.userData.firstName,
+        lastName: subscriptionData.userData.lastName,
+        userEmail: subscriptionData.userData.email,
+        userPassword: subscriptionData.userData.password,
+        
+        // Plan de suscripción
+        subscriptionPlanId: subscriptionData.planId,
+        
+        // Datos del pago (si existe)
+        paymentConfirmation: subscriptionData.paymentData || null
+      }
+
+      console.log('🚀 Enviando datos al endpoint /api/business:', businessPayload)
+
+      const response = await fetch(`${API_BASE_URL}/api/business`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
+          // No se necesita Authorization - es endpoint público
         },
-        body: JSON.stringify(subscriptionData)
+        body: JSON.stringify(businessPayload)
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        const errorText = await response.text()
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
       }
 
       const result = await response.json()
@@ -27,6 +56,7 @@ export const createSubscription = createAsyncThunk(
 
       return result.data
     } catch (error) {
+      console.error('❌ Error en createSubscription:', error)
       return rejectWithValue(error.message)
     }
   }

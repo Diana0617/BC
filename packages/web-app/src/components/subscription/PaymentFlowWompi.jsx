@@ -313,6 +313,8 @@ const PaymentFlowWompi = ({
             <WompiWidgetMinimal
               planName={selectedPlan.name}
               amount={selectedPlan.price}
+              businessData={businessData}
+              selectedPlan={selectedPlan}
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
             />

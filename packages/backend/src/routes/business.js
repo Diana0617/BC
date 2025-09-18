@@ -10,22 +10,17 @@ const { ownerOnly, businessAndOwner, allStaffRoles } = require('../middleware/ro
  * Gestión de negocios, empleados y configuraciones
  */
 
-// Todas las rutas requieren autenticación
-router.use(authenticateToken);
-
 // =====================================
-// RUTAS PARA CLIENTES (sin tenancy)
+// RUTAS PÚBLICAS (sin autenticación)
 // =====================================
 
 /**
  * @swagger
  * /api/business:
  *   post:
- *     summary: Crear nuevo negocio
- *     description: Permite a un CLIENT que ya pagó crear su negocio en la plataforma
+ *     summary: Crear nuevo negocio (Registro público)
+ *     description: Permite a cualquier persona crear un negocio. Si el usuario no existe, se crea automáticamente. El usuario se convierte en BUSINESS.
  *     tags: [🏢 Gestión de Negocios]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -34,18 +29,25 @@ router.use(authenticateToken);
  *             type: object
  *             required:
  *               - name
- *               - businessType
- *               - phone
- *               - address
+ *               - email
+ *               - subscriptionPlanId
+ *               - userEmail
+ *               - userPassword
+ *               - firstName
+ *               - lastName
  *             properties:
  *               name:
  *                 type: string
  *                 description: Nombre del negocio
  *                 example: "Salon de Belleza María"
- *               businessType:
+ *               description:
  *                 type: string
- *                 description: Tipo de negocio
- *                 example: "salon"
+ *                 description: Descripción del negocio
+ *                 example: "Salon especializado en tratamientos capilares"
+ *               email:
+ *                 type: string
+ *                 description: Email del negocio
+ *                 example: "contacto@salonmaria.com"
  *               phone:
  *                 type: string
  *                 description: Teléfono del negocio
@@ -54,10 +56,50 @@ router.use(authenticateToken);
  *                 type: string
  *                 description: Dirección del negocio
  *                 example: "Calle 123 #45-67, Bogotá"
- *               description:
+ *               city:
  *                 type: string
- *                 description: Descripción del negocio
- *                 example: "Salon especializado en tratamientos capilares"
+ *                 description: Ciudad
+ *                 example: "Bogotá"
+ *               state:
+ *                 type: string
+ *                 description: Departamento/Estado
+ *                 example: "Cundinamarca"
+ *               country:
+ *                 type: string
+ *                 description: País
+ *                 example: "Colombia"
+ *               zipCode:
+ *                 type: string
+ *                 description: Código postal
+ *                 example: "110111"
+ *               website:
+ *                 type: string
+ *                 description: Sitio web del negocio
+ *                 example: "https://salonmaria.com"
+ *               subdomain:
+ *                 type: string
+ *                 description: Subdominio único para el negocio
+ *                 example: "salonmaria"
+ *               subscriptionPlanId:
+ *                 type: integer
+ *                 description: ID del plan de suscripción seleccionado
+ *                 example: 1
+ *               userEmail:
+ *                 type: string
+ *                 description: Email del usuario administrador
+ *                 example: "admin@salonmaria.com"
+ *               userPassword:
+ *                 type: string
+ *                 description: Contraseña del usuario administrador
+ *                 example: "password123"
+ *               firstName:
+ *                 type: string
+ *                 description: Nombre del usuario administrador
+ *                 example: "María"
+ *               lastName:
+ *                 type: string
+ *                 description: Apellido del usuario administrador
+ *                 example: "García"
  *     responses:
  *       201:
  *         description: Negocio creado exitosamente
@@ -69,31 +111,67 @@ router.use(authenticateToken);
  *                 success:
  *                   type: boolean
  *                   example: true
- *                 business:
- *                   $ref: '#/components/schemas/Business'
+ *                 message:
+ *                   type: string
+ *                   example: "Negocio creado exitosamente"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     business:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         name:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         subdomain:
+ *                           type: string
+ *                         status:
+ *                           type: string
+ *                         trialEndDate:
+ *                           type: string
+ *                           format: date-time
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         role:
+ *                           type: string
+ *                           example: "BUSINESS"
+ *                         businessId:
+ *                           type: integer
+ *                     tokens:
+ *                       type: object
+ *                       properties:
+ *                         accessToken:
+ *                           type: string
+ *                         refreshToken:
+ *                           type: string
  *       400:
  *         description: Error de validación
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: No autorizado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Usuario no tiene permisos para crear negocio
+ *       409:
+ *         description: Email ya registrado o subdominio no disponible
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// Crear nuevo negocio (solo para CLIENT que pagó)
+// Crear nuevo negocio (endpoint público)
 router.post('/', BusinessController.createBusiness);
 
 // =====================================
+// RUTAS AUTENTICADAS
+// =====================================
+
+// Las siguientes rutas requieren autenticación
+router.use(authenticateToken);
 // RUTAS PARA STAFF DEL NEGOCIO (con tenancy)
 // =====================================
 

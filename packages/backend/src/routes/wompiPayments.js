@@ -578,4 +578,57 @@ router.get('/transaction/:transactionId', WompiPaymentController.getTransactionS
  */
 router.post('/confirm-payment/:transactionId', WompiPaymentController.confirmPayment);
 
+/**
+ * @swagger
+ * /api/wompi/transaction-by-reference/{reference}:
+ *   get:
+ *     summary: Obtener transacción por referencia
+ *     description: Busca una transacción de Wompi usando la referencia de pago (público, sin autenticación)
+ *     tags: [Wompi Payments]
+ *     parameters:
+ *       - in: path
+ *         name: reference
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Referencia del pago
+ *         example: "BC_1758212258747_fmgtaski3"
+ *     responses:
+ *       200:
+ *         description: Transacción encontrada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: "158187-1758212316-76838"
+ *                     status:
+ *                       type: string
+ *                       enum: [APPROVED, DECLINED, PENDING, VOIDED]
+ *                       example: "APPROVED"
+ *                     reference:
+ *                       type: string
+ *                       example: "BC_1758212258747_fmgtaski3"
+ *                     amount_in_cents:
+ *                       type: integer
+ *                       example: 8990000
+ *                     currency:
+ *                       type: string
+ *                       example: "COP"
+ *       404:
+ *         description: Transacción no encontrada
+ *       500:
+ *         description: Error interno del servidor
+ */
+// Endpoint público para buscar transacción por referencia (sin autenticación)
+router.get('/transaction-by-reference/:reference', WompiPaymentController.getTransactionByReference);
+
 module.exports = router;

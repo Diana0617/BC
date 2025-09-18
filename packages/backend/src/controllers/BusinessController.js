@@ -6,6 +6,8 @@ const BusinessRules = require('../models/BusinessRules');
 const User = require('../models/User');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 const BusinessSubscription = require('../models/BusinessSubscription');
+const SubscriptionPayment = require('../models/SubscriptionPayment');
+const AuthController = require('./AuthController');
 
 /**
  * Controlador de Negocios para Beauty Control
@@ -13,26 +15,13 @@ const BusinessSubscription = require('../models/BusinessSubscription');
  */
 class BusinessController {
   
-  /**
-   * Crear un nuevo negocio (solo para usuarios CLIENT que pagaron)
-   * @param {Object} req - Request object
-   * @param {Object} res - Response object
-   */
   static async createBusiness(req, res) {
     const transaction = await sequelize.transaction();
     
     try {
-      const { userId, role } = req.user;
-      
-      // Solo usuarios CLIENT pueden crear negocios
-      if (role !== 'CLIENT') {
-        return res.status(403).json({
-          success: false,
-          error: 'Solo usuarios CLIENT pueden crear negocios'
-        });
-      }
-
+      console.log('🔄 Iniciando creación de negocio...');
       const {
+        // Datos del negocio
         name,
         description,
         email,
@@ -45,57 +34,85 @@ class BusinessController {
         website,
         subdomain,
         subscriptionPlanId,
+        // Datos del usuario administrador
+        userEmail,
+        userPassword,
+        firstName,
+        lastName,
         // TODO: Agregar validación de pago aquí
         paymentConfirmation
       } = req.body;
 
+      console.log('📝 Datos recibidos:', { name, email, userEmail, subscriptionPlanId });
+
       // Validaciones básicas
-      if (!name || !email || !subscriptionPlanId) {
+      if (!name || !email || !subscriptionPlanId || !userEmail || !userPassword || !firstName || !lastName) {
         await transaction.rollback();
+        console.log('❌ Faltan campos requeridos');
         return res.status(400).json({
           success: false,
-          error: 'Los campos name, email y subscriptionPlanId son requeridos'
+          error: 'Los campos name, email, subscriptionPlanId, userEmail, userPassword, firstName y lastName son requeridos'
         });
       }
 
-      // Verificar que el usuario no tenga ya un negocio
+      // Verificar que el email del usuario no esté registrado
+      console.log('🔍 Verificando email del usuario...');
+      const existingUser = await User.findOne({
+        where: { email: userEmail }
+      });
+
+      if (existingUser) {
+        await transaction.rollback();
+        console.log('❌ Email del usuario ya existe');
+        return res.status(409).json({
+          success: false,
+          error: 'El email del usuario ya está registrado'
+        });
+      }
+
+      // Verificar que el email del negocio no esté registrado
+      console.log('🔍 Verificando email del negocio...');
       const existingBusiness = await Business.findOne({
-        include: [{
-          model: User,
-          where: { id: userId, role: 'BUSINESS' }
-        }]
+        where: { email: email }
       });
 
       if (existingBusiness) {
         await transaction.rollback();
+        console.log('❌ Email del negocio ya existe');
         return res.status(409).json({
           success: false,
-          error: 'Ya tienes un negocio creado'
+          error: 'El email del negocio ya está registrado'
         });
       }
 
       // Verificar que el plan de suscripción existe
+      console.log('🔍 Verificando plan de suscripción...');
       const plan = await SubscriptionPlan.findByPk(subscriptionPlanId);
       if (!plan) {
         await transaction.rollback();
+        console.log('❌ Plan no encontrado');
         return res.status(404).json({
           success: false,
           error: 'Plan de suscripción no encontrado'
         });
       }
+      console.log('✅ Plan encontrado:', plan.name);
 
       // Verificar disponibilidad del subdominio si se proporciona
       if (subdomain) {
+        console.log('🔍 Verificando subdominio...');
         const { isSubdomainAvailable } = require('../middleware/subdomain');
         const available = await isSubdomainAvailable(subdomain);
         
         if (!available) {
           await transaction.rollback();
+          console.log('❌ Subdominio no disponible');
           return res.status(409).json({
             success: false,
             error: 'El subdominio no está disponible'
           });
         }
+        console.log('✅ Subdominio disponible');
       }
 
       // TODO: Aquí validar el pago antes de continuar
@@ -107,6 +124,7 @@ class BusinessController {
       // }
 
       // Crear el negocio
+      console.log('🏢 Creando negocio...');
       const business = await Business.create({
         name,
         description,
@@ -123,18 +141,40 @@ class BusinessController {
         status: 'TRIAL', // Inicia en trial
         trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 días
       }, { transaction });
+      console.log('✅ Negocio creado con ID:', business.id);
 
-      // Crear reglas predeterminadas del negocio
-      await BusinessRules.create({
+      // Encriptar contraseña del usuario
+      console.log('🔐 Encriptando contraseña...');
+      const hashedPassword = await bcrypt.hash(userPassword, 10);
+
+      // Crear el usuario administrador del negocio
+      console.log('👤 Creando usuario...');
+      const user = await User.create({
+        firstName,
+        lastName,
+        email: userEmail,
+        password: hashedPassword,
+        role: 'BUSINESS',
         businessId: business.id,
-        // Usar valores predeterminados del modelo
+        isActive: true
       }, { transaction });
+      console.log('✅ Usuario creado con ID:', user.id);
+
+      // Crear reglas predeterminadas del negocio (opcional - se pueden crear después)
+      // await BusinessRules.create({
+      //   businessId: business.id,
+      //   ruleKey: 'DEFAULT_SETUP',
+      //   ruleValue: { configured: false },
+      //   description: 'Configuración inicial del negocio',
+      //   category: 'GENERAL'
+      // }, { transaction });
 
       // Crear la suscripción del negocio
+      console.log('📋 Creando suscripción...');
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + (plan.durationType === 'MONTHS' ? plan.duration : 1));
       
-      await BusinessSubscription.create({
+      const subscription = await BusinessSubscription.create({
         businessId: business.id,
         subscriptionPlanId: subscriptionPlanId,
         status: 'TRIAL',
@@ -144,25 +184,51 @@ class BusinessController {
         amount: plan.price,
         currency: plan.currency
       }, { transaction });
+      console.log('✅ Suscripción creada con ID:', subscription.id);
 
-      // Actualizar el usuario: cambiar rol a BUSINESS y asignar businessId
-      await User.update({
-        role: 'BUSINESS',
-        businessId: business.id
-      }, {
-        where: { id: userId },
-        transaction
-      });
+      // Registrar el pago si hay datos de confirmación de pago
+      if (paymentConfirmation && paymentConfirmation.transactionId) {
+        console.log('💳 Registrando pago en SubscriptionPayment...');
+        
+        const subscriptionPayment = await SubscriptionPayment.create({
+          businessSubscriptionId: subscription.id,
+          amount: paymentConfirmation.amount || plan.price,
+          currency: paymentConfirmation.currency || plan.currency || 'COP',
+          status: 'COMPLETED', // Cambiado de 'APPROVED' a 'COMPLETED'
+          paymentMethod: paymentConfirmation.method || 'CREDIT_CARD', // Cambiado de 'WOMPI_CARD' a 'CREDIT_CARD'
+          externalReference: paymentConfirmation.transactionId,
+          wompiTransactionId: paymentConfirmation.transactionId,
+          wompiReference: paymentConfirmation.reference,
+          dueDate: new Date(), // Campo obligatorio agregado
+          netAmount: (paymentConfirmation.amount || plan.price) * 0.97, // Campo obligatorio - Descontando comisión aprox. del 3%
+          description: `Pago inicial para suscripción ${plan.name} - Business: ${business.name}`,
+          paidAt: new Date(),
+          metadata: {
+            planId: subscriptionPlanId,
+            businessId: business.id,
+            userEmail: userEmail,
+            businessEmail: email,
+            paymentType: 'INITIAL_SUBSCRIPTION'
+          }
+        }, { transaction });
+        
+        console.log('✅ Pago registrado con ID:', subscriptionPayment.id);
+      } else {
+        console.log('ℹ️ No hay datos de pago para registrar (registro sin pago previo)');
+      }
 
+      console.log('💾 Haciendo commit de la transacción...');
       await transaction.commit();
+      console.log('✅ Transacción completada exitosamente');
 
-      // Generar nuevo token con el nuevo rol y businessId
-      const updatedUser = await User.findByPk(userId);
-      const tokens = AuthController.generateTokens(updatedUser);
+      // Generar tokens para el usuario creado
+      console.log('🔑 Generando tokens...');
+      const tokens = AuthController.generateTokens(user);
 
+      console.log('🎉 Proceso completado exitosamente');
       res.status(201).json({
         success: true,
-        message: 'Negocio creado exitosamente',
+        message: 'Negocio y usuario creados exitosamente',
         data: {
           business: {
             id: business.id,
@@ -173,15 +239,19 @@ class BusinessController {
             trialEndDate: business.trialEndDate
           },
           user: {
-            id: updatedUser.id,
-            role: updatedUser.role,
-            businessId: updatedUser.businessId
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role,
+            businessId: user.businessId
           },
           tokens
         }
       });
 
     } catch (error) {
+      console.log('❌ Error en createBusiness, haciendo rollback...');
       await transaction.rollback();
       console.error('Error creando negocio:', error);
       res.status(500).json({
@@ -427,8 +497,5 @@ class BusinessController {
     }
   }
 }
-
-// Importar AuthController para generar tokens
-const AuthController = require('./AuthController');
 
 module.exports = BusinessController;
