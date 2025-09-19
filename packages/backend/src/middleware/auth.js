@@ -57,7 +57,7 @@ const authenticateToken = async (req, res, next) => {
       include: [{
         model: Business,
         as: 'business',
-        attributes: ['id', 'name', 'status']
+        attributes: ['id', 'name', 'status', 'trialEndDate']
       }]
     });
 
@@ -68,12 +68,30 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Verificar que el negocio esté activo (excepto para OWNER)
-    if (user.role !== 'OWNER' && user.business && user.business.status !== 'ACTIVE') {
-      return res.status(403).json({ 
-        success: false,
-        error: 'Negocio inactivo o suspendido' 
-      });
+    // Verificar que el negocio esté activo o en período de prueba válido (excepto para OWNER)
+    if (user.role !== 'OWNER' && user.business) {
+      const business = user.business;
+      
+      // Si el negocio no está en estado activo o trial, denegar acceso
+      if (!['ACTIVE', 'TRIAL'].includes(business.status)) {
+        return res.status(403).json({ 
+          success: false,
+          error: 'El negocio asociado está inactivo' 
+        });
+      }
+      
+      // Si está en TRIAL, verificar que no haya expirado
+      if (business.status === 'TRIAL' && business.trialEndDate) {
+        const now = new Date();
+        const trialEnd = new Date(business.trialEndDate);
+        
+        if (now > trialEnd) {
+          return res.status(403).json({ 
+            success: false,
+            error: 'El período de prueba ha expirado. Contacte al administrador para renovar su suscripción.' 
+          });
+        }
+      }
     }
 
     req.user = {

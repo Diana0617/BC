@@ -21,8 +21,7 @@ const SubscriptionPayment = sequelize.define('SubscriptionPayment', {
     references: {
       model: 'owner_payment_configurations',
       key: 'id'
-    },
-    comment: 'Configuración de pago utilizada (null para pagos manuales)'
+    }
   },
   amount: {
     type: DataTypes.DECIMAL(10, 2),
@@ -37,18 +36,18 @@ const SubscriptionPayment = sequelize.define('SubscriptionPayment', {
     defaultValue: 'COP'
   },
   status: {
-    type: DataTypes.ENUM('PENDING', 'PROCESSING', 'ATTEMPT_FAILED', 'PAYMENT_INCOMPLETE', 'COMPLETED', 'FAILED', 'CANCELLED', 'REFUNDED', 'PARTIALLY_REFUNDED'),
+    type: DataTypes.ENUM('PENDING', 'PROCESSING', 'ATTEMPT_FAILED', 'PAYMENT_INCOMPLETE', 'COMPLETED', 'FAILED', 'CANCELLED', 'REFUNDED', 'PARTIALLY_REFUNDED', 'APPROVED', 'DECLINED', 'ERROR', 'VOIDED', 'THREEDS_PENDING', 'THREEDS_CHALLENGE', 'THREEDS_COMPLETED'),
     allowNull: false,
     defaultValue: 'PENDING'
   },
   paymentMethod: {
-    type: DataTypes.ENUM('CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'PSE', 'CASH', 'CHECK', 'DIGITAL_WALLET', 'MANUAL'),
+    type: DataTypes.ENUM('CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'PSE', 'CASH', 'CHECK', 'DIGITAL_WALLET', 'MANUAL', 'WOMPI_CARD', 'WOMPI_3DS', 'WOMPI_3RI'),
     allowNull: false
   },
   transactionId: {
     type: DataTypes.STRING,
     allowNull: true,
-    comment: 'ID de transacción del proveedor de pagos'
+    comment: 'ID de transaccion del proveedor de pagos'
   },
   externalReference: {
     type: DataTypes.STRING,
@@ -76,13 +75,13 @@ const SubscriptionPayment = sequelize.define('SubscriptionPayment', {
   receiptPublicId: {
     type: DataTypes.STRING,
     allowNull: true,
-    comment: 'Public ID del comprobante en Cloudinary para gestión'
+    comment: 'Public ID del comprobante en Cloudinary para gestion'
   },
   receiptMetadata: {
     type: DataTypes.JSONB,
     allowNull: true,
     defaultValue: {},
-    comment: 'Metadatos del archivo: tamaño, formato, fecha subida, etc.'
+    comment: 'Metadatos del archivo'
   },
   receiptUploadedBy: {
     type: DataTypes.UUID,
@@ -91,7 +90,7 @@ const SubscriptionPayment = sequelize.define('SubscriptionPayment', {
       model: 'users',
       key: 'id'
     },
-    comment: 'Usuario que subió el comprobante'
+    comment: 'Usuario que subio el comprobante'
   },
   receiptUploadedAt: {
     type: DataTypes.DATE,
@@ -103,12 +102,12 @@ const SubscriptionPayment = sequelize.define('SubscriptionPayment', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
     defaultValue: 0,
-    comment: 'Comisión cobrada por el proveedor de pagos'
+    comment: 'Comision cobrada por el proveedor de pagos'
   },
   netAmount: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
-    comment: 'Monto neto recibido después de comisiones'
+    comment: 'Monto neto recibido despues de comisiones'
   },
   
   // === INFORMACIÓN ADICIONAL ===
@@ -124,12 +123,12 @@ const SubscriptionPayment = sequelize.define('SubscriptionPayment', {
   failureReason: {
     type: DataTypes.TEXT,
     allowNull: true,
-    comment: 'Razón del fallo si status es FAILED'
+    comment: 'Razon del fallo si status es FAILED'
   },
   refundReason: {
     type: DataTypes.TEXT,
     allowNull: true,
-    comment: 'Razón del reembolso si aplica'
+    comment: 'Razon del reembolso si aplica'
   },
   refundedAmount: {
     type: DataTypes.DECIMAL(10, 2),
@@ -152,6 +151,76 @@ const SubscriptionPayment = sequelize.define('SubscriptionPayment', {
     type: DataTypes.JSONB,
     allowNull: true,
     defaultValue: {}
+  },
+  
+  // === TOKENIZACIÓN Y PAGOS RECURRENTES (3DS/3RI) ===
+  paymentSourceToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Token de la fuente de pago para cobros recurrentes (3RI)'
+  },
+  isThreeDsEnabled: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Si la fuente de pago fue creada con 3D Secure'
+  },
+  threeDsAuthData: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {},
+    comment: 'Datos de autenticacion 3DS completos'
+  },
+  
+  // === CAMPOS ESPECÍFICOS 3DS v2 ===
+  browserInfo: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {},
+    comment: 'Informacion del navegador requerida para 3DS v2'
+  },
+  threeDsAuthType: {
+    type: DataTypes.ENUM('no_challenge_success', 'challenge_denied', 'challenge_v2', 'supported_version_error', 'authentication_error'),
+    allowNull: true
+  },
+  threeDsMethodData: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'HTML iframe codificado para challenge 3DS'
+  },
+  currentStep: {
+    type: DataTypes.ENUM('SUPPORTED_VERSION', 'AUTHENTICATION', 'CHALLENGE'),
+    allowNull: true
+  },
+  currentStepStatus: {
+    type: DataTypes.ENUM('PENDING', 'COMPLETED', 'Non-Authenticated', 'ERROR'),
+    allowNull: true
+  },
+  isRecurringPayment: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Si es un pago recurrente automático'
+  },
+  originalPaymentId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'subscription_payments',
+      key: 'id'
+    },
+    comment: 'Referencia al pago original que estableció el token 3DS'
+  },
+  recurringType: {
+    type: DataTypes.ENUM('INITIAL', 'RECURRING', 'MANUAL'),
+    allowNull: false,
+    defaultValue: 'MANUAL'
+  },
+  autoRenewalEnabled: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Si está habilitada la renovación automática'
   },
   
   // === GESTIÓN DE REINTENTOS ===

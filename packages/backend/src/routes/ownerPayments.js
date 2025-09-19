@@ -796,4 +796,200 @@ router.post('/:id/receipt', uploadImageMiddleware.single('file'), OwnerPaymentCo
  */
 router.delete('/:id/receipt', OwnerPaymentController.deleteReceipt);
 
+// === RUTAS 3D SECURE v2 ===
+const Payment3DSController = require('../controllers/Payment3DSController');
+
+/**
+ * @swagger
+ * /api/owner/payments/3ds/create:
+ *   post:
+ *     tags:
+ *       - Owner Payments 3DS
+ *     summary: Crear transacción 3DS v2 para cualquier suscripción
+ *     description: Permite al owner crear una transacción 3D Secure v2 para cualquier suscripción de negocio
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - businessSubscriptionId
+ *               - cardToken
+ *               - customerEmail
+ *               - acceptanceToken
+ *               - browserInfo
+ *             properties:
+ *               businessSubscriptionId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID de la suscripción de negocio
+ *               cardToken:
+ *                 type: string
+ *                 description: Token de la tarjeta de crédito
+ *               customerEmail:
+ *                 type: string
+ *                 format: email
+ *                 description: Email del cliente
+ *               acceptanceToken:
+ *                 type: string
+ *                 description: Token de aceptación de términos
+ *               browserInfo:
+ *                 type: object
+ *                 required:
+ *                   - browser_color_depth
+ *                   - browser_screen_height
+ *                   - browser_screen_width
+ *                   - browser_language
+ *                   - browser_user_agent
+ *                   - browser_tz
+ *                 properties:
+ *                   browser_color_depth:
+ *                     type: integer
+ *                     example: 24
+ *                   browser_screen_height:
+ *                     type: integer
+ *                     example: 1080
+ *                   browser_screen_width:
+ *                     type: integer
+ *                     example: 1920
+ *                   browser_language:
+ *                     type: string
+ *                     example: "es-CO"
+ *                   browser_user_agent:
+ *                     type: string
+ *                     example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+ *                   browser_tz:
+ *                     type: integer
+ *                     example: -300
+ *               threeDsAuthType:
+ *                 type: string
+ *                 enum: [no_challenge_success, challenge_denied, challenge_v2, supported_version_error, authentication_error]
+ *                 description: Tipo de autenticación 3DS para testing (solo sandbox)
+ *               autoRenewalEnabled:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Habilitar renovación automática
+ *     responses:
+ *       200:
+ *         description: Transacción 3DS creada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     paymentId:
+ *                       type: string
+ *                       format: uuid
+ *                     transactionId:
+ *                       type: string
+ *                     reference:
+ *                       type: string
+ *                     status:
+ *                       type: string
+ *                     step:
+ *                       type: string
+ *                     challengeUrl:
+ *                       type: string
+ *                       description: iframe base64-encoded para challenge (si aplica)
+ *       400:
+ *         description: Error en los datos enviados
+ *       404:
+ *         description: Suscripción no encontrada
+ */
+router.post('/3ds/create', Payment3DSController.create3DSPayment);
+
+/**
+ * @swagger
+ * /api/owner/payments/3ds/status/{transactionId}:
+ *   get:
+ *     tags:
+ *       - Owner Payments 3DS
+ *     summary: Consultar estado de transacción 3DS
+ *     description: Permite consultar el estado actual de una transacción 3D Secure
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: transactionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la transacción de Wompi
+ *     responses:
+ *       200:
+ *         description: Estado de transacción obtenido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     transactionId:
+ *                       type: string
+ *                     status:
+ *                       type: string
+ *                     step:
+ *                       type: string
+ *                     authType:
+ *                       type: string
+ *                     eci:
+ *                       type: string
+ *                     cavv:
+ *                       type: string
+ *                     liabilityShift:
+ *                       type: boolean
+ *       404:
+ *         description: Transacción no encontrada
+ */
+router.get('/3ds/status/:transactionId', Payment3DSController.get3DSTransactionStatus);
+
+/**
+ * @swagger
+ * /api/owner/payments/3ds/stats:
+ *   get:
+ *     tags:
+ *       - Owner Payments 3DS
+ *     summary: Estadísticas de pagos 3DS para todos los negocios
+ *     description: Obtiene estadísticas consolidadas de todos los pagos 3D Secure del sistema
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Estadísticas obtenidas exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total3DSPayments:
+ *                       type: integer
+ *                     completedPayments:
+ *                       type: integer
+ *                     pendingPayments:
+ *                       type: integer
+ *                     failedPayments:
+ *                       type: integer
+ *                     successRate:
+ *                       type: number
+ *                       format: float
+ */
+router.get('/3ds/stats', Payment3DSController.getPaymentStats);
+
 module.exports = router;

@@ -166,6 +166,8 @@ const cacheRoutes = require('./routes/cache');
 const receiptRoutes = require('./routes/receipts');
 const subscriptionRoutes = require('./routes/subscription');
 const subscriptionStatusRoutes = require('./routes/subscriptionStatus');
+const payment3DSRoutes = require('./routes/payment3DS');
+
 
 app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
@@ -188,6 +190,7 @@ app.use('/api/owner/subscription-status', subscriptionStatusRoutes); // Rutas de
 app.use('/api/owner/subscriptions', subscriptionStatusRoutes); // Alias para compatibilidad con el frontend
 app.use('/api/public', publicInvitationRoutes);
 app.use('/api/wompi', wompiPaymentRoutes);
+app.use('/api/payments/3ds', payment3DSRoutes); // Rutas de pagos 3D Secure
 app.use('/api/test/auto-renewal', autoRenewalTestRoutes);
 
 // Ruta 404
