@@ -1,0 +1,128 @@
+{
+  "name": "Beauty Control - 3DS v2 Testing",
+  "description": "Colección completa para probar los endpoints de 3D Secure v2 de Wompi",
+  "baseUrl": "http://localhost:3001",
+  "auth": {
+    "type": "bearer",
+    "token": "{{jwt_token}}"
+  },
+  "requests": [
+    {
+      "name": "1. Login Admin Owner",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "email": "admin@beautycontrol.com",
+        "password": "AdminPassword123!"
+      },
+      "description": "Obtener token JWT para el usuario owner admin"
+    },
+    {
+      "name": "2. Crear Transacción 3DS v2",
+      "method": "POST", 
+      "url": "{{baseUrl}}/api/owner/payments/3ds/create",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer {{jwt_token}}"
+      },
+      "body": {
+        "businessId": "{{business_id}}",
+        "subscriptionId": "{{subscription_id}}",
+        "amount": 50000,
+        "currency": "COP",
+        "description": "Pago de suscripción - Prueba 3DS v2",
+        "customerEmail": "test@test.com",
+        "browserInfo": {
+          "colorDepth": 24,
+          "javaEnabled": false,
+          "language": "es-CO",
+          "screenHeight": 1080,
+          "screenWidth": 1920,
+          "timeZoneOffset": 300,
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        },
+        "paymentMethod": {
+          "type": "CARD", 
+          "installments": 1,
+          "card": {
+            "number": "4111111111111111",
+            "cvc": "123",
+            "exp_month": "12",
+            "exp_year": "2025",
+            "card_holder": "Juan Perez"
+          }
+        }
+      },
+      "description": "Crear nueva transacción 3DS v2 con datos de tarjeta de prueba"
+    },
+    {
+      "name": "3. Consultar Estado Transacción",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/owner/payments/3ds/status/{{transaction_id}}",
+      "headers": {
+        "Authorization": "Bearer {{jwt_token}}"
+      },
+      "description": "Verificar el estado actual de la transacción 3DS"
+    },
+    {
+      "name": "4. Obtener Estadísticas 3DS",
+      "method": "GET", 
+      "url": "{{baseUrl}}/api/owner/payments/3ds/stats?businessId={{business_id}}&period=7d",
+      "headers": {
+        "Authorization": "Bearer {{jwt_token}}"
+      },
+      "description": "Obtener estadísticas de pagos 3DS de los últimos 7 días"
+    },
+    {
+      "name": "5. Listar Businesses (para obtener IDs)",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/owner/businesses",
+      "headers": {
+        "Authorization": "Bearer {{jwt_token}}"
+      },
+      "description": "Listar todos los negocios para obtener businessId"
+    },
+    {
+      "name": "6. Listar Suscripciones (para obtener IDs)",
+      "method": "GET", 
+      "url": "{{baseUrl}}/api/owner/businesses/{{business_id}}/subscriptions",
+      "headers": {
+        "Authorization": "Bearer {{jwt_token}}"
+      },
+      "description": "Listar suscripciones para obtener subscriptionId"
+    }
+  ],
+  "variables": {
+    "baseUrl": "http://localhost:3001",
+    "jwt_token": "",
+    "business_id": "",
+    "subscription_id": "",
+    "transaction_id": ""
+  },
+  "testCards": {
+    "visa_3ds_challenge": {
+      "number": "4111111111111111",
+      "cvc": "123",
+      "exp_month": "12", 
+      "exp_year": "2025",
+      "expected_result": "challenge_v2"
+    },
+    "visa_3ds_success": {
+      "number": "4242424242424242",
+      "cvc": "123",
+      "exp_month": "12",
+      "exp_year": "2025", 
+      "expected_result": "no_challenge_success"
+    },
+    "visa_3ds_denied": {
+      "number": "4000000000000002",
+      "cvc": "123",
+      "exp_month": "12",
+      "exp_year": "2025",
+      "expected_result": "challenge_denied"
+    }
+  }
+}

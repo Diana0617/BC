@@ -41,7 +41,7 @@ router.put('/payments/:paymentId/confirm', SubscriptionStatusController.confirmP
 router.put('/payments/:paymentId/reject', SubscriptionStatusController.rejectPayment);
 
 // GET /business/:businessId/history - Obtener historial de pagos de un negocio
-router.get('/business/:businessId/history', SubscriptionStatusController.getPaymentHistory);
+router.get('/business/:businessId/history', SubscriptionStatusController.getStatusHistory);
 
 // GET /payments - Obtener todos los pagos de suscripciones con filtros y estadísticas
 router.get('/payments', SubscriptionStatusController.getAllSubscriptionPayments);

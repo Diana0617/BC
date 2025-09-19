@@ -204,12 +204,30 @@ class AuthController {
         });
       }
 
-      // Verificar si el negocio está activo (para usuarios de negocio)
-      if (user.businessId && user.business && user.business.status !== 'ACTIVE') {
-        return res.status(403).json({
-          success: false,
-          error: 'El negocio asociado está inactivo'
-        });
+      // Verificar si el negocio está activo o en período de prueba válido (para usuarios de negocio)
+      if (user.businessId && user.business) {
+        const business = user.business;
+        
+        // Si el negocio no está en estado activo o trial, denegar acceso
+        if (!['ACTIVE', 'TRIAL'].includes(business.status)) {
+          return res.status(403).json({
+            success: false,
+            error: 'El negocio asociado está inactivo'
+          });
+        }
+        
+        // Si está en TRIAL, verificar que no haya expirado
+        if (business.status === 'TRIAL' && business.trialEndDate) {
+          const now = new Date();
+          const trialEnd = new Date(business.trialEndDate);
+          
+          if (now > trialEnd) {
+            return res.status(403).json({
+              success: false,
+              error: 'El período de prueba ha expirado. Contacte al administrador para renovar su suscripción.'
+            });
+          }
+        }
       }
 
       // Generar tokens
