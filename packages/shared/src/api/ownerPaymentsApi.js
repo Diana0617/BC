@@ -6,12 +6,12 @@
 import { api } from './client';
 
 const PAYMENTS_ENDPOINTS = {
-  GET_ALL: '/owner/payments',
+  GET_ALL: '/api/owner/subscription-status/payments',
   PROCESS: '/owner/payments/process',
   REFUND: (id) => `/owner/payments/${id}/refund`,
   UPDATE_STATUS: (id) => `/owner/payments/${id}/status`,
   DETAILS: (id) => `/owner/payments/${id}`,
-  STATS: '/owner/payments/stats',
+  STATS: '/api/owner/subscription-status/payments/stats',
   ANALYTICS: '/owner/payments/analytics',
   DISPUTE: (id) => `/owner/payments/${id}/dispute`,
   COMMISSIONS: '/owner/payments/commissions',
@@ -50,12 +50,8 @@ export const ownerPaymentsApi = {
       if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
       
       const response = await api.get(`${PAYMENTS_ENDPOINTS.GET_ALL}?${queryParams}`);
-      
-      return {
-        payments: response.data.payments || [],
-        pagination: response.data.pagination || {},
-        summary: response.data.summary || null
-      };
+      // Retornar el objeto data completo del backend
+      return response.data;
     } catch (error) {
       console.error('Error fetching payments:', error);
       throw error;

@@ -69,6 +69,12 @@ export const useOwnerSubscription = () => {
   const errors = useSelector(selectSubscriptionsErrors);
   const ui = useSelector(selectSubscriptionsUI);
 
+  // Debug: log raw data from Redux
+  console.log('[useOwnerSubscription] subscriptions:', subscriptions);
+  console.log('[useOwnerSubscription] subscriptionStats:', subscriptionStats);
+  console.log('[useOwnerSubscription] pagination:', pagination);
+  console.log('[useOwnerSubscription] filters:', filters);
+
   // ====== COMPUTED VALUES ======
   const computedValues = useMemo(() => ({
     hasSubscriptions: subscriptions.length > 0,
@@ -151,16 +157,40 @@ export const useOwnerSubscription = () => {
   // ====== API ACTIONS ======
   const actions = useMemo(() => ({
     // Data fetching
-    loadSubscriptions: (params) => dispatch(fetchAllSubscriptions(params)),
-    loadSubscriptionStats: () => dispatch(getSubscriptionStats()),
-    loadSubscriptionDetails: (id) => dispatch(getSubscriptionDetails(id)),
+    loadSubscriptions: (params) => {
+      console.log('[useOwnerSubscription] loadSubscriptions called with:', params);
+      return dispatch(fetchAllSubscriptions(params));
+    },
+    loadSubscriptionStats: () => {
+      console.log('[useOwnerSubscription] loadSubscriptionStats called');
+      return dispatch(getSubscriptionStats());
+    },
+    loadSubscriptionDetails: (id) => {
+      console.log('[useOwnerSubscription] loadSubscriptionDetails called with id:', id);
+      return dispatch(getSubscriptionDetails(id));
+    },
     
     // Subscription management
-    createSubscription: (data) => dispatch(createNewSubscription(data)),
-    cancelSubscription: (id, reason) => dispatch(cancelExistingSubscription({ subscriptionId: id, reason })),
-    updateStatus: (id, status, reason) => dispatch(updateSubscriptionStatus({ subscriptionId: id, status, reason })),
-    extendSubscription: (id, duration, durationType) => dispatch(extendSubscription({ subscriptionId: id, duration, durationType })),
-    renewSubscription: (id, planId) => dispatch(renewSubscription({ subscriptionId: id, planId })),
+    createSubscription: (data) => {
+      console.log('[useOwnerSubscription] createSubscription called with:', data);
+      return dispatch(createNewSubscription(data));
+    },
+    cancelSubscription: (id, reason) => {
+      console.log('[useOwnerSubscription] cancelSubscription called with id:', id, 'reason:', reason);
+      return dispatch(cancelExistingSubscription({ subscriptionId: id, reason }));
+    },
+    updateStatus: (id, status, reason) => {
+      console.log('[useOwnerSubscription] updateStatus called with id:', id, 'status:', status, 'reason:', reason);
+      return dispatch(updateSubscriptionStatus({ subscriptionId: id, status, reason }));
+    },
+    extendSubscription: (id, duration, durationType) => {
+      console.log('[useOwnerSubscription] extendSubscription called with id:', id, 'duration:', duration, 'durationType:', durationType);
+      return dispatch(extendSubscription({ subscriptionId: id, duration, durationType }));
+    },
+    renewSubscription: (id, planId) => {
+      console.log('[useOwnerSubscription] renewSubscription called with id:', id, 'planId:', planId);
+      return dispatch(renewSubscription({ subscriptionId: id, planId }));
+    },
     
     // Pagination
     changePage: (page) => dispatch(setPage(page)),

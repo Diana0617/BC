@@ -89,43 +89,44 @@ export const useOwnerSubscriptions = () => {
     suspendedSubscriptions: subscriptions.filter(s => s.status === 'SUSPENDED').length,
     cancelledSubscriptions: subscriptions.filter(s => s.status === 'CANCELLED').length,
     expiredSubscriptions: subscriptions.filter(s => s.status === 'EXPIRED').length,
-    
+    trialSubscriptions: subscriptions.filter(s => s.status === 'TRIAL').length,
+
     // Subscription status groups
     healthySubscriptions: subscriptions.filter(s => 
-      ['ACTIVE'].includes(s.status)
+      ['ACTIVE', 'TRIAL'].includes(s.status)
     ).length,
-    
+
     problematicSubscriptions: subscriptions.filter(s => 
       ['SUSPENDED', 'EXPIRED'].includes(s.status)
     ).length,
-    
+
     // Financial summary
     totalRevenueFromList: subscriptions
-      .filter(s => s.status === 'ACTIVE')
+      .filter(s => ['ACTIVE', 'TRIAL'].includes(s.status))
       .reduce((sum, s) => sum + (s.amount || 0), 0),
-    
+
     averageSubscriptionValue: subscriptions.length > 0 
       ? subscriptions.reduce((sum, s) => sum + (s.amount || 0), 0) / subscriptions.length 
       : 0,
-    
+
     // Expiring subscriptions (next 30 days)
     expiringSubscriptions: subscriptions.filter(s => {
-      if (!s.endDate || s.status !== 'ACTIVE') return false;
+      if (!s.endDate || !['ACTIVE', 'TRIAL'].includes(s.status)) return false;
       const endDate = new Date(s.endDate);
       const today = new Date();
       const diffTime = endDate - today;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return diffDays <= 30 && diffDays > 0;
     }),
-    
+
     // Plan distribution
     planDistribution: subscriptions.reduce((acc, subscription) => {
       const planName = subscription.plan?.name || 'Sin Plan';
       acc[planName] = (acc[planName] || 0) + 1;
       return acc;
     }, {}),
-    
-    // Status distribution
+
+    // Status distribution (incluye TRIAL)
     statusDistribution: subscriptions.reduce((acc, subscription) => {
       const status = subscription.status || 'UNKNOWN';
       acc[status] = (acc[status] || 0) + 1;

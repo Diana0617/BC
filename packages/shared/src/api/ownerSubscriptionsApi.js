@@ -190,24 +190,21 @@ export const ownerSubscriptionsApi = {
   async getSubscriptionStats() {
     try {
       const response = await api.get(SUBSCRIPTIONS_ENDPOINTS.STATS);
-      
+      // El backend ahora responde con { success, data: { ...stats } }
+      const stats = response.data?.data || response.data;
       return {
-        totalSubscriptions: response.data.totalSubscriptions || 0,
-        activeSubscriptions: response.data.activeSubscriptions || 0,
-        cancelledSubscriptions: response.data.cancelledSubscriptions || 0,
-        suspendedSubscriptions: response.data.suspendedSubscriptions || 0,
-        expiredSubscriptions: response.data.expiredSubscriptions || 0,
-        expiringThisMonth: response.data.expiringThisMonth || 0,
-        newThisMonth: response.data.newThisMonth || 0,
-        totalRevenue: response.data.totalRevenue || 0,
-        monthlyRecurringRevenue: response.data.monthlyRecurringRevenue || 0,
-        averageSubscriptionValue: response.data.averageSubscriptionValue || 0,
-        churnRate: response.data.churnRate || 0,
-        growthRate: response.data.growthRate || 0,
-        statusDistribution: response.data.statusDistribution || {},
-        planDistribution: response.data.planDistribution || {},
-        revenueByMonth: response.data.revenueByMonth || [],
-        subscriptionsByMonth: response.data.subscriptionsByMonth || []
+        totalSubscriptions: stats.totalSubscriptions || 0,
+        activeSubscriptions: stats.activeSubscriptions || 0,
+        cancelledSubscriptions: stats.cancelledSubscriptions || 0,
+        suspendedSubscriptions: stats.suspendedSubscriptions || 0,
+        expiredSubscriptions: stats.expiredSubscriptions || 0,
+        trialSubscriptions: stats.trialSubscriptions || 0,
+        expiringSoon: stats.expiringSoon || 0,
+        overdue: stats.overdue || 0,
+        statusDistribution: stats.statusDistribution || {},
+        planDistribution: stats.planDistribution || {},
+        revenueByMonth: stats.revenueByMonth || [],
+        subscriptionsByMonth: stats.subscriptionsByMonth || []
       };
     } catch (error) {
       console.error('Error fetching subscription stats:', error);

@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const OwnerSubscriptionsPage = () => {
+
   const {
     subscriptions = [],
     subscriptionStats,
@@ -28,6 +29,29 @@ const OwnerSubscriptionsPage = () => {
     computed = {},
     helpers = {}
   } = useOwnerSubscriptions() || {};
+
+  useEffect(() => {
+    console.log('Arreglo de suscripciones:', subscriptions);
+  }, [subscriptions]);
+
+  // Render dashboard statistics
+  const renderStats = () => {
+    if (!subscriptionStats) return <div className="mb-6">No hay estadísticas disponibles.</div>;
+    return (
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg shadow-sm">
+        <h2 className="text-lg font-bold mb-2">Estadísticas de Suscripciones</h2>
+        <ul className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 text-sm">
+          <li><strong>Total:</strong> {subscriptionStats.totalSubscriptions ?? 0}</li>
+          <li><strong>Activas:</strong> {subscriptionStats.activeSubscriptions ?? 0}</li>
+          <li><strong>De prueba:</strong> {subscriptionStats.trialSubscriptions ?? 0}</li>
+          <li><strong>Suspendidas:</strong> {subscriptionStats.suspendedSubscriptions ?? 0}</li>
+          <li><strong>Canceladas:</strong> {subscriptionStats.cancelledSubscriptions ?? 0}</li>
+          <li><strong>Vencidas:</strong> {subscriptionStats.expiredSubscriptions ?? 0}</li>
+          <li><strong>Próximas a vencer:</strong> {subscriptionStats.expiringSoon ?? 0}</li>
+        </ul>
+      </div>
+    );
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -136,6 +160,7 @@ const OwnerSubscriptionsPage = () => {
   // Renderizar estadísticas y lista de suscripciones
   return (
     <div className="space-y-6">
+      {renderStats()}
       {/* Header */}
       <div className="bg-white shadow-sm rounded-lg p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -146,18 +171,8 @@ const OwnerSubscriptionsPage = () => {
               <p className="text-gray-600">Gestiona todas las suscripciones de la plataforma</p>
             </div>
           </div>
-          
           {/* Actions */}
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={handleRefresh}
-              disabled={loading?.subscriptions}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              <ArrowPathIcon className={`w-4 h-4 ${loading?.subscriptions ? 'animate-spin' : ''}`} />
-              Actualizar
-            </button>
-            
             <button
               onClick={handleExport}
               className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -168,68 +183,6 @@ const OwnerSubscriptionsPage = () => {
           </div>
         </div>
       </div>
-
-      {/* Stats Cards */}
-      {subscriptionStats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white shadow-sm rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckCircleIcon className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Activas</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {subscriptionStats.activeSubscriptions || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white shadow-sm rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <ClockIcon className="w-6 h-6 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Por Vencer</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {subscriptionStats.expiringSubscriptions || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white shadow-sm rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <CurrencyDollarIcon className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Ingresos Mensuales</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${subscriptionStats.monthlyRevenue ? subscriptionStats.monthlyRevenue.toLocaleString('es-CO') : '0'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white shadow-sm rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-indigo-100 rounded-lg">
-                <CreditCardIcon className="w-6 h-6 text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {subscriptionStats.totalSubscriptions || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Filters */}
       <div className="bg-white shadow-sm rounded-lg p-6">
         <div className="flex flex-col lg:flex-row gap-4">
@@ -246,7 +199,6 @@ const OwnerSubscriptionsPage = () => {
               />
             </div>
           </div>
-
           {/* Status Filter */}
           <div className="lg:w-48">
             <select
@@ -257,12 +209,11 @@ const OwnerSubscriptionsPage = () => {
               <option value="">Todos los estados</option>
               {availableStatuses.map(status => (
                 <option key={status} value={status}>
-                                          {helpers?.formatSubscriptionStatus(status).label}
+                  {helpers?.formatSubscriptionStatus(status).label}
                 </option>
               ))}
             </select>
           </div>
-
           {/* Clear Filters */}
           {(searchTerm || statusFilter) && (
             <button
@@ -278,7 +229,6 @@ const OwnerSubscriptionsPage = () => {
           )}
         </div>
       </div>
-
       {/* Subscriptions Table */}
       <div className="bg-white shadow-sm rounded-lg overflow-hidden">
         {loading?.subscriptions ? (
@@ -396,7 +346,6 @@ const OwnerSubscriptionsPage = () => {
           </div>
         )}
       </div>
-
       {/* Pagination */}
       {computed?.totalPages > 1 && (
         <div className="bg-white shadow-sm rounded-lg px-6 py-4">
@@ -408,7 +357,6 @@ const OwnerSubscriptionsPage = () => {
               </span> de{' '}
               <span className="font-medium">{computed?.totalSubscriptions || 0}</span> resultados
             </div>
-            
             <div className="flex items-center gap-2">
               <button
                 onClick={() => helpers?.prevPage()}
@@ -417,12 +365,10 @@ const OwnerSubscriptionsPage = () => {
               >
                 Anterior
               </button>
-              
               <div className="flex items-center gap-1">
                 {Array.from({ length: Math.min(computed?.totalPages || 1, 7) }, (_, i) => {
                   const pageNum = i + 1;
                   const isCurrentPage = pageNum === pagination?.page;
-                  
                   return (
                     <button
                       key={pageNum}
@@ -438,7 +384,6 @@ const OwnerSubscriptionsPage = () => {
                   );
                 })}
               </div>
-              
               <button
                 onClick={() => helpers?.nextPage()}
                 disabled={!computed?.hasNextPage}
@@ -450,7 +395,6 @@ const OwnerSubscriptionsPage = () => {
           </div>
         </div>
       )}
-
       {/* Error Display */}
       {errors?.subscriptions && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4">

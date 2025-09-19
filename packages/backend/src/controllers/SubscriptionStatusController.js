@@ -395,6 +395,203 @@ class SubscriptionStatusController {
       });
     }
   }
+
+  /**
+   * Obtener todas las suscripciones del Owner
+   */
+  static async getAllSubscriptions(req, res) {
+    try {
+      const { 
+        page = 1, 
+        limit = 10, 
+        status,
+        planId,
+        businessId,
+        startDate,
+        endDate,
+        expiring,
+        sortBy = 'createdAt',
+        sortOrder = 'DESC'
+      } = req.query;
+
+      const offset = (page - 1) * limit;
+      
+      // Construir filtros
+      const whereClause = {};
+      
+      if (status) whereClause.status = status;
+      if (planId) whereClause.subscriptionPlanId = planId;
+      if (businessId) whereClause.businessId = businessId;
+      
+      if (startDate || endDate) {
+        whereClause.startDate = {};
+        if (startDate) whereClause.startDate[Op.gte] = new Date(startDate);
+        if (endDate) whereClause.startDate[Op.lte] = new Date(endDate);
+      }
+      
+      if (expiring === 'true') {
+        const in30Days = new Date();
+        in30Days.setDate(in30Days.getDate() + 30);
+        whereClause.endDate = {
+          [Op.gte]: new Date(),
+          [Op.lte]: in30Days
+        };
+      }
+
+      const subscriptions = await BusinessSubscription.findAndCountAll({
+        where: whereClause,
+        include: [
+          {
+            model: Business,
+            as: 'business',
+            attributes: ['id', 'name', 'email', 'subdomain']
+          },
+          {
+            model: SubscriptionPlan,
+            as: 'plan',
+            attributes: ['id', 'name', 'price', 'currency']
+          }
+        ],
+        order: [[sortBy, sortOrder]],
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      });
+
+      // Calcular estadísticas básicas
+      const stats = {
+        totalSubscriptions: subscriptions.count,
+        activeSubscriptions: subscriptions.rows.filter(s => s.status === 'ACTIVE').length,
+        expiredSubscriptions: subscriptions.rows.filter(s => s.status === 'EXPIRED').length,
+        suspendedSubscriptions: subscriptions.rows.filter(s => s.status === 'SUSPENDED').length,
+        cancelledSubscriptions: subscriptions.rows.filter(s => s.status === 'CANCELLED').length
+      };
+
+      res.json({
+        success: true,
+        data: {
+          subscriptions: subscriptions.rows.map(sub => ({
+            id: sub.id,
+            businessId: sub.businessId,
+            businessName: sub.business?.name || 'N/A',
+            businessEmail: sub.business?.email || 'N/A',
+            businessSubdomain: sub.business?.subdomain || 'N/A',
+            status: sub.status,
+            currentPlan: {
+              id: sub.plan?.id || null,
+              name: sub.plan?.name || 'N/A',
+              price: sub.plan?.price || 0,
+              currency: sub.plan?.currency || 'COP'
+            },
+            startDate: sub.startDate,
+            endDate: sub.endDate,
+            autoRenewal: sub.autoRenewal,
+            createdAt: sub.createdAt,
+            updatedAt: sub.updatedAt
+          })),
+          pagination: {
+            total: subscriptions.count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(subscriptions.count / limit)
+          },
+          stats
+        }
+      });
+
+    } catch (error) {
+      console.error('Error obteniendo todas las suscripciones:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor.',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Obtener estadísticas generales de suscripciones
+   */
+  static async getSubscriptionStats(req, res) {
+    try {
+      // Obtener conteo por estado
+      const statusStats = await BusinessSubscription.findAll({
+        attributes: [
+          'status',
+          [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+        ],
+        group: ['status']
+      });
+
+      // Obtener estadísticas adicionales
+      const totalSubscriptions = await BusinessSubscription.count();
+      
+      // Suscripciones próximas a vencer (próximos 30 días)
+      const expiringSoon = await BusinessSubscription.count({
+        where: {
+          status: 'ACTIVE',
+          endDate: {
+            [Op.gte]: new Date(),
+            [Op.lte]: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          }
+        }
+      });
+
+      // Suscripciones vencidas sin renovar
+      const overdueSubscriptions = await BusinessSubscription.count({
+        where: {
+          status: 'EXPIRED',
+          endDate: {
+            [Op.lt]: new Date()
+          }
+        }
+      });
+
+      // Construir respuesta de estadísticas
+      const stats = {
+        totalSubscriptions,
+        activeSubscriptions: 0,
+        expiredSubscriptions: 0,
+        suspendedSubscriptions: 0,
+        cancelledSubscriptions: 0,
+        expiringSoon,
+        overdue: overdueSubscriptions
+      };
+
+      // Mapear resultados de estados
+      statusStats.forEach(stat => {
+        const status = stat.dataValues.status;
+        const count = parseInt(stat.dataValues.count);
+        
+        switch(status) {
+          case 'ACTIVE':
+            stats.activeSubscriptions = count;
+            break;
+          case 'EXPIRED':
+            stats.expiredSubscriptions = count;
+            break;
+          case 'SUSPENDED':
+            stats.suspendedSubscriptions = count;
+            break;
+          case 'CANCELLED':
+            stats.cancelledSubscriptions = count;
+            break;
+        }
+      });
+
+      res.json({
+        success: true,
+        data: stats
+      });
+
+    } catch (error) {
+      console.error('Error obteniendo estadísticas de suscripciones:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor.',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 }
 
 module.exports = SubscriptionStatusController;

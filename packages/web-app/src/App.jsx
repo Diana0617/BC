@@ -18,8 +18,8 @@ import OwnerDashboardPage from './pages/owner/OwnerDashboardPage'
 import OwnerPlansPage from './pages/owner/plans/OwnerPlansPage'
 import OwnerModulesPage from './pages/owner/OwnerModulesPage'
 import RuleTemplatesPage from './pages/owner/RuleTemplates/RuleTemplatesPage'
-import OwnerSubscriptionsPage from './pages/OwnerSubscriptionsPage'
-import OwnerBusinessesPage from './pages/OwnerBusinessesPage'
+import OwnerSubscriptionsPage from './pages/owner/suscriptions/OwnerSubscriptionsPage.jsx'
+import OwnerBusinessesPage from './pages/owner/business/OwnerBusinessesPage.jsx'
 
 // Public Pages
 import LandingPage from './pages/public/LandingPage'

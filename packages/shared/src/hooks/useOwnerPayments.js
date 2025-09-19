@@ -1,7 +1,3 @@
-/**
- * Hook para Gestión de Pagos del Owner
- * Proporciona acceso fácil y funciones helper para el manejo de pagos, reembolsos y analytics
- */
 
 import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -68,6 +64,7 @@ export const useOwnerPayments = () => {
   const intervalRef = useRef(null);
 
   // ====== SELECTORS ======
+  // El selector ya retorna el array de pagos directamente
   const payments = useSelector(selectPayments);
   const selectedPayment = useSelector(selectSelectedPayment);
   const paymentStats = useSelector(selectPaymentStats);
@@ -489,12 +486,7 @@ export const useOwnerPayments = () => {
       page: pagination.page, 
       limit: pagination.limit 
     });
-    actions.loadPaymentStats({ 
-      startDate: filters.startDate, 
-      endDate: filters.endDate,
-      businessId: filters.businessId,
-      currency: filters.currency
-    });
+    // No llamar a actions.loadPaymentStats porque el endpoint /payments/stats no existe
   }, [filters, pagination.page, pagination.limit]);
 
   // Load data when filters or pagination changes

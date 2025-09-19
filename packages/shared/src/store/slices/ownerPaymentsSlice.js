@@ -5,6 +5,7 @@
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { ownerPaymentsApi } from '../../api/ownerPaymentsApi';
+import { createSelector } from '@reduxjs/toolkit';
 
 // ====== ASYNC THUNKS ======
 
@@ -12,7 +13,9 @@ export const fetchAllPayments = createAsyncThunk(
   'ownerPayments/fetchAllPayments',
   async (params = {}, { rejectWithValue }) => {
     try {
-      return await ownerPaymentsApi.getAllPayments(params);
+      const response = await ownerPaymentsApi.getAllPayments(params);
+      // Retornar solo el objeto data
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Error al cargar pagos');
     }
@@ -435,9 +438,11 @@ const ownerPaymentsSlice = createSlice({
         state.errors.payments = null;
       })
       .addCase(fetchAllPayments.fulfilled, (state, action) => {
-        state.loading.payments = false;
-        state.payments = action.payload.payments;
-        state.pagination = action.payload.pagination;
+  state.loading.payments = false;
+  // Guardar el objeto completo de la respuesta (ahora es solo data)
+  state.data = action.payload || {};
+  state.payments = action.payload?.payments || [];
+  state.pagination = action.payload?.pagination || {};
       })
       .addCase(fetchAllPayments.rejected, (state, action) => {
         state.loading.payments = false;
@@ -670,7 +675,11 @@ export const {
 } = ownerPaymentsSlice.actions;
 
 // ====== SELECTORS ======
-export const selectPayments = (state) => state.ownerPayments.payments;
+// Selector memoizado para evitar rerenders innecesarios
+export const selectPayments = createSelector(
+  [(state) => state.ownerPayments.data?.payments],
+  (payments) => payments || []
+);
 export const selectSelectedPayment = (state) => state.ownerPayments.selectedPayment;
 export const selectPaymentStats = (state) => state.ownerPayments.paymentStats;
 export const selectRevenueAnalytics = (state) => state.ownerPayments.revenueAnalytics;
