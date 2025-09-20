@@ -167,6 +167,7 @@ const receiptRoutes = require('./routes/receipts');
 const subscriptionRoutes = require('./routes/subscription');
 const subscriptionStatusRoutes = require('./routes/subscriptionStatus');
 const payment3DSRoutes = require('./routes/payment3DS');
+const testingRoutes = require('./routes/testing');
 
 
 app.use('/api/auth', authRoutes);
@@ -192,6 +193,7 @@ app.use('/api/public', publicInvitationRoutes);
 app.use('/api/wompi', wompiPaymentRoutes);
 app.use('/api/payments/3ds', payment3DSRoutes); // Rutas de pagos 3D Secure
 app.use('/api/test/auto-renewal', autoRenewalTestRoutes);
+app.use('/api/testing', testingRoutes); // Rutas de testing (solo desarrollo)
 
 // Ruta 404
 app.use('*', (req, res) => {

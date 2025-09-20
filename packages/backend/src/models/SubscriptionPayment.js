@@ -9,7 +9,7 @@ const SubscriptionPayment = sequelize.define('SubscriptionPayment', {
   },
   businessSubscriptionId: {
     type: DataTypes.UUID,
-    allowNull: false,
+    allowNull: true, // Permitir null para registros públicos temporales
     references: {
       model: 'business_subscriptions',
       key: 'id'

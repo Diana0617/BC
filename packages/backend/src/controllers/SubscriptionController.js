@@ -161,7 +161,7 @@ class SubscriptionController {
       // Verificar que el businessCode (subdominio) no existe
       if (businessData.businessCode) {
         const existingBusiness = await Business.findOne({
-          where: { businessCode: businessData.businessCode }
+          where: { subdomain: businessData.businessCode }
         })
         if (existingBusiness) {
           return res.status(409).json({
@@ -212,10 +212,49 @@ class SubscriptionController {
         console.log('Negocio creado:', business.id)
 
         // 2. Crear reglas predeterminadas del negocio
-        await BusinessRules.create({
-          businessId: business.id,
-          // Usar valores predeterminados del modelo BusinessRules
-        }, { transaction })
+        const defaultRules = [
+          {
+            businessId: business.id,
+            ruleKey: 'BUSINESS_HOURS',
+            ruleValue: {
+              monday: { open: '09:00', close: '18:00', enabled: true },
+              tuesday: { open: '09:00', close: '18:00', enabled: true },
+              wednesday: { open: '09:00', close: '18:00', enabled: true },
+              thursday: { open: '09:00', close: '18:00', enabled: true },
+              friday: { open: '09:00', close: '18:00', enabled: true },
+              saturday: { open: '09:00', close: '15:00', enabled: true },
+              sunday: { open: '09:00', close: '15:00', enabled: false }
+            },
+            description: 'Horarios de atención del negocio',
+            category: 'BUSINESS_HOURS'
+          },
+          {
+            businessId: business.id,
+            ruleKey: 'CANCELLATION_POLICY',
+            ruleValue: {
+              allowCancellation: true,
+              minHoursBeforeAppointment: 24,
+              refundPolicy: 'full'
+            },
+            description: 'Política de cancelación de citas',
+            category: 'CANCELLATION_POLICY'
+          },
+          {
+            businessId: business.id,
+            ruleKey: 'APPOINTMENT_RULES',
+            ruleValue: {
+              maxAdvanceBookingDays: 30,
+              minAdvanceBookingHours: 2,
+              allowSameDayBooking: true
+            },
+            description: 'Reglas para agendamiento de citas',
+            category: 'APPOINTMENT_RULES'
+          }
+        ];
+
+        for (const rule of defaultRules) {
+          await BusinessRules.create(rule, { transaction });
+        }
 
         console.log('Reglas del negocio creadas para:', business.id)
 
@@ -258,24 +297,52 @@ class SubscriptionController {
 
         console.log('Suscripción creada:', subscription.id)
 
-        // 5. Registrar la transacción de pago
-        const paymentTransaction = await SubscriptionPayment.create({
-          businessSubscriptionId: subscription.id,
-          transactionId: paymentData.transactionId || uuidv4(),
-          amount: paymentData.amount,
-          currency: paymentData.currency || 'COP',
-          method: paymentData.method || 'card',
-          status: paymentData.status || 'APPROVED',
-          metadata: {
-            invitationToken: invitationToken,
-            acceptedTerms: acceptedTerms,
-            paymentData: paymentData
-          },
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }, { transaction })
+        // 5. Registrar o actualizar la transacción de pago
+        let paymentTransaction = await SubscriptionPayment.findOne({
+          where: { transactionId: paymentData.transactionId }
+        });
 
-        console.log('Transacción registrada:', paymentTransaction.id)
+        if (paymentTransaction) {
+          // Actualizar el pago existente con la nueva suscripción
+          paymentTransaction = await paymentTransaction.update({
+            businessSubscriptionId: subscription.id,
+            status: paymentData.status || 'APPROVED',
+            paymentMethod: paymentData.method || 'WOMPI_3DS',
+            netAmount: paymentData.amount,
+            dueDate: new Date(),
+            metadata: {
+              ...paymentTransaction.metadata,
+              invitationToken: invitationToken,
+              acceptedTerms: acceptedTerms,
+              paymentData: paymentData,
+              businessCreated: true
+            },
+            updatedAt: new Date()
+          }, { transaction });
+          
+          console.log('Transacción actualizada:', paymentTransaction.id);
+        } else {
+          // Crear nueva transacción si no existe
+          paymentTransaction = await SubscriptionPayment.create({
+            businessSubscriptionId: subscription.id,
+            transactionId: paymentData.transactionId || uuidv4(),
+            amount: paymentData.amount,
+            currency: paymentData.currency || 'COP',
+            paymentMethod: paymentData.method || 'WOMPI_3DS',
+            netAmount: paymentData.amount,
+            dueDate: new Date(),
+            status: paymentData.status || 'APPROVED',
+            metadata: {
+              invitationToken: invitationToken,
+              acceptedTerms: acceptedTerms,
+              paymentData: paymentData
+            },
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }, { transaction });
+          
+          console.log('Transacción creada:', paymentTransaction.id);
+        }
 
         // Confirmar todas las operaciones
         await transaction.commit()
