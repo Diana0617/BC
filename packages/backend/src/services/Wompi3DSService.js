@@ -1,5 +1,13 @@
 /**
- * Servicio para manejar pagos con Wompi usando 3D Secure v2 (3DS) y 3RI
+ * Servicio para manejar pagos con Wompi u      console.log('🔐 Creando transacción 3DS v2:', {
+        email: transactionData.customerEmail,
+        amount: transactionData.amountInCents,
+        reference: transactionData.reference,
+        authType: transactionData.threeDsAuthType,
+        customerName: transactionData.customerName,
+        url: `${this.baseURL}/transactions`,
+        publicKey: this.publicKey.substring(0, 12) + '...'
+      }); Secure v2 (3DS) y 3RI
  * 
  * 3DS v2: Para crear transacciones seguras con autenticación (primera vez)
  * 3RI: Para pagos recurrentes automáticos usando tokens de fuentes de pago
@@ -12,10 +20,18 @@ const { SubscriptionPayment, BusinessSubscription, Business } = require('../mode
 
 class Wompi3DSService {
   constructor() {
-    this.baseURL = process.env.WOMPI_BASE_URL || 'https://production.wompi.co/v1';
+    this.baseURL = process.env.WOMPI_API_URL || 'https://sandbox.wompi.co/v1';
     this.publicKey = process.env.WOMPI_PUBLIC_KEY;
     this.privateKey = process.env.WOMPI_PRIVATE_KEY;
-    this.isSandbox = process.env.NODE_ENV !== 'production';
+    this.isSandbox = process.env.WOMPI_ENVIRONMENT === 'test';
+    
+    console.log('🔧 Wompi3DSService configurado:', {
+      baseURL: this.baseURL,
+      publicKey: this.publicKey?.substring(0, 10) + '...',
+      privateKey: this.privateKey?.substring(0, 10) + '...',
+      isSandbox: this.isSandbox,
+      environment: process.env.WOMPI_ENVIRONMENT
+    });
     
     if (!this.publicKey || !this.privateKey) {
       throw new Error('Las claves de Wompi no están configuradas');
@@ -41,7 +57,9 @@ class Wompi3DSService {
         email: transactionData.customerEmail,
         amount: transactionData.amountInCents,
         reference: transactionData.reference,
-        authType: transactionData.threeDsAuthType
+        authType: transactionData.threeDsAuthType,
+        url: `${this.baseURL}/transactions`,
+        publicKey: this.publicKey?.substring(0, 10) + '...'
       });
 
       // Validar que browserInfo esté presente
@@ -57,11 +75,13 @@ class Wompi3DSService {
         reference: transactionData.reference,
         payment_method: {
           type: 'CARD',
-          token: transactionData.token
+          token: transactionData.token,
+          installments: 1 // Campo obligatorio - número de cuotas
         },
         // Campos obligatorios para 3DS v2
         is_three_ds: true,
         customer_data: {
+          full_name: transactionData.customerName || 'Usuario BC',
           browser_info: transactionData.browserInfo
         }
       };
@@ -70,6 +90,29 @@ class Wompi3DSService {
       if (this.isSandbox && transactionData.threeDsAuthType) {
         requestBody.three_ds_auth_type = transactionData.threeDsAuthType;
       }
+
+      // Corregir formato de customer_data para Wompi - mantener full_name
+      if (requestBody.customer_data?.browser_info) {
+        requestBody.customer_data = {
+          full_name: requestBody.customer_data.full_name, // Mantener el full_name
+          browser_info: requestBody.customer_data.browser_info
+        };
+      }
+
+      // DEBUG: Log del requestBody completo antes de enviar
+      console.log('📤 DEBUG - RequestBody completo a Wompi:', {
+        ...requestBody,
+        customer_data_debug: {
+          full_name: requestBody.customer_data?.full_name,
+          browser_info_present: !!requestBody.customer_data?.browser_info,
+          browser_info_keys: requestBody.customer_data?.browser_info ? Object.keys(requestBody.customer_data.browser_info) : null
+        },
+        payment_method_debug: {
+          type: requestBody.payment_method?.type,
+          token: requestBody.payment_method?.token ? requestBody.payment_method.token.substring(0, 20) + '...' : 'NO_TOKEN',
+          token_length: requestBody.payment_method?.token?.length
+        }
+      });
 
       const response = await axios.post(`${this.baseURL}/transactions`, requestBody, {
         headers: {
@@ -91,7 +134,15 @@ class Wompi3DSService {
       return transaction;
 
     } catch (error) {
-      console.error('❌ Error creando transacción 3DS:', error.response?.data || error.message);
+      console.error('❌ Error creando transacción 3DS:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        error: error.response?.data?.error,
+        messages: error.response?.data?.error?.messages,
+        customer_data_errors: error.response?.data?.error?.messages?.customer_data,
+        payment_method_errors: error.response?.data?.error?.messages?.payment_method,
+        payment_method_details: error.response?.data?.error?.messages?.payment_method?.messages
+      });
       throw new Error(`Error al crear transacción 3DS: ${error.response?.data?.error?.reason || error.message}`);
     }
   }

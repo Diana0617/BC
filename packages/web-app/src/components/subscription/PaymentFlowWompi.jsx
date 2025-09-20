@@ -188,7 +188,7 @@ const PaymentFlowWompi = ({
                 Error en el Pago
               </h2>
               <p className="text-gray-600 mb-4">
-                {paymentResult?.error || paymentError || 'Hubo un problema al procesar tu pago.'}
+                {paymentResult?.error || (paymentError?.message || paymentError) || 'Hubo un problema al procesar tu pago.'}
               </p>
               <div className="space-y-3">
                 <button

@@ -524,6 +524,364 @@ class Payment3DSController {
     }
   }
 
+  /**
+   * Crear pago 3DS v2 público para registro (sin autenticación)
+   * POST /api/subscriptions/3ds/create
+   */
+  static async createPublic3DSPayment(req, res) {
+    try {
+      const { 
+        businessCode, // Para registro nuevo
+        subscriptionPlanId,
+        customerEmail,
+        amount,
+        currency = 'COP',
+        description,
+        cardToken, // Token de la tarjeta
+        acceptanceToken, // Token de aceptación de términos
+        browserInfo,
+        threeDsAuthType = 'challenge_v2', // Para testing - valor correcto según documentación Wompi
+        registrationData // Datos completos del negocio y usuario para crear después del pago
+      } = req.body;
+
+      // Validaciones
+      if (!businessCode || !subscriptionPlanId || !customerEmail || !amount || !cardToken || !acceptanceToken || !browserInfo || !registrationData) {
+        return res.status(400).json({
+          success: false,
+          error: 'businessCode, subscriptionPlanId, customerEmail, amount, cardToken, acceptanceToken, browserInfo y registrationData son requeridos'
+        });
+      }
+
+      // Verificar que el plan existe
+      const plan = await SubscriptionPlan.findByPk(subscriptionPlanId);
+      if (!plan) {
+        return res.status(404).json({
+          success: false,
+          error: 'Plan de suscripción no encontrado'
+        });
+      }
+
+      // Verificar que el businessCode no existe
+      const existingBusiness = await Business.findOne({
+        where: { subdomain: businessCode }
+      });
+      if (existingBusiness) {
+        return res.status(409).json({
+          success: false,
+          error: 'El código de negocio ya existe'
+        });
+      }
+
+      console.log('🔐 Creando transacción 3DS v2 pública para registro:', {
+        businessCode,
+        customerEmail,
+        amount,
+        planId: subscriptionPlanId,
+        hasCardToken: !!cardToken,
+        hasAcceptanceToken: !!acceptanceToken,
+        hasBrowserInfo: !!browserInfo,
+        threeDsAuthTypeReceived: threeDsAuthType,
+        threeDsAuthTypeFromBody: req.body.threeDsAuthType
+      });
+
+      // DEBUG: Verificar browserInfo detalladamente
+      console.log('🌐 DEBUG - browserInfo recibido:', {
+        browserInfo: browserInfo,
+        keys: browserInfo ? Object.keys(browserInfo) : 'NULL',
+        values: browserInfo ? browserInfo : 'NULL'
+      });
+
+      const wompiService = new Wompi3DSService();
+
+      // Generar referencia única para la transacción
+      const reference = `BC_REGISTER_${businessCode}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+      // Preparar datos para Wompi 3DS
+      const transactionData = {
+        token: cardToken, // Token de la tarjeta
+        acceptanceToken: acceptanceToken, // Token de aceptación
+        amountInCents: parseInt(amount),
+        currency: currency,
+        customerEmail: customerEmail,
+        customerName: registrationData?.userData?.firstName && registrationData?.userData?.lastName 
+          ? `${registrationData.userData.firstName} ${registrationData.userData.lastName}`
+          : registrationData?.userData?.firstName 
+          ? registrationData.userData.firstName
+          : customerEmail.split('@')[0] || 'Usuario BC',
+        reference: reference,
+        browserInfo: browserInfo,
+        threeDsAuthType: 'challenge_v2' // Forzar valor correcto independiente del frontend
+      };
+
+      const result = await wompiService.create3DSTransaction(transactionData);
+
+      console.log('✅ Transacción 3DS creada exitosamente en Wompi:', {
+        transactionId: result.id,
+        reference: reference,
+        status: result.status,
+        payment_link_id: result.payment_link_id
+      });
+
+      // Crear SubscriptionPayment para el flujo público (sin BusinessSubscription aún)
+      const subscriptionPayment = await SubscriptionPayment.create({
+        businessSubscriptionId: null, // Se asignará después al crear el negocio
+        transactionId: result.id,
+        reference: reference,
+        amount: amount,
+        currency: currency,
+        paymentMethod: 'WOMPI_3DS',
+        netAmount: amount,
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas
+        method: '3DS_V2',
+        status: 'PENDING',
+        wompiData: result,
+        metadata: {
+          type: 'PUBLIC_REGISTRATION',
+          businessCode: businessCode,
+          subscriptionPlanId: subscriptionPlanId,
+          registrationData: registrationData,
+          browserInfo: browserInfo,
+          threeDsAuthType: 'challenge_v2',
+          isTemporary: true,
+          wompiReference: reference
+        }
+      });
+
+      console.log('✅ SubscriptionPayment creado para registro público:', {
+        id: subscriptionPayment.id,
+        transactionId: subscriptionPayment.transactionId,
+        amount: subscriptionPayment.amount,
+        status: subscriptionPayment.status
+      });
+
+      // Respuesta para el frontend
+      res.json({
+        success: true,
+        data: {
+          transaction: {
+            id: result.id,
+            reference: reference,
+            status: result.status,
+            amount: amount,
+            currency: currency
+          },
+          threeds: {
+            challenge_required: result.payment_link_id ? true : false,
+            challenge_url: result.payment_link_id ? `${process.env.WOMPI_BASE_URL}/payment_links/${result.payment_link_id}` : null,
+            iframe_required: result.three_ds_auth?.iframe_challenge_url ? true : false,
+            iframe_url: result.three_ds_auth?.iframe_challenge_url || null
+          },
+          next_steps: {
+            action: result.payment_link_id ? 'redirect' : 'wait',
+            url: result.payment_link_id ? `${process.env.WOMPI_BASE_URL}/payment_links/${result.payment_link_id}` : null,
+            message: result.payment_link_id ? 
+              'Redirigir al usuario a la URL de challenge 3DS' : 
+              'Polling del estado de la transacción'
+          }
+        }
+      });
+
+      // 🤖 Auto-simulación en desarrollo (opcional)
+      console.log('🔍 DEBUG Auto-simulación:', {
+        NODE_ENV: process.env.NODE_ENV,
+        AUTO_SIMULATE_PAYMENTS: process.env.AUTO_SIMULATE_PAYMENTS,
+        shouldAutoSimulate: process.env.NODE_ENV === 'development' && process.env.AUTO_SIMULATE_PAYMENTS === 'true'
+      });
+      
+      if (process.env.NODE_ENV === 'development' && process.env.AUTO_SIMULATE_PAYMENTS === 'true') {
+        console.log('🤖 Programando auto-simulación para desarrollo...');
+        setTimeout(async () => {
+          try {
+            const TestingController = require('./TestingController');
+            const mockReq = {
+              params: { transactionId: result.id },
+              body: { amount, currency, status: 'APPROVED' }
+            };
+            const mockRes = {
+              status: () => ({ json: (data) => console.log('🤖 Auto-simulado:', data) }),
+              json: (data) => console.log('🤖 Auto-simulación exitosa:', data)
+            };
+            await TestingController.simulateApprovedPayment(mockReq, mockRes);
+          } catch (err) {
+            console.log('🤖 Error en auto-simulación:', err.message);
+          }
+        }, 15000); // 15 segundos después
+      }
+
+    } catch (error) {
+      console.error('Error creando pago 3DS v2 público:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Consultar estado de transacción 3DS v2 pública
+   * GET /api/subscriptions/3ds/status/:transactionId
+   */
+  static async getPublic3DSTransactionStatus(req, res) {
+    try {
+      const { transactionId } = req.params;
+
+      if (!transactionId) {
+        return res.status(400).json({
+          success: false,
+          error: 'transactionId es requerido'
+        });
+      }
+
+      console.log('📊 Consultando estado 3DS v2 público:', transactionId);
+
+      // Buscar el pago temporal con metadata type correcto
+      const payment = await SubscriptionPayment.findOne({
+        where: { 
+          transactionId: transactionId
+        }
+      });
+
+      if (!payment) {
+        return res.status(404).json({
+          success: false,
+          error: 'Transacción no encontrada'
+        });
+      }
+
+      console.log('💾 Pago encontrado en BD:', {
+        id: payment.id,
+        transactionId: payment.transactionId,
+        status: payment.status,
+        amount: payment.amount,
+        metadataType: payment.metadata?.type
+      });
+
+      // Si el pago ya está aprobado en BD, no consultar Wompi (auto-simulación completada)
+      if (payment.status === 'APPROVED') {
+        console.log('✅ Pago ya aprobado en BD - devolviendo estado exitoso');
+        
+        return res.json({
+          success: true,
+          data: {
+            transaction: {
+              id: transactionId,
+              reference: payment.reference,
+              status: payment.status,
+              amount: payment.amount,
+              currency: payment.currency
+            },
+            wompi: {
+              status: 'APPROVED',
+              status_message: 'Pago simulado y aprobado',
+              created_at: payment.createdAt,
+              finalized_at: payment.updatedAt
+            },
+            business_creation: {
+              required: true,
+              completed: payment.metadata?.businessCreated || false
+            }
+          }
+        });
+      }
+
+      // Consultar estado en Wompi solo si está pendiente
+      const wompiService = new Wompi3DSService();
+      const wompiTransaction = await wompiService.get3DSTransactionStatus(transactionId);
+      
+      console.log('🌐 Estado actual en Wompi:', {
+        transactionId: wompiTransaction.id,
+        status: wompiTransaction.status,
+        currentStep: wompiTransaction.current_step,
+        stepStatus: wompiTransaction.step_status
+      });
+
+      // Actualizar estado del pago local
+      await payment.update({
+        status: wompiTransaction.status === 'APPROVED' ? 'APPROVED' : 
+                wompiTransaction.status === 'DECLINED' ? 'DECLINED' : 
+                wompiTransaction.status === 'VOIDED' ? 'VOIDED' : 'PENDING',
+        wompiData: wompiTransaction,
+        updatedAt: new Date()
+      });
+
+      console.log('✅ Estado actualizado en BD:', payment.status);
+
+      // Si el pago fue aprobado, crear el negocio y suscripción
+      if (wompiTransaction.status === 'APPROVED' && payment.metadata?.businessData) {
+        console.log('✅ Pago aprobado - iniciando creación de negocio');
+        
+        try {
+          // Usar el SubscriptionController para crear el negocio completo
+          const businessData = payment.metadata.businessData;
+          const paymentData = {
+            transactionId: transactionId,
+            amount: payment.amount,
+            currency: payment.currency,
+            method: 'WOMPI_3DS', // Corregir: usar valor válido del enum
+            status: 'APPROVED'
+          };
+
+          // Crear el negocio usando el método createCompleteSubscription
+          const SubscriptionController = require('./SubscriptionController');
+          const creationResult = await SubscriptionController.createCompleteSubscription({
+            businessData: businessData,
+            paymentData: paymentData,
+            invitationToken: payment.metadata.invitationToken || 'auto-generated',
+            acceptedTerms: payment.metadata.acceptedTerms || true
+          });
+          
+          console.log('✅ Negocio creado exitosamente después del pago 3DS');
+          
+          // Actualizar el pago con el resultado
+          await payment.update({
+            businessSubscriptionId: creationResult.subscription?.id,
+            metadata: {
+              ...payment.metadata,
+              businessCreated: true,
+              businessId: creationResult.business?.id
+            }
+          });
+          
+        } catch (creationError) {
+          console.error('❌ Error creando negocio después del pago:', creationError);
+          // No fallar la respuesta, el pago fue exitoso
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          transaction: {
+            id: transactionId,
+            reference: payment.reference,
+            status: payment.status,
+            amount: payment.amount,
+            currency: payment.currency
+          },
+          wompi: {
+            status: wompiTransaction.status,
+            status_message: wompiTransaction.status_message,
+            created_at: wompiTransaction.created_at,
+            finalized_at: wompiTransaction.finalized_at
+          },
+          business_creation: {
+            required: wompiTransaction.status === 'APPROVED',
+            completed: payment.metadata?.businessCreated || false
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error consultando estado 3DS v2 público:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
 }
 
 module.exports = Payment3DSController;
