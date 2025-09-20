@@ -13,6 +13,7 @@ import ownerBusinessReducer from './slices/ownerBusinessSlice';
 import ownerSubscriptionReducer from './slices/ownerSubscriptionSlice';
 import ownerPaymentsReducer from './slices/ownerPaymentsSlice';
 import ownerFinancialReportsReducer from './slices/ownerFinancialReportsSlice';
+import ownerExpensesReducer from './slices/ownerExpensesSlice';
 // 🔄 NEW SYSTEM REDUCERS
 import autoRenewalReducer from './slices/autoRenewalSlice';
 import ownerBusinessManagementReducer from './slices/ownerBusinessManagementSlice';
@@ -44,7 +45,8 @@ export const createStore = (preloadedState = {}) => {
       ownerBusiness: ownerBusinessReducer,
       ownerSubscription: ownerSubscriptionReducer,
       ownerPayments: ownerPaymentsReducer,
-      ownerFinancialReports: ownerFinancialReportsReducer,
+  ownerFinancialReports: ownerFinancialReportsReducer,
+  ownerExpenses: ownerExpensesReducer,
       // 🔄 NEW SYSTEM REDUCERS
       autoRenewal: autoRenewalReducer,
       ownerBusinessManagement: ownerBusinessManagementReducer,

@@ -6,17 +6,17 @@
 import { apiClient } from './client.js';
 
 const EXPENSES_ENDPOINTS = {
-  CREATE: '/owner/expenses',
-  GET_ALL: '/owner/expenses',
-  GET_BY_ID: (id) => `/owner/expenses/${id}`,
-  UPDATE: (id) => `/owner/expenses/${id}`,
-  DELETE: (id) => `/owner/expenses/${id}`,
-  APPROVE: (id) => `/owner/expenses/${id}/approve`,
-  REJECT: (id) => `/owner/expenses/${id}/reject`,
-  MARK_PAID: (id) => `/owner/expenses/${id}/mark-paid`,
-  REMOVE_RECEIPT: (id) => `/owner/expenses/${id}/receipt`,
-  CATEGORIES: '/owner/expenses/categories',
-  STATS: '/owner/expenses/stats'
+  CREATE: '/api/owner/expenses',
+  GET_ALL: '/api/owner/expenses',
+  GET_BY_ID: (id) => `/api/owner/expenses/${id}`,
+  UPDATE: (id) => `/api/owner/expenses/${id}`,
+  DELETE: (id) => `/api/owner/expenses/${id}`,
+  APPROVE: (id) => `/api/owner/expenses/${id}/approve`,
+  REJECT: (id) => `/api/owner/expenses/${id}/reject`,
+  MARK_PAID: (id) => `/api/owner/expenses/${id}/mark-paid`,
+  REMOVE_RECEIPT: (id) => `/api/owner/expenses/${id}/receipt`,
+  CATEGORIES: '/api/owner/expenses/categories',
+  STATS: '/api/owner/expenses/stats'
 };
 
 export const ownerExpensesApi = {
@@ -28,26 +28,23 @@ export const ownerExpensesApi = {
    */
   async createExpense(expenseData, receiptFile = null) {
     try {
-      const formData = new FormData();
-      
-      // Agregar todos los campos de datos
-      Object.keys(expenseData).forEach(key => {
-        if (expenseData[key] !== null && expenseData[key] !== undefined) {
-          formData.append(key, expenseData[key]);
-        }
-      });
-      
-      // Agregar archivo si existe
+      let response;
       if (receiptFile) {
+        const formData = new FormData();
+        Object.keys(expenseData).forEach(key => {
+          if (expenseData[key] !== null && expenseData[key] !== undefined) {
+            formData.append(key, expenseData[key]);
+          }
+        });
         formData.append('receipt', receiptFile);
+        response = await apiClient.post(EXPENSES_ENDPOINTS.CREATE, formData);
+      } else {
+        response = await apiClient.post(EXPENSES_ENDPOINTS.CREATE, expenseData, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
       }
-
-      const response = await apiClient.post(EXPENSES_ENDPOINTS.CREATE, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
       return response.data;
     } catch (error) {
       console.error('Error creando gasto:', error);
@@ -62,9 +59,8 @@ export const ownerExpensesApi = {
    */
   async getExpenses(params = {}) {
     try {
-      const response = await apiClient.get(EXPENSES_ENDPOINTS.GET_ALL, {
-        params
-      });
+      // Pasar los filtros directamente como segundo argumento
+      const response = await apiClient.get(EXPENSES_ENDPOINTS.GET_ALL, { ...params });
       return response.data;
     } catch (error) {
       console.error('Error obteniendo gastos:', error);
@@ -218,7 +214,8 @@ export const ownerExpensesApi = {
   async getCategories() {
     try {
       const response = await apiClient.get(EXPENSES_ENDPOINTS.CATEGORIES);
-      return response.data;
+      // El backend responde { success, categories }
+      return response.data.categories;
     } catch (error) {
       console.error('Error obteniendo categorías:', error);
       throw error;
@@ -331,6 +328,33 @@ export const ownerExpensesApi = {
       formatted.isRecurring = formatted.isRecurring === 'true';
     }
 
+    // Mapear categoría a valor válido del enum
+    const validCategories = [
+      'INFRASTRUCTURE', 'MARKETING', 'PERSONNEL', 'OFFICE', 'TECHNOLOGY', 'LEGAL', 'TRAVEL', 'TRAINING', 'MAINTENANCE', 'UTILITIES', 'INSURANCE', 'TAXES', 'OTHER'
+    ];
+    if (formatted.category && !validCategories.includes(formatted.category)) {
+      // Si el usuario pone "luz", lo mapeamos a UTILITIES
+      const categoryMap = {
+        'luz': 'UTILITIES',
+        'electricidad': 'UTILITIES',
+        'agua': 'UTILITIES',
+        'internet': 'UTILITIES',
+        'marketing': 'MARKETING',
+        'personal': 'PERSONNEL',
+        'tecnología': 'TECHNOLOGY',
+        'oficina': 'OFFICE',
+        'legal': 'LEGAL',
+        'viajes': 'TRAVEL',
+        'capacitacion': 'TRAINING',
+        'mantenimiento': 'MAINTENANCE',
+        'seguros': 'INSURANCE',
+        'impuestos': 'TAXES',
+        'otros': 'OTHER'
+      };
+      const normalized = formatted.category.toLowerCase();
+      formatted.category = categoryMap[normalized] || 'OTHER';
+    }
+
     return formatted;
   },
 
@@ -370,7 +394,12 @@ export const ownerExpensesApi = {
       'UTILITIES': { label: 'Servicios', icon: 'zap' },
       'INSURANCE': { label: 'Seguros', icon: 'shield' },
       'TAXES': { label: 'Impuestos', icon: 'receipt' },
-      'OTHER': { label: 'Otros', icon: 'more-horizontal' }
+      'OTHER': { label: 'Otros', icon: 'more-horizontal' },
+      // Mapear alias comunes
+      'luz': { label: 'Servicios (Luz)', icon: 'zap' },
+      'electricidad': { label: 'Servicios (Electricidad)', icon: 'zap' },
+      'agua': { label: 'Servicios (Agua)', icon: 'zap' },
+      'internet': { label: 'Servicios (Internet)', icon: 'zap' }
     };
 
     return categoryMap[category] || { label: category, icon: 'folder' };

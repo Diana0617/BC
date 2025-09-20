@@ -34,16 +34,17 @@ export const ownerPaymentsApi = {
       if (params.page) queryParams.append('page', params.page);
       if (params.limit) queryParams.append('limit', params.limit);
       
-      // Filters
-      if (params.status) queryParams.append('status', params.status);
-      if (params.method) queryParams.append('method', params.method);
-      if (params.businessId) queryParams.append('businessId', params.businessId);
-      if (params.subscriptionId) queryParams.append('subscriptionId', params.subscriptionId);
-      if (params.startDate) queryParams.append('startDate', params.startDate);
-      if (params.endDate) queryParams.append('endDate', params.endDate);
-      if (params.minAmount) queryParams.append('minAmount', params.minAmount);
-      if (params.maxAmount) queryParams.append('maxAmount', params.maxAmount);
-      if (params.currency) queryParams.append('currency', params.currency);
+  // Filters
+  if (params.status) queryParams.append('status', params.status);
+  if (params.method) queryParams.append('method', params.method);
+  if (params.businessId) queryParams.append('businessId', params.businessId);
+  if (params.subscriptionId) queryParams.append('subscriptionId', params.subscriptionId);
+  if (params.startDate) queryParams.append('startDate', params.startDate);
+  if (params.endDate) queryParams.append('endDate', params.endDate);
+  if (params.minAmount) queryParams.append('minAmount', params.minAmount);
+  if (params.maxAmount) queryParams.append('maxAmount', params.maxAmount);
+  if (params.currency) queryParams.append('currency', params.currency);
+  if (params.search) queryParams.append('search', params.search);
       
       // Sorting
       if (params.sortBy) queryParams.append('sortBy', params.sortBy);

@@ -148,7 +148,6 @@ class OwnerController {
               as: 'plan',
               attributes: ['id', 'name', 'price']
             }],
-            where: { status: 'ACTIVE' },
             required: false
           }
         ],

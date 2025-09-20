@@ -1,10 +1,13 @@
+//const PaginationService = require('../services/PaginationService');
+const PaginationService = require('../services/PaginationService');
+const { validatePaginationParams, generatePaginationMeta } = PaginationService;
 const { Op, literal, fn, col } = require('sequelize');
 const { OwnerExpense, User } = require('../models');
-const PaginationService = require('../services/PaginationService');
-const { uploadToCloudinary, deleteFromCloudinary } = require('../config/cloudinary');
+const { uploadPaymentReceipt, deleteDocument } = require('../config/cloudinary');
 const fs = require('fs').promises;
 
 class OwnerExpenseController {
+ 
 
   /**
    * Crear un nuevo gasto
@@ -67,24 +70,17 @@ class OwnerExpenseController {
       // Manejar comprobante si existe
       if (req.file) {
         try {
-          const cloudinaryResult = await uploadToCloudinary(
-            req.file.path,
-            {
-              folder: 'beauty-control/owner/expenses',
-              resource_type: req.file.mimetype.startsWith('image/') ? 'image' : 'raw',
-              public_id: `expense_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-            }
-          );
-
-          expenseData.receiptUrl = cloudinaryResult.secure_url;
-          expenseData.receiptPublicId = cloudinaryResult.public_id;
-          expenseData.receiptType = req.file.mimetype.startsWith('image/') ? 'IMAGE' : 'PDF';
-          expenseData.receiptOriginalName = req.file.originalname;
-
+          const cloudinaryResult = await uploadPaymentReceipt(req.file.path, expenseData.id);
+          if (cloudinaryResult.success && cloudinaryResult.data) {
+            expenseData.receiptUrl = cloudinaryResult.data.secure_url || cloudinaryResult.data.url;
+            expenseData.receiptPublicId = cloudinaryResult.data.public_id;
+            expenseData.receiptType = req.file.mimetype === 'application/pdf' ? 'PDF' : 'IMAGE';
+            expenseData.receiptOriginalName = req.file.originalname;
+          }
           // Eliminar archivo temporal
           await fs.unlink(req.file.path);
         } catch (cloudinaryError) {
-          console.error('Error subiendo a Cloudinary:', cloudinaryError);
+          console.error('Error subiendo comprobante:', cloudinaryError);
           // No fallar si hay error con cloudinary, solo continuar sin comprobante
         }
       }
@@ -160,8 +156,8 @@ class OwnerExpenseController {
         }
       }
 
-      // Paginación
-      const paginationOptions = PaginationService.getPaginationOptions(page, limit);
+      // Validar y calcular paginación
+      const { page: validPage, limit: validLimit, offset } = validatePaginationParams({ page, limit, sortBy, sortOrder });
 
       const expenses = await OwnerExpense.findAndCountAll({
         where,
@@ -181,17 +177,15 @@ class OwnerExpenseController {
           }
         ],
         order: [[sortBy, sortOrder.toUpperCase()]],
-        ...paginationOptions
+        limit: validLimit,
+        offset,
+        distinct: true
       });
 
       // Calcular estadísticas
       const stats = await OwnerExpenseController._calculateExpenseStats(where);
 
-      const pagination = PaginationService.formatPagination(
-        expenses.count, 
-        page, 
-        limit
-      );
+      const pagination = generatePaginationMeta(expenses.count, { page: validPage, limit: validLimit });
 
       res.json({
         success: true,
@@ -574,22 +568,16 @@ class OwnerExpenseController {
   }
 
   /**
-   * Obtener categorías disponibles
+   * Obtener categorías de gastos del owner
    */
   static async getCategories(req, res) {
     try {
+    
       const categories = OwnerExpense.getCategories();
-      
-      res.json({
-        success: true,
-        data: categories
-      });
+      res.json({ success: true, categories });
     } catch (error) {
-      console.error('Error obteniendo categorías:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error interno del servidor'
-      });
+      console.error('Error al obtener categorías:', error);
+      res.status(500).json({ success: false, message: 'Error al obtener categorías', error: error.message });
     }
   }
 

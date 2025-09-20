@@ -7,6 +7,7 @@ const SubscriptionStatusService = require('../services/SubscriptionStatusService
 const CronJobManager = require('../utils/CronJobManager');
 const { BusinessSubscription, Business, SubscriptionPlan, SubscriptionPayment } = require('../models');
 const { Op } = require('sequelize');
+const Sequelize = require('sequelize');
 
 class SubscriptionStatusController {
 
@@ -271,7 +272,8 @@ class SubscriptionStatusController {
         dateTo,
         businessId,
         sortBy = 'createdAt',
-        sortOrder = 'DESC'
+        sortOrder = 'DESC',
+        search
       } = req.query;
 
       const offset = (page - 1) * limit;
@@ -286,7 +288,16 @@ class SubscriptionStatusController {
       if (paymentMethod) {
         whereClause.paymentMethod = paymentMethod;
       }
-      
+
+      if (search) {
+        whereClause[Op.or] = [
+          { externalReference: { [Op.iLike]: `%${search}%` } },
+          { description: { [Op.iLike]: `%${search}%` } },
+          { notes: { [Op.iLike]: `%${search}%` } },
+          Sequelize.literal(`CAST("SubscriptionPayment"."status" AS TEXT) ILIKE '%${search}%'`),
+        ];
+      }
+
       if (dateFrom || dateTo) {
         whereClause.createdAt = {};
         if (dateFrom) {
@@ -308,12 +319,25 @@ class SubscriptionStatusController {
               model: Business,
               as: 'business',
               attributes: ['id', 'name', 'email', 'subdomain', 'status'],
-              where: businessId ? { id: businessId } : undefined
+              where: search ? {
+                [Op.or]: [
+                  { name: { [Op.iLike]: `%${search}%` } },
+                  { email: { [Op.iLike]: `%${search}%` } }
+                ],
+                ...(search && {
+                  [Op.and]: [
+                    Sequelize.literal(`CAST("subscription->business"."status" AS TEXT) ILIKE '%${search}%'`)
+                  ]
+                })
+              } : (businessId ? { id: businessId } : undefined)
             },
             {
               model: SubscriptionPlan,
               as: 'plan',
-              attributes: ['id', 'name', 'price', 'currency', 'duration']
+              attributes: ['id', 'name', 'price', 'currency', 'duration'],
+              where: search ? {
+                name: { [Op.iLike]: `%${search}%` }
+              } : undefined
             }
           ]
         }
@@ -561,8 +585,8 @@ class SubscriptionStatusController {
       statusStats.forEach(stat => {
         const status = stat.dataValues.status;
         const count = parseInt(stat.dataValues.count);
-        
-        switch(status) {
+
+        switch (status) {
           case 'ACTIVE':
             stats.activeSubscriptions = count;
             break;

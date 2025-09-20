@@ -1,4 +1,5 @@
 
+
 import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -37,6 +38,7 @@ import {
   openDisputeModal,
   closeDisputeModal,
   openCommissionModal,
+  setSearch,
   closeCommissionModal,
   setViewMode,
   toggleAutoRefresh,
@@ -173,8 +175,9 @@ export const useOwnerPayments = () => {
 
   // ====== API ACTIONS ======
   const actions = useMemo(() => ({
-    // Data fetching
-    loadPayments: (params) => dispatch(fetchAllPayments(params)),
+  // Data fetching
+  loadPayments: (params) => dispatch(fetchAllPayments(params)),
+  setSearch: (search) => dispatch(setSearch(search)),
     loadPaymentStats: (params) => dispatch(getPaymentStats(params)),
     loadRevenueAnalytics: (params) => dispatch(getRevenueAnalytics(params)),
     loadPaymentDetails: (id) => dispatch(getPaymentDetails(id)),

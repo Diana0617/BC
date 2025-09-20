@@ -10,6 +10,7 @@ const router = express.Router();
 const OwnerController = require('../controllers/OwnerController');
 const OwnerDashboardController = require('../controllers/OwnerDashboardController');
 const OwnerPlanController = require('../controllers/OwnerPlanController');
+const OwnerExpenseController = require('../controllers/OwnerExpenseController');
 const { authenticateToken } = require('../middleware/auth');
 const ownerOnly = require('../middleware/ownerOnly');
 
@@ -2315,12 +2316,15 @@ router.delete('/plans/:planId', OwnerPlanController.deletePlan);
  *                   notificationsSent: 45
  *                   expectedRevenueImpact: 4049.55
  *                 actions:
- *                   newSubscriptionsBlocked: true
- *                   existingSubscriptionsStatus: "MAINTAINED"
- *                   alternativePlansOffered:
- *                     - planId: "67508291234567890123456a"
- *                       planName: "Plan Standard"
- *                       migrationOffered: true
+ *                   ownerNotified: true
+ *                   usersNotified: true
+ *                   accessRevoked: true
+ *                   servicesDisabled: ["api_access", "mobile_app", "web_dashboard"]
+ *                   supportTicketCreated: true
+ *                   appealProcess:
+ *                     available: true
+ *                     deadline: "2024-11-30T23:59:59.999Z"
+ *                     instructions: "Contacte a soporte@beautycontrol.com para iniciar proceso de apelación"
  *       400:
  *         description: Estado inválido o datos incorrectos
  *         content:
@@ -2430,6 +2434,9 @@ router.patch('/plans/:planId/status', OwnerPlanController.changePlanStatus);
  *                         price:
  *                           type: number
  *                           example: 89.99
+ *                         currency:
+ *                           type: string
+ *                           example: "COP"
  *                     period:
  *                       type: object
  *                       properties:
@@ -2656,55 +2663,53 @@ router.patch('/plans/:planId/status', OwnerPlanController.changePlanStatus);
  *                   canceledInPeriod: 3
  *                   conversionRate: 75.0
  *                 revenue:
- *                   totalInPeriod: 4049.55
- *                   monthlyRecurring: 4049.55
- *                   averagePerSubscription: 89.99
- *                   projectedMonthly: 4049.55
+ *                   total: 4049.55
+ *                   monthly: 12749.85
+ *                   recurring: 12749.85
+ *                   oneTime: 0
+ *                   byPlan:
+ *                     - planName: "Plan Premium"
+ *                       revenue: 4049.55
+ *                       percentage: 31.7
  *                   growth:
- *                     percentageLastMonth: 15.5
- *                     percentageLastQuarter: 45.2
- *                 usage:
- *                   averageUsers: 7.2
- *                   averageClients: 245.8
- *                   averageAppointments: 127.5
- *                   storageUsage:
- *                     average: 2147483648
- *                     percentage: 20.0
- *                   limitExceeded:
- *                     users: 2
- *                     clients: 0
- *                     appointments: 1
- *                     storage: 0
+ *                     percentage: 22.3
+ *                     trend: "INCREASING"
+ *                     projectedNext: 15597.32
  *                 performance:
- *                   satisfaction:
- *                     score: 8.7
- *                     responses: 32
+ *                   systemUptime: 99.9
+ *                   averageResponseTime: 245
+ *                   errorRate: 0.1
  *                   supportTickets:
- *                     total: 15
- *                     resolved: 14
- *                     averageResolutionTime: 4.2
- *                   featureUsage:
+ *                     total: 89
+ *                     resolved: 84
+ *                     pending: 5
+ *                     averageResolutionTime: 6.2
+ *                   customerSatisfaction:
+ *                     score: 8.7
+ *                     responses: 167
+ *                 analytics:
+ *                   topFeatures:
  *                     - feature: "appointments"
- *                       usagePercentage: 95.5
- *                       activeUsers: 43
- *                 churn:
- *                   rate: 6.7
- *                   reasons:
- *                     - reason: "Precio elevado"
- *                       count: 2
- *                       percentage: 66.7
- *                   riskFactors:
- *                     - factor: "Bajo uso de funcionalidades"
- *                       affectedSubscriptions: 8
- *                 forecast:
+ *                       usagePercentage: 95.2
+ *                       activeBusinesses: 135
+ *                   regionDistribution:
+ *                     - region: "Bogotá"
+ *                       businesses: 67
+ *                       percentage: 42.9
+ *                   deviceUsage:
+ *                     mobile: 68.5
+ *                     desktop: 31.5
+ *                 projections:
  *                   nextMonth:
- *                     expectedSubscriptions: 52
- *                     expectedRevenue: 4679.48
- *                     confidence: 85.0
+ *                     businesses: 178
+ *                     users: 3256
+ *                     revenue: 15597.32
+ *                     confidence: 87.5
  *                   nextQuarter:
- *                     expectedSubscriptions: 68
- *                     expectedRevenue: 6119.32
- *                     confidence: 75.0
+ *                     businesses: 235
+ *                     users: 4280
+ *                     revenue: 20276.52
+ *                     confidence: 78.2
  *       404:
  *         description: Plan no encontrado
  *         content:
@@ -3434,11 +3439,6 @@ router.get('/stats/platform', OwnerController.getPlatformStats);
  *               success: true
  *               data:
  *                 businesses:
- *                   - id: "675082912345678901234567"
- *                     businessName: "Bella Spa & Wellness"
- *                     industry: "Beauty & Spa"
- *                     status: "ACTIVE"
- *                     owner:
  *                       id: "675082912345678901234568"
  *                       name: "María González"
  *                       email: "maria@bellaspa.com"

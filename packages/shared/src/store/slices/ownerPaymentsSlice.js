@@ -153,7 +153,8 @@ const initialState = {
     maxAmount: '',
     currency: 'COP',
     sortBy: 'createdAt',
-    sortOrder: 'DESC'
+    sortOrder: 'DESC',
+    search: ''
   },
   
   // Loading states
@@ -214,6 +215,10 @@ const ownerPaymentsSlice = createSlice({
   name: 'ownerPayments',
   initialState,
   reducers: {
+    setSearch: (state, action) => {
+      state.filters.search = action.payload;
+      state.pagination.page = 1;
+    },
     // Pagination
     setPage: (state, action) => {
       state.pagination.page = action.payload;
@@ -671,7 +676,8 @@ export const {
   removePaymentFromList,
   clearErrors,
   clearError,
-  reset
+  reset,
+  setSearch
 } = ownerPaymentsSlice.actions;
 
 // ====== SELECTORS ======

@@ -48,18 +48,37 @@ class ApiClient {
   // Generic request method
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    const headers = await this.buildHeaders(options.headers);
+    let headers = await this.buildHeaders(options.headers);
+    let body = options.body;
+
+    // Detect FormData and adjust headers/body
+    if (body instanceof FormData) {
+      // Remove Content-Type header if present (let browser set it)
+      if (headers['Content-Type']) {
+        delete headers['Content-Type'];
+      }
+    } else if (body && typeof body === 'object' && !(body instanceof Blob)) {
+      // If body is a plain object, stringify as JSON
+      body = JSON.stringify(body);
+      if (!headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+      }
+    }
+
     const config = {
       timeout: this.timeout,
       headers,
-      ...options
+      ...options,
+      body
     };
 
-    console.log('ApiClient request:', { 
-      url, 
+    console.log('ApiClient request:', {
+      url,
       method: config.method || 'GET',
       hasAuthHeader: !!headers.Authorization,
-      authPreview: headers.Authorization ? `${headers.Authorization.substring(0, 20)}...` : null
+      authPreview: headers.Authorization ? `${headers.Authorization.substring(0, 20)}...` : null,
+      contentType: headers['Content-Type'] || null,
+      isFormData: body instanceof FormData
     });
 
     try {
@@ -107,24 +126,28 @@ class ApiClient {
     return this.request(url, { method: 'GET' });
   }
 
-  async post(endpoint, data = {}) {
+  async post(endpoint, data = {}, options = {}) {
+    // If data is FormData, pass as body; else, pass as object
     return this.request(endpoint, {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: data,
+      ...options
     });
   }
 
-  async put(endpoint, data = {}) {
+  async put(endpoint, data = {}, options = {}) {
     return this.request(endpoint, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: data,
+      ...options
     });
   }
 
-  async patch(endpoint, data = {}) {
+  async patch(endpoint, data = {}, options = {}) {
     return this.request(endpoint, {
       method: 'PATCH',
-      body: JSON.stringify(data)
+      body: data,
+      ...options
     });
   }
 

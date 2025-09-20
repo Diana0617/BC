@@ -303,7 +303,14 @@ router.use(ownerOnly);
  *       403:
  *         description: Acceso denegado - Solo para Owner
  */
-router.post('/', uploadExpenseReceipt, OwnerExpenseController.createExpense);
+// Middleware condicional: si el Content-Type es multipart/form-data, usa multer; si es application/json, omite multer
+router.post('/', (req, res, next) => {
+	if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+		uploadExpenseReceipt(req, res, next);
+	} else {
+		next();
+	}
+}, OwnerExpenseController.createExpense);
 
 /**
  * @swagger
@@ -462,6 +469,8 @@ router.get('/', OwnerExpenseController.getExpenses);
  *       403:
  *         description: Acceso denegado - Solo para Owner
  */
+// Ruta de categorías debe ir antes de cualquier ruta con parámetro :id
+router.get('/categories', OwnerExpenseController.getCategories);
 router.get('/:id', OwnerExpenseController.getExpenseById);
 
 /**
@@ -851,7 +860,6 @@ router.delete('/:id/receipt', OwnerExpenseController.removeReceipt);
  *       403:
  *         description: Acceso denegado - Solo para Owner
  */
-router.get('/categories', OwnerExpenseController.getCategories);
 
 /**
  * @swagger

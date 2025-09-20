@@ -72,10 +72,10 @@ const OwnerLayout = () => {
       current: location.pathname.startsWith('/owner/reports')
     },
     {
-      name: 'Pagos',
-      href: '/owner/payments',
+      name: 'Gastos',
+      href: '/owner/expenses',
       icon: CurrencyDollarIcon,
-      current: location.pathname.startsWith('/owner/payments')
+      current: location.pathname.startsWith('/owner/expenses')
     },
     {
       name: 'Configuración',

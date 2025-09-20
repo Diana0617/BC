@@ -25,6 +25,9 @@ export { default as useOwnerModules } from './useOwnerModules';
 // OWNER payments management
 export { default as useOwnerPayments } from './useOwnerPayments';
 
+// OWNER expenses management
+export { default as useOwnerExpenses } from './useOwnerExpenses';
+
 // OWNER financial reports
 export { default as useOwnerFinancialReports } from './useOwnerFinancialReports';
 

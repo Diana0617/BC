@@ -6,6 +6,7 @@ export * from './api/plansApi.js';
 export * from './api/publicPlans.js'; // Public plans API (no auth required)
 export * from './api/ownerPlansApi.js';
 export * from './api/ownerModulesApi.js';
+export * from './api/ownerExpensesApi.js';
 // New OWNER APIs
 export * from './api/ownerDashboardApi.js';
 export * from './api/ownerBusinessesApi.js';
@@ -78,6 +79,7 @@ export * from './hooks/useOwnerSubscriptions.js';
 export * from './hooks/useOwnerSubscription.js';
 export * from './hooks/useOwnerPayments.js';
 export * from './hooks/useOwnerFinancialReports.js';
+export * from './hooks/useOwnerExpenses.js';
 // Rule Template System hooks
 export * from './hooks/useRuleTemplates.js';
 
