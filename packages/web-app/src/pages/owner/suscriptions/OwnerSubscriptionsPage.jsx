@@ -85,6 +85,10 @@ const OwnerSubscriptionsPage = () => {
             {!loading.payments && payments.map(payment => {
               const sub = payment.subscription || {};
               const metadata = payment.metadata || {};
+              const registrationData = metadata.registrationData || {};
+              const userData = registrationData.userData || {};
+              const businessData = registrationData.businessData || {};
+              
               return (
                 <tr key={payment.id} className="hover:bg-indigo-50 transition">
                   <td className="px-4 py-3 uppercase font-semibold text-gray-700">{sub.business?.name || metadata.businessId || '-'}</td>
@@ -99,10 +103,10 @@ const OwnerSubscriptionsPage = () => {
                   </td>
                   <td className="px-4 py-3 text-gray-700">{sub.startDate ? new Date(sub.startDate).toLocaleDateString('es-CO') : '-'}</td>
                   <td className="px-4 py-3 text-gray-700">{sub.endDate ? new Date(sub.endDate).toLocaleDateString('es-CO') : '-'}</td>
-                  <td className="px-4 py-3 text-gray-700">{metadata.userEmail || '-'}</td>
+                  <td className="px-4 py-3 text-gray-700">{userData.email || businessData.email || '-'}</td>
                   <td className="px-4 py-3 text-gray-700">{payment.description || '-'}</td>
                   <td className="px-4 py-3 text-gray-700">{payment.notes || '-'}</td>
-                  <td className="px-4 py-3 text-gray-700">{payment.externalReference || '-'}</td>
+                  <td className="px-4 py-3 text-gray-700">{payment.transactionId || '-'}</td>
                   <td className="px-4 py-3 text-gray-700 font-bold">{payment.amount}</td>
                   <td className="px-4 py-3 text-gray-700">{payment.commissionFee || '-'}</td>
                   <td className="px-4 py-3 text-gray-700 font-bold">{payment.netAmount || '-'}</td>
