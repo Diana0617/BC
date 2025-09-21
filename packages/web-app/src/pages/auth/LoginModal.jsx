@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import logo from '../../../public/logo.png';
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
@@ -6,6 +7,7 @@ import { loginUser } from '../../../../shared/src/store/slices/authSlice.js'
 import { forgotPassword } from '../../../../shared/src/store/slices/authSlice.js';
 
 const LoginModal = ({ isOpen, onClose }) => {
+  const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { loading, error } = useSelector(state => state.auth)
@@ -102,16 +104,30 @@ const LoginModal = ({ isOpen, onClose }) => {
                   <label htmlFor="password" className="block mb-2 font-medium text-gray-700 text-sm">
                     Contraseña
                   </label>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={credentials.password}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-200 bg-white focus:outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
-                    placeholder="••••••••"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      id="password"
+                      name="password"
+                      value={credentials.password}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-200 bg-white focus:outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 pr-12"
+                      placeholder="••••••••"
+                      required
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-500"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                    >
+                      {showPassword ? (
+                        <EyeSlashIcon className="h-6 w-6" />
+                      ) : (
+                        <EyeIcon className="h-6 w-6" />
+                      )}
+                    </button>
+                  </div>
                 </div>
                 {error && (
                   <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm border border-red-200">
