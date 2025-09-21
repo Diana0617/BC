@@ -100,7 +100,7 @@ function AppLayout() {
             element={<Navigate to={
               isAuthenticated 
                 ? (user?.role === 'OWNER' ? "/owner/dashboard" : "/dashboard")
-                : "/login"
+                : "/"
             } />} 
           />
           
@@ -110,7 +110,7 @@ function AppLayout() {
             element={<Navigate to={
               isAuthenticated 
                 ? (user?.role === 'OWNER' ? "/owner/dashboard" : "/dashboard")
-                : "/login"
+                : "/"
             } />} 
           />
         </Routes>

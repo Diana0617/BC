@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom';
 import logo from '../../../public/logo.png';
 import { useSearchParams } from 'react-router-dom'
-import { useSelector, useDispatch } from 'react-redux'
+import { useSelector, useDispatch} from 'react-redux'
 import { fetchPublicPlans } from '../../../../shared/src/store/slices/plansSlice'
 import { createSubscription } from '../../../../shared/src/store/slices/subscriptionSlice'
 import { selectIsOwner, selectCanCreateCashSubscriptions, selectAuthToken } from '../../../../shared/src/store/selectors/authSelectors'
@@ -11,7 +12,10 @@ import PaymentFlow from '../../components/subscription/PaymentFlowWompi'
 import LoginModal from '../auth/LoginModal';
 
 const SubscriptionPage = () => {
-  const dispatch = useDispatch()
+  // Estado de autenticación y navegación
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams()
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedPlan, setSelectedPlan] = useState(null)
@@ -26,6 +30,24 @@ const SubscriptionPage = () => {
   const isOwner = useSelector(selectIsOwner)
   const canCreateCashSubscriptions = useSelector(selectCanCreateCashSubscriptions)
   const authToken = useSelector(selectAuthToken)
+
+  const { isAuthenticated, user } = useSelector(state => state.auth);
+ 
+
+  // Handler para ir al dashboard según rol
+  const handleGoDashboard = () => {
+    if (user?.role === 'OWNER') {
+      navigate('/owner/dashboard');
+    } else if (user?.role === 'BUSINESS_OWNER') {
+      navigate('/dashboard');
+    }
+  };
+
+  // Handler para logout
+  const handleLogout = () => {
+    dispatch({ type: 'auth/logout' });
+    window.location.reload();
+  };
 
   // Debug: Ver el estado de los planes
   console.log('SubscriptionPage - Plans from Redux:', plans)
@@ -224,14 +246,35 @@ const SubscriptionPage = () => {
               </span>
             </div>
             <div className="text-xs sm:text-sm text-gray-200 mt-4 sm:mt-0 w-full sm:w-auto text-center sm:text-right">
-              ¿Ya tienes cuenta?
-              <button
-                type="button"
-                className="ml-1 text-cyan-400 hover:text-cyan-300 font-bold bg-transparent border-none cursor-pointer"
-                onClick={() => setShowLoginModal(true)}
-              >
-                Inicia sesión
-              </button>
+              {isAuthenticated && user?.role ? (
+                <>
+                  <button
+                    type="button"
+                    className="ml-1 text-cyan-400 hover:text-cyan-300 font-bold bg-transparent border-none cursor-pointer"
+                    onClick={handleGoDashboard}
+                  >
+                    Ir al dashboard
+                  </button>
+                  <button
+                    type="button"
+                    className="ml-3 text-red-400 hover:text-red-300 font-bold bg-transparent border-none cursor-pointer"
+                    onClick={handleLogout}
+                  >
+                    Cerrar sesión
+                  </button>
+                </>
+              ) : (
+                <>
+                  ¿Ya tienes cuenta?
+                  <button
+                    type="button"
+                    className="ml-1 text-cyan-400 hover:text-cyan-300 font-bold bg-transparent border-none cursor-pointer"
+                    onClick={() => setShowLoginModal(true)}
+                  >
+                    Inicia sesión
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

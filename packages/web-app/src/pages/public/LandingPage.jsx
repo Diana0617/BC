@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import LoginModal from '../auth/LoginModal';
 import {
   CheckCircleIcon,
@@ -19,6 +21,30 @@ const LandingPage = () => {
   // Usar los hooks directamente
   const { plans, loading, error } = usePublicPlans();
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Redux para auth y navegación
+  const { isAuthenticated, user } = useSelector(state => state.auth);
+  const navigate = useNavigate();
+
+  // Handler para el botón Ingresar
+  const handleIngresar = React.useCallback(() => {
+    // Si está logueado, redirige siempre
+    if (isAuthenticated && user?.role) {
+      if (user.role === 'OWNER') {
+        window.location.replace('/owner/dashboard');
+      } else if (user.role === 'BUSINESS_OWNER') {
+        window.location.replace('/dashboard');
+      } // Agrega más roles si es necesario
+      return;
+    }
+    // Si no está logueado, abre el modal
+    setShowLoginModal(true);
+  }, [isAuthenticated, user]);
+
+  // Handler para el botón Ingresar
+  // (Solo una declaración, ya que la anterior es suficiente)
+
+  // Eliminado: redirección automática al montar. Solo el botón 'Ingresar' redirige.
 
   const formatPrice = (price, currency = 'COP') => {
     return new Intl.NumberFormat('es-CO', {
@@ -110,7 +136,7 @@ const LandingPage = () => {
               </a>
               <button
                 type="button"
-                onClick={() => setShowLoginModal(true)}
+                onClick={handleIngresar}
                 className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 border-2 border-gray-400 text-gray-300 font-semibold rounded-lg hover:bg-white/10 hover:border-gray-300 transition-all duration-200 text-sm sm:text-base"
               >
                 Ingresar
