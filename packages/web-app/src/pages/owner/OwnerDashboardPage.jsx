@@ -49,20 +49,20 @@ const OwnerDashboardPage = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 min-h-screen bg-gradient-to-b from-cyan-50 via-white to-plancyan-light font-nunito">
       {/* Header del dashboard */}
-      <div className="flex justify-between items-center">
+  <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrativo</h1>
-          <p className="text-gray-600 mt-1">
-            Resumen general de la plataforma Business Control
+          <h1 className="text-3xl font-bold text-cyan-900">Dashboard Administrativo</h1>
+          <p className="text-cyan-700 mt-1">
+            Resumen general de la plataforma <span className="font-bold text-plancyan-dark">Business Control</span>
           </p>
         </div>
         
         <button
           onClick={helpers.refresh}
           disabled={computed.isAnyLoading}
-          className="flex items-center space-x-2 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md transition-colors"
+          className="flex items-center space-x-2 bg-plancyan-dark hover:bg-plancyan text-white px-4 py-2 rounded-md shadow-plan transition-colors disabled:bg-gray-400"
         >
           <ArrowPathIcon className={`h-5 w-5 ${computed.isAnyLoading ? 'animate-spin' : ''}`} />
           <span>Actualizar</span>
@@ -83,10 +83,10 @@ const OwnerDashboardPage = () => {
       )}
 
       {/* Grid principal de métricas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Métricas principales */}
-        <div className="bg-white rounded-lg shadow p-6">
+  <div className="bg-white rounded-lg shadow-plan p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Métricas Principales
           </h2>
@@ -131,7 +131,7 @@ const OwnerDashboardPage = () => {
         </div>
 
         {/* Gráfico de ingresos */}
-        <div className="bg-white rounded-lg shadow p-6">
+  <div className="bg-white rounded-lg shadow-plan p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Ingresos por Mes
           </h2>
@@ -158,10 +158,10 @@ const OwnerDashboardPage = () => {
       </div>
 
       {/* Segunda fila de gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Distribución de planes */}
-        <div className="bg-white rounded-lg shadow p-6">
+  <div className="bg-white rounded-lg shadow-plan p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Distribución de Planes
           </h2>
@@ -187,7 +187,7 @@ const OwnerDashboardPage = () => {
         </div>
 
         {/* Top negocios */}
-        <div className="bg-white rounded-lg shadow p-6">
+  <div className="bg-white rounded-lg shadow-plan p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Negocios Más Activos
           </h2>
@@ -212,7 +212,7 @@ const OwnerDashboardPage = () => {
 
       {/* Estadísticas de crecimiento */}
       {growthStats && (
-        <div className="bg-white rounded-lg shadow p-6">
+  <div className="bg-white rounded-lg shadow-plan p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Estadísticas de Crecimiento
           </h2>
@@ -273,14 +273,14 @@ const QuickWidget = ({ widget, helpers }) => {
   const IconComponent = getIcon(widget.icon);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+  <div className="bg-white rounded-lg shadow-plan p-6">
       <div className="flex items-center">
-        <div className="p-2 bg-pink-100 rounded-lg">
-          <IconComponent className="h-6 w-6 text-pink-600" />
+        <div className="p-2 bg-plancyan-light rounded-lg">
+          <IconComponent className="h-6 w-6 text-plancyan-dark" />
         </div>
         <div className="ml-4">
-          <p className="text-sm text-gray-600">{widget.title}</p>
-          <p className="text-2xl font-bold text-gray-900">
+          <p className="text-sm text-cyan-700">{widget.title}</p>
+          <p className="text-2xl font-bold text-cyan-900">
             {formatValue(widget.value, widget.format)}
           </p>
         </div>
@@ -307,9 +307,9 @@ const MetricItem = ({ label, value, format, trend, icon: Icon }) => {
   };
 
   return (
-    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+  <div className="flex items-center justify-between p-4 bg-cyan-50 rounded-lg">
       <div className="flex items-center space-x-3">
-        <Icon className="h-8 w-8 text-pink-600" />
+  <Icon className="h-8 w-8 text-plancyan-dark" />
         <div>
           <p className="text-sm text-gray-600">{label}</p>
           <p className="text-xl font-semibold text-gray-900">
@@ -353,9 +353,9 @@ const RevenueChart = ({ data, helpers }) => {
             })}
           </div>
           <div className="flex-1">
-            <div className="bg-gray-200 rounded-full h-4">
+            <div className="bg-cyan-100 rounded-full h-4">
               <div 
-                className="bg-gradient-to-r from-pink-500 to-purple-600 h-4 rounded-full"
+                className="bg-gradient-to-r from-plancyan-dark to-plancyan h-4 rounded-full"
                 style={{ width: `${(item.revenue / maxRevenue) * 100}%` }}
               />
             </div>
@@ -374,8 +374,8 @@ const RevenueChart = ({ data, helpers }) => {
  */
 const PlanDistributionChart = ({ data, total }) => {
   const colors = [
-    'bg-pink-500', 'bg-purple-500', 'bg-blue-500', 
-    'bg-green-500', 'bg-yellow-500', 'bg-red-500'
+    'bg-plancyan-dark', 'bg-plancyan', 'bg-planyellow-dark', 
+    'bg-planred-dark', 'bg-secondary-500', 'bg-primary-500'
   ];
   
   return (
@@ -406,10 +406,10 @@ const TopBusinessesList = ({ businesses }) => {
   return (
     <div className="space-y-3">
       {businesses.map((business, index) => (
-        <div key={business.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+  <div key={business.id} className="flex items-center justify-between p-3 bg-cyan-50 rounded-lg">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-pink-600">
+            <div className="w-8 h-8 bg-plancyan-light rounded-full flex items-center justify-center">
+              <span className="text-sm font-medium text-plancyan-dark">
                 #{index + 1}
               </span>
             </div>
@@ -444,12 +444,12 @@ const GrowthStat = ({ title, value, description, format }) => {
   };
 
   return (
-    <div className="text-center p-4 bg-gray-50 rounded-lg">
-      <p className="text-lg font-semibold text-gray-900">
+    <div className="text-center p-4 bg-cyan-50 rounded-lg">
+      <p className="text-lg font-semibold text-cyan-900">
         {formatValue(value, format)}
       </p>
-      <p className="text-sm font-medium text-gray-700 mt-1">{title}</p>
-      <p className="text-xs text-gray-500 mt-2">{description}</p>
+      <p className="text-sm font-medium text-cyan-700 mt-1">{title}</p>
+      <p className="text-xs text-cyan-500 mt-2">{description}</p>
     </div>
   );
 };
