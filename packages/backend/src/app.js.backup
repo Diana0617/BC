@@ -168,8 +168,6 @@ const subscriptionRoutes = require('./routes/subscription');
 const subscriptionStatusRoutes = require('./routes/subscriptionStatus');
 const payment3DSRoutes = require('./routes/payment3DS');
 const testingRoutes = require('./routes/testing');
-const scheduleRoutes = require('./routes/schedules');
-const timeSlotRoutes = require('./routes/time-slots');
 
 
 app.use('/api/auth', authRoutes);
@@ -196,8 +194,6 @@ app.use('/api/wompi', wompiPaymentRoutes);
 app.use('/api/payments/3ds', payment3DSRoutes); // Rutas de pagos 3D Secure
 app.use('/api/test/auto-renewal', autoRenewalTestRoutes);
 app.use('/api/testing', testingRoutes); // Rutas de testing (solo desarrollo)
-app.use('/api/schedules', scheduleRoutes); // Rutas de gestión de horarios
-app.use('/api/time-slots', timeSlotRoutes); // Rutas de gestión de slots de tiempo
 
 // Ruta 404
 app.use('*', (req, res) => {

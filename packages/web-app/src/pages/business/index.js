@@ -1,0 +1,1 @@
+export { default as BusinessProfile } from './profile'

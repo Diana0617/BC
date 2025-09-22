@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const BusinessController = require('../controllers/BusinessController');
+const SubscriptionStatusController = require('../controllers/SubscriptionStatusController');
 const { authenticateToken } = require('../middleware/auth');
 const tenancyMiddleware = require('../middleware/tenancy');
 const { ownerOnly, businessAndOwner, allStaffRoles } = require('../middleware/roleCheck');
@@ -302,6 +303,99 @@ router.get('/', allStaffRoles, BusinessController.getBusiness);
  */
 // Actualizar información del negocio
 router.put('/', businessAndOwner, BusinessController.updateBusiness);
+
+/**
+ * @swagger
+ * /api/business/subscription-status:
+ *   get:
+ *     summary: Obtener estado de suscripción del negocio
+ *     description: Obtiene información del estado de suscripción del negocio actual
+ *     tags: [🏢 Gestión de Negocios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: x-business-id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID del negocio (tenancy)
+ *     responses:
+ *       200:
+ *         description: Estado de suscripción obtenido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 subscription:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                       example: "123e4567-e89b-12d3-a456-426614174000"
+ *                     planId:
+ *                       type: string
+ *                       format: uuid
+ *                       example: "987e6543-e21a-12d3-a456-426614174000"
+ *                     status:
+ *                       type: string
+ *                       enum: ['active', 'inactive', 'trial', 'expired', 'suspended']
+ *                       example: "active"
+ *                     currentPeriodStart:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2024-01-01T00:00:00.000Z"
+ *                     currentPeriodEnd:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2024-02-01T00:00:00.000Z"
+ *                     trialEnd:
+ *                       type: string
+ *                       format: date-time
+ *                       nullable: true
+ *                       example: "2024-01-15T00:00:00.000Z"
+ *                     autoRenew:
+ *                       type: boolean
+ *                       example: true
+ *                     plan:
+ *                       type: object
+ *                       properties:
+ *                         name:
+ *                           type: string
+ *                           example: "Plan Básico"
+ *                         price:
+ *                           type: number
+ *                           example: 29.99
+ *                         currency:
+ *                           type: string
+ *                           example: "USD"
+ *       401:
+ *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Sin permisos para acceder a este negocio
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Suscripción no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Obtener estado de suscripción del negocio
+router.get('/subscription-status', allStaffRoles, SubscriptionStatusController.checkBusinessSubscriptionStatus);
 
 /**
  * @swagger

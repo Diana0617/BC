@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
 import userReducer from './slices/userSlice';
+import businessReducer from './slices/businessSlice';
 import ownerStatsReducer from './slices/ownerStatsSlice';
 import ownerBusinessesReducer from './slices/ownerBusinessesSlice';
 import ownerSubscriptionsReducer from './slices/ownerSubscriptionsSlice';
@@ -27,6 +28,8 @@ import advancePaymentReducer from './slices/advancePaymentSlice';
 import businessValidationReducer from './slices/businessValidationSlice';
 // 💰 SUBSCRIPTION SYSTEM REDUCERS
 import subscriptionReducer from './slices/subscriptionSlice';
+// 🏢 BUSINESS CONFIGURATION REDUCERS
+import businessConfigurationReducer from './slices/businessConfigurationSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -34,6 +37,7 @@ export const createStore = (preloadedState = {}) => {
     reducer: {
       auth: authReducer,
       user: userReducer,
+      business: businessReducer,
       ownerStats: ownerStatsReducer,
       ownerBusinesses: ownerBusinessesReducer,
       ownerSubscriptions: ownerSubscriptionsReducer,
@@ -59,7 +63,9 @@ export const createStore = (preloadedState = {}) => {
       advancePayment: advancePaymentReducer,
       businessValidation: businessValidationReducer,
       // 💰 SUBSCRIPTION SYSTEM REDUCERS
-      subscription: subscriptionReducer
+      subscription: subscriptionReducer,
+      // 🏢 BUSINESS CONFIGURATION REDUCERS
+      businessConfiguration: businessConfigurationReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>

@@ -49,6 +49,8 @@ const authenticateToken = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
+    console.log('DEBUG authenticateToken: Token decoded successfully:', { userId: decoded.userId });
+    
     const user = await User.findOne({
       where: { 
         id: decoded.userId,
@@ -310,10 +312,44 @@ const requireSpecialistOrReceptionist = async (req, res, next) => {
   }
 };
 
+/**
+ * Middleware para autorizar roles específicos
+ * @param {Array} allowedRoles - Array de roles permitidos
+ * @returns {Function} Middleware function
+ */
+const authorizeRole = (allowedRoles) => {
+  return (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Usuario no autenticado'
+        });
+      }
+
+      if (!allowedRoles.includes(req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          error: 'No tienes permisos para acceder a este recurso'
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error('Error en authorizeRole:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  };
+};
+
 module.exports = { 
   authenticateToken, 
+  authorizeRole,
   validateBusinessId,
   requireSpecialist, 
   requireReceptionist, 
   requireSpecialistOrReceptionist 
-};
+};console.log('SIMPLE TEST LOG');
