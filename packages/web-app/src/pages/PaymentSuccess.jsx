@@ -68,9 +68,9 @@ const PaymentSuccess = () => {
           setBusinessCreated(true);
           setError('El negocio fue creado exitosamente por el administrador.');
           
-          // Redirigir después de un tiempo
+          // Redirigir al perfil de Business después de un tiempo
           setTimeout(() => {
-            navigate('/dashboard');
+            navigate('/business/profile?setup=true');
           }, 3000);
           return;
         }
@@ -154,12 +154,10 @@ const PaymentSuccess = () => {
       console.log('🗑️ Limpiando localStorage después de creación exitosa');
       localStorage.removeItem('pendingBusinessCreation');
       
-      // Opcional: Redirigir después de un tiempo
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 5000);
-
-    } catch (error) {
+          // Redirigir al perfil de Business en modo setup
+          setTimeout(() => {
+            navigate('/business/profile?setup=true');
+          }, 3000);    } catch (error) {
       console.error('❌ Error creando negocio:', error);
       
       // Manejar errores específicos

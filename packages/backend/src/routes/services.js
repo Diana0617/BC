@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const { requireBasicAccess, requireFullAccess } = require('../middleware/subscription');
+const ServiceController = require('../controllers/ServiceController');
 // const tenancyMiddleware = require('../middleware/tenancy');
 // const { allStaffRoles, businessAndOwner } = require('../middleware/roleCheck');
 
@@ -10,52 +11,22 @@ router.use(authenticateToken);
 // router.use(tenancyMiddleware);
 // router.use(allStaffRoles);
 
+// Obtener categorías de servicios (debe ir ANTES de /:id para evitar conflictos)
+router.get('/categories', requireBasicAccess, ServiceController.getCategories);
+
 // Obtener lista de servicios (acceso básico)
-router.get('/', requireBasicAccess, (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de obtener servicios aún no implementada'
-  });
-});
+router.get('/', requireBasicAccess, ServiceController.getServices);
 
 // Crear nuevo servicio (requiere acceso completo)
-router.post('/', requireFullAccess, /* businessAndOwner, */ (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de crear servicio aún no implementada'
-  });
-});
+router.post('/', requireFullAccess, /* businessAndOwner, */ ServiceController.createService);
 
 // Obtener servicio por ID (acceso básico)
-router.get('/:id', requireBasicAccess, (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de obtener servicio por ID aún no implementada'
-  });
-});
+router.get('/:id', requireBasicAccess, ServiceController.getServiceById);
 
 // Actualizar servicio
-router.put('/:id', /* businessAndOwner, */ (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de actualizar servicio aún no implementada'
-  });
-});
+router.put('/:id', requireFullAccess, /* businessAndOwner, */ ServiceController.updateService);
 
 // Eliminar servicio
-router.delete('/:id', /* businessAndOwner, */ (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de eliminar servicio aún no implementada'
-  });
-});
-
-// Obtener categorías de servicios
-router.get('/categories', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de categorías de servicios aún no implementada'
-  });
-});
+router.delete('/:id', requireFullAccess, /* businessAndOwner, */ ServiceController.deleteService);
 
 module.exports = router;

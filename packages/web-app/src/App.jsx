@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Toaster } from 'react-hot-toast'
-import { checkExistingSession, OwnerOnlyRoute } from '../../shared/src/index.js'
+import { checkExistingSession, OwnerOnlyRoute, AdminRoute } from '../../shared/src/index.js'
 
 // Pages
 
@@ -21,6 +21,9 @@ import RuleTemplatesPage from './pages/owner/RuleTemplates/RuleTemplatesPage'
 import OwnerSubscriptionsPage from './pages/owner/suscriptions/OwnerSubscriptionsPage.jsx'
 import OwnerBusinessesPage from './pages/owner/business/OwnerBusinessesPage.jsx'
 import OwnerExpensesPage from './pages/owner/Expenses/OwnerExpensesPage.jsx'
+
+// Business Pages
+import BusinessProfile from './pages/business/profile/BusinessProfile.jsx'
 
 // Public Pages
 import LandingPage from './pages/public/LandingPage'
@@ -88,10 +91,30 @@ function AppLayout() {
             <Route path="settings" element={<div>Configuración - En desarrollo</div>} />
           </Route>
           
+          {/* Business routes - Protected */}
+          {isAuthenticated && user?.role === 'BUSINESS' && (
+            <Route path="/business/profile" element={<BusinessProfile />} />
+          )}
+          
+          {/* Redirect non-business users trying to access business routes */}
+          {isAuthenticated && user?.role !== 'BUSINESS' && (
+            <Route path="/business/*" element={<Navigate to="/dashboard" />} />
+          )}
+          
           {/* Regular user routes */}
           <Route 
             path="/dashboard" 
-            element={isAuthenticated && user?.role !== 'OWNER' ? <DashboardPage /> : <Navigate to="/login" />} 
+            element={
+              isAuthenticated && user?.role !== 'OWNER' && user?.role !== 'BUSINESS' 
+                ? <DashboardPage /> 
+                : <Navigate to={
+                    isAuthenticated 
+                      ? (user?.role === 'OWNER' ? "/owner/dashboard" : 
+                         user?.role === 'BUSINESS' ? "/business/profile" : 
+                         "/login")
+                      : "/login"
+                  } />
+            } 
           />
           
           {/* Root redirect */}
@@ -99,7 +122,9 @@ function AppLayout() {
             path="/" 
             element={<Navigate to={
               isAuthenticated 
-                ? (user?.role === 'OWNER' ? "/owner/dashboard" : "/dashboard")
+                ? (user?.role === 'OWNER' ? "/owner/dashboard" : 
+                   user?.role === 'BUSINESS' ? "/business/profile" : 
+                   "/dashboard")
                 : "/login"
             } />} 
           />
@@ -109,7 +134,9 @@ function AppLayout() {
             path="*" 
             element={<Navigate to={
               isAuthenticated 
-                ? (user?.role === 'OWNER' ? "/owner/dashboard" : "/dashboard")
+                ? (user?.role === 'OWNER' ? "/owner/dashboard" : 
+                   user?.role === 'BUSINESS' ? "/business/profile" : 
+                   "/dashboard")
                 : "/login"
             } />} 
           />

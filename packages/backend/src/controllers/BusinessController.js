@@ -7,6 +7,7 @@ const User = require('../models/User');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 const BusinessSubscription = require('../models/BusinessSubscription');
 const SubscriptionPayment = require('../models/SubscriptionPayment');
+const Module = require('../models/Module');
 const AuthController = require('./AuthController');
 
 // Cache temporal para prevenir creaciones duplicadas
@@ -360,7 +361,17 @@ class BusinessController {
           },
           {
             model: SubscriptionPlan,
-            as: 'currentPlan'
+            as: 'currentPlan',
+            include: [
+              {
+                model: Module,
+                as: 'modules',
+                attributes: ['id', 'name', 'displayName', 'description', 'icon', 'category'],
+                through: {
+                  attributes: ['isIncluded', 'limitQuantity', 'additionalPrice', 'configuration']
+                }
+              }
+            ]
           },
           {
             model: BusinessSubscription,
@@ -369,7 +380,17 @@ class BusinessController {
               {
                 model: SubscriptionPlan,
                 as: 'plan',
-                attributes: ['id', 'name', 'price', 'duration', 'durationType']
+                attributes: ['id', 'name', 'price', 'duration', 'durationType'],
+                include: [
+                  {
+                    model: Module,
+                    as: 'modules',
+                    attributes: ['id', 'name', 'displayName', 'description', 'icon', 'category'],
+                    through: {
+                      attributes: ['isIncluded', 'limitQuantity', 'additionalPrice', 'configuration']
+                    }
+                  }
+                ]
               }
             ]
           }

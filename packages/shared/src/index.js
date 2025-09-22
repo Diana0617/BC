@@ -24,6 +24,8 @@ export * from './api/ruleTemplateApi.js';
 export * from './api/businessServicesApi.js';
 export * from './api/businessInventoryApi.js';
 export * from './api/businessSuppliersApi.js';
+export * from './api/businessProfileApi.js';
+export * from './api/businessSpecialistsApi.js';
 // 💳 ADVANCE PAYMENT SYSTEM APIs
 export * from './api/advancePaymentApi.js';
 // 🔐 BUSINESS VALIDATION SYSTEM APIs

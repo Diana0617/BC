@@ -17,7 +17,7 @@ export const subscriptionStatusApi = {
    * @returns {Promise} Estado detallado de la suscripción
    */
   checkSubscriptionStatus: (businessId) => {
-    return apiClient.get(`/business/${businessId}/subscription/status`);
+    return apiClient.get(`/api/business/subscription-status`);
   },
 
   /**

@@ -616,6 +616,39 @@ class SubscriptionStatusController {
       });
     }
   }
+
+  /**
+   * Verificar estado de suscripción del negocio actual
+   * Para uso desde rutas de Business (businessId viene del middleware/header)
+   */
+  static async checkBusinessSubscriptionStatus(req, res) {
+    try {
+      // El businessId viene del middleware de autenticación
+      const businessId = req.user?.businessId;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID de negocio requerido'
+        });
+      }
+
+      const result = await SubscriptionStatusService.checkBusinessSubscription(businessId);
+
+      res.json({
+        success: true,
+        subscription: result
+      });
+
+    } catch (error) {
+      console.error('Error verificando suscripción del negocio:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error verificando suscripción.',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 }
 
 module.exports = SubscriptionStatusController;
