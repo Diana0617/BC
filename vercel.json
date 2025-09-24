@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run vercel-build",
+  "buildCommand": "npm run build:web",
   "installCommand": "npm install",
   "outputDirectory": "packages/web-app/dist",
   "framework": null
