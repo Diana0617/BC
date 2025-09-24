@@ -5,11 +5,14 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "postinstall": "npm run db:ensure-init",
     "dev": "nodemon server.js",
     "test": "jest",
     "db:migrate": "npx sequelize-cli db:migrate",
     "db:seed": "npx sequelize-cli db:seed:all",
     "db:init": "node scripts/init-db.js",
+    "db:init-production": "NODE_ENV=production DATABASE_URL=postgresql://neondb_owner:npg_aoi02FPudzqj@ep-curly-union-aek8wz8r-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require node scripts/init-db.js",
+    "db:ensure-init": "node scripts/ensure-db-init.js || npm run db:init",
     "db:reset": "npm run db:init",
     "check": "node scripts/check-setup.js",
     "start:force-sync": "cross-env FORCE_SYNC_DB=true npm start"

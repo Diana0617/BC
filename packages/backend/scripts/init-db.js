@@ -15,11 +15,10 @@ async function initializeDatabase() {
     await sequelize.authenticate();
     console.log('✅ Conexión a la base de datos establecida');
 
-    // Sincronizar modelos (cuidado en producción)
-    await sequelize.sync({ force: process.env.NODE_ENV === 'development' });
-    console.log('✅ Modelos sincronizados');
-
-    // Importar modelos
+    // Sincronizar modelos de forma ordenada para respetar dependencias
+    console.log('🔄 Sincronizando modelos en orden de dependencias...');
+    
+    // Importar modelos principales
     const {
       User,
       Business,
@@ -28,6 +27,28 @@ async function initializeDatabase() {
       PlanModule,
       BusinessSubscription
     } = require('../src/models');
+
+    if (process.env.NODE_ENV === 'production') {
+      // En producción, sincronizar modelos base primero
+      const baseModels = [SubscriptionPlan, Module, Business];
+      for (const Model of baseModels) {
+        await Model.sync({ alter: true });
+        console.log(`✅ Modelo ${Model.name} sincronizado`);
+      }
+      
+      // Luego los modelos que dependen de Business
+      const dependentModels = [User, PlanModule, BusinessSubscription];
+      for (const Model of dependentModels) {
+        await Model.sync({ alter: true });
+        console.log(`✅ Modelo ${Model.name} sincronizado`);
+      }
+      
+      console.log('✅ Modelos principales sincronizados');
+    } else {
+      // En desarrollo, usar force para limpiar todo
+      await sequelize.sync({ force: true });
+      console.log('✅ Modelos sincronizados (force: true para desarrollo)');
+    }
 
     // 1. Crear Módulos del Sistema
     console.log('📦 Creando módulos del sistema...');
