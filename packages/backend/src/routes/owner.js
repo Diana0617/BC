@@ -216,7 +216,6 @@ router.get('/dashboard/summary', OwnerDashboardController.getQuickSummary);
  *           minimum: 1
  *           maximum: 24
  *           default: 6
- *         description: Número de meses a mostrar en el gráfico
  *         example: 6
  *     responses:
  *       200:
