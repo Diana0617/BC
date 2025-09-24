@@ -1,5 +1,5 @@
 import React from 'react';
-import { useOwnerPlans } from '@shared';
+import { useOwnerPlans } from '@bc/shared';
 import {
   XMarkIcon,
   ExclamationTriangleIcon,

@@ -10,7 +10,8 @@
     "install:all": "npm install",
     "build:web": "npm run build --workspace=packages/web-app",
     "build:mobile": "npm run build --workspace=packages/mobile-app",
-    "build:backend": "npm run build --workspace=packages/backend"
+    "build:backend": "npm run build --workspace=packages/backend",
+    "vercel-build": "npm run build:web"
   },
   "devDependencies": {
     "@reduxjs/toolkit": "^2.9.0",

@@ -1,0 +1,23 @@
+# Ignore mobile app and backend for web app deployment
+packages/mobile-app/
+packages/backend/
+
+# Ignore node_modules in packages (will be installed via workspaces)
+packages/*/node_modules/
+
+# Ignore development files
+*.log
+.env*
+!.env.local
+
+# Ignore build artifacts except web-app dist
+packages/*/dist/
+!packages/web-app/dist/
+
+# Ignore IDE files
+.vscode/
+.idea/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
