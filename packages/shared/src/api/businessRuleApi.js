@@ -8,49 +8,49 @@ import { apiClient } from './client.js';
  * Obtener plantillas disponibles para el negocio
  */
 export const getAvailableTemplates = async () => {
-  return await apiClient.get('/api/business/rule-templates/available');
+  return await apiClient.get('/api/rule-templates/business/rule-templates/available');
 };
 
 /**
  * Obtener plantillas disponibles por categoría
  */
 export const getAvailableTemplatesByCategory = async (category) => {
-  return await apiClient.get(`/api/business/rule-templates/available?category=${category}`);
+  return await apiClient.get(`/api/rule-templates/business/rule-templates/available?category=${category}`);
 };
 
 /**
  * Asignar plantilla de regla al negocio
  */
 export const assignRuleTemplate = async (templateId, options = {}) => {
-  return await apiClient.post(`/api/business/rule-templates/${templateId}/assign`, options);
+  return await apiClient.post(`/api/rule-templates/business/rule-templates/${templateId}/assign`, options);
 };
 
 /**
  * Obtener reglas asignadas al negocio
  */
 export const getBusinessAssignedRules = async (includeInactive = false) => {
-  return await apiClient.get(`/api/business/rule-assignments?includeInactive=${includeInactive}`);
+  return await apiClient.get(`/api/rule-templates/business/rule-assignments?includeInactive=${includeInactive}`);
 };
 
 /**
  * Obtener reglas asignadas por categoría
  */
 export const getBusinessAssignedRulesByCategory = async (category) => {
-  return await apiClient.get(`/api/business/rule-assignments?category=${category}`);
+  return await apiClient.get(`/api/rule-templates/business/rule-assignments?category=${category}`);
 };
 
 /**
  * Obtener detalles de una regla asignada específica
  */
 export const getAssignedRuleDetails = async (assignmentId) => {
-  return await apiClient.get(`/api/business/rule-assignments/${assignmentId}`);
+  return await apiClient.get(`/api/rule-templates/business/rule-assignments/${assignmentId}`);
 };
 
 /**
  * Personalizar regla asignada
  */
 export const customizeAssignedRule = async (assignmentId, { customValue, notes }) => {
-  return await apiClient.put(`/api/business/rule-assignments/${assignmentId}/customize`, {
+  return await apiClient.put(`/api/rule-templates/business/rule-assignments/${assignmentId}/customize`, {
     customValue,
     notes
   });
@@ -60,7 +60,7 @@ export const customizeAssignedRule = async (assignmentId, { customValue, notes }
  * Activar/desactivar regla asignada
  */
 export const toggleRuleAssignment = async (assignmentId, { isActive }) => {
-  return await apiClient.patch(`/api/business/rule-assignments/${assignmentId}/toggle`, {
+  return await apiClient.patch(`/api/rule-templates/business/rule-assignments/${assignmentId}/toggle`, {
     isActive
   });
 };
@@ -69,7 +69,7 @@ export const toggleRuleAssignment = async (assignmentId, { isActive }) => {
  * Remover regla asignada
  */
 export const removeRuleAssignment = async (assignmentId) => {
-  return await apiClient.delete(`/api/business/rule-assignments/${assignmentId}`);
+  return await apiClient.delete(`/api/rule-templates/business/rule-assignments/${assignmentId}`);
 };
 
 /**

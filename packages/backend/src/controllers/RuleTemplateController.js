@@ -308,7 +308,9 @@ class RuleTemplateController {
    */
   static async getAvailableTemplates(req, res) {
     try {
-      const businessId = req.business.id;
+      // Para OWNERS, businessId puede ser null, pero pueden acceder a todas las plantillas
+      // Para otros roles, usar el businessId del tenancy
+      const businessId = req.tenancy.businessId;
       
       const templates = await RuleTemplateService.getAvailableTemplatesForBusiness(businessId);
       
@@ -367,7 +369,7 @@ class RuleTemplateController {
   static async assignRuleTemplate(req, res) {
     try {
       const { templateId } = req.params;
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId;
       const assignedBy = req.user.id;
       
       const assignment = await RuleTemplateService.assignRuleToBusiness(
@@ -465,7 +467,7 @@ class RuleTemplateController {
   static async customizeAssignedRule(req, res) {
     try {
       const { assignmentId } = req.params;
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId;
       const modifiedBy = req.user.id;
       const { customValue, notes } = req.body;
       
@@ -522,7 +524,7 @@ class RuleTemplateController {
   static async toggleRuleAssignment(req, res) {
     try {
       const { assignmentId } = req.params;
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId;
       const { isActive } = req.body;
       
       const assignment = await RuleTemplateService.toggleRuleAssignment(

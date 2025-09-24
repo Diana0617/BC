@@ -872,17 +872,6 @@ BusinessRuleAssignment.belongsTo(User, {
   as: 'modifiedByUser'
 });
 
-// BusinessRules belongs to BusinessRuleTemplate
-// BusinessRules.belongsTo(BusinessRuleTemplate, {
-//   foreignKey: 'ruleTemplateId',
-//   as: 'ruleTemplate'
-// });
-
-// BusinessRules belongs to BusinessRuleAssignment  
-// BusinessRules.belongsTo(BusinessRuleAssignment, {
-//   foreignKey: 'ruleAssignmentId',
-//   as: 'assignment'
-// });
 
 // BusinessRuleAssignment has one BusinessRules
 BusinessRuleAssignment.hasOne(BusinessRules, {

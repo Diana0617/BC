@@ -1,9 +1,75 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { ruleTemplateApi } from '../../api/ruleTemplateApi';
+import {
+  getAvailableTemplates as apiGetAvailableTemplates,
+  getBusinessAssignedRules as apiGetBusinessAssignedRules,
+  assignRuleTemplate as apiAssignRuleTemplate,
+  removeRuleAssignment as apiRemoveRuleAssignment
+} from '../../api/businessRuleApi';
 
 // ================================
-// ASYNC THUNKS - Rule Template Management
+// BUSINESS RULES THUNKS
 // ================================
+
+/**
+ * Obtener todas las reglas disponibles para el negocio
+ */
+export const getAvailableRuleTemplates = createAsyncThunk(
+  'ruleTemplate/getAvailableRuleTemplates',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiGetAvailableTemplates();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Error al obtener reglas disponibles');
+    }
+  }
+);
+
+/**
+ * Obtener reglas asignadas al negocio
+ */
+export const getBusinessAssignedRules = createAsyncThunk(
+  'ruleTemplate/getBusinessAssignedRules',
+  async (businessId = null, { rejectWithValue }) => {
+    try {
+      const response = await apiGetBusinessAssignedRules();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Error al obtener reglas asignadas');
+    }
+  }
+);
+
+/**
+ * Asignar regla al negocio
+ */
+export const assignRuleTemplate = createAsyncThunk(
+  'ruleTemplate/assignRuleTemplate',
+  async ({ businessId, ruleTemplateId }, { rejectWithValue }) => {
+    try {
+      const response = await apiAssignRuleTemplate(ruleTemplateId, { businessId });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Error al asignar regla');
+    }
+  }
+);
+
+/**
+ * Desasignar regla del negocio
+ */
+export const unassignRuleTemplate = createAsyncThunk(
+  'ruleTemplate/unassignRuleTemplate',
+  async (assignmentId, { rejectWithValue }) => {
+    try {
+      await apiRemoveRuleAssignment(assignmentId);
+      return assignmentId;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Error al desasignar regla');
+    }
+  }
+);
 
 // ================================
 // ASYNC THUNKS - Rule Template Management
@@ -119,7 +185,9 @@ const initialState = {
   // Templates data
   templates: [],
   currentTemplate: null,
-  
+  // Reglas disponibles y asignadas para el negocio
+  availableRules: [],
+  assignedRules: [],
   // Filters and pagination
   filters: {
     category: '',
@@ -133,7 +201,6 @@ const initialState = {
     total: 0,
     totalPages: 0
   },
-  
   // Statistics
   stats: {
     totalTemplates: 0,
@@ -142,7 +209,6 @@ const initialState = {
     categoriesStats: [],
     businessTypesStats: []
   },
-  
   // UI State
   loading: {
     templates: false,
@@ -150,9 +216,12 @@ const initialState = {
     update: false,
     delete: false,
     stats: false,
-    sync: false
+    sync: false,
+    availableRules: false,
+    assignedRules: false,
+    assign: false,
+    unassign: false
   },
-  
   // Errors
   errors: {
     templates: null,
@@ -160,17 +229,21 @@ const initialState = {
     update: null,
     delete: null,
     stats: null,
-    sync: null
+    sync: null,
+    availableRules: null,
+    assignedRules: null,
+    assign: null,
+    unassign: null
   },
-  
   // Success messages
   success: {
     create: null,
     update: null,
     delete: null,
-    sync: null
+    sync: null,
+    assign: null,
+    unassign: null
   },
-  
   // Modal states
   modals: {
     createTemplate: false,
@@ -387,6 +460,78 @@ const ruleTemplateSlice = createSlice({
     //     state.loading.sync = false;
     //     state.errors.sync = action.payload;
     //   });
+
+    // ================================
+    // BUSINESS RULES CASES
+    // ================================
+
+    // Get Available Rule Templates
+    builder
+      .addCase(getAvailableRuleTemplates.pending, (state) => {
+        state.loading.availableRules = true;
+        state.errors.availableRules = null;
+      })
+      .addCase(getAvailableRuleTemplates.fulfilled, (state, action) => {
+        state.loading.availableRules = false;
+        const templates = action.payload?.data || action.payload;
+        state.availableRules = Array.isArray(templates) ? templates : [];
+      })
+      .addCase(getAvailableRuleTemplates.rejected, (state, action) => {
+        state.loading.availableRules = false;
+        state.errors.availableRules = action.payload;
+      });
+
+    // Get Business Assigned Rules
+    builder
+      .addCase(getBusinessAssignedRules.pending, (state) => {
+        state.loading.assignedRules = true;
+        state.errors.assignedRules = null;
+      })
+      .addCase(getBusinessAssignedRules.fulfilled, (state, action) => {
+        state.loading.assignedRules = false;
+        const assignments = action.payload?.data || action.payload;
+        state.assignedRules = Array.isArray(assignments) ? assignments : [];
+      })
+      .addCase(getBusinessAssignedRules.rejected, (state, action) => {
+        state.loading.assignedRules = false;
+        state.errors.assignedRules = action.payload;
+      });
+
+    // Assign Rule Template
+    builder
+      .addCase(assignRuleTemplate.pending, (state) => {
+        state.loading.assign = true;
+        state.errors.assign = null;
+      })
+      .addCase(assignRuleTemplate.fulfilled, (state, action) => {
+        state.loading.assign = false;
+        // Add the new assignment to assignedRules
+        const newAssignment = action.payload?.data || action.payload;
+        if (newAssignment) {
+          state.assignedRules.push(newAssignment);
+        }
+      })
+      .addCase(assignRuleTemplate.rejected, (state, action) => {
+        state.loading.assign = false;
+        state.errors.assign = action.payload;
+      });
+
+    // Unassign Rule Template
+    builder
+      .addCase(unassignRuleTemplate.pending, (state) => {
+        state.loading.unassign = true;
+        state.errors.unassign = null;
+      })
+      .addCase(unassignRuleTemplate.fulfilled, (state, action) => {
+        state.loading.unassign = false;
+        // Remove the assignment from assignedRules
+        const assignmentId = action.payload;
+        state.assignedRules = state.assignedRules.filter(rule => rule.id !== assignmentId);
+      })
+      .addCase(unassignRuleTemplate.rejected, (state, action) => {
+        state.loading.unassign = false;
+        state.errors.unassign = action.payload;
+      });
   }
 });
 

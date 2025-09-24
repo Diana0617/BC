@@ -8,7 +8,12 @@ import {
   CalendarDaysIcon,
   CurrencyDollarIcon,
   BellIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  UserGroupIcon,
+  Cog6ToothIcon,
+  ChartBarIcon,
+  DocumentTextIcon,
+  PhotoIcon
 } from '@heroicons/react/24/outline'
 
 const SubscriptionSection = ({ isSetupMode }) => {
@@ -20,6 +25,56 @@ const SubscriptionSection = ({ isSetupMode }) => {
     sub.status === 'ACTIVE' || sub.status === 'TRIAL'
   ) || business?.subscriptions?.[0]
   
+  // Mapeo de iconos para módulos
+  const getModuleIcon = (iconName, category) => {
+    const iconMap = {
+      'calendar-days': CalendarDaysIcon,
+      'user-group': UserGroupIcon,
+      'chart-bar': ChartBarIcon,
+      'document-text': DocumentTextIcon,
+      'photo': PhotoIcon,
+      'cog-6-tooth': Cog6ToothIcon
+    }
+    
+    // Si no hay icono específico, usar por categoría
+    const categoryIcons = {
+      'APPOINTMENTS': CalendarDaysIcon,
+      'CLIENTS': UserGroupIcon,
+      'REPORTS': ChartBarIcon,
+      'INVENTORY': DocumentTextIcon,
+      'MARKETING': PhotoIcon,
+      'SETTINGS': Cog6ToothIcon
+    }
+    
+    return iconMap[iconName] || categoryIcons[category] || Cog6ToothIcon
+  }
+
+
+  // Obtener el plan actual de forma robusta
+  const getCurrentPlan = () => {
+    if (business.plan) return business.plan;
+    if (business.plans && currentSubscription?.planId) {
+      return business.plans.find(p => p.id === currentSubscription.planId);
+    }
+    if (business.plans && business.plans.length > 0) {
+      return business.plans[0];
+    }
+    return null;
+  }
+
+  // Obtener información específica del trial
+  const getTrialInfo = () => {
+    if (business.status === 'TRIAL') {
+      const trialEndDate = business.trialEndDate || business.trialExpiresAt;
+      return {
+        isActive: true,
+        endDate: trialEndDate,
+        daysRemaining: calculateDaysRemaining(trialEndDate)
+      }
+    }
+    return { isActive: false }
+  }
+
   // Funciones auxiliares para fechas y pagos
   const calculateDaysRemaining = (expirationDate) => {
     if (!expirationDate) return 0
@@ -32,13 +87,18 @@ const SubscriptionSection = ({ isSetupMode }) => {
 
   const getNextPaymentInfo = () => {
     if (business.status === 'TRIAL') {
+      const trialEndDate = business.trialEndDate || business.trialExpiresAt;
+      // Usar el precio y moneda de la suscripción actual
+      const price = currentSubscription?.amount || '0';
+      const currency = currentSubscription?.currency || 'COP';
       return {
         isTrialMode: true,
-        daysRemaining: calculateDaysRemaining(business.trialExpiresAt),
-        expirationDate: business.trialExpiresAt,
-        nextPaymentDate: business.trialExpiresAt,
-        amount: business.plan?.price || 0
-      }
+        daysRemaining: calculateDaysRemaining(trialEndDate),
+        expirationDate: trialEndDate,
+        nextPaymentDate: trialEndDate,
+        amount: parseFloat(price),
+        currency: currency
+      };
     }
     
     return {
@@ -53,10 +113,13 @@ const SubscriptionSection = ({ isSetupMode }) => {
   // Determinar el estado efectivo considerando trial
   const getEffectiveStatus = () => {
     // Si el negocio está en trial, mostrar como activo
-    if (business?.status === 'TRIAL' && business?.trialEndDate) {
-      const trialEnd = new Date(business.trialEndDate)
-      const now = new Date()
-      return trialEnd > now ? 'TRIAL_ACTIVE' : 'TRIAL_EXPIRED'
+    if (business?.status === 'TRIAL') {
+      const trialEndDate = business.trialEndDate || business.trialExpiresAt
+      if (trialEndDate) {
+        const trialEnd = new Date(trialEndDate)
+        const now = new Date()
+        return trialEnd > now ? 'TRIAL_ACTIVE' : 'TRIAL_EXPIRED'
+      }
     }
     
     // Si no, usar el estado de la suscripción
@@ -73,7 +136,10 @@ const SubscriptionSection = ({ isSetupMode }) => {
       'TRIAL_ACTIVE': {
         color: 'text-blue-700 bg-blue-100',
         icon: CheckCircleIcon,
-        label: 'Trial Activo'
+        label: () => {
+  const trialInfo = getTrialInfo()
+  return `Trial Activo (${trialInfo.daysRemaining} días restantes)`
+}
       },
       'TRIAL_EXPIRED': {
         color: 'text-red-700 bg-red-100',
@@ -103,18 +169,30 @@ const SubscriptionSection = ({ isSetupMode }) => {
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
         <Icon className="w-4 h-4 mr-1" />
-        {config.label}
+        {typeof config.label === 'function' ? config.label() : config.label}
       </span>
     )
   }
 
+  const formatPrice = (price, currency = 'COP') => {
+    console.log('Debug - formatPrice called with:', price, currency)
+    if (!price || price === 0 || price === '0' || price === '0.00') return '$0'
+    const numericPrice = typeof price === 'string' ? parseFloat(price) : price
+    if (isNaN(numericPrice) || numericPrice <= 0) return '$0'
+    return `$${numericPrice.toLocaleString()} ${currency}`
+  }
+
   const formatDate = (dateString) => {
-    if (!dateString) return 'No disponible'
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
+    if (!dateString) return 'Fecha no configurada'
+    try {
+      return new Date(dateString).toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    } catch {
+      return 'Fecha inválida'
+    }
   }
 
   if (isLoading) {
@@ -172,7 +250,7 @@ const SubscriptionSection = ({ isSetupMode }) => {
               <p className="text-sm text-gray-600">Fecha de vencimiento</p>
               <p className="font-medium text-gray-900">
                 {business.status === 'TRIAL' 
-                  ? formatDate(business.trialExpiresAt) 
+                  ? formatDate(business.trialEndDate || business.trialExpiresAt) 
                   : formatDate(currentSubscription.expiresAt)
                 }
               </p>
@@ -204,112 +282,97 @@ const SubscriptionSection = ({ isSetupMode }) => {
               ? 'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200' 
               : 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200'
           }`}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                {paymentInfo.isTrialMode ? (
-                  <ClockIcon className="h-6 w-6 text-amber-600 mr-3" />
-                ) : (
-                  <CurrencyDollarIcon className="h-6 w-6 text-green-600 mr-3" />
+            {/* Solo para trial mode - sección simplificada */}
+            {paymentInfo.isTrialMode ? (
+              <div>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start">
+                    <InformationCircleIcon className="h-5 w-5 text-amber-600 mr-2 mt-0.5" />
+                    <div>
+                      <p className="text-amber-800 font-medium text-lg">
+                        {paymentInfo.daysRemaining <= 3 
+                          ? '¡Tu trial expira pronto!' 
+                          : 'Período de prueba activo'
+                        }
+                      </p>
+                      <p className="text-amber-700 mt-1">
+                        Precio después del trial: <span className="font-semibold">{formatPrice(paymentInfo.amount, paymentInfo.currency)}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <button className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    Cancelar Trial
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Sección completa para suscripción normal */
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <CurrencyDollarIcon className="h-6 w-6 text-green-600 mr-3" />
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Próximo Pago</h3>
+                      <p className="text-sm text-gray-600">Información de facturación</p>
+                    </div>
+                  </div>
+                  <BellIcon className="h-5 w-5 text-gray-400" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center">
+                    <CalendarDaysIcon className="h-5 w-5 mr-2 text-green-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Próximo pago</p>
+                      <p className="font-medium text-gray-900">
+                        {formatDate(paymentInfo.nextPaymentDate)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <ClockIcon className={`h-5 w-5 mr-2 ${
+                      paymentInfo.daysRemaining <= 3 ? 'text-red-500' : 
+                      paymentInfo.daysRemaining <= 7 ? 'text-amber-500' : 'text-green-500'
+                    }`} />
+                    <div>
+                      <p className="text-sm text-gray-600">Días restantes</p>
+                      <p className={`font-medium ${
+                        paymentInfo.daysRemaining <= 3 ? 'text-red-600' : 
+                        paymentInfo.daysRemaining <= 7 ? 'text-amber-600' : 'text-gray-900'
+                      }`}>
+                        {paymentInfo.daysRemaining} días
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <CurrencyDollarIcon className="h-5 w-5 mr-2 text-green-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Monto</p>
+                      <p className="font-medium text-gray-900">
+                        ${paymentInfo.amount?.toLocaleString() || '0'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mensaje para próximo pago */}
+                {paymentInfo.daysRemaining <= 7 && (
+                  <div className="mt-4 p-3 bg-green-100 rounded-lg border border-green-200">
+                    <div className="flex items-start">
+                      <InformationCircleIcon className="h-5 w-5 text-green-600 mr-2 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="text-green-800 font-medium">
+                          Próximo pago programado
+                        </p>
+                        <p className="text-green-700 mt-1">
+                          Tu suscripción se renovará automáticamente el {formatDate(paymentInfo.nextPaymentDate)}.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {paymentInfo.isTrialMode ? 'Período de Prueba' : 'Próximo Pago'}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {paymentInfo.isTrialMode 
-                      ? 'Tu trial está activo' 
-                      : 'Información de facturación'
-                    }
-                  </p>
-                </div>
-              </div>
-              <BellIcon className="h-5 w-5 text-gray-400" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center">
-                <CalendarDaysIcon className={`h-5 w-5 mr-2 ${
-                  paymentInfo.isTrialMode ? 'text-amber-500' : 'text-green-500'
-                }`} />
-                <div>
-                  <p className="text-sm text-gray-600">
-                    {paymentInfo.isTrialMode ? 'Trial expira' : 'Próximo pago'}
-                  </p>
-                  <p className="font-medium text-gray-900">
-                    {formatDate(paymentInfo.nextPaymentDate)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <ClockIcon className={`h-5 w-5 mr-2 ${
-                  paymentInfo.daysRemaining <= 3 ? 'text-red-500' : 
-                  paymentInfo.daysRemaining <= 7 ? 'text-amber-500' : 
-                  paymentInfo.isTrialMode ? 'text-amber-500' : 'text-green-500'
-                }`} />
-                <div>
-                  <p className="text-sm text-gray-600">Días restantes</p>
-                  <p className={`font-medium ${
-                    paymentInfo.daysRemaining <= 3 ? 'text-red-600' : 
-                    paymentInfo.daysRemaining <= 7 ? 'text-amber-600' : 'text-gray-900'
-                  }`}>
-                    {paymentInfo.daysRemaining} días
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <CurrencyDollarIcon className={`h-5 w-5 mr-2 ${
-                  paymentInfo.isTrialMode ? 'text-amber-500' : 'text-green-500'
-                }`} />
-                <div>
-                  <p className="text-sm text-gray-600">
-                    {paymentInfo.isTrialMode ? 'Precio después del trial' : 'Monto'}
-                  </p>
-                  <p className="font-medium text-gray-900">
-                    ${paymentInfo.amount?.toLocaleString() || '0'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Mensaje adicional para trial */}
-            {paymentInfo.isTrialMode && (
-              <div className="mt-4 p-3 bg-amber-100 rounded-lg border border-amber-200">
-                <div className="flex items-start">
-                  <InformationCircleIcon className="h-5 w-5 text-amber-600 mr-2 mt-0.5" />
-                  <div className="text-sm">
-                    <p className="text-amber-800 font-medium">
-                      {paymentInfo.daysRemaining <= 3 
-                        ? '¡Tu trial expira pronto!' 
-                        : 'Período de prueba activo'
-                      }
-                    </p>
-                    <p className="text-amber-700 mt-1">
-                      {paymentInfo.daysRemaining <= 3 
-                        ? 'Actualiza tu plan para continuar usando todas las funcionalidades sin interrupciones.'
-                        : `Tienes ${paymentInfo.daysRemaining} días para explorar todas las funcionalidades. El plan se activará automáticamente cuando termine el trial.`
-                      }
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Mensaje para próximo pago */}
-            {!paymentInfo.isTrialMode && paymentInfo.daysRemaining <= 7 && (
-              <div className="mt-4 p-3 bg-green-100 rounded-lg border border-green-200">
-                <div className="flex items-start">
-                  <InformationCircleIcon className="h-5 w-5 text-green-600 mr-2 mt-0.5" />
-                  <div className="text-sm">
-                    <p className="text-green-800 font-medium">
-                      Próximo pago programado
-                    </p>
-                    <p className="text-green-700 mt-1">
-                      Tu suscripción se renovará automáticamente el {formatDate(paymentInfo.nextPaymentDate)}.
-                    </p>
-                  </div>
-                </div>
               </div>
             )}
           </div>
@@ -318,34 +381,113 @@ const SubscriptionSection = ({ isSetupMode }) => {
 
       {/* Módulos incluidos */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Módulos Incluidos
-        </h3>
-        
-        {business.plan?.modules && business.plan.modules.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {business.plan.modules.map((module, index) => (
-              <div 
-                key={index}
-                className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium text-gray-900">
-                      {module.name || module.code}
-                    </h4>
-                    <p className="text-sm text-gray-500">
-                      {module.description || 'Módulo activo'}
-                    </p>
-                  </div>
-                  <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                </div>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Módulos Incluidos
+          </h3>
+          {(() => {
+            const trialInfo = getTrialInfo()
+            return trialInfo.isActive && (
+              <div className="flex items-center text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+                <ClockIcon className="h-4 w-4 mr-1" />
+                Trial: {trialInfo.daysRemaining} días restantes
               </div>
-            ))}
+            )
+          })()}
+        </div>
+        
+        {currentSubscription?.plan?.modules && currentSubscription.plan.modules.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {currentSubscription.plan.modules.map((module, index) => {
+              const IconComponent = getModuleIcon(module.icon, module.category)
+              const trialInfo = getTrialInfo()
+              return (
+                <div 
+                  key={index}
+                  className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300"
+                >
+                  {/* Header del módulo */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="p-3 bg-blue-50 rounded-lg mr-4">
+                        <IconComponent className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 text-lg">
+                          {module.displayName || module.name}
+                        </h4>
+                        <p className="text-sm text-gray-500 uppercase tracking-wide">
+                          {module.category?.replace('_', ' ') || 'General'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <CheckCircleIcon className="h-6 w-6 text-green-500" />
+                    </div>
+                  </div>
+
+                  {/* Descripción */}
+                  <p className="text-gray-600 mb-4 leading-relaxed">
+                    {module.description || 'Módulo activo en tu plan'}
+                  </p>
+
+                  {/* Información adicional */}
+                  <div className="space-y-3">
+                    {/* Estado de inclusión */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Estado en el plan:</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        module.PlanModule?.isIncluded 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {module.PlanModule?.isIncluded ? 'Incluido' : 'No incluido'}
+                      </span>
+                    </div>
+
+                    {/* Precio adicional si aplica */}
+                    {module.PlanModule?.additionalPrice && parseFloat(module.PlanModule.additionalPrice) > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500">Precio adicional:</span>
+                        <span className="text-sm font-medium text-blue-600">
+                          ${parseFloat(module.PlanModule.additionalPrice).toLocaleString()} {currentSubscription.currency || 'COP'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Límite de cantidad si aplica */}
+                    {module.PlanModule?.limitQuantity && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500">Límite:</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          {module.PlanModule.limitQuantity} unidades
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Estado del trial para este módulo */}
+                    {trialInfo.isActive && (
+                      <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div className="flex items-center text-sm">
+                          <ClockIcon className="h-4 w-4 text-amber-600 mr-2" />
+                          <span className="text-amber-800">
+                            <strong>Acceso de prueba:</strong> Disponible hasta el {formatDate(trialInfo.endDate)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         ) : (
-          <div className="text-center py-6 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">No hay módulos adicionales en este plan</p>
+          <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+            <Cog6ToothIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h4 className="text-lg font-medium text-gray-900 mb-2">Sin módulos adicionales</h4>
+            <p className="text-gray-500 max-w-sm mx-auto">
+              Este plan no incluye módulos adicionales. Considera actualizar para acceder a más funcionalidades.
+            </p>
           </div>
         )}
       </div>

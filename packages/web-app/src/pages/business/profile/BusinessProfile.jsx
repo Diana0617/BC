@@ -9,7 +9,8 @@ import {
   CalendarDaysIcon,
   UsersIcon,
   BuildingStorefrontIcon,
-  WrenchScrewdriverIcon
+  WrenchScrewdriverIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline'
 
 // Redux actions
@@ -29,6 +30,7 @@ import TaxxaConfigSection from './sections/TaxxaConfigSection'
 import InventoryConfigSection from './sections/InventoryConfigSection'
 import ScheduleConfigSection from './sections/ScheduleConfigSection'
 import SuppliersConfigSection from './sections/SuppliersConfigSection'
+import BusinessRuleModal from '../../../components/BusinessRuleModal'
 
 // Hook personalizado para la configuración del negocio
 // import { useBusinessSetup } from './hooks/useBusinessSetup'
@@ -43,6 +45,7 @@ const BusinessProfile = () => {
   
   // Estados locales
   const [activeSection, setActiveSection] = useState('subscription')
+  const [isRuleModalOpen, setIsRuleModalOpen] = useState(false)
   
     // Estados de Redux
   const { user } = useSelector(state => state.auth)
@@ -114,6 +117,14 @@ const BusinessProfile = () => {
       icon: CreditCardIcon,
       component: SubscriptionSection,
       alwaysVisible: true
+    },
+    {
+      id: 'business-rules',
+      name: 'Reglas de Negocio',
+      icon: ShieldCheckIcon,
+      component: null, // No tiene componente de sección, abre modal
+      alwaysVisible: true,
+      isModalTrigger: true
     },
     {
       id: 'basic-info',
@@ -191,6 +202,14 @@ const BusinessProfile = () => {
   // Función para cambiar de sección
   const handleSectionChange = (sectionId) => {
     const section = sectionsWithAvailability.find(s => s.id === sectionId)
+    
+    // Si es un trigger de modal, abrir el modal correspondiente
+    if (section?.isModalTrigger) {
+      if (sectionId === 'business-rules') {
+        setIsRuleModalOpen(true)
+        return
+      }
+    }
     
     // Si la sección no está disponible, mostrar mensaje de upgrade
     if (section && !section.isAvailable) {
@@ -392,6 +411,14 @@ const BusinessProfile = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de reglas de negocio */}
+      <BusinessRuleModal
+        isOpen={isRuleModalOpen}
+        onClose={() => setIsRuleModalOpen(false)}
+        businessId={business?.id}
+        business={business}
+      />
     </div>
   )
 }
