@@ -1,0 +1,20 @@
+{
+  "name": "beauty-control-monorepo",
+  "version": "1.0.0",
+  "description": "Beauty Control Monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "install:all": "npm install",
+    "build:web": "npm run build --workspace=packages/web-app",
+    "build:mobile": "npm run build --workspace=packages/mobile-app",
+    "build:backend": "npm run build --workspace=packages/backend"
+  },
+  "devDependencies": {
+    "@reduxjs/toolkit": "^2.9.0",
+    "react-hot-toast": "^2.6.0",
+    "react-redux": "^9.2.0"
+  }
+}

@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@bc/shared": "file:../shared",
     "@heroicons/react": "^2.2.0",
     "@reduxjs/toolkit": "^2.9.0",
     "date-fns": "^4.1.0",

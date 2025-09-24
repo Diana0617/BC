@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import logo from '../../../public/logo.png';
 import { useSearchParams } from 'react-router-dom'
 import { useSelector, useDispatch} from 'react-redux'
-import { fetchPublicPlans } from '../../../../shared/src/store/slices/plansSlice'
-import { createSubscription } from '../../../../shared/src/store/slices/subscriptionSlice'
-import { selectIsOwner, selectCanCreateCashSubscriptions, selectAuthToken } from '../../../../shared/src/store/selectors/authSelectors'
+import { fetchPublicPlans } from '@bc/shared/store/slices/plansSlice'
+import { createSubscription } from '@bc/shared/store/slices/subscriptionSlice'
+import { selectIsOwner, selectCanCreateCashSubscriptions, selectAuthToken } from '@bc/shared/store/selectors/authSelectors'
 import PlanSelection from '../../components/subscription/PlanSelection'
 import BusinessRegistration from '../../components/subscription/BusinessRegistration'
 import PaymentFlow from '../../components/subscription/PaymentFlowWompi'

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useOwnerPlans, useOwnerModules } from '@shared';
+import { useOwnerPlans, useOwnerModules } from '@bc/shared';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
