@@ -29,12 +29,19 @@ app.use(helmet({
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? [
+        // URLs de producción
         process.env.WEB_URL, 
         process.env.APP_URL,
         process.env.FRONTEND_URL,
         'https://bc-webapp-ky7aqhc88-diana0617s-projects.vercel.app',
         'https://bc-webapp.vercel.app', // Por si cambias el nombre del proyecto
-        /^https:\/\/.*\.vercel\.app$/ // Permitir cualquier subdominio de Vercel
+        /^https:\/\/.*\.vercel\.app$/, // Permitir cualquier subdominio de Vercel
+        // URLs de desarrollo (para testing local contra backend de producción)
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:19006',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:3001'
       ]
     : [
         'http://localhost:3000', 
