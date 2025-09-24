@@ -1,18 +1,11 @@
 {
   "version": 2,
-  "buildCommand": "npm run build --workspace=packages/web-app",
+  "buildCommand": "npm run vercel-build",
   "installCommand": "npm install",
   "outputDirectory": "packages/web-app/dist",
   "framework": "vite",
-  "routes": [
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
     {
       "source": "/((?!api/.*).*)",
@@ -33,5 +26,8 @@
         }
       ]
     }
-  ]
+  ],
+  "env": {
+    "VITE_API_URL": "https://bc-16wt.onrender.com"
+  }
 }
