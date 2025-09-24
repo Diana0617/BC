@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useOwnerPlans, useOwnerModules } from '@bc/shared';
+import { useOwnerPlans, useOwnerModules } from '@shared';
 import {
   XMarkIcon,
   PencilIcon,

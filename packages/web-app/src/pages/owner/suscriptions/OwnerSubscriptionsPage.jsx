@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useOwnerPayments } from '@bc/shared';
+import { useOwnerPayments } from '@shared';
 
 const OwnerSubscriptionsPage = () => {
   const { payments, loading, errors, pagination, helpers, actions, filters } = useOwnerPayments();

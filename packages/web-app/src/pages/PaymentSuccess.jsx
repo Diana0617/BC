@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { CheckCircleIcon, XCircleIcon, ClockIcon } from '@heroicons/react/24/outline'
-import { createSubscription } from '@bc/shared/store/slices/subscriptionSlice.js'
+import { createSubscription } from '@shared/store/slices/subscriptionSlice.js'
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams()

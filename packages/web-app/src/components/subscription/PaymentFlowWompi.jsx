@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { ArrowLeftIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
 import WompiWidgetMinimal from './WompiWidgetMinimal'
-import { resetSubscriptionFlow } from '@bc/shared/store/slices/subscriptionSlice'
+import { resetSubscriptionFlow } from '@shared/store/slices/subscriptionSlice'
 
 const PaymentFlowWompi = ({ 
   selectedPlan, 

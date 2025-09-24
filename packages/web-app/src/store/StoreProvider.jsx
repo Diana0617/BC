@@ -1,5 +1,6 @@
 import { Provider } from 'react-redux';
-import { store } from '@bc/shared';
+import React from 'react'
+import { store } from '@shared';
 
 const StoreProvider = ({ children }) => {
   return (

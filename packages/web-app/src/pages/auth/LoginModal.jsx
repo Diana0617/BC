@@ -1,10 +1,9 @@
 import React, { useState } from 'react'
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import logo from '../../../public/logo.png';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
+import logo from '../../../public/logo.png'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { loginUser } from '@bc/shared/shared/src/store/slices/authSlice.js'
-import { forgotPassword } from  '@bc/shared/shared/src/store/slices/authSlice.js';
+import { loginUser, forgotPassword } from '@shared/store/slices/authSlice.js'
 
 const LoginModal = ({ isOpen, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useOwnerSubscriptions } from '@bc/shared';
+import { useOwnerSubscriptions } from '@shared';
 import {
   CreditCardIcon,
   MagnifyingGlassIcon,
