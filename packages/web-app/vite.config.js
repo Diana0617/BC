@@ -29,5 +29,19 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['@react-native-async-storage/async-storage']
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'terser',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['@heroicons/react']
+        }
+      }
+    }
   }
 })
