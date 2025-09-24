@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "install:all": "npm install",
-    "build:web": "npm run build --workspace=packages/web-app",
+    "build:web": "cd packages/web-app && npm run build",
     "build:mobile": "npm run build --workspace=packages/mobile-app",
     "build:backend": "npm run build --workspace=packages/backend",
     "vercel-build": "npm run build:web"

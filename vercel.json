@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:web",
+  "buildCommand": "cd packages/web-app && npm run build",
   "installCommand": "npm install",
   "outputDirectory": "packages/web-app/dist",
   "framework": null
