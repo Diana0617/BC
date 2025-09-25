@@ -306,3 +306,6 @@ export const useOwnerModules = () => {
     helpers
   };
 };
+
+// Export como default para compatibilidad
+export default useOwnerModules;

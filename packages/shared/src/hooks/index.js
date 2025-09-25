@@ -3,6 +3,18 @@
  * Exporta todos los hooks relacionados con la gestión del Owner
  */
 
+// Importaciones individuales para el objeto ownerHooks
+import useOwnerHook from './useOwner';
+import useOwnerDashboardHook from './useOwnerDashboard';
+import useOwnerBusinessesHook from './useOwnerBusinesses';
+import useOwnerSubscriptionsHook from './useOwnerSubscriptions';
+import useOwnerSubscriptionHook from './useOwnerSubscription';
+import useOwnerPlansHook from './useOwnerPlans';
+import useRuleTemplatesHook from './useRuleTemplates';
+import useOwnerModulesHook from './useOwnerModules';
+import useOwnerPaymentsHook from './useOwnerPayments';
+import useOwnerFinancialReportsHook from './useOwnerFinancialReports';
+
 // OWNER main hooks
 export { default as useOwner } from './useOwner';
 
@@ -18,6 +30,9 @@ export { default as useOwnerSubscription } from './useOwnerSubscription';
 
 // OWNER plans management
 export { default as useOwnerPlans } from './useOwnerPlans';
+
+// OWNER rule templates management
+export { default as useRuleTemplates } from './useRuleTemplates';
 
 // OWNER modules management
 export { default as useOwnerModules } from './useOwnerModules';
@@ -36,13 +51,14 @@ export { default as usePublicPlans } from './usePublicPlans';
 
 // Export all OWNER hooks as a group
 export const ownerHooks = {
-  useOwner,
-  useOwnerDashboard,
-  useOwnerBusinesses,
-  useOwnerSubscriptions,
-  useOwnerSubscription,
-  useOwnerPlans,
-  useOwnerModules,
-  useOwnerPayments,
-  useOwnerFinancialReports
+  useOwner: useOwnerHook,
+  useOwnerDashboard: useOwnerDashboardHook,
+  useOwnerBusinesses: useOwnerBusinessesHook,
+  useOwnerSubscriptions: useOwnerSubscriptionsHook,
+  useOwnerSubscription: useOwnerSubscriptionHook,
+  useOwnerPlans: useOwnerPlansHook,
+  useRuleTemplates: useRuleTemplatesHook,
+  useOwnerModules: useOwnerModulesHook,
+  useOwnerPayments: useOwnerPaymentsHook,
+  useOwnerFinancialReports: useOwnerFinancialReportsHook
 };

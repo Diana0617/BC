@@ -8,42 +8,44 @@ import { apiClient } from './client.js';
  * Obtener plantillas disponibles para el negocio
  */
 export const getAvailableTemplates = async () => {
-  return await apiClient.get('/api/rule-templates/business/rule-templates/available');
+  return await apiClient.get('/api/rule-templates/business/templates/available');
 };
 
 /**
  * Obtener plantillas disponibles por categoría
  */
 export const getAvailableTemplatesByCategory = async (category) => {
-  return await apiClient.get(`/api/rule-templates/business/rule-templates/available?category=${category}`);
+  return await apiClient.get(`/api/rule-templates/business/templates/available?category=${category}`);
 };
 
 /**
- * Asignar plantilla de regla al negocio
+ * Obtener plantillas disponibles desde business-rules endpoint
  */
-export const assignRuleTemplate = async (templateId, options = {}) => {
-  return await apiClient.post(`/api/rule-templates/business/rule-templates/${templateId}/assign`, options);
+export const getAvailableRuleTemplates = async () => {
+  return await apiClient.get('/api/business-rules/rule-templates');
 };
 
 /**
  * Obtener reglas asignadas al negocio
  */
 export const getBusinessAssignedRules = async (includeInactive = false) => {
-  return await apiClient.get(`/api/rule-templates/business/rule-assignments?includeInactive=${includeInactive}`);
+  return await apiClient.get(`/api/business-rules/business/rules?includeInactive=${includeInactive}`);
 };
 
 /**
- * Obtener reglas asignadas por categoría
+ * Personalizar regla de negocio
  */
-export const getBusinessAssignedRulesByCategory = async (category) => {
-  return await apiClient.get(`/api/rule-templates/business/rule-assignments?category=${category}`);
+export const customizeBusinessRule = async (ruleKey, customValue) => {
+  return await apiClient.put(`/api/business-rules/business/rules/${ruleKey}`, {
+    value: customValue
+  });
 };
 
 /**
- * Obtener detalles de una regla asignada específica
+ * Configurar reglas iniciales del negocio
  */
-export const getAssignedRuleDetails = async (assignmentId) => {
-  return await apiClient.get(`/api/rule-templates/business/rule-assignments/${assignmentId}`);
+export const setupBusinessRules = async (rulesConfig) => {
+  return await apiClient.post('/api/business-rules/business/rules/setup', rulesConfig);
 };
 
 /**
@@ -215,54 +217,43 @@ export const importBusinessRuleConfiguration = async (configurationData) => {
 };
 
 // ================================
-// BUSINESS RULE API OBJECT
+// BUSINESS RULE API OBJECT - UPDATED
 // ================================
 
 export const businessRuleApi = {
-  // Template discovery
+  // IMPLEMENTADOS - Templates y reglas disponibles
   getAvailableTemplates,
-  getAvailableTemplatesByCategory,
-  getRuleRecommendations,
+  getAvailableTemplatesByCategory, 
+  getAvailableRuleTemplates,
   
-  // Rule assignment
-  assignRuleTemplate,
-  removeRuleAssignment,
-  checkRuleCompatibility,
-  previewRuleForBusiness,
-  
-  // Rule management
+  // IMPLEMENTADOS - Gestión de reglas del negocio
   getBusinessAssignedRules,
-  getBusinessAssignedRulesByCategory,
-  getAssignedRuleDetails,
+  customizeBusinessRule,
+  setupBusinessRules,
   
-  // Customization
-  customizeAssignedRule,
-  revertRuleCustomization,
-  toggleRuleAssignment,
-  updateRulePriority,
-  updateRuleEffectiveDates,
-  
-  // Conflict resolution
-  getBusinessRuleConflicts,
-  resolveRuleConflict,
-  validateCurrentRuleConfiguration,
-  
-  // History and analytics
-  getBusinessRuleHistory,
-  getBusinessRuleStats,
-  
-  // Backup and restore
-  backupBusinessRules,
-  restoreBusinessRules,
-  
-  // Template synchronization
-  syncBusinessRulesWithTemplates,
-  getPendingTemplateUpdates,
-  applyPendingUpdates,
-  
-  // Import/Export
-  exportBusinessRuleConfiguration,
-  importBusinessRuleConfiguration
+  // PENDIENTES DE IMPLEMENTAR - comentados
+  // assignRuleTemplate,
+  // removeRuleAssignment,
+  // getAssignedRuleDetails,
+  // customizeAssignedRule,
+  // revertRuleCustomization,
+  // toggleRuleAssignment,
+  // updateRulePriority,
+  // checkRuleCompatibility,
+  // previewRuleForBusiness,
+  // getRuleRecommendations,
+  // getBusinessRuleConflicts,
+  // resolveRuleConflict,
+  // validateCurrentRuleConfiguration,
+  // getBusinessRuleHistory,
+  // getBusinessRuleStats,
+  // backupBusinessRules,
+  // restoreBusinessRules,
+  // syncBusinessRulesWithTemplates,
+  // getPendingTemplateUpdates,
+  // applyPendingUpdates,
+  // exportBusinessRuleConfiguration,
+  // importBusinessRuleConfiguration
 };
 
 export default businessRuleApi;

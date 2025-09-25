@@ -138,8 +138,24 @@ export const useRuleTemplates = () => {
       console.log('loadTemplateDetails - server data:', serverData)
       
       if (serverData && serverData.success) {
-        console.log('loadTemplateDetails - success, returning:', serverData.data)
-        return serverData.data // Contains { template, stats }
+        const templateData = serverData.data
+        console.log('loadTemplateDetails - template data:', templateData)
+        
+        // Si el backend devuelve la plantilla directamente (no en {template, stats})
+        if (templateData && templateData.id) {
+          return {
+            template: templateData,
+            stats: null // No hay stats implementadas en backend aún
+          }
+        }
+        
+        // Si el backend devuelve {template, stats}
+        if (templateData && templateData.template) {
+          return templateData
+        }
+        
+        console.error('loadTemplateDetails - unexpected data structure:', templateData)
+        throw new Error('Estructura de datos inesperada')
       }
       
       console.error('loadTemplateDetails - server response not successful:', serverData)

@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { sequelize } = require('../config/database');
 const Business = require('../models/Business');
-const BusinessRules = require('../models/BusinessRules');
+// const BusinessRules = require('../models/BusinessRules'); // Deprecated - usar RuleTemplate + BusinessRule
 const User = require('../models/User');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 const BusinessSubscription = require('../models/BusinessSubscription');
@@ -356,7 +356,7 @@ class BusinessController {
       const business = await Business.findByPk(businessId, {
         include: [
           {
-            model: BusinessRules,
+            // model: BusinessRules, // Deprecated - usar RuleTemplate + BusinessRule
             as: 'rules'
           },
           {

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { X, Eye, Users, Building2, Calendar, TrendingUp, BarChart3, Activity, Clock } from 'lucide-react'
-import useRuleTemplates from '../../../../../../shared/src/hooks/useRuleTemplates'
+import { useRuleTemplates } from '@shared/hooks'
 
 const ViewTemplateModal = ({ isOpen, onClose, template }) => {
   const { loadTemplateDetails } = useRuleTemplates()
@@ -11,23 +11,10 @@ const ViewTemplateModal = ({ isOpen, onClose, template }) => {
   const [error, setError] = useState(null)
 
   // ================================
-  // EFFECTS
+  // CALLBACKS
   // ================================
   
-  useEffect(() => {
-    if (isOpen && template?.id) {
-      loadDetails()
-    }
-    
-    if (!isOpen) {
-      // Reset state when modal closes
-      setTemplateData(null)
-      setStats(null)
-      setError(null)
-    }
-  }, [isOpen, template?.id])
-
-  const loadDetails = async () => {
+  const loadDetails = useCallback(async () => {
     setLoading(true)
     setError(null)
     
@@ -48,7 +35,24 @@ const ViewTemplateModal = ({ isOpen, onClose, template }) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [template?.id, loadTemplateDetails])
+
+  // ================================
+  // EFFECTS
+  // ================================
+  
+  useEffect(() => {
+    if (isOpen && template?.id) {
+      loadDetails()
+    }
+    
+    if (!isOpen) {
+      // Reset state when modal closes
+      setTemplateData(null)
+      setStats(null)
+      setError(null)
+    }
+  }, [isOpen, template?.id, loadDetails])
 
   // ================================
   // CONSTANTS

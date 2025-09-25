@@ -174,6 +174,7 @@ const autoRenewalTestRoutes = require('./routes/autoRenewalTest');
 const ownerBusinessManagementRoutes = require('./routes/ownerBusinessManagement');
 const publicInvitationRoutes = require('./routes/publicInvitation');
 const businessConfigRoutes = require('./routes/businessConfig');
+const businessRulesRoutes = require('./routes/businessRules'); // Nuevas rutas simplificadas
 const ruleTemplateRoutes = require('./routes/ruleTemplate');
 const ownerExpenseRoutes = require('./routes/ownerExpenses');
 const cacheRoutes = require('./routes/cache');
@@ -189,7 +190,8 @@ const timeSlotRoutes = require('./routes/time-slots');
 app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/business', businessConfigRoutes); // Rutas de configuración del negocio
-app.use('/api/rule-templates', ruleTemplateRoutes); // Rutas de plantillas de reglas
+app.use('/api', businessRulesRoutes); // Nuevas rutas simplificadas de reglas
+app.use('/api/rule-templates', ruleTemplateRoutes); // Rutas de plantillas de reglas (legacy)
 app.use('/api/receipts', receiptRoutes); // Rutas de recibos
 app.use('/api/plans', plansRoutes);
 app.use('/api/modules', moduleRoutes);
