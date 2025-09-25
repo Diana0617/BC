@@ -71,6 +71,7 @@ const ViewPlanModal = ({ isOpen, onClose }) => {
   // Determinar la estructura correcta de los datos del plan
   // Los logs muestran que selectedPlan es directamente el objeto del plan
   const plan = selectedPlan;
+  // eslint-disable-next-line no-unused-vars
   const statistics = selectedPlan?.statistics;
 
   // Validación adicional para asegurar que tenemos los datos del plan
