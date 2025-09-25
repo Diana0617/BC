@@ -355,10 +355,11 @@ class BusinessController {
 
       const business = await Business.findByPk(businessId, {
         include: [
-          {
-            // model: BusinessRules, // Deprecated - usar RuleTemplate + BusinessRule
-            as: 'rules'
-          },
+          // Commented out until BusinessRules system is fully integrated
+          // {
+          //   model: BusinessRule, // Updated to use new BusinessRule model
+          //   as: 'businessRules'
+          // },
           {
             model: SubscriptionPlan,
             as: 'currentPlan',

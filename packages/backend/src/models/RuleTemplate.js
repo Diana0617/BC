@@ -80,6 +80,16 @@ const RuleTemplate = sequelize.define('RuleTemplate', {
     type: DataTypes.JSONB,
     allowNull: true,
     comment: 'Ejemplos de uso de la regla'
+  },
+  createdBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    comment: 'Usuario que creó la regla'
+  },
+  updatedBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    comment: 'Usuario que actualizó la regla por última vez'
   }
 }, {
   tableName: 'rule_templates',
