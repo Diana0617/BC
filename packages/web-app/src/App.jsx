@@ -111,8 +111,8 @@ function AppLayout() {
                     isAuthenticated 
                       ? (user?.role === 'OWNER' ? "/owner/dashboard" : 
                          user?.role === 'BUSINESS' ? "/business/profile" : 
-                         "/login")
-                      : "/login"
+                         "/")
+                      : "/"
                   } />
             } 
           />
@@ -125,7 +125,7 @@ function AppLayout() {
                 ? (user?.role === 'OWNER' ? "/owner/dashboard" : 
                    user?.role === 'BUSINESS' ? "/business/profile" : 
                    "/dashboard")
-                : "/login"
+                : "/"
             } />} 
           />
           
@@ -137,7 +137,7 @@ function AppLayout() {
                 ? (user?.role === 'OWNER' ? "/owner/dashboard" : 
                    user?.role === 'BUSINESS' ? "/business/profile" : 
                    "/dashboard")
-                : "/login"
+                : "/"
             } />} 
           />
         </Routes>
