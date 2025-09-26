@@ -369,8 +369,10 @@ class BusinessController {
                 as: 'modules',
                 attributes: ['id', 'name', 'displayName', 'description', 'icon', 'category'],
                 through: {
+                  where: { isIncluded: true }, // Solo módulos incluidos en el plan
                   attributes: ['isIncluded', 'limitQuantity', 'additionalPrice', 'configuration']
-                }
+                },
+                where: { status: 'ACTIVE' } // Solo módulos activos
               }
             ]
           },
@@ -388,14 +390,22 @@ class BusinessController {
                     as: 'modules',
                     attributes: ['id', 'name', 'displayName', 'description', 'icon', 'category'],
                     through: {
+                      where: { isIncluded: true }, // Solo módulos incluidos en el plan
                       attributes: ['isIncluded', 'limitQuantity', 'additionalPrice', 'configuration']
-                    }
+                    },
+                    where: { status: 'ACTIVE' } // Solo módulos activos
                   }
                 ]
               }
             ]
           }
         ]
+      });
+
+      // Obtener TODOS los módulos disponibles en el sistema
+      const allModules = await Module.findAll({
+        where: { status: 'ACTIVE' },
+        attributes: ['id', 'name', 'displayName', 'description', 'icon', 'category']
       });
 
       // console.log('🔍 Business found:', !!business);
@@ -412,9 +422,31 @@ class BusinessController {
         });
       }
 
+      // Obtener módulos incluidos en el plan actual
+      const currentSubscription = business.subscriptions?.find(sub => sub.status === 'ACTIVE' || sub.status === 'TRIAL') || business.subscriptions?.[0];
+      const currentPlan = business.currentPlan || currentSubscription?.plan;
+      const includedModuleNames = currentPlan?.modules?.map(module => module.name) || [];
+
+      console.log('🔍 Current Subscription:', currentSubscription);
+      console.log('🔍 Current Plan:', currentPlan);
+      console.log('🔍 Current Plan Modules:', currentPlan?.modules);
+      console.log('🔍 Included Module Names:', includedModuleNames);
+      console.log('🔍 All Modules from DB:', allModules);
+
+      // Marcar módulos disponibles vs no disponibles
+      const modulesWithAvailability = allModules.map(module => ({
+        ...module.toJSON(),
+        isAvailable: includedModuleNames.includes(module.name)
+      }));
+
+      console.log('🔍 Modules with Availability:', modulesWithAvailability);
+
       res.json({
         success: true,
-        data: business
+        data: {
+          ...business.toJSON(),
+          allModules: modulesWithAvailability
+        }
       });
 
     } catch (error) {
@@ -587,6 +619,96 @@ class BusinessController {
       res.status(500).json({
         success: false,
         error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Obtener módulos disponibles para el negocio actual
+   * GET /api/business/modules
+   */
+  static async getAvailableModules(req, res) {
+    try {
+      const businessId = req.user.businessId;
+
+      // Obtener el negocio con su plan actual
+      const business = await Business.findByPk(businessId, {
+        include: [
+          {
+            model: SubscriptionPlan,
+            as: 'currentPlan',
+            include: [
+              {
+                model: Module,
+                as: 'modules',
+                through: {
+                  model: PlanModule,
+                  where: { isIncluded: true }, // Solo módulos incluidos en el plan
+                  attributes: ['isIncluded', 'limitQuantity', 'additionalPrice']
+                },
+                where: { status: 'ACTIVE' }, // Solo módulos activos
+                attributes: ['id', 'name', 'displayName', 'description', 'icon', 'category', 'version', 'requiresConfiguration']
+              }
+            ]
+          }
+        ]
+      });
+
+      if (!business) {
+        return res.status(404).json({
+          success: false,
+          error: 'Negocio no encontrado'
+        });
+      }
+
+      if (!business.currentPlan) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            modules: [],
+            message: 'El negocio no tiene un plan activo'
+          }
+        });
+      }
+
+      // Agrupar módulos por categoría para mejor organización
+      const modulesByCategory = business.currentPlan.modules.reduce((acc, module) => {
+        if (!acc[module.category]) {
+          acc[module.category] = [];
+        }
+        acc[module.category].push({
+          id: module.id,
+          name: module.name,
+          displayName: module.displayName,
+          description: module.description,
+          icon: module.icon,
+          category: module.category,
+          version: module.version,
+          requiresConfiguration: module.requiresConfiguration,
+          planModule: module.PlanModule // Información específica del plan
+        });
+        return acc;
+      }, {});
+
+      res.status(200).json({
+        success: true,
+        data: {
+          modules: modulesByCategory,
+          plan: {
+            id: business.currentPlan.id,
+            name: business.currentPlan.name,
+            description: business.currentPlan.description
+          },
+          totalModules: business.currentPlan.modules.length
+        }
+      });
+
+    } catch (error) {
+      console.error('Error obteniendo módulos disponibles:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }

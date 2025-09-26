@@ -30,6 +30,7 @@ import TaxxaConfigSection from './sections/TaxxaConfigSection'
 import InventoryConfigSection from './sections/InventoryConfigSection'
 import ScheduleConfigSection from './sections/ScheduleConfigSection'
 import SuppliersConfigSection from './sections/SuppliersConfigSection'
+import AppointmentsConfigSection from './sections/AppointmentsConfigSection'
 import BusinessRuleModal from '../../../components/BusinessRuleModal'
 
 // Hook personalizado para la configuración del negocio
@@ -88,17 +89,17 @@ const BusinessProfile = () => {
     }
   }, [business?.id, dispatch])
 
-  // Obtener módulos disponibles basados en la suscripción
+  // Obtener TODOS los módulos disponibles y marcar cuáles están incluidos en el plan
   const currentSubscription = business?.subscriptions?.find(sub => sub.status === 'ACTIVE' || sub.status === 'TRIAL') || business?.subscriptions?.[0]
   const currentPlan = business?.currentPlan || currentSubscription?.plan
-  const availableModules = currentPlan?.modules
-    ?.filter(module => module.PlanModule?.isIncluded)
-    ?.map(module => module.name) || []
+  const allModules = business?.allModules || []
+  const availableModules = allModules.filter(module => module.isAvailable).map(module => module.name) || []
   
-  console.log('📦 Available Modules:', availableModules)
+  console.log('📦 All Modules:', allModules)
+  console.log('✅ Available Modules:', availableModules)
   console.log('🎯 Current Subscription:', currentSubscription)
   console.log('💼 Current Plan Details:', currentPlan)
-  console.log('🔧 Full Modules Info:', currentPlan?.modules)
+  console.log('🏢 Full Business Data:', business)
 
   // Función para verificar si un paso está completado
   const isStepCompleted = (stepId) => completedSteps.includes(stepId)
@@ -131,28 +132,32 @@ const BusinessProfile = () => {
       name: 'Información Básica',
       icon: BuildingStorefrontIcon,
       component: BasicInfoSection,
-      setupStep: 'basic-info'
+      setupStep: 'basic-info',
+      alwaysVisible: true
     },
     {
       id: 'specialists',
       name: 'Especialistas',
       icon: UsersIcon,
       component: SpecialistsSection,
-      setupStep: 'specialists'
+      setupStep: 'specialists',
+      alwaysVisible: true
     },
     {
       id: 'services',
       name: 'Servicios',
       icon: ClipboardDocumentListIcon,
       component: ServicesSection,
-      setupStep: 'services'
+      setupStep: 'services',
+      alwaysVisible: true
     },
     {
       id: 'schedule',
       name: 'Horarios',
       icon: CalendarDaysIcon,
       component: ScheduleConfigSection,
-      setupStep: 'schedule'
+      setupStep: 'schedule',
+      alwaysVisible: true
     }
   ]
 
@@ -163,9 +168,20 @@ const BusinessProfile = () => {
       name: 'Facturación (Taxxa)',
       icon: CogIcon,
       component: TaxxaConfigSection,
-      moduleRequired: 'taxxa-integration',
+      moduleRequired: 'facturacion_electronica', // Actualizado para coincidir con BD
       setupStep: 'taxxa-config'
     },
+    {
+      id: 'appointments',
+      name: 'Gestión de Turnos',
+      icon: CalendarDaysIcon,
+      component: AppointmentsConfigSection,
+      moduleRequired: 'gestion_de_turnos',
+      setupStep: 'appointments-config'
+    }
+    // Nota: Los módulos 'basic-inventory' y 'basic-payments' no existen en la BD
+    // Se pueden agregar cuando se creen estos módulos en el seed
+    /*
     {
       id: 'inventory',
       name: 'Inventario',
@@ -182,12 +198,42 @@ const BusinessProfile = () => {
       moduleRequired: 'basic-payments', // Los proveedores requieren pagos
       setupStep: 'suppliers-config'
     }
+    */
   ]
+
+  // Generar secciones dinámicas para TODOS los módulos disponibles
+  const dynamicModulesSections = allModules.map(module => {
+    // Buscar si ya existe una sección específica para este módulo
+    const existingSection = modulesSections.find(section => section.moduleRequired === module.name)
+    
+    if (existingSection) {
+      // Usar la sección existente si ya está definida
+      return {
+        ...existingSection,
+        isAvailable: module.isAvailable,
+        requiredModule: module.name,
+        moduleInfo: module
+      }
+    } else {
+      // Crear una sección genérica para módulos sin implementación específica
+      return {
+        id: `module-${module.name}`,
+        name: module.displayName || module.name,
+        icon: CogIcon, // Icono por defecto
+        component: null, // Sin componente específico por ahora
+        moduleRequired: module.name,
+        isAvailable: module.isAvailable,
+        requiredModule: module.name,
+        moduleInfo: module,
+        isGeneric: true // Marcar como sección genérica
+      }
+    }
+  })
 
   // Filtrar secciones disponibles basadas en los módulos del plan
   const allSections = [
     ...profileSections,
-    ...modulesSections
+    ...dynamicModulesSections
   ]
 
   // Agregar información de disponibilidad a cada sección
@@ -195,9 +241,11 @@ const BusinessProfile = () => {
     ...section,
     isAvailable: section.alwaysVisible || 
                 !section.moduleRequired || 
-                availableModules.includes(section.moduleRequired),
-    requiredModule: section.moduleRequired
+                availableModules.includes(section.moduleRequired)
   }))
+
+  console.log('📋 All Sections:', allSections)
+  console.log('✅ Sections with Availability:', sectionsWithAvailability)
 
   // Función para cambiar de sección
   const handleSectionChange = (sectionId) => {
@@ -257,6 +305,11 @@ const BusinessProfile = () => {
             <p className="text-sm text-blue-700">
               <span className="font-semibold">Módulo requerido:</span> {section.requiredModule}
             </p>
+            {section.moduleInfo && (
+              <p className="text-sm text-blue-600 mt-2">
+                {section.moduleInfo.description}
+              </p>
+            )}
           </div>
           <button 
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -271,14 +324,49 @@ const BusinessProfile = () => {
       )
     }
 
-    const SectionComponent = section.component
-    return (
-      <SectionComponent
-        isSetupMode={isSetupMode}
-        onComplete={section.setupStep ? () => completeStep(section.setupStep) : undefined}
-        isCompleted={section.setupStep ? isStepCompleted(section.setupStep) : false}
-      />
-    )
+    // Si es una sección genérica sin componente, mostrar mensaje de "próximamente"
+    if (section.isGeneric) {
+      return (
+        <div className="text-center py-12">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+            <section.icon className="h-6 w-6 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {section.name}
+          </h3>
+          <p className="text-gray-600 mb-6 max-w-sm mx-auto">
+            Esta funcionalidad está en desarrollo y estará disponible próximamente.
+          </p>
+          <div className="bg-blue-50 rounded-lg p-4 mb-6 max-w-md mx-auto">
+            <p className="text-sm text-blue-700">
+              <span className="font-semibold">Módulo:</span> {section.requiredModule}
+            </p>
+            {section.moduleInfo && (
+              <p className="text-sm text-blue-600 mt-2">
+                {section.moduleInfo.description}
+              </p>
+            )}
+          </div>
+          <div className="text-sm text-gray-500">
+            Mantente atento a las actualizaciones
+          </div>
+        </div>
+      )
+    }
+
+    // Renderizar componente específico si existe
+    if (section.component) {
+      const Component = section.component
+      return (
+        <Component 
+          isSetupMode={isSetupMode} 
+          onComplete={() => completeStep(section.setupStep)}
+          isCompleted={section.setupStep ? isStepCompleted(section.setupStep) : false}
+        />
+      )
+    }
+
+    return null
   }
 
   if (loading) {
