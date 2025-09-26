@@ -583,6 +583,60 @@ router.get('/stats', allStaffRoles, (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /api/business/modules:
+ *   get:
+ *     summary: Obtener módulos disponibles para el negocio
+ *     description: Lista los módulos incluidos en el plan de suscripción actual del negocio
+ *     tags: [🏢 Gestión de Negocios]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Módulos disponibles obtenidos exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     modules:
+ *                       type: object
+ *                       description: Módulos agrupados por categoría
+ *                       example: {
+ *                         "APPOINTMENTS": [{"id": 1, "name": "appointments", "displayName": "Citas"}],
+ *                         "INVENTORY": [{"id": 2, "name": "inventory", "displayName": "Inventario"}]
+ *                       }
+ *                     plan:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         name:
+ *                           type: string
+ *                         description:
+ *                           type: string
+ *                     totalModules:
+ *                       type: integer
+ *       401:
+ *         description: No autorizado
+ *       404:
+ *         description: Negocio no encontrado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/modules', 
+  authenticateToken,
+  businessAndOwner,
+  BusinessController.getAvailableModules
+);
+
 // =====================================
 // RUTAS DE GESTIÓN DE PAGOS DE NEGOCIOS
 // =====================================
