@@ -507,14 +507,6 @@ router.post('/invite-employee', businessAndOwner, BusinessController.inviteEmplo
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// Obtener reglas del negocio
-router.get('/rules', allStaffRoles, (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de obtener reglas del negocio aún no implementada'
-  });
-});
-
 /**
  * @swagger
  * /api/business/rules:
@@ -552,14 +544,6 @@ router.get('/rules', allStaffRoles, (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// Actualizar reglas del negocio
-router.put('/rules', businessAndOwner, (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de actualizar reglas del negocio aún no implementada'
-  });
-});
-
 /**
  * @swagger
  * /api/business/stats:

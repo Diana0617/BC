@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const BusinessRulesController = require('../controllers/BusinessRulesController');
 const { authenticateToken } = require('../middleware/auth');
-const { roleCheck } = require('../middleware/roleCheck');
+const { businessAndOwner } = require('../middleware/roleCheck');
 const { validateSubdomain } = require('../middleware/subdomain');
 const tenancy = require('../middleware/tenancy');
 
@@ -122,7 +122,7 @@ const tenancy = require('../middleware/tenancy');
  */
 router.get('/business/rules', 
   authenticateToken, 
-  roleCheck(['business_admin', 'owner']),
+  businessAndOwner,
   validateSubdomain,
   tenancy,
   BusinessRulesController.getBusinessRules
@@ -165,7 +165,7 @@ router.get('/business/rules',
  */
 router.get('/business/rules/:ruleKey', 
   authenticateToken, 
-  roleCheck(['business_admin', 'owner']),
+  businessAndOwner,
   validateSubdomain,
   tenancy,
   BusinessRulesController.getRuleValue
@@ -214,7 +214,7 @@ router.get('/business/rules/:ruleKey',
  */
 router.put('/business/rules/:ruleKey', 
   authenticateToken, 
-  roleCheck(['business_admin', 'owner']),
+  businessAndOwner,
   validateSubdomain,
   tenancy,
   BusinessRulesController.setRuleValue
@@ -242,7 +242,7 @@ router.put('/business/rules/:ruleKey',
  */
 router.delete('/business/rules/:ruleKey', 
   authenticateToken, 
-  roleCheck(['business_admin', 'owner']),
+  businessAndOwner,
   validateSubdomain,
   tenancy,
   BusinessRulesController.resetRuleToDefault
@@ -263,10 +263,43 @@ router.delete('/business/rules/:ruleKey',
  */
 router.post('/business/rules/setup', 
   authenticateToken, 
-  roleCheck(['business_admin', 'owner']),
+  businessAndOwner,
   validateSubdomain,
   tenancy,
   BusinessRulesController.setupBusinessRules
+);
+
+/**
+ * @swagger
+ * /api/business/rules/assign:
+ *   post:
+ *     tags: [Business Rules]
+ *     summary: Asignar una plantilla específica al negocio
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               templateId:
+ *                 type: string
+ *                 description: ID de la plantilla a asignar
+ *               customValue:
+ *                 type: object
+ *                 description: Valor personalizado (opcional, usa el valor por defecto si no se provee)
+ *     responses:
+ *       200:
+ *         description: Plantilla asignada exitosamente
+ */
+router.post('/business/rules/assign', 
+  authenticateToken, 
+  businessAndOwner,
+  validateSubdomain,
+  tenancy,
+  BusinessRulesController.assignRuleTemplate
 );
 
 // ================================

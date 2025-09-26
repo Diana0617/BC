@@ -39,7 +39,7 @@ async function startServer() {
         SubscriptionPayment,
         OwnerFinancialReport,
         // Nuevos modelos simplificados de reglas
-        RuleTemplate,
+        // RuleTemplate, // Temporalmente comentado
         BusinessRule,
         // Nuevo modelo de recibos
         Receipt
@@ -77,8 +77,8 @@ async function startServer() {
         await User.sync(syncOptions);
         console.log('✅ Tabla User sincronizada');
         
-        // 4. Nuevos modelos simplificados de reglas
-        await RuleTemplate.sync(syncOptions);
+        // 4. Nuevos modelos simplificados de reglas (temporalmente comentado)
+        // await RuleTemplate.sync(syncOptions);
         await BusinessRule.sync(syncOptions);
         console.log('✅ Nuevos modelos de reglas sincronizados');
         

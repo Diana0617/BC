@@ -18,8 +18,8 @@ import {
   loadBusinessConfiguration,
   setSetupMode,
   setCurrentStep
-} from '../../../../../shared/src/store/slices/businessConfigurationSlice'
-import { fetchCurrentBusiness } from '../../../../../shared/src/store/slices/businessSlice'
+} from '@shared/store/slices/businessConfigurationSlice'
+import { fetchCurrentBusiness } from '@shared/store/slices/businessSlice'
 
 // Componentes de secciones
 import SubscriptionSection from './sections/SubscriptionSection'

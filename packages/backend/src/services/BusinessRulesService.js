@@ -146,7 +146,7 @@ class BusinessRulesService {
         customValue,
         isActive: true,
         updatedBy,
-        appliedAt: created ? new Date() : undefined
+        appliedAt: new Date() // Always set appliedAt to current timestamp
       }, {
         returning: true
       });
@@ -255,6 +255,63 @@ class BusinessRulesService {
       return businessRules;
     } catch (error) {
       console.error('Error applying default rules:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Assign a specific rule template to business
+   */
+  static async assignRuleToBusinessFromTemplate(businessId, templateId, updatedBy, customValue = null) {
+    try {
+      console.log(`🔄 Assigning template ${templateId} to business ${businessId}`);
+      
+      // First, get the template to ensure it exists
+      const template = await RuleTemplate.findByPk(templateId);
+      if (!template) {
+        throw new Error(`Template ${templateId} not found`);
+      }
+
+      console.log(`📋 Found template: ${template.key}`);
+
+      // Check if already assigned
+      const existingRule = await BusinessRule.findOne({
+        where: {
+          businessId,
+          ruleTemplateId: templateId
+        }
+      });
+
+      if (existingRule) {
+        console.log(`⚠️ Rule already exists for business ${businessId}, template ${templateId}`);
+        throw new Error(`Rule "${template.key}" is already assigned to this business`);
+      }
+
+      // Create the business rule
+      const businessRule = await BusinessRule.create({
+        businessId,
+        ruleTemplateId: templateId,
+        customValue: customValue,
+        isActive: true,
+        updatedBy,
+        appliedAt: new Date()
+      });
+
+      console.log(`✅ Business rule created:`, businessRule.id);
+
+      // Return the rule with template data
+      const fullRule = await BusinessRule.findByPk(businessRule.id, {
+        include: [
+          {
+            model: RuleTemplate,
+            as: 'template'
+          }
+        ]
+      });
+
+      return fullRule;
+    } catch (error) {
+      console.error('❌ Error assigning rule template:', error);
       throw error;
     }
   }

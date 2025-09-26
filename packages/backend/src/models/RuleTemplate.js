@@ -16,7 +16,6 @@ const RuleTemplate = sequelize.define('RuleTemplate', {
   key: {
     type: DataTypes.STRING(100),
     allowNull: false,
-    unique: true,
     validate: {
       notEmpty: true,
       len: [3, 100]
@@ -126,6 +125,20 @@ RuleTemplate.associate = function(models) {
     as: 'updater',
     allowNull: true
   });
+};
+
+// Agregar índices únicos después de la definición
+RuleTemplate.addIndex = async () => {
+  try {
+    await RuleTemplate.sequelize.query(
+      'CREATE UNIQUE INDEX IF NOT EXISTS "rule_templates_key_unique" ON "rule_templates" ("key");'
+    );
+  } catch (error) {
+    // Si el índice ya existe, no es un error
+    if (!error.message.includes('already exists')) {
+      console.warn('Warning creating unique index for rule_templates.key:', error.message);
+    }
+  }
 };
 
 module.exports = RuleTemplate;

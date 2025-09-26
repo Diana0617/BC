@@ -54,7 +54,21 @@ class BusinessRulesController {
    */
   static async getBusinessRules(req, res) {
     try {
-      const { businessId } = req.user.business;
+      console.log('🔍 Debug - req.user:', req.user);
+      console.log('🔍 Debug - req.user.business:', req.user.business);
+      
+      // Try different ways to get businessId
+      let businessId = req.user.business?.businessId || req.user.business?.id || req.user.businessId;
+      
+      console.log('🔍 Debug - extracted businessId:', businessId);
+      
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Business ID not found in user context'
+        });
+      }
+
       const { categories, activeOnly } = req.query;
 
       const rules = await BusinessRulesService.getBusinessEffectiveRules(businessId, {
@@ -96,8 +110,15 @@ class BusinessRulesController {
    */
   static async getRuleValue(req, res) {
     try {
-      const { businessId } = req.user.business;
+      let businessId = req.user.business?.businessId || req.user.business?.id || req.user.businessId;
       const { ruleKey } = req.params;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          message: 'businessId is required and could not be determined from user data'
+        });
+      }
 
       const value = await BusinessRulesService.getBusinessRuleValue(businessId, ruleKey);
 
@@ -156,15 +177,37 @@ class BusinessRulesController {
    */
   static async setRuleValue(req, res) {
     try {
-      const { businessId } = req.user.business;
+      let businessId = req.user.business?.businessId || req.user.business?.id || req.user.businessId;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          message: 'businessId is required and could not be determined from user data'
+        });
+      }
       const { ruleKey } = req.params;
-      const { value } = req.body;
+      const { value, customValue, notes } = req.body;
       const userId = req.user.id;
+
+      // Support both 'value' (legacy) and 'customValue' (new API format)
+      const ruleValue = customValue !== undefined ? customValue : value;
+
+      if (ruleValue === undefined) {
+        return res.status(400).json({
+          success: false,
+          message: 'value or customValue is required'
+        });
+      }
+
+      console.log(`🔄 Setting rule value for ${ruleKey}:`, ruleValue);
+      if (notes) {
+        console.log(`📝 Notes: ${notes}`);
+      }
 
       const businessRule = await BusinessRulesService.setBusinessRuleValue(
         businessId, 
         ruleKey, 
-        value, 
+        ruleValue, 
         userId
       );
 
@@ -203,8 +246,15 @@ class BusinessRulesController {
    */
   static async resetRuleToDefault(req, res) {
     try {
-      const { businessId } = req.user.business;
+      let businessId = req.user.business?.businessId || req.user.business?.id || req.user.businessId;
       const { ruleKey } = req.params;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          message: 'businessId is required and could not be determined from user data'
+        });
+      }
 
       const reset = await BusinessRulesService.resetBusinessRuleToDefault(businessId, ruleKey);
 
@@ -272,7 +322,14 @@ class BusinessRulesController {
    */
   static async setupBusinessRules(req, res) {
     try {
-      const { businessId } = req.user.business;
+      let businessId = req.user.business?.businessId || req.user.business?.id || req.user.businessId;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          message: 'businessId is required and could not be determined from user data'
+        });
+      }
       const userId = req.user.id;
 
       // Apply all default rules to new business
@@ -291,6 +348,61 @@ class BusinessRulesController {
       res.status(500).json({
         success: false,
         message: 'Error setting up business rules',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/business/rules/assign:
+   *   post:
+   *     tags: [Business Rules]  
+   *     summary: Assign a specific rule template to business
+   */
+  static async assignRuleTemplate(req, res) {
+    try {
+      // Use safe businessId extraction like in getBusinessRules method
+      let businessId = req.user.business?.businessId || req.user.business?.id || req.user.businessId;
+      const userId = req.user.id;
+      const { templateId, customValue } = req.body;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          message: 'businessId is required and could not be determined from user data'
+        });
+      }
+
+      if (!templateId) {
+        return res.status(400).json({
+          success: false,
+          message: 'templateId is required'
+        });
+      }
+
+      console.log(`🔄 Assigning template ${templateId} to business ${businessId}`);
+
+      // Assign the specific template
+      const assignedRule = await BusinessRulesService.assignRuleToBusinessFromTemplate(
+        businessId, 
+        templateId,
+        userId,
+        customValue
+      );
+
+      console.log(`✅ Template assigned successfully:`, assignedRule);
+
+      res.json({
+        success: true,
+        message: `Template assigned successfully`,
+        data: assignedRule
+      });
+    } catch (error) {
+      console.error('❌ Error assigning rule template:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error assigning rule template',
         error: error.message
       });
     }

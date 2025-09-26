@@ -12,9 +12,15 @@ export const getAvailableTemplates = createAsyncThunk(
   'businessRule/getAvailableTemplates',
   async (_, { rejectWithValue }) => {
     try {
+      console.log('📥 Redux: Fetching available templates...');
       const response = await businessRuleApi.getAvailableTemplates();
-      return response.data;
+      console.log('📥 Redux: Available templates response:', response);
+      // El backend devuelve { success: true, data: [...] }
+      const data = response.data.data || response.data;
+      console.log('📥 Redux: Processed available templates:', data);
+      return data;
     } catch (error) {
+      console.error('❌ Redux: Error fetching available templates:', error);
       return rejectWithValue(
         error.response?.data?.message || 'Error al obtener plantillas disponibles'
       );
@@ -46,9 +52,15 @@ export const getBusinessAssignedRules = createAsyncThunk(
   'businessRule/getBusinessAssignedRules',
   async (includeInactive = false, { rejectWithValue }) => {
     try {
+      console.log('📥 Redux: Fetching assigned rules...');
       const response = await businessRuleApi.getBusinessAssignedRules(includeInactive);
-      return response.data;
+      console.log('📥 Redux: Assigned rules response:', response);
+      // El backend devuelve { success: true, data: [...] }
+      const data = response.data.data || response.data;
+      console.log('📥 Redux: Processed assigned rules:', data);
+      return data;
     } catch (error) {
+      console.error('❌ Redux: Error fetching assigned rules:', error);
       return rejectWithValue(
         error.response?.data?.message || 'Error al obtener reglas asignadas'
       );
@@ -61,9 +73,9 @@ export const getBusinessAssignedRules = createAsyncThunk(
  */
 export const customizeAssignedRule = createAsyncThunk(
   'businessRule/customizeAssignedRule',
-  async ({ assignmentId, customValue, notes }, { rejectWithValue }) => {
+  async ({ ruleKey, customValue, notes }, { rejectWithValue }) => {
     try {
-      const response = await businessRuleApi.customizeAssignedRule(assignmentId, {
+      const response = await businessRuleApi.customizeAssignedRule(ruleKey, {
         customValue,
         notes
       });
