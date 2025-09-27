@@ -15,6 +15,15 @@ const Appointment = sequelize.define('Appointment', {
       key: 'id'
     }
   },
+  branchId: {
+    type: DataTypes.UUID,
+    allowNull: true, // Inicialmente nullable para migración gradual
+    references: {
+      model: 'branches',
+      key: 'id'
+    },
+    comment: 'Sucursal donde se realiza la cita'
+  },
   clientId: {
     type: DataTypes.UUID,
     allowNull: false,
@@ -240,5 +249,38 @@ const Appointment = sequelize.define('Appointment', {
     }
   ]
 });
+
+// Relaciones
+Appointment.associate = (models) => {
+  Appointment.belongsTo(models.Business, {
+    foreignKey: 'businessId',
+    as: 'business'
+  });
+
+  Appointment.belongsTo(models.Branch, {
+    foreignKey: 'branchId',
+    as: 'branch'
+  });
+
+  Appointment.belongsTo(models.Client, {
+    foreignKey: 'clientId',
+    as: 'client'
+  });
+
+  Appointment.belongsTo(models.User, {
+    foreignKey: 'specialistId',
+    as: 'specialist'
+  });
+
+  Appointment.belongsTo(models.Service, {
+    foreignKey: 'serviceId',
+    as: 'service'
+  });
+
+  Appointment.belongsTo(models.User, {
+    foreignKey: 'canceledBy',
+    as: 'canceledByUser'
+  });
+};
 
 module.exports = Appointment;

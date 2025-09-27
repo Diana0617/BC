@@ -4,7 +4,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-const { specs, swaggerUi, swaggerConfig } = require('./config/swagger');
+// const { specs, swaggerUi, swaggerConfig } = require('./config/swagger');
 const { authenticateToken } = require('./middleware/auth');
 const ownerOnly = require('./middleware/ownerOnly');
 require('dotenv').config();
@@ -72,25 +72,25 @@ app.use('/api/', limiter);
 
 // 📚 SWAGGER DOCUMENTATION - SOLO PARA OWNERS (excepto en desarrollo)
 // Middleware condicional para desarrollo vs producción
-const swaggerMiddleware = process.env.NODE_ENV === 'development' 
-  ? [] // Sin restricciones en desarrollo
-  : [authenticateToken, ownerOnly]; // Con restricciones en producción
+// const swaggerMiddleware = process.env.NODE_ENV === 'development'
+//   ? [] // Sin restricciones en desarrollo
+//   : [authenticateToken, ownerOnly]; // Con restricciones en producción
 
-app.use('/api-docs', ...swaggerMiddleware, swaggerUi.serve, swaggerUi.setup(specs, swaggerConfig));
+// app.use('/api-docs', ...swaggerMiddleware, swaggerUi.serve, swaggerUi.setup(specs, swaggerConfig));
 
 // Ruta adicional para desarrollo sin restricciones
-if (process.env.NODE_ENV === 'development') {
-  app.use('/api-docs-dev', swaggerUi.serve, swaggerUi.setup(specs, {
-    ...swaggerConfig,
-    customSiteTitle: "Beauty Control API Docs - DESARROLLO (Sin restricciones)"
-  }));
-}
+// if (process.env.NODE_ENV === 'development') {
+//   app.use('/api-docs-dev', swaggerUi.serve, swaggerUi.setup(specs, {
+//     ...swaggerConfig,
+//     customSiteTitle: "Beauty Control API Docs - DESARROLLO (Sin restricciones)"
+//   }));
+// }
 
 // Ruta para acceder al JSON de la documentación - También con restricción condicional
-app.get('/api-docs.json', ...swaggerMiddleware, (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(specs);
-});
+// app.get('/api-docs.json', ...swaggerMiddleware, (req, res) => {
+//   res.setHeader('Content-Type', 'application/json');
+//   res.send(specs);
+// });
 
 // Rate limiting más estricto para autenticación
 const authLimiter = rateLimit({
@@ -173,9 +173,11 @@ const wompiPaymentRoutes = require('./routes/wompiPayments');
 const autoRenewalTestRoutes = require('./routes/autoRenewalTest');
 const ownerBusinessManagementRoutes = require('./routes/ownerBusinessManagement');
 const publicInvitationRoutes = require('./routes/publicInvitation');
+const publicBookingsRoutes = require('./routes/publicBookings');
 const businessConfigRoutes = require('./routes/businessConfig');
 const businessRulesRoutes = require('./routes/businessRules'); // Nuevas rutas simplificadas
 const ruleTemplateRoutes = require('./routes/ruleTemplate');
+const branchRoutes = require('./routes/branches');
 const ownerExpenseRoutes = require('./routes/ownerExpenses');
 const cacheRoutes = require('./routes/cache');
 const receiptRoutes = require('./routes/receipts');
@@ -190,6 +192,7 @@ const timeSlotRoutes = require('./routes/time-slots');
 app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/business', businessConfigRoutes); // Rutas de configuración del negocio
+app.use('/api/business', branchRoutes); // Rutas de sucursales
 app.use('/api', businessRulesRoutes); // Nuevas rutas simplificadas de reglas
 app.use('/api/rule-templates', ruleTemplateRoutes); // Rutas de plantillas de reglas (legacy)
 app.use('/api/receipts', receiptRoutes); // Rutas de recibos
@@ -208,6 +211,7 @@ app.use('/api/subscriptions', subscriptionRoutes); // Rutas de suscripciones
 app.use('/api/owner/subscription-status', subscriptionStatusRoutes); // Rutas de estado de suscripciones para Owner
 app.use('/api/owner/subscriptions', subscriptionStatusRoutes); // Alias para compatibilidad con el frontend
 app.use('/api/public', publicInvitationRoutes);
+app.use('/api/public/bookings', publicBookingsRoutes); // Nuevas rutas públicas para bookings
 app.use('/api/wompi', wompiPaymentRoutes);
 app.use('/api/payments/3ds', payment3DSRoutes); // Rutas de pagos 3D Secure
 app.use('/api/test/auto-renewal', autoRenewalTestRoutes);

@@ -44,6 +44,9 @@ export { default as advancePaymentSlice } from './advancePaymentSlice';
 export { default as businessValidationSlice } from './businessValidationSlice';
 export { default as businessRuleSlice } from './businessRuleSlice';
 
+// 🏨 PUBLIC BOOKING SYSTEM SLICES
+export { default as publicBookingSlice } from './publicBookingSlice';
+
 // Export all OWNER slices as a group
 export const ownerSlices = {
   ownerStatsSlice,

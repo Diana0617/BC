@@ -34,7 +34,8 @@ class AppointmentController {
         specialistId,
         date,
         startDate,
-        endDate
+        endDate,
+        branchId
       } = req.query;
 
       const offset = (page - 1) * limit;
@@ -49,6 +50,11 @@ class AppointmentController {
         if (specialistId) {
           where.specialistId = specialistId;
         }
+      }
+
+      // Filtro opcional por sucursal
+      if (branchId) {
+        where.branchId = branchId;
       }
 
       // Filtros adicionales
@@ -91,6 +97,12 @@ class AppointmentController {
               model: SpecialistProfile,
               attributes: ['specialization']
             }]
+          },
+          {
+            model: require('../models/Branch'),
+            as: 'branch',
+            attributes: ['id', 'name', 'code'],
+            required: false
           }
         ],
         order: [['startTime', 'ASC']],
@@ -158,6 +170,12 @@ class AppointmentController {
               model: SpecialistProfile,
               attributes: ['specialization', 'experience']
             }]
+          },
+          {
+            model: require('../models/Branch'),
+            as: 'branch',
+            attributes: ['id', 'name', 'code', 'address'],
+            required: false
           }
         ]
       });
@@ -206,7 +224,8 @@ class AppointmentController {
         startTime,
         endTime,
         notes,
-        clientNotes
+        clientNotes,
+        branchId
       } = req.body;
 
       // Validar que el especialista pertenezca al negocio
@@ -254,6 +273,43 @@ class AppointmentController {
         });
       }
 
+      // Validar sucursal si se proporciona
+      if (branchId) {
+        const Branch = require('../models/Branch');
+        const branch = await Branch.findOne({
+          where: {
+            id: branchId,
+            businessId,
+            isActive: true
+          }
+        });
+
+        if (!branch) {
+          return res.status(400).json({
+            success: false,
+            error: 'Sucursal no válida para este negocio'
+          });
+        }
+
+        // Verificar que el especialista trabaje en esa sucursal
+        const specialistProfile = await require('../models/SpecialistProfile').findOne({
+          where: { userId: specialistId },
+          include: [{
+            model: Branch,
+            as: 'branches',
+            where: { id: branchId },
+            required: true
+          }]
+        });
+
+        if (!specialistProfile) {
+          return res.status(400).json({
+            success: false,
+            error: 'El especialista no trabaja en la sucursal seleccionada'
+          });
+        }
+      }
+
       // Verificar disponibilidad del especialista
       const conflictingAppointment = await Appointment.findOne({
         where: {
@@ -299,6 +355,7 @@ class AppointmentController {
         clientId,
         specialistId,
         serviceId,
+        branchId: branchId || null, // Campo opcional
         appointmentNumber,
         startTime: new Date(startTime),
         endTime: new Date(endTime),
@@ -323,6 +380,12 @@ class AppointmentController {
             model: User,
             as: 'specialist',
             attributes: ['id', 'firstName', 'lastName']
+          },
+          {
+            model: require('../models/Branch'),
+            as: 'branch',
+            attributes: ['id', 'name', 'code'],
+            required: false
           }
         ]
       });

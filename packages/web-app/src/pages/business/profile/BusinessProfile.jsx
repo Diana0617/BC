@@ -31,6 +31,8 @@ import InventoryConfigSection from './sections/InventoryConfigSection'
 import ScheduleConfigSection from './sections/ScheduleConfigSection'
 import SuppliersConfigSection from './sections/SuppliersConfigSection'
 import AppointmentsConfigSection from './sections/AppointmentsConfigSection'
+import AppointmentPaymentsConfigSection from './sections/AppointmentPaymentsConfigSection'
+import CalendarAccessSection from './sections/CalendarAccessSection'
 import BusinessRuleModal from '../../../components/BusinessRuleModal'
 
 // Hook personalizado para la configuración del negocio
@@ -152,6 +154,13 @@ const BusinessProfile = () => {
       alwaysVisible: true
     },
     {
+      id: 'calendar-access',
+      name: 'Calendario y Acceso',
+      icon: CalendarDaysIcon,
+      component: CalendarAccessSection,
+      alwaysVisible: true
+    },
+    {
       id: 'schedule',
       name: 'Horarios',
       icon: CalendarDaysIcon,
@@ -178,6 +187,14 @@ const BusinessProfile = () => {
       component: AppointmentsConfigSection,
       moduleRequired: 'gestion_de_turnos',
       setupStep: 'appointments-config'
+    },
+    {
+      id: 'appointment-payments',
+      name: 'Pagos de Turnos Online',
+      icon: CreditCardIcon,
+      component: AppointmentPaymentsConfigSection,
+      moduleRequired: 'wompi_appointment_payments',
+      setupStep: 'appointment-payments-config'
     }
     // Nota: Los módulos 'basic-inventory' y 'basic-payments' no existen en la BD
     // Se pueden agregar cuando se creen estos módulos en el seed

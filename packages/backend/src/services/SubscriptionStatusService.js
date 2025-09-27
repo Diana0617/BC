@@ -8,7 +8,7 @@
  * - Notificaciones de vencimiento
  */
 
-const { BusinessSubscription, SubscriptionPayment, Business, SubscriptionPlan } = require('../models');
+const { BusinessSubscription, SubscriptionPayment, Business, SubscriptionPlan, Module, PlanModule } = require('../models');
 const { Op } = require('sequelize');
 
 class SubscriptionStatusService {
