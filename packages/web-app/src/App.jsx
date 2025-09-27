@@ -28,6 +28,8 @@ import BusinessProfile from './pages/business/profile/BusinessProfile.jsx'
 
 // Public Pages
 import LandingPage from './pages/public/LandingPage'
+import OnlineBookingPage from './pages/public/OnlineBookingPage'
+import BookingSuccess from './pages/public/BookingSuccess'
 
 // Test Components (temporal)
 import ReduxPlansTest from './components/test/ReduxPlansTest'
@@ -60,6 +62,8 @@ function AppLayout() {
         <Routes>
           {/* Public routes - No authentication required */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/book/:businessCode" element={<OnlineBookingPage />} />
+          <Route path="/booking/success" element={<BookingSuccess />} />
           
          
           

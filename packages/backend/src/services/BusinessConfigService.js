@@ -71,6 +71,57 @@ class BusinessConfigService {
   }
 
   // Service methods - these might still work without BusinessRules
+  async getSpecialists(businessId, filters = {}) {
+    try {
+      const whereClause = { businessId };
+
+      if (filters.isActive !== undefined) {
+        whereClause.isActive = filters.isActive;
+      }
+
+      if (filters.specialization) {
+        whereClause.specialization = filters.specialization;
+      }
+
+      // Filtro opcional por sucursal
+      const includeOptions = [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name', 'email']
+        }
+      ];
+
+      if (filters.branchId) {
+        includeOptions.push({
+          model: require('../models/Branch'),
+          as: 'branches',
+          where: { id: filters.branchId },
+          through: { attributes: [] }, // Excluir atributos de la tabla intermedia
+          required: true // INNER JOIN para filtrar solo especialistas de la sucursal
+        });
+      } else {
+        // Si no hay filtro de sucursal, incluir todas las sucursales del especialista
+        includeOptions.push({
+          model: require('../models/Branch'),
+          as: 'branches',
+          through: { attributes: [] },
+          required: false // LEFT JOIN para incluir especialistas sin sucursal asignada
+        });
+      }
+
+      const specialists = await SpecialistProfile.findAll({
+        where: whereClause,
+        include: includeOptions,
+        order: [['createdAt', 'DESC']]
+      });
+
+      return specialists;
+    } catch (error) {
+      throw new Error(`Error al obtener especialistas: ${error.message}`);
+    }
+  }
+
   async getServices(businessId, filters = {}) {
     try {
       const whereClause = { businessId };

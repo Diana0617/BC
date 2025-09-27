@@ -5,6 +5,7 @@ const { sequelize } = require('../config/database');
 const SubscriptionPlan = require('./SubscriptionPlan');
 const Module = require('./Module');
 const Business = require('./Business');
+const Branch = require('./Branch');
 const User = require('./User');
 const Client = require('./Client');
 const Service = require('./Service');
@@ -22,6 +23,7 @@ const PasswordResetToken = require('./PasswordResetToken');
 
 // Modelos de configuración del negocio
 const SpecialistProfile = require('./SpecialistProfile');
+const SpecialistBranchSchedule = require('./SpecialistBranchSchedule');
 const Schedule = require('./Schedule');
 const TimeSlot = require('./TimeSlot');
 const BusinessPaymentConfig = require('./BusinessPaymentConfig');
@@ -179,6 +181,48 @@ BusinessClient.belongsTo(User, {
   as: 'preferredSpecialist' 
 });
 
+// Business - Branch
+Business.hasMany(Branch, {
+  foreignKey: 'businessId',
+  as: 'branches'
+});
+Branch.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+
+// Branch - Specialist (muchos a muchos a través de SpecialistBranchSchedule)
+Branch.belongsToMany(SpecialistProfile, {
+  through: SpecialistBranchSchedule,
+  foreignKey: 'branchId',
+  otherKey: 'specialistId',
+  as: 'specialists'
+});
+SpecialistProfile.belongsToMany(Branch, {
+  through: SpecialistBranchSchedule,
+  foreignKey: 'specialistId',
+  otherKey: 'branchId',
+  as: 'branches'
+});
+
+// Relaciones directas con SpecialistBranchSchedule
+SpecialistBranchSchedule.belongsTo(SpecialistProfile, {
+  foreignKey: 'specialistId',
+  as: 'specialist'
+});
+SpecialistBranchSchedule.belongsTo(Branch, {
+  foreignKey: 'branchId',
+  as: 'branch'
+});
+Branch.hasMany(SpecialistBranchSchedule, {
+  foreignKey: 'branchId',
+  as: 'specialistSchedules'
+});
+SpecialistProfile.hasMany(SpecialistBranchSchedule, {
+  foreignKey: 'specialistId',
+  as: 'branchSchedules'
+});
+
 // Business - Service
 Business.hasMany(Service, { 
   foreignKey: 'businessId', 
@@ -190,13 +234,17 @@ Service.belongsTo(Business, {
 });
 
 // Appointment relationships
-Appointment.belongsTo(Business, { 
-  foreignKey: 'businessId', 
-  as: 'business' 
+Appointment.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
 });
-Appointment.belongsTo(Client, { 
-  foreignKey: 'clientId', 
-  as: 'client' 
+Appointment.belongsTo(Branch, {
+  foreignKey: 'branchId',
+  as: 'branch'
+});
+Appointment.belongsTo(Client, {
+  foreignKey: 'clientId',
+  as: 'client'
 });
 Appointment.belongsTo(User, { 
   foreignKey: 'specialistId', 
@@ -863,6 +911,8 @@ module.exports = {
   sequelize,
   User,
   Business,
+  Branch,
+  SpecialistBranchSchedule,
   SubscriptionPlan,
   Module,
   PlanModule,

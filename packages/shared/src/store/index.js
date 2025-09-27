@@ -30,6 +30,8 @@ import businessValidationReducer from './slices/businessValidationSlice';
 import subscriptionReducer from './slices/subscriptionSlice';
 // 🏢 BUSINESS CONFIGURATION REDUCERS
 import businessConfigurationReducer from './slices/businessConfigurationSlice';
+// 🏨 PUBLIC BOOKING SYSTEM REDUCERS
+import publicBookingReducer from './slices/publicBookingSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -65,7 +67,9 @@ export const createStore = (preloadedState = {}) => {
       // 💰 SUBSCRIPTION SYSTEM REDUCERS
       subscription: subscriptionReducer,
       // 🏢 BUSINESS CONFIGURATION REDUCERS
-      businessConfiguration: businessConfigurationReducer
+      businessConfiguration: businessConfigurationReducer,
+      // 🏨 PUBLIC BOOKING SYSTEM REDUCERS
+      publicBooking: publicBookingReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>
