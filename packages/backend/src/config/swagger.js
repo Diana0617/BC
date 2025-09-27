@@ -1,6 +1,14 @@
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
+// In development we may want to avoid parsing very large / fragile JSDoc
+// blocks (like owner.js) that can break swagger-jsdoc due to YAML examples.
+const isDev = process.env.NODE_ENV !== 'production';
+const defaultApis = [
+  './src/routes/*.js',
+  './src/controllers/*.js'
+];
+
 const options = {
   definition: {
     openapi: '3.0.0',
@@ -2619,11 +2627,10 @@ const options = {
       }
     ]
   },
-  apis: [
-    './src/routes/*.js',
-    './src/controllers/*.js',
-    './src/models/*.js'
-  ]
+  // In development only parse controller files to avoid parsing large/fragile JSDoc in routes
+  apis: isDev ? [
+    './src/controllers/*.js'
+  ] : defaultApis
 };
 
 const specs = swaggerJsdoc(options);

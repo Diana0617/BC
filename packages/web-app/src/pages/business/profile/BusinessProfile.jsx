@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { 
-  UserCircleIcon, 
-  CogIcon, 
+import {
+  UserCircleIcon,
+  CogIcon,
   ClipboardDocumentListIcon,
   CreditCardIcon,
   CalendarDaysIcon,
   UsersIcon,
   BuildingStorefrontIcon,
   WrenchScrewdriverIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+ ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline'
 
 // Redux actions
@@ -20,6 +21,7 @@ import {
   setCurrentStep
 } from '@shared/store/slices/businessConfigurationSlice'
 import { fetchCurrentBusiness } from '@shared/store/slices/businessSlice'
+import { logout } from '@shared/store/slices/authSlice'
 
 // Componentes de secciones
 import SubscriptionSection from './sections/SubscriptionSection'
@@ -39,16 +41,22 @@ import BusinessRuleModal from '../../../components/BusinessRuleModal'
 const BusinessProfile = () => {
   console.log('🟢 BusinessProfile component is rendering...')
   console.log('🔧 Current path:', window.location.pathname)
-  
+
+  // Logout handler
+  const handleLogout = () => {
+    dispatch(logout())
+    navigate('/', { replace: true })
+  }
+
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  
+
   // Estados locales
   const [activeSection, setActiveSection] = useState('subscription')
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false)
-  
-    // Estados de Redux
+
+  // Estados de Redux
   const { user } = useSelector(state => state.auth)
   const business = useSelector(state => state.business?.currentBusiness)
   const {
@@ -59,7 +67,7 @@ const BusinessProfile = () => {
     completedSteps,
     isSetupMode
   } = useSelector(state => state.businessConfiguration)
-  
+
   console.log('👤 User:', user)
   console.log('🏢 Business:', business)
   console.log('📋 Current Plan:', business?.currentPlan)
@@ -94,7 +102,7 @@ const BusinessProfile = () => {
   const currentPlan = business?.currentPlan || currentSubscription?.plan
   const allModules = business?.allModules || []
   const availableModules = allModules.filter(module => module.isAvailable).map(module => module.name) || []
-  
+
   console.log('📦 All Modules:', allModules)
   console.log('✅ Available Modules:', availableModules)
   console.log('🎯 Current Subscription:', currentSubscription)
@@ -205,7 +213,7 @@ const BusinessProfile = () => {
   const dynamicModulesSections = allModules.map(module => {
     // Buscar si ya existe una sección específica para este módulo
     const existingSection = modulesSections.find(section => section.moduleRequired === module.name)
-    
+
     if (existingSection) {
       // Usar la sección existente si ya está definida
       return {
@@ -239,9 +247,9 @@ const BusinessProfile = () => {
   // Agregar información de disponibilidad a cada sección
   const sectionsWithAvailability = allSections.map(section => ({
     ...section,
-    isAvailable: section.alwaysVisible || 
-                !section.moduleRequired || 
-                availableModules.includes(section.moduleRequired)
+    isAvailable: section.alwaysVisible ||
+      !section.moduleRequired ||
+      availableModules.includes(section.moduleRequired)
   }))
 
   console.log('📋 All Sections:', allSections)
@@ -250,7 +258,7 @@ const BusinessProfile = () => {
   // Función para cambiar de sección
   const handleSectionChange = (sectionId) => {
     const section = sectionsWithAvailability.find(s => s.id === sectionId)
-    
+
     // Si es un trigger de modal, abrir el modal correspondiente
     if (section?.isModalTrigger) {
       if (sectionId === 'business-rules') {
@@ -258,16 +266,16 @@ const BusinessProfile = () => {
         return
       }
     }
-    
+
     // Si la sección no está disponible, mostrar mensaje de upgrade
     if (section && !section.isAvailable) {
       console.log(`Sección ${sectionId} no disponible. Requiere módulo: ${section.requiredModule}`)
       // TODO: Mostrar modal de upgrade de plan
       return
     }
-    
+
     setActiveSection(sectionId)
-    
+
     // En modo setup, actualizar la URL
     if (isSetupMode) {
       const newParams = new URLSearchParams(searchParams)
@@ -311,7 +319,7 @@ const BusinessProfile = () => {
               </p>
             )}
           </div>
-          <button 
+          <button
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             onClick={() => {
               // TODO: Implementar navegación a planes
@@ -358,8 +366,8 @@ const BusinessProfile = () => {
     if (section.component) {
       const Component = section.component
       return (
-        <Component 
-          isSetupMode={isSetupMode} 
+        <Component
+          isSetupMode={isSetupMode}
           onComplete={() => completeStep(section.setupStep)}
           isCompleted={section.setupStep ? isStepCompleted(section.setupStep) : false}
         />
@@ -415,11 +423,18 @@ const BusinessProfile = () => {
                 )}
               </div>
             </div>
-            
+            {/* Botón de logout */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-2 text-cyan-500 hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition"
+            >
+              <ArrowRightOnRectangleIcon className="h-5 w-5" />
+              <span>Salir</span>
+            </button>
             {isSetupMode && (
               <div className="flex items-center space-x-4">
                 <div className="w-48 bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${setupProgress}%` }}
                   ></div>
@@ -443,30 +458,29 @@ const BusinessProfile = () => {
                 const isActive = activeSection === section.id
                 const isCompleted = section.setupStep ? isStepCompleted(section.setupStep) : false
                 const isAvailable = section.isAvailable
-                
+
                 return (
                   <button
                     key={section.id}
                     onClick={() => handleSectionChange(section.id)}
                     disabled={!isAvailable}
-                    className={`w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors relative ${
-                      !isAvailable
+                    className={`w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors relative ${!isAvailable
                         ? 'text-gray-400 bg-gray-50 cursor-not-allowed opacity-60'
                         : isActive
-                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
+                          ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
                   >
                     <Icon className="h-5 w-5 mr-3" />
                     <span className="flex-1 text-left">{section.name}</span>
-                    
+
                     {/* Indicador de disponibilidad */}
                     {!isAvailable && (
                       <span className="text-xs bg-gray-200 text-gray-500 px-2 py-1 rounded-full ml-2">
                         Pro
                       </span>
                     )}
-                    
+
                     {isSetupMode && isCompleted && isAvailable && (
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     )}

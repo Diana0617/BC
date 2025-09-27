@@ -37,7 +37,8 @@ async function startServer() {
         // Nuevos modelos de pagos OWNER
         OwnerPaymentConfiguration,
         SubscriptionPayment,
-        OwnerFinancialReport,
+  OwnerFinancialReport,
+  OwnerExpense,
         // Nuevos modelos simplificados de reglas
         // RuleTemplate, // Temporalmente comentado
         BusinessRule,
@@ -114,7 +115,17 @@ async function startServer() {
         
         // 9. Tablas de pagos del OWNER (al final porque dependen de BusinessSubscription)
         await SubscriptionPayment.sync(syncOptions);
-        await OwnerFinancialReport.sync(syncOptions);
+  await OwnerFinancialReport.sync(syncOptions);
+        // OwnerExpense puede no existir en bases de datos antiguas; crearla en desarrollo si falta
+        // Evitamos usar `alter` sobre tablas complejas que puedan generar SQL inválido
+        // en ciertas combinaciones de versiones de Postgres/Sequelize. Solo usamos
+        // force cuando explícitamente se pide via FORCE_SYNC_DB, de lo contrario
+        // realizamos una creación no destructiva (create-if-not-exists).
+        if (syncMode === 'force') {
+          await OwnerExpense.sync({ force: true });
+        } else {
+          await OwnerExpense.sync();
+        }
         console.log('✅ Tablas de pagos OWNER sincronizadas');
         
         console.log(`✅ Todas las tablas sincronizadas en modo: ${syncMode.toUpperCase()}`);

@@ -4,7 +4,32 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-const { specs, swaggerUi, swaggerConfig } = require('./config/swagger');
+// Intentamos cargar la configuración de Swagger; si falla (por ejemplo
+// por un bloque @swagger mal formateado), no queremos que el servidor
+// deje de arrancar. Usamos un try/catch y stubs seguros como fallback.
+let specs = {};
+let swaggerUi = {
+  // middleware stub que simplemente delega al siguiente handler
+  serve: (req, res, next) => next(),
+  // setup debe devolver un middleware; por defecto devolvemos uno que
+  // responde 501 indicando que la documentación no está disponible
+  setup: () => (req, res) => res.status(501).json({ success: false, message: 'API docs not available' })
+};
+let swaggerConfig = {};
+try {
+  const swaggerModule = require('./config/swagger');
+  specs = swaggerModule.specs;
+  // swaggerUi y swaggerConfig vienen del módulo; si no tienen las
+  // propiedades esperadas, mantenemos los stubs.
+  if (swaggerModule.swaggerUi) swaggerUi = swaggerModule.swaggerUi;
+  if (swaggerModule.swaggerConfig) swaggerConfig = swaggerModule.swaggerConfig;
+} catch (err) {
+  // Logueamos el error para diagnóstico, pero no rompemos el arranque
+  // del servidor. Esto es intencional durante desarrollo para permitir
+  // pruebas aunque la documentación tenga errores de formato.
+  // eslint-disable-next-line no-console
+  console.warn('Warning: failed to load Swagger docs -', err && err.message ? err.message : err);
+}
 const { authenticateToken } = require('./middleware/auth');
 const ownerOnly = require('./middleware/ownerOnly');
 require('dotenv').config();

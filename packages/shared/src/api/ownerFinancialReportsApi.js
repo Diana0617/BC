@@ -5,19 +5,21 @@
 
 import { api } from './client';
 
+// NOTE: backend mounts owner report routes under /api/owner/financial-reports
 const FINANCIAL_REPORTS_ENDPOINTS = {
-  REVENUE_REPORT: '/owner/reports/revenue',
-  COMMISSION_REPORT: '/owner/reports/commissions',
-  PAYMENT_REPORT: '/owner/reports/payments',
-  BUSINESS_PERFORMANCE: '/owner/reports/business-performance',
-  SUBSCRIPTION_REPORT: '/owner/reports/subscriptions',
-  TAX_REPORT: '/owner/reports/tax',
-  FINANCIAL_SUMMARY: '/owner/reports/financial-summary',
-  PROFIT_AND_LOSS: '/owner/reports/profit-loss',
-  CASH_FLOW: '/owner/reports/cash-flow',
-  REVENUE_PROJECTION: '/owner/reports/revenue-projection',
-  EXPORT: '/owner/reports/export',
-  SCHEDULED_REPORTS: '/owner/reports/scheduled'
+  REVENUE_REPORT: '/api/owner/financial-reports/revenue',
+  COMMISSION_REPORT: '/api/owner/financial-reports/commissions',
+  PAYMENT_REPORT: '/api/owner/financial-reports/payments',
+  BUSINESS_PERFORMANCE: '/api/owner/financial-reports/business-performance',
+  SUBSCRIPTION_REPORT: '/api/owner/financial-reports/subscriptions',
+  TAX_REPORT: '/api/owner/financial-reports/tax',
+  // backend exposes an executive-summary endpoint for the financial summary
+  FINANCIAL_SUMMARY: '/api/owner/financial-reports/executive-summary',
+  PROFIT_AND_LOSS: '/api/owner/financial-reports/profit-loss',
+  CASH_FLOW: '/api/owner/financial-reports/cash-flow',
+  REVENUE_PROJECTION: '/api/owner/financial-reports/revenue-projection',
+  EXPORT: '/api/owner/financial-reports/export',
+  SCHEDULED_REPORTS: '/api/owner/financial-reports/scheduled'
 };
 
 export const ownerFinancialReportsApi = {

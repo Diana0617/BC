@@ -6,6 +6,11 @@ const { OwnerExpense, User } = require('../models');
 const { uploadPaymentReceipt, deleteDocument } = require('../config/cloudinary');
 const fs = require('fs').promises;
 
+// Helper to detect missing-table errors from Postgres/pg
+function isMissingRelationError(err) {
+  return err && err.parent && (err.parent.code === '42P01' || err.parent.message?.includes('no existe la relación'));
+}
+
 class OwnerExpenseController {
  
 
@@ -95,6 +100,14 @@ class OwnerExpenseController {
 
     } catch (error) {
       console.error('Error creando gasto:', error);
+      if (isMissingRelationError(error)) {
+        return res.status(503).json({
+          success: false,
+          message: 'La tabla de gastos (owner_expenses) no existe en la base de datos. Ejecuta las migraciones o inicializa la DB (npm run db:migrate o npm run db:init).',
+          hint: 'Si usas Docker: docker run -d --name bc-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password -e POSTGRES_DB=beauty_control_dev -p 5432:5432 postgres:15'
+        });
+      }
+
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',
@@ -198,6 +211,14 @@ class OwnerExpenseController {
 
     } catch (error) {
       console.error('Error obteniendo gastos:', error);
+      if (isMissingRelationError(error)) {
+        return res.status(503).json({
+          success: false,
+          message: 'La tabla de gastos (owner_expenses) no existe en la base de datos. Ejecuta las migraciones o inicializa la DB (npm run db:migrate o npm run db:init).',
+          hint: 'Si usas Docker: docker run -d --name bc-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password -e POSTGRES_DB=beauty_control_dev -p 5432:5432 postgres:15'
+        });
+      }
+
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',

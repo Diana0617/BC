@@ -1,4 +1,16 @@
 /**
+ * Cambiar el plan de suscripción del negocio
+ */
+export const changeBusinessPlan = async (newPlanId) => {
+  try {
+    const response = await apiClient.post('/api/business/subscription/change-plan', { newPlanId });
+    return response.data;
+  } catch (error) {
+    console.error('Error cambiando el plan del negocio:', error);
+    throw error;
+  }
+};
+/**
  * API para gestión del perfil de Business
  * Incluye funciones para obtener y actualizar información básica del negocio
  */
@@ -159,5 +171,6 @@ export const businessProfileApi = {
   updateBusinessSchedule,
   markSectionComplete,
   getSetupProgress,
-  uploadBusinessImage
+  uploadBusinessImage,
+  changeBusinessPlan
 };

@@ -21,6 +21,7 @@ import RuleTemplatesPage from './pages/owner/RuleTemplates/RuleTemplatesPage'
 import OwnerSubscriptionsPage from './pages/owner/suscriptions/OwnerSubscriptionsPage.jsx'
 import OwnerBusinessesPage from './pages/owner/business/OwnerBusinessesPage.jsx'
 import OwnerExpensesPage from './pages/owner/Expenses/OwnerExpensesPage.jsx'
+import OwnerReports from './pages/owner/reports/OwnerReports'
 
 // Business Pages
 import BusinessProfile from './pages/business/profile/BusinessProfile.jsx'
@@ -86,7 +87,7 @@ function AppLayout() {
             <Route path="expenses" element={<OwnerExpensesPage />} />
             <Route path="test-redux" element={<ReduxPlansTest />} />
             {/* TODO: Agregar más rutas de Owner */}
-            <Route path="reports" element={<div>Reportes - En desarrollo</div>} />
+            <Route path="reports" element={<OwnerReports />} />
             <Route path="payments" element={<div>Pagos - En desarrollo</div>} />
             <Route path="settings" element={<div>Configuración - En desarrollo</div>} />
           </Route>

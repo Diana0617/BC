@@ -32,9 +32,12 @@ const LandingPage = () => {
     if (isAuthenticated && user?.role) {
       if (user.role === 'OWNER') {
         window.location.replace('/owner/dashboard');
+      } else if (user.role === 'BUSINESS') {
+        window.location.replace('/business/profile');
       } else if (user.role === 'BUSINESS_OWNER') {
         window.location.replace('/dashboard');
-      } // Agrega más roles si es necesario
+      }
+      // Agrega más roles si es necesario
       return;
     }
     // Si no está logueado, abre el modal

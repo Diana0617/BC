@@ -16,6 +16,8 @@ const { uploadImageMiddleware } = require('../config/cloudinary');
 
 // Middleware de autenticación para todas las rutas
 router.use(authenticateToken);
+// Endpoint para cambio de plan de suscripción
+router.post('/subscription/change-plan', BusinessPaymentController.changePlan);
 
 /**
  * @swagger
