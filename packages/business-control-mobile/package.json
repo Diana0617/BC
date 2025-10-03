@@ -1,0 +1,25 @@
+{
+  "name": "business-control-mobile",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "cross-env EXPO_USE_EXPERIMENTAL_BRIDGELESS=0 expo start",
+    "android": "cross-env EXPO_USE_EXPERIMENTAL_BRIDGELESS=0 expo start --android",
+    "ios": "cross-env EXPO_USE_EXPERIMENTAL_BRIDGELESS=0 expo start --ios",
+    "web": "cross-env EXPO_USE_EXPERIMENTAL_BRIDGELESS=0 expo start --web"
+  },
+  "dependencies": {
+    "@bc/shared": "file:../shared",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@reduxjs/toolkit": "^2.9.0",
+    "expo": "~54.0.10",
+    "expo-asset": "^12.0.9",
+    "expo-status-bar": "~3.0.8",
+    "react": "19.1.0",
+    "react-native": "0.81.4",
+    "react-redux": "^9.2.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  }
+}

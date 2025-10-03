@@ -3,6 +3,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
+const resolveNodeModule = (moduleName) => path.resolve(__dirname, 'node_modules', moduleName)
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -17,7 +19,12 @@ export default defineConfig({
     alias: {
       '@shared': path.resolve(__dirname, '../shared/src'),
       '@bc/shared': path.resolve(__dirname, '../shared/src'),
+      react: resolveNodeModule('react'),
+      'react-dom': resolveNodeModule('react-dom'),
+      '@reduxjs/toolkit': resolveNodeModule('@reduxjs/toolkit'),
+      'react-redux': resolveNodeModule('react-redux')
     },
+    preserveSymlinks: true
   },
   define: {
     global: 'globalThis',
@@ -28,6 +35,7 @@ export default defineConfig({
     })
   },
   optimizeDeps: {
+    include: ['@reduxjs/toolkit', 'react-redux'],
     exclude: ['@react-native-async-storage/async-storage']
   },
   build: {
