@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "buildCommand": "cd packages/shared && npm install && cd ../web-app && npm install && npm run build",
+  "outputDirectory": "packages/web-app/dist",
+  "installCommand": "npm install --prefix packages/shared && npm install --prefix packages/web-app",
+  "framework": "vite",
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    }
+  ],
+  "env": {
+    "VITE_API_URL": "https://bc-16wt.onrender.com"
+  }
+}
