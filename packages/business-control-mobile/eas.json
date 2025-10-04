@@ -21,8 +21,9 @@
         "buildType": "apk"
       },
       "ios": {
-        "simulator": true
-      },
+    "simulator": false,
+    "enterpriseProvisioning": "adhoc"
+  },
       "env": {
         "EXPO_PUBLIC_ENVIRONMENT": "staging",
         "EXPO_PUBLIC_API_URL": "https://bc-16wt.onrender.com",
