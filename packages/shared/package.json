@@ -9,7 +9,7 @@
     "./store": "./src/store/index.js",
     "./store/slices/authSlice": "./src/store/slices/authSlice.js",
     "./store/slices/userSlice": "./src/store/slices/userSlice.js",
-  "./store/reactNativeStore": "./src/store/reactNativeStore.js",
+    "./store/reactNativeStore": "./src/store/reactNativeStore.js",
     "./api/auth": "./src/api/auth.js",
     "./constants/api": "./src/constants/api.js",
     "./utils/storage": "./src/utils/storage.js"
@@ -23,6 +23,7 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.9.0",
     "react-hot-toast": "^2.6.0",
-    "react-redux": "^9.2.0"
+    "react-redux": "^9.2.0",
+    "react-router-dom": "^7.9.3"
   }
 }

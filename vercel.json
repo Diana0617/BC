@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "npm run vercel-build",
-  "installCommand": "npm install",
+  "buildCommand": "cd packages/shared && npm install && cd ../web-app && npm install && npm run build",
   "outputDirectory": "packages/web-app/dist",
+  "installCommand": "npm install --prefix packages/shared && npm install --prefix packages/web-app",
   "framework": "vite",
   "cleanUrls": true,
   "trailingSlash": false,
