@@ -15,7 +15,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.businesscontrol.mobile",
-      "buildNumber": "1.0.0"
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -26,19 +29,20 @@
       "package": "com.businesscontrol.mobile",
       "versionCode": 1,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
+      "environment": "dev",
       "eas": {
-        "projectId": "TU_PROJECT_ID_AQUI"
-      },
-      "environment": "dev"
+        "projectId": "f02c9edb-1999-4ca0-af17-56c670f7f6e5"
+      }
     },
     "plugins": [
       [

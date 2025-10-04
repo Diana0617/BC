@@ -15,7 +15,7 @@ const ENV = {
   },
 };
 
-const getEnvVars = (env = Constants.expoConfig?.extra?.environment || 'dev') => {
+const getEnvVars = (env = process.env.ENVIRONMENT || Constants.expoConfig?.extra?.environment || 'dev') => {
   if (env === 'prod') {
     return ENV.prod;
   } else if (env === 'staging') {
