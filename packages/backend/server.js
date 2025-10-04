@@ -17,7 +17,6 @@ async function startServer() {
         SubscriptionPlan,
         Module,
         Business,
-        BusinessRules,
         User,
         Client,
         Service,
@@ -38,80 +37,99 @@ async function startServer() {
         // Nuevos modelos de pagos OWNER
         OwnerPaymentConfiguration,
         SubscriptionPayment,
-        OwnerFinancialReport,
-        // Nuevos modelos de Rule Templates
-        BusinessRuleTemplate,
-        BusinessRuleAssignment,
+  OwnerFinancialReport,
+  OwnerExpense,
+        // Nuevos modelos simplificados de reglas
+        // RuleTemplate, // Temporalmente comentado
+        BusinessRule,
         // Nuevo modelo de recibos
         Receipt
       } = require('./src/models');
 
-      // Configuración de sincronización - cambiar FORCE_SYNC_DB=true para recrear toda la base
+      // Configuración de sincronización
+      // DISABLE_SYNC=true para deshabilitar sincronización automática (más rápido)
+      // FORCE_SYNC_DB=true para recrear toda la base de datos
+      const disableSync = process.env.DISABLE_SYNC === 'true';
       const syncMode = process.env.FORCE_SYNC_DB === 'true' ? 'force' : 'alter';
       const syncOptions = syncMode === 'force' ? { force: true } : { alter: true };
       
-      if (syncMode === 'force') {
+      if (disableSync) {
+        console.log('⚡ DISABLE_SYNC activado - OMITIENDO sincronización automática');
+        console.log('✅ Base de datos ya debe estar configurada correctamente');
+      } else if (syncMode === 'force') {
         console.log('🔥 FORCE_SYNC_DB activado - RECREANDO TODA LA BASE DE DATOS');
         console.log('⚠️  TODOS LOS DATOS SERÁN ELIMINADOS');
       } else {
         console.log('🔄 Sincronizando tablas con alter mode...');
       }
       
-      // 1. Tablas sin dependencias
-      await SubscriptionPlan.sync(syncOptions);
-      await Module.sync(syncOptions);
-      console.log('✅ Tablas base sincronizadas');
-      
-      // 2. Business (puede depender de SubscriptionPlan si agregamos currentPlanId)
-      await Business.sync(syncOptions);
-      console.log('✅ Tabla Business sincronizada');
-      
-      // 3. User primero (porque BusinessRuleTemplate referencia al Owner/User)
-      await User.sync(syncOptions);
-      console.log('✅ Tabla User sincronizada');
-      
-      // 4. Tablas de Rule Templates (necesarias antes de BusinessRules)
-      await BusinessRuleTemplate.sync(syncOptions);
-      await BusinessRuleAssignment.sync(syncOptions);
-      console.log('✅ Tablas de Rule Templates sincronizadas');
-      
-      // 5. Ahora BusinessRules (después de que existan las tablas que referencia)
-      await BusinessRules.sync(syncOptions);
-      await Client.sync(syncOptions);
-      await Service.sync(syncOptions);
-      await Product.sync(syncOptions);
-      console.log('✅ Tablas principales sincronizadas');
-      
-      // 6. Modelos de especialistas (nuevos)
-      await SpecialistDocument.sync(syncOptions);
-      await SpecialistCommission.sync(syncOptions);
-      console.log('✅ Tablas de especialistas sincronizadas');
-      
-      // 7. Modelos de pagos OWNER (nuevos)
-      await OwnerPaymentConfiguration.sync(syncOptions);
-      console.log('✅ Configuración de pagos OWNER sincronizada');
-      
-      // 8. Tablas que dependen de múltiples entidades
-      await Appointment.sync(syncOptions);
-      await PlanModule.sync(syncOptions);
-      await BusinessSubscription.sync(syncOptions);
-      await BusinessClient.sync(syncOptions);
-      await InventoryMovement.sync(syncOptions);
-      await FinancialMovement.sync(syncOptions);
-      await PaymentIntegration.sync(syncOptions);
-      await PasswordResetToken.sync(syncOptions);
-      
-      // 7. Tablas de comisiones (al final porque dependen de otras)
-      await CommissionPaymentRequest.sync(syncOptions);
-      await CommissionDetail.sync(syncOptions);
-      console.log('✅ Tablas de comisiones sincronizadas');
-      
-      // 9. Tablas de pagos del OWNER (al final porque dependen de BusinessSubscription)
-      await SubscriptionPayment.sync(syncOptions);
-      await OwnerFinancialReport.sync(syncOptions);
-      console.log('✅ Tablas de pagos OWNER sincronizadas');
-      
-      console.log(`✅ Todas las tablas sincronizadas en modo: ${syncMode.toUpperCase()}`);
+      // Solo sincronizar si no está deshabilitado
+      if (!disableSync) {
+        // 1. Tablas sin dependencias
+        await SubscriptionPlan.sync(syncOptions);
+        await Module.sync(syncOptions);
+        console.log('✅ Tablas base sincronizadas');
+        
+        // 2. Business (puede depender de SubscriptionPlan si agregamos currentPlanId)
+        await Business.sync(syncOptions);
+        console.log('✅ Tabla Business sincronizada');
+        
+        // 3. User primero (porque BusinessRuleTemplate referencia al Owner/User)
+        await User.sync(syncOptions);
+        console.log('✅ Tabla User sincronizada');
+        
+        // 4. Nuevos modelos simplificados de reglas (temporalmente comentado)
+        // await RuleTemplate.sync(syncOptions);
+        await BusinessRule.sync(syncOptions);
+        console.log('✅ Nuevos modelos de reglas sincronizados');
+        
+        // 5. Tablas principales
+        await Client.sync(syncOptions);
+        await Service.sync(syncOptions);
+        await Product.sync(syncOptions);
+        console.log('✅ Tablas principales sincronizadas');
+        
+        // 6. Modelos de especialistas (nuevos)
+        await SpecialistDocument.sync(syncOptions);
+        await SpecialistCommission.sync(syncOptions);
+        console.log('✅ Tablas de especialistas sincronizadas');
+        
+        // 7. Modelos de pagos OWNER (nuevos)
+        await OwnerPaymentConfiguration.sync(syncOptions);
+        console.log('✅ Configuración de pagos OWNER sincronizada');
+        
+        // 8. Tablas que dependen de múltiples entidades
+        await Appointment.sync(syncOptions);
+        await PlanModule.sync(syncOptions);
+        await BusinessSubscription.sync(syncOptions);
+        await BusinessClient.sync(syncOptions);
+        await InventoryMovement.sync(syncOptions);
+        await FinancialMovement.sync(syncOptions);
+        await PaymentIntegration.sync(syncOptions);
+        await PasswordResetToken.sync(syncOptions);
+        
+        // 7. Tablas de comisiones (al final porque dependen de otras)
+        await CommissionPaymentRequest.sync(syncOptions);
+        await CommissionDetail.sync(syncOptions);
+        console.log('✅ Tablas de comisiones sincronizadas');
+        
+        // 9. Tablas de pagos del OWNER (al final porque dependen de BusinessSubscription)
+        await SubscriptionPayment.sync(syncOptions);
+  await OwnerFinancialReport.sync(syncOptions);
+        // OwnerExpense puede no existir en bases de datos antiguas; crearla en desarrollo si falta
+        // Evitamos usar `alter` sobre tablas complejas que puedan generar SQL inválido
+        // en ciertas combinaciones de versiones de Postgres/Sequelize. Solo usamos
+        // force cuando explícitamente se pide via FORCE_SYNC_DB, de lo contrario
+        // realizamos una creación no destructiva (create-if-not-exists).
+        if (syncMode === 'force') {
+          await OwnerExpense.sync({ force: true });
+        } else {
+          await OwnerExpense.sync();
+        }
+        console.log('✅ Tablas de pagos OWNER sincronizadas');
+        
+        console.log(`✅ Todas las tablas sincronizadas en modo: ${syncMode.toUpperCase()}`);
+      }
     }
 
     // Inicializar servicios

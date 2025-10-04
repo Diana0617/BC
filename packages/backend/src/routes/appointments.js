@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const AppointmentController = require('../controllers/AppointmentController');
 const { authenticateToken } = require('../middleware/auth');
 // const tenancyMiddleware = require('../middleware/tenancy');
 // const { allStaffRoles } = require('../middleware/roleCheck');
@@ -10,28 +11,13 @@ router.use(authenticateToken);
 // router.use(allStaffRoles);
 
 // Obtener lista de citas
-router.get('/', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de obtener citas aún no implementada'
-  });
-});
+router.get('/', AppointmentController.getAppointments);
 
 // Crear nueva cita
-router.post('/', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de crear cita aún no implementada'
-  });
-});
+router.post('/', AppointmentController.createAppointment);
 
 // Obtener cita por ID
-router.get('/:id', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de obtener cita por ID aún no implementada'
-  });
-});
+router.get('/:id', AppointmentController.getAppointmentDetail);
 
 // Actualizar cita
 router.put('/:id', (req, res) => {
@@ -42,12 +28,7 @@ router.put('/:id', (req, res) => {
 });
 
 // Cancelar cita
-router.patch('/:id/cancel', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de cancelar cita aún no implementada'
-  });
-});
+router.patch('/:id/cancel', AppointmentController.updateAppointmentStatus);
 
 // Completar cita
 router.patch('/:id/complete', (req, res) => {

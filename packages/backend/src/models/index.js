@@ -5,7 +5,7 @@ const { sequelize } = require('../config/database');
 const SubscriptionPlan = require('./SubscriptionPlan');
 const Module = require('./Module');
 const Business = require('./Business');
-const BusinessRules = require('./BusinessRules');
+const Branch = require('./Branch');
 const User = require('./User');
 const Client = require('./Client');
 const Service = require('./Service');
@@ -23,13 +23,14 @@ const PasswordResetToken = require('./PasswordResetToken');
 
 // Modelos de configuración del negocio
 const SpecialistProfile = require('./SpecialistProfile');
+const SpecialistBranchSchedule = require('./SpecialistBranchSchedule');
 const Schedule = require('./Schedule');
 const TimeSlot = require('./TimeSlot');
 const BusinessPaymentConfig = require('./BusinessPaymentConfig');
 
-// Modelos de plantillas de reglas
-const BusinessRuleTemplate = require('./BusinessRuleTemplate');
-const BusinessRuleAssignment = require('./BusinessRuleAssignment');
+// Nuevos modelos simplificados de reglas
+const RuleTemplate = require('./RuleTemplate');
+const BusinessRule = require('./BusinessRule');
 
 // Modelos de relaciones (tablas intermedias)
 const PlanModule = require('./PlanModule');
@@ -68,15 +69,7 @@ Business.hasMany(User, {
   as: 'users' 
 });
 
-// Business - BusinessRules (uno a uno)
-Business.hasOne(BusinessRules, { 
-  foreignKey: 'businessId', 
-  as: 'rules' 
-});
-BusinessRules.belongsTo(Business, { 
-  foreignKey: 'businessId', 
-  as: 'business' 
-});
+
 
 // SubscriptionPlan - Module (muchos a muchos a través de PlanModule)
 SubscriptionPlan.belongsToMany(Module, {
@@ -188,6 +181,48 @@ BusinessClient.belongsTo(User, {
   as: 'preferredSpecialist' 
 });
 
+// Business - Branch
+Business.hasMany(Branch, {
+  foreignKey: 'businessId',
+  as: 'branches'
+});
+Branch.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+
+// Branch - Specialist (muchos a muchos a través de SpecialistBranchSchedule)
+Branch.belongsToMany(SpecialistProfile, {
+  through: SpecialistBranchSchedule,
+  foreignKey: 'branchId',
+  otherKey: 'specialistId',
+  as: 'specialists'
+});
+SpecialistProfile.belongsToMany(Branch, {
+  through: SpecialistBranchSchedule,
+  foreignKey: 'specialistId',
+  otherKey: 'branchId',
+  as: 'branches'
+});
+
+// Relaciones directas con SpecialistBranchSchedule
+SpecialistBranchSchedule.belongsTo(SpecialistProfile, {
+  foreignKey: 'specialistId',
+  as: 'specialist'
+});
+SpecialistBranchSchedule.belongsTo(Branch, {
+  foreignKey: 'branchId',
+  as: 'branch'
+});
+Branch.hasMany(SpecialistBranchSchedule, {
+  foreignKey: 'branchId',
+  as: 'specialistSchedules'
+});
+SpecialistProfile.hasMany(SpecialistBranchSchedule, {
+  foreignKey: 'specialistId',
+  as: 'branchSchedules'
+});
+
 // Business - Service
 Business.hasMany(Service, { 
   foreignKey: 'businessId', 
@@ -199,13 +234,17 @@ Service.belongsTo(Business, {
 });
 
 // Appointment relationships
-Appointment.belongsTo(Business, { 
-  foreignKey: 'businessId', 
-  as: 'business' 
+Appointment.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
 });
-Appointment.belongsTo(Client, { 
-  foreignKey: 'clientId', 
-  as: 'client' 
+Appointment.belongsTo(Branch, {
+  foreignKey: 'branchId',
+  as: 'branch'
+});
+Appointment.belongsTo(Client, {
+  foreignKey: 'clientId',
+  as: 'client'
 });
 Appointment.belongsTo(User, { 
   foreignKey: 'specialistId', 
@@ -821,62 +860,50 @@ BusinessPaymentConfig.belongsTo(User, {
   as: 'activatedByUser' 
 });
 
+
+
+
+
 // ================================
-// RULE TEMPLATE ASSOCIATIONS
+// NUEVAS ASOCIACIONES SIMPLIFICADAS
 // ================================
 
-// BusinessRuleTemplate belongs to User (creator)
-BusinessRuleTemplate.belongsTo(User, {
-  foreignKey: 'createdBy',
-  as: 'creator'
-});
-
-// User has many BusinessRuleTemplates
-User.hasMany(BusinessRuleTemplate, {
-  foreignKey: 'createdBy',
-  as: 'createdRuleTemplates'
-});
-
-// BusinessRuleAssignment belongs to BusinessRuleTemplate
-BusinessRuleAssignment.belongsTo(BusinessRuleTemplate, {
-  foreignKey: 'ruleTemplateId'
-});
-
-// BusinessRuleTemplate has many BusinessRuleAssignments
-BusinessRuleTemplate.hasMany(BusinessRuleAssignment, {
+// RuleTemplate has many BusinessRule (one template can be used by many businesses)
+RuleTemplate.hasMany(BusinessRule, {
   foreignKey: 'ruleTemplateId',
-  as: 'assignments'
+  as: 'businessRules',
+  onDelete: 'CASCADE'
 });
 
-// BusinessRuleAssignment belongs to Business
-BusinessRuleAssignment.belongsTo(Business, {
+// BusinessRule belongs to RuleTemplate
+BusinessRule.belongsTo(RuleTemplate, {
+  foreignKey: 'ruleTemplateId',
+  as: 'template'
+});
+
+// Business has many BusinessRule (one business can have many rules)
+Business.hasMany(BusinessRule, {
+  foreignKey: 'businessId',
+  as: 'businessRules',
+  onDelete: 'CASCADE'
+});
+
+// BusinessRule belongs to Business
+BusinessRule.belongsTo(Business, {
   foreignKey: 'businessId',
   as: 'business'
 });
 
-// Business has many BusinessRuleAssignments
-Business.hasMany(BusinessRuleAssignment, {
-  foreignKey: 'businessId',
-  as: 'ruleAssignments'
+// BusinessRule belongs to User (updatedBy)
+BusinessRule.belongsTo(User, {
+  foreignKey: 'updatedBy',
+  as: 'updatedByUser'
 });
 
-// BusinessRuleAssignment belongs to User (assignedBy)
-BusinessRuleAssignment.belongsTo(User, {
-  foreignKey: 'assignedBy',
-  as: 'assignedByUser'
-});
-
-// BusinessRuleAssignment belongs to User (modifiedBy)
-BusinessRuleAssignment.belongsTo(User, {
-  foreignKey: 'modifiedBy',
-  as: 'modifiedByUser'
-});
-
-
-// BusinessRuleAssignment has one BusinessRules
-BusinessRuleAssignment.hasOne(BusinessRules, {
-  foreignKey: 'ruleAssignmentId',
-  as: 'effectiveRule'
+// User has many BusinessRule (updated by)
+User.hasMany(BusinessRule, {
+  foreignKey: 'updatedBy',
+  as: 'updatedBusinessRules'
 });
 
 // Exportar modelos y sequelize
@@ -884,7 +911,8 @@ module.exports = {
   sequelize,
   User,
   Business,
-  BusinessRules,
+  Branch,
+  SpecialistBranchSchedule,
   SubscriptionPlan,
   Module,
   PlanModule,
@@ -917,9 +945,9 @@ module.exports = {
   Schedule,
   TimeSlot,
   BusinessPaymentConfig,
-  // Modelos de plantillas de reglas
-  BusinessRuleTemplate,
-  BusinessRuleAssignment,
+  // Nuevos modelos simplificados de reglas
+  RuleTemplate,
+  BusinessRule,
   // Modelos de pagos OWNER
   OwnerPaymentConfiguration,
   SubscriptionPayment,

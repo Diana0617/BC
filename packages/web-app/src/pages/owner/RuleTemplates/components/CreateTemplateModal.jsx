@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { X, Save, Loader2, AlertTriangle } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import useRuleTemplates from '../../../../../../shared/src/hooks/useRuleTemplates'
-import { useOwnerPlans } from '../../../../../../shared/src/hooks/useOwnerPlans'
+import { useRuleTemplates, useOwnerPlans } from '@shared/hooks'
 
 const CreateTemplateModal = ({ isOpen, onClose }) => {
   const { createTemplate, loading } = useRuleTemplates()

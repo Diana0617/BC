@@ -75,7 +75,7 @@ class BusinessConfigController {
   async getSpecialists(req, res) {
     try {
       const { businessId } = req.params;
-      const { isActive, status, specialization } = req.query;
+      const { isActive, status, specialization, branchId } = req.query;
       
       if (req.user.businessId !== businessId && req.user.role !== 'OWNER') {
         return res.status(403).json({
@@ -87,7 +87,8 @@ class BusinessConfigController {
       const filters = {
         ...(isActive !== undefined && { isActive: isActive === 'true' }),
         ...(status && { status }),
-        ...(specialization && { specialization })
+        ...(specialization && { specialization }),
+        ...(branchId && { branchId })
       };
 
       const specialists = await BusinessConfigService.getSpecialists(businessId, filters);

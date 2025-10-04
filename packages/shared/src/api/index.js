@@ -48,6 +48,9 @@ export { subscriptionStatusApi } from './subscriptionStatusApi';
 export { ruleTemplateApi } from './ruleTemplateApi';
 export { businessRuleApi } from './businessRuleApi';
 
+// 🏨 PUBLIC BOOKING SYSTEM APIS
+export { publicBookingApi } from './publicBookingApi';
+
 // 💳 ADVANCE PAYMENTS & BUSINESS VALIDATION APIS
 export { default as advancePaymentApi } from './advancePaymentApi';
 export { default as businessValidationApi } from './businessValidationApi';

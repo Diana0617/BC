@@ -1,6 +1,5 @@
-const BusinessRuleTemplate = require('../models/BusinessRuleTemplate');
-const BusinessRuleAssignment = require('../models/BusinessRuleAssignment');
-const BusinessRules = require('../models/BusinessRules');
+const RuleTemplate = require('../models/RuleTemplate');
+const BusinessRule = require('../models/BusinessRule');
 const Business = require('../models/Business');
 const User = require('../models/User');
 const { Op } = require('sequelize');
@@ -26,626 +25,459 @@ class RuleTemplateService {
         throw new Error('Solo los Owners pueden crear plantillas de reglas');
       }
 
-      // Validar dependencias y conflictos
-      await this.validateTemplateDependencies(templateData);
+      // Validar clave única y formato
+      await this.validateUniqueKey(templateData.key);
+      this.validateKeyFormat(templateData.key);
+      this.validateValueType(templateData.type, templateData.defaultValue);
 
-      // Determinar el tipo de regla basado en el valor
-      const ruleType = this.determineRuleType(templateData.ruleValue);
-
-      const template = await BusinessRuleTemplate.create({
-        ...templateData,
-        ownerId: ownerId,
-        ruleType: ruleType,
+      // Crear la nueva plantilla
+      const template = await RuleTemplate.create({
+        key: templateData.key,
+        name: templateData.name,
+        description: templateData.description,
+        type: templateData.type,
+        category: templateData.category,
+        defaultValue: templateData.defaultValue,
+        validationRules: templateData.validationRules,
+        isActive: templateData.isActive !== false,
         createdBy: ownerId,
-        version: '1.0.0',
-        usageCount: 0
+        updatedBy: ownerId
       });
 
       return template;
     } catch (error) {
-      console.error('Error creating rule template:', error);
-      throw error;
+      throw new Error(`Error al crear plantilla de regla: ${error.message}`);
     }
   }
 
   /**
-   * Actualizar plantilla de regla existente
+   * Actualizar plantilla existente
    */
   static async updateRuleTemplate(ownerId, templateId, updateData) {
     try {
-      const template = await BusinessRuleTemplate.findOne({
-        where: { id: templateId, createdBy: ownerId }
+      const owner = await User.findOne({
+        where: { id: ownerId, role: 'OWNER' }
+      });
+      
+      if (!owner) {
+        throw new Error('Solo los Owners pueden actualizar plantillas de reglas');
+      }
+
+      const template = await RuleTemplate.findOne({
+        where: { id: templateId }
       });
 
       if (!template) {
-        throw new Error('Plantilla no encontrada o no autorizada');
+        throw new Error('Plantilla de regla no encontrada');
       }
 
-      // Incrementar versión
-      const versionParts = template.version.split('.');
-      const newVersion = `${versionParts[0]}.${versionParts[1]}.${parseInt(versionParts[2]) + 1}`;
-
-      await template.update({
-        ...updateData,
-        version: newVersion,
-        lastModified: new Date()
-      });
-
-      // Si hay cambios significativos, marcar actualizaciones pendientes
-      if (this.hasSignificantChanges(template.ruleValue, updateData.ruleValue)) {
-        await this.markPendingUpdates(templateId);
+      // Validar clave si se está actualizando
+      if (updateData.key && updateData.key !== template.key) {
+        await this.validateUniqueKey(updateData.key, templateId);
+        this.validateKeyFormat(updateData.key);
       }
 
-      return template;
+      // Validar tipo de valor si se está actualizando
+      if (updateData.defaultValue !== undefined) {
+        const ruleType = updateData.type || template.type;
+        this.validateValueType(ruleType, updateData.defaultValue);
+      }
+
+      // Actualizar campos permitidos
+      const allowedFields = ['key', 'name', 'description', 'defaultValue', 'validationRules', 'isActive'];
+      const updateFields = {};
+      
+      for (const field of allowedFields) {
+        if (updateData[field] !== undefined) {
+          updateFields[field] = updateData[field];
+        }
+      }
+      
+      updateFields.updatedBy = ownerId;
+
+      await template.update(updateFields);
+      return await template.reload();
     } catch (error) {
-      console.error('Error updating rule template:', error);
-      throw error;
+      throw new Error(`Error al actualizar plantilla: ${error.message}`);
     }
   }
 
   /**
-   * Eliminar plantilla de regla
+   * Eliminar plantilla
    */
   static async deleteRuleTemplate(ownerId, templateId) {
     try {
-      const template = await BusinessRuleTemplate.findOne({
-        where: { id: templateId, createdBy: ownerId }
+      const owner = await User.findOne({
+        where: { id: ownerId, role: 'OWNER' }
+      });
+      
+      if (!owner) {
+        throw new Error('Solo los Owners pueden eliminar plantillas de reglas');
+      }
+
+      // Verificar que no haya reglas de negocio usando esta plantilla
+      const businessRulesCount = await BusinessRule.count({
+        where: { ruleTemplateId: templateId }
+      });
+
+      if (businessRulesCount > 0) {
+        throw new Error('No se puede eliminar la plantilla porque está siendo utilizada por reglas de negocio');
+      }
+
+      const template = await RuleTemplate.findOne({
+        where: { id: templateId }
       });
 
       if (!template) {
-        throw new Error('Plantilla no encontrada o no autorizada');
-      }
-
-      // Verificar si hay asignaciones activas
-      const activeAssignments = await BusinessRuleAssignment.count({
-        where: { ruleTemplateId: templateId, isActive: true }
-      });
-
-      if (activeAssignments > 0) {
-        throw new Error('No se puede eliminar una plantilla con asignaciones activas');
+        throw new Error('Plantilla de regla no encontrada');
       }
 
       await template.destroy();
-      return true;
+      return { success: true, message: 'Plantilla eliminada correctamente' };
     } catch (error) {
-      console.error('Error deleting rule template:', error);
-      throw error;
+      throw new Error(`Error al eliminar plantilla: ${error.message}`);
     }
   }
 
   /**
-   * Alternar estado de regla asignada
+   * Obtener estadísticas de plantillas
    */
-  static async toggleRuleAssignment(businessId, assignmentId, isActive) {
+  static async getTemplateStats(ownerId) {
     try {
-      const assignment = await BusinessRuleAssignment.findOne({
-        where: { id: assignmentId, businessId }
-      });
-
-      if (!assignment) {
-        throw new Error('Asignación de regla no encontrada');
-      }
-
-      await assignment.update({ isActive });
-
-      // Actualizar regla efectiva
-      await BusinessRules.update({
-        isActive
-      }, {
-        where: { ruleAssignmentId: assignmentId }
-      });
-
-      return assignment;
-    } catch (error) {
-      console.error('Error toggling rule assignment:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtener estadísticas de plantillas de regla
-   */
-  static async getRuleTemplateStats() {
-    try {
-      const totalTemplates = await BusinessRuleTemplate.count();
-      const activeTemplates = await BusinessRuleTemplate.count({
-        where: { isActive: true }
+      const owner = await User.findOne({
+        where: { id: ownerId, role: 'OWNER' }
       });
       
-      const totalUsage = await BusinessRuleAssignment.count({
+      if (!owner) {
+        throw new Error('Solo los Owners pueden ver estadísticas');
+      }
+
+      const totalTemplates = await RuleTemplate.count();
+      const activeTemplates = await RuleTemplate.count({
         where: { isActive: true }
       });
 
-      const categoriesStats = await BusinessRuleTemplate.findAll({
+      // Estadísticas por categoría
+      const categoriesStats = await RuleTemplate.findAll({
         attributes: [
           'category',
-          [dbSequelize.fn('COUNT', dbSequelize.col('id')), 'count'],
-          [dbSequelize.fn('SUM', dbSequelize.col('usageCount')), 'usage']
-        ],
-        group: ['category'],
-        raw: true
-      });
-
-      const businessTypesStats = await BusinessRuleTemplate.findAll({
-        attributes: [
-          'businessTypes',
           [dbSequelize.fn('COUNT', dbSequelize.col('id')), 'count']
         ],
-        group: ['businessTypes'],
+        group: ['category'],
         raw: true
       });
 
       return {
         totalTemplates,
         activeTemplates,
-        totalUsage,
-        categoriesStats,
-        businessTypesStats
+        inactiveTemplates: totalTemplates - activeTemplates,
+        categoriesStats
       };
     } catch (error) {
-      console.error('Error getting rule template stats:', error);
-      throw error;
+      throw new Error(`Error al obtener estadísticas: ${error.message}`);
     }
   }
-  static async getOwnerRuleTemplates(ownerId, filters = {}) {
+
+  /**
+   * Listar todas las plantillas (para Owner)
+   */
+  static async getOwnerRuleTemplates(ownerId, options = {}) {
     try {
-      const whereClause = { createdBy: ownerId };
+      const owner = await User.findOne({
+        where: { id: ownerId, role: 'OWNER' }
+      });
       
-      if (filters.category) {
-        whereClause.category = filters.category;
-      }
-      
-      if (filters.isActive !== undefined) {
-        whereClause.isActive = filters.isActive;
+      if (!owner) {
+        throw new Error('Solo los Owners pueden ver todas las plantillas');
       }
 
-      if (filters.businessType) {
-        whereClause.businessTypes = {
-          [Op.contains]: [filters.businessType]
-        };
+      const { page = 1, limit = 20, category, isActive, search } = options;
+      
+      const whereClause = {};
+      
+      if (category) {
+        whereClause.category = category;
+      }
+      
+      if (isActive !== undefined) {
+        whereClause.isActive = isActive;
+      }
+      
+      if (search) {
+        whereClause[Op.or] = [
+          { key: { [Op.iLike]: `%${search}%` } },
+          { name: { [Op.iLike]: `%${search}%` } },
+          { description: { [Op.iLike]: `%${search}%` } }
+        ];
       }
 
-      const templates = await BusinessRuleTemplate.findAll({
+      const templates = await RuleTemplate.findAll({
         where: whereClause,
-        order: [['category', 'ASC'], ['name', 'ASC']],
-        include: [
-          {
-            model: User,
-            as: 'creator',
-            attributes: ['id', 'firstName', 'lastName', 'email']
-          }
-        ]
+        order: [['category', 'ASC'], ['key', 'ASC']],
+        limit: limit,
+        offset: (page - 1) * limit
+        // Temporalmente removemos el include hasta que las asociaciones estén configuradas
+        // include: [
+        //   {
+        //     model: User,
+        //     as: 'creator',
+        //     attributes: ['id', 'firstName', 'lastName', 'email']
+        //   }
+        // ]
       });
 
       return templates;
     } catch (error) {
-      console.error('Error getting owner rule templates:', error);
-      throw error;
+      throw new Error(`Error al obtener plantillas: ${error.message}`);
     }
   }
 
   /**
-   * Obtener detalles completos de una plantilla con estadísticas
+   * Obtener plantilla por ID
    */
-  static async getRuleTemplateById(ownerId, templateId) {
+  static async getRuleTemplateById(templateId, userId = null) {
     try {
-      const template = await BusinessRuleTemplate.findOne({
-        where: { 
-          id: templateId, 
-          createdBy: ownerId 
-        },
-        include: [
-          {
-            model: User,
-            as: 'creator',
-            attributes: ['id', 'firstName', 'lastName', 'email']
-          }
-        ]
+      const template = await RuleTemplate.findOne({
+        where: { id: templateId }
+        // Temporalmente removemos el include hasta que las asociaciones estén configuradas
+        // include: [
+        //   {
+        //     model: User,
+        //     as: 'creator',
+        //     attributes: ['id', 'firstName', 'lastName', 'email']
+        //   }
+        // ]
       });
 
       if (!template) {
-        throw new Error('Plantilla no encontrada');
+        throw new Error('Plantilla de regla no encontrada');
       }
 
-      // Obtener estadísticas de uso
-      const stats = await this.getTemplateUsageStats(templateId);
-
-      return {
-        template,
-        stats
-      };
+      return template;
     } catch (error) {
-      console.error('Error getting rule template by ID:', error);
-      throw error;
+      throw new Error(`Error al obtener plantilla: ${error.message}`);
     }
   }
 
   /**
-   * Obtener estadísticas de uso de una plantilla
+   * Obtener todas las plantillas activas (públicas)
    */
-  static async getTemplateUsageStats(templateId) {
+  static async getRuleTemplates(options = {}) {
     try {
-      // Total de asignaciones
-      const totalAssignments = await BusinessRuleAssignment.count({
-        where: { ruleTemplateId: templateId }
-      });
+      const { category, search, page = 1, limit = 50 } = options;
+      
+      const whereClause = {
+        isActive: true
+      };
+      
+      if (category) {
+        whereClause.category = category;
+      }
+      
+      if (search) {
+        whereClause[Op.or] = [
+          { key: { [Op.iLike]: `%${search}%` } },
+          { name: { [Op.iLike]: `%${search}%` } },
+          { description: { [Op.iLike]: `%${search}%` } }
+        ];
+      }
 
-      // Asignaciones activas
-      const activeAssignments = await BusinessRuleAssignment.count({
-        where: { ruleTemplateId: templateId, isActive: true }
-      });
-
-      // Negocios únicos que usan la plantilla
-      const businessesUsingTemplate = await BusinessRuleAssignment.count({
-        where: { ruleTemplateId: templateId, isActive: true },
-        distinct: true,
-        col: 'businessId'
-      });
-
-      // Última vez que se usó (última asignación)
-      const lastAssignment = await BusinessRuleAssignment.findOne({
-        where: { ruleTemplateId: templateId },
-        order: [['createdAt', 'DESC']],
-        attributes: ['createdAt']
-      });
-
-      // Reglas efectivas creadas a partir de esta plantilla
-      const effectiveRules = await BusinessRules.count({
-        where: { ruleTemplateId: templateId }
-      });
-
-      // Promedio de prioridad de las asignaciones
-      const avgPriority = await BusinessRuleAssignment.findOne({
-        where: { ruleTemplateId: templateId },
-        attributes: [[dbSequelize.fn('AVG', dbSequelize.col('priority')), 'avgPriority']],
-        raw: true
+      const templates = await RuleTemplate.findAndCountAll({
+        where: whereClause,
+        order: [['category', 'ASC'], ['key', 'ASC']],
+        limit: limit,
+        offset: (page - 1) * limit
       });
 
       return {
-        totalAssignments,
-        activeAssignments,
-        businessesUsingTemplate,
-        effectiveRules,
-        lastUsed: lastAssignment?.createdAt || null,
-        averagePriority: avgPriority?.avgPriority ? parseFloat(avgPriority.avgPriority).toFixed(1) : null,
-        usageRate: totalAssignments > 0 ? ((activeAssignments / totalAssignments) * 100).toFixed(1) : 0
+        templates: templates.rows,
+        total: templates.count,
+        page,
+        totalPages: Math.ceil(templates.count / limit)
       };
     } catch (error) {
-      console.error('Error getting template usage stats:', error);
-      throw error;
+      throw new Error(`Error al obtener plantillas: ${error.message}`);
     }
   }
 
   // ================================
-  // BUSINESS FUNCTIONS - Asignación y Uso de Reglas
+  // BUSINESS FUNCTIONS - Usar plantillas
   // ================================
 
   /**
    * Obtener plantillas disponibles para un negocio
    */
-  static async getAvailableTemplatesForBusiness(businessId) {
+  static async getBusinessAvailableTemplates(businessId, options = {}) {
     try {
-      const business = await Business.findByPk(businessId);
+      const business = await Business.findOne({
+        where: { id: businessId }
+      });
+
       if (!business) {
         throw new Error('Negocio no encontrado');
       }
 
-      // Obtener plantillas activas que coincidan con el tipo y plan del negocio
-      const templates = await BusinessRuleTemplate.findAll({
-        where: {
-          isActive: true,
-          [Op.or]: [
-            { businessTypes: { [Op.contains]: [business.businessType] } },
-            { businessTypes: { [Op.eq]: [] } } // Plantillas universales
-          ],
-          [Op.or]: [
-            { planTypes: { [Op.contains]: [business.planType] } },
-            { planTypes: { [Op.eq]: [] } } // Plantillas para todos los planes
-          ]
-        },
-        order: [['category', 'ASC'], ['priority', 'DESC'], ['name', 'ASC']]
-      });
-
-      // Excluir plantillas ya asignadas
-      const assignedTemplateIds = await BusinessRuleAssignment.findAll({
-        where: { businessId },
-        attributes: ['ruleTemplateId']
-      }).then(assignments => assignments.map(a => a.ruleTemplateId));
-
-      return templates.filter(t => !assignedTemplateIds.includes(t.id));
-    } catch (error) {
-      console.error('Error getting available templates:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Asignar plantilla de regla a un negocio
-   */
-  static async assignRuleToBusiness(businessId, templateId, assignedBy, options = {}) {
-    try {
-      // Validar que la plantilla existe y está activa
-      const template = await BusinessRuleTemplate.findOne({
-        where: { id: templateId, isActive: true }
-      });
-
-      if (!template) {
-        throw new Error('Plantilla de regla no encontrada o inactiva');
-      }
-
-      // Validar que no haya conflictos
-      await this.validateRuleConflicts(businessId, template);
-
-      // Crear asignación
-      const assignment = await BusinessRuleAssignment.create({
-        businessId,
-        ruleTemplateId: templateId,
-        assignedBy,
-        originalValue: template.ruleValue,
-        priority: options.priority || template.priority,
-        notes: options.notes,
-        effectiveFrom: options.effectiveFrom,
-        effectiveTo: options.effectiveTo,
-        lastTemplateVersion: template.version
-      });
-
-      // Crear regla efectiva en BusinessRules
-      await this.createEffectiveRule(assignment, template);
-
-      // Incrementar contador de uso
-      await template.increment('usageCount');
-
-      return assignment;
-    } catch (error) {
-      console.error('Error assigning rule to business:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Personalizar regla asignada
-   */
-  static async customizeAssignedRule(businessId, assignmentId, customValue, modifiedBy, notes) {
-    try {
-      const assignment = await BusinessRuleAssignment.findOne({
-        where: { id: assignmentId, businessId },
-        include: [{ model: BusinessRuleTemplate }]
-      });
-
-      if (!assignment) {
-        throw new Error('Asignación de regla no encontrada');
-      }
-
-      if (!assignment.BusinessRuleTemplate.allowCustomization) {
-        throw new Error('Esta regla no permite personalización');
-      }
-
-      // Validar el valor personalizado
-      await this.validateCustomValue(assignment.BusinessRuleTemplate, customValue);
-
-      // Actualizar asignación
-      await assignment.update({
-        customValue,
-        isCustomized: true,
-        lastModified: new Date(),
-        modifiedBy,
-        notes: notes || assignment.notes,
-        autoUpdate: false // Desactivar actualizaciones automáticas al personalizar
-      });
-
-      // Actualizar regla efectiva
-      await this.updateEffectiveRule(assignment);
-
-      return assignment;
-    } catch (error) {
-      console.error('Error customizing assigned rule:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtener reglas asignadas a un negocio
-   */
-  static async getBusinessAssignedRules(businessId, includeInactive = false) {
-    try {
-      const whereClause = { businessId };
-      if (!includeInactive) {
-        whereClause.isActive = true;
-      }
-
-      const assignments = await BusinessRuleAssignment.findAll({
-        where: whereClause,
-        include: [
-          {
-            model: BusinessRuleTemplate,
-            attributes: ['id', 'name', 'description', 'category', 'ruleKey', 'allowCustomization']
-          },
-          {
-            model: User,
-            as: 'assignedByUser',
-            attributes: ['id', 'firstName', 'lastName', 'email']
-          }
-        ],
-        order: [['priority', 'DESC'], [BusinessRuleTemplate, 'category', 'ASC']]
-      });
-
-      return assignments;
-    } catch (error) {
-      console.error('Error getting business assigned rules:', error);
-      throw error;
-    }
-  }
-
-  // ================================
-  // UTILITY FUNCTIONS
-  // ================================
-
-  /**
-   * Validar dependencias y conflictos de plantilla
-   */
-  static async validateTemplateDependencies(templateData) {
-    if (templateData.dependencies && templateData.dependencies.length > 0) {
-      for (const depKey of templateData.dependencies) {
-        const depTemplate = await BusinessRuleTemplate.findOne({
-          where: { ruleKey: depKey, isActive: true }
-        });
-        
-        if (!depTemplate) {
-          throw new Error(`Dependencia requerida no encontrada: ${depKey}`);
-        }
-      }
-    }
-  }
-
-  /**
-   * Validar conflictos de regla para un negocio
-   */
-  static async validateRuleConflicts(businessId, template) {
-    if (template.conflicts && template.conflicts.length > 0) {
-      const conflictingRules = await BusinessRules.findAll({
-        where: {
-          businessId,
-          ruleKey: { [Op.in]: template.conflicts },
-          isActive: true
-        }
-      });
-
-      if (conflictingRules.length > 0) {
-        const conflictKeys = conflictingRules.map(r => r.ruleKey).join(', ');
-        throw new Error(`Esta regla entra en conflicto con reglas existentes: ${conflictKeys}`);
-      }
-    }
-  }
-
-  /**
-   * Crear regla efectiva en BusinessRules
-   */
-  static async createEffectiveRule(assignment, template) {
-    const effectiveValue = assignment.isCustomized ? assignment.customValue : template.ruleValue;
-
-    await BusinessRules.create({
-      businessId: assignment.businessId,
-      ruleKey: template.ruleKey,
-      ruleValue: effectiveValue,
-      description: template.description,
-      category: template.category,
-      priority: assignment.priority,
-      ruleTemplateId: template.id,
-      ruleAssignmentId: assignment.id,
-      isFromTemplate: true,
-      isCustomized: assignment.isCustomized,
-      originalTemplateValue: template.ruleValue,
-      lastSyncedAt: new Date(),
-      templateVersion: template.version
-    });
-  }
-
-  /**
-   * Actualizar regla efectiva
-   */
-  static async updateEffectiveRule(assignment) {
-    const template = assignment.BusinessRuleTemplate;
-    const effectiveValue = assignment.isCustomized ? assignment.customValue : template.ruleValue;
-
-    await BusinessRules.update({
-      ruleValue: effectiveValue,
-      isCustomized: assignment.isCustomized,
-      lastSyncedAt: new Date(),
-      templateVersion: template.version
-    }, {
-      where: { ruleAssignmentId: assignment.id }
-    });
-  }
-
-  /**
-   * Verificar si hay cambios significativos
-   */
-  static hasSignificantChanges(oldValue, newValue) {
-    // Implementar lógica para determinar si los cambios son significativos
-    return JSON.stringify(oldValue) !== JSON.stringify(newValue);
-  }
-
-  /**
-   * Marcar actualizaciones pendientes
-   */
-  static async markPendingUpdates(templateId) {
-    await BusinessRuleAssignment.update({
-      updatesPending: true
-    }, {
-      where: {
-        ruleTemplateId: templateId,
-        autoUpdate: true,
+      const { category, search } = options;
+      
+      const whereClause = {
         isActive: true
+      };
+      
+      if (category) {
+        whereClause.category = category;
       }
-    });
+      
+      if (search) {
+        whereClause[Op.or] = [
+          { key: { [Op.iLike]: `%${search}%` } },
+          { name: { [Op.iLike]: `%${search}%` } },
+          { description: { [Op.iLike]: `%${search}%` } }
+        ];
+      }
+
+      const templates = await RuleTemplate.findAll({
+        where: whereClause,
+        order: [['category', 'ASC'], ['key', 'ASC']]
+      });
+
+      return templates;
+    } catch (error) {
+      throw new Error(`Error al obtener plantillas disponibles: ${error.message}`);
+    }
   }
 
   /**
-   * Validar valor personalizado
+   * Obtener reglas efectivas de un negocio (con valores personalizados)
    */
-  static async validateCustomValue(template, customValue) {
-    // Implementar validaciones específicas según el tipo de regla
-    if (template.customizationRules) {
-      // Aplicar reglas de personalización
-      // Por ejemplo, rangos permitidos, tipos de datos, etc.
+  static async getBusinessEffectiveRules(businessId, options = {}) {
+    try {
+      const business = await Business.findOne({
+        where: { id: businessId }
+      });
+
+      if (!business) {
+        throw new Error('Negocio no encontrado');
+      }
+
+      const { category } = options;
+      
+      const whereClause = {
+        isActive: true
+      };
+      
+      if (category) {
+        whereClause.category = category;
+      }
+
+      // Query usando COALESCE para obtener valor efectivo (personalizado o por defecto)
+      const query = `
+        SELECT 
+          rt.*,
+          COALESCE(br."customValue", rt."defaultValue") as "effectiveValue",
+          br."customValue",
+          br."createdAt" as "customizedAt",
+          br."updatedBy" as "customizedBy"
+        FROM "RuleTemplates" rt
+        LEFT JOIN "BusinessRules" br ON rt.id = br."ruleTemplateId" AND br."businessId" = :businessId
+        WHERE rt."isActive" = true
+        ${category ? 'AND rt.category = :category' : ''}
+        ORDER BY rt.category, rt.key
+      `;
+
+      const rules = await dbSequelize.query(query, {
+        replacements: { businessId, ...(category && { category }) },
+        type: dbSequelize.QueryTypes.SELECT
+      });
+
+      return rules;
+    } catch (error) {
+      throw new Error(`Error al obtener reglas efectivas: ${error.message}`);
+    }
+  }
+
+  // ================================
+  // VALIDATION HELPERS
+  // ================================
+
+  /**
+   * Validar que la clave de la plantilla sea única
+   */
+  static async validateUniqueKey(key, excludeId = null) {
+    const whereClause = { key };
+    if (excludeId) {
+      whereClause.id = { [Op.ne]: excludeId };
+    }
+
+    const existingTemplate = await RuleTemplate.findOne({
+      where: whereClause
+    });
+
+    if (existingTemplate) {
+      throw new Error(`Ya existe una plantilla con la clave '${key}'`);
+    }
+
+    return true;
+  }
+
+  /**
+   * Validar formato de clave de plantilla
+   */
+  static validateKeyFormat(key) {
+    const keyRegex = /^[A-Z_][A-Z0-9_]*$/;
+    if (!keyRegex.test(key)) {
+      throw new Error('La clave debe estar en formato UPPER_SNAKE_CASE (ej: MAX_APPOINTMENTS_PER_DAY)');
     }
     return true;
   }
 
   /**
-   * Sincronizar reglas con plantillas actualizadas
+   * Validar tipo de valor según el tipo de regla
    */
-  static async syncRulesWithTemplates(businessId = null) {
-    try {
-      const whereClause = {
-        updatesPending: true,
-        autoUpdate: true,
-        isActive: true
-      };
-
-      if (businessId) {
-        whereClause.businessId = businessId;
-      }
-
-      const pendingAssignments = await BusinessRuleAssignment.findAll({
-        where: whereClause,
-        include: [{ model: BusinessRuleTemplate }]
-      });
-
-      for (const assignment of pendingAssignments) {
-        if (!assignment.isCustomized) {
-          await this.updateEffectiveRule(assignment);
-          await assignment.update({
-            updatesPending: false,
-            lastTemplateVersion: assignment.BusinessRuleTemplate.version
-          });
+  static validateValueType(ruleType, value) {
+    switch (ruleType) {
+      case 'NUMBER':
+      case 'NUMERIC': // backwards compatibility
+        if (typeof value !== 'number' && !Number.isFinite(Number(value))) {
+          throw new Error('El valor debe ser numérico');
         }
-      }
-
-      return pendingAssignments.length;
-    } catch (error) {
-      console.error('Error syncing rules with templates:', error);
-      throw error;
+        break;
+      case 'BOOLEAN':
+        if (typeof value !== 'boolean') {
+          throw new Error('El valor debe ser booleano (true/false)');
+        }
+        break;
+      case 'STRING':
+      case 'TEXT': // backwards compatibility
+        if (typeof value !== 'string') {
+          throw new Error('El valor debe ser texto');
+        }
+        break;
+      case 'JSON':
+        try {
+          if (typeof value === 'string') {
+            JSON.parse(value);
+          } else if (typeof value !== 'object') {
+            throw new Error('Invalid JSON');
+          }
+        } catch {
+          throw new Error('El valor debe ser un JSON válido');
+        }
+        break;
+      case 'ARRAY':
+        if (!Array.isArray(value)) {
+          throw new Error('El valor debe ser un array');
+        }
+        break;
+      case 'CONFIGURATION':
+        // CONFIGURATION permite cualquier objeto JSON válido
+        if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+          throw new Error('El valor debe ser un objeto de configuración válido');
+        }
+        break;
+      default:
+        throw new Error('Tipo de regla no válido');
     }
-  }
-
-  /**
-   * Determinar el tipo de regla basado en su valor
-   */
-  static determineRuleType(ruleValue) {
-    if (typeof ruleValue === 'boolean') {
-      return 'BOOLEAN';
-    } else if (typeof ruleValue === 'string') {
-      return 'STRING';
-    } else if (typeof ruleValue === 'number') {
-      return 'NUMBER';
-    } else if (Array.isArray(ruleValue)) {
-      return 'ARRAY';
-    } else if (typeof ruleValue === 'object' && ruleValue !== null) {
-      return 'OBJECT';
-    } else {
-      return 'OBJECT'; // Por defecto
-    }
+    return true;
   }
 }
 

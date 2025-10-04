@@ -16,6 +16,12 @@
 - **Role**: Business
 - **Permissions**: Full access to all features, business configuration, user management
 
+### Secondary Business Account
+- **Email**: `dd@gmail.com`
+- **Password**: `Admin*7754`
+- **Role**: Business
+- **Permissions**: Full access to business management features, mirrors owner account capabilities
+
 ### Specialist Account
 - **Email**: `specialist@test.com`
 - **Password**: `Password123!`

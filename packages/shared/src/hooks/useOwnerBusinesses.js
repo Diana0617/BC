@@ -439,3 +439,6 @@ export const useOwnerBusinesses = () => {
     helpers
   };
 };
+
+// Export como default para compatibilidad
+export default useOwnerBusinesses;

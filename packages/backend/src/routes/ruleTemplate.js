@@ -9,111 +9,92 @@ const tenancy = require('../middleware/tenancy');
 
 /**
  * @swagger
- * tags:
- *   - name: Owner Rule Templates
- *     description: Gestión de plantillas de reglas por parte del Owner
- *   - name: Business Rule Templates
- *     description: Uso de plantillas de reglas por parte de los negocios
- *   - name: Admin Rule Templates
- *     description: Administración y estadísticas de plantillas de reglas
- */
-
-/**
- * @swagger
  * components:
  *   schemas:
  *     RuleTemplate:
  *       type: object
  *       required:
+ *         - key
  *         - name
+ *         - description
+ *         - type
  *         - category
- *         - ruleKey
- *         - ruleValue
+ *         - defaultValue
  *       properties:
  *         id:
  *           type: string
  *           format: uuid
  *           description: ID único de la plantilla
+ *         key:
+ *           type: string
+ *           description: Clave única de la regla (UPPER_SNAKE_CASE)
+ *           example: "MAX_APPOINTMENTS_PER_DAY"
  *         name:
  *           type: string
  *           description: Nombre descriptivo de la regla
- *           example: "Cierre sin comprobante de pago"
+ *           example: "Máximo de citas por día"
  *         description:
  *           type: string
- *           description: Descripción detallada de qué hace esta regla
+ *           description: Descripción detallada de la regla
+ *           example: "Limita el número máximo de citas que se pueden agendar por día"
+ *         type:
+ *           type: string
+ *           enum: [NUMERIC, BOOLEAN, TEXT, JSON, ARRAY]
+ *           description: Tipo de valor de la regla
+ *           example: "NUMERIC"
  *         category:
  *           type: string
- *           enum: [PAYMENT_POLICY, CANCELLATION_POLICY, BOOKING_POLICY, WORKING_HOURS, NOTIFICATION_POLICY, REFUND_POLICY, SERVICE_POLICY, GENERAL]
- *           description: Categoría de la regla para organización
- *         ruleKey:
- *           type: string
- *           description: Clave única que identifica qué campo/regla afecta
- *           example: "allowCloseWithoutPayment"
- *         ruleValue:
+ *           enum: [APPOINTMENTS, PAYMENTS, NOTIFICATIONS, BUSINESS_HOURS, LIMITS, CUSTOMIZATION]
+ *           description: Categoría de la regla
+ *           example: "APPOINTMENTS"
+ *         defaultValue:
+ *           description: Valor por defecto de la regla
+ *           example: 10
+ *         validationRules:
  *           type: object
- *           description: Valor por defecto de la regla en formato JSON
- *         businessTypes:
- *           type: array
- *           items:
- *             type: string
- *           description: Tipos de negocio compatibles con esta regla
- *         planTypes:
- *           type: array
- *           items:
- *             type: string
- *           description: Tipos de plan de suscripción que incluyen esta regla
+ *           description: Reglas de validación específicas
+ *           example: {"min": 1, "max": 50}
  *         isActive:
  *           type: boolean
  *           description: Si la plantilla está activa
+ *           default: true
+ *         createdBy:
+ *           type: string
+ *           format: uuid
+ *           description: ID del usuario que creó la plantilla
+ *         updatedBy:
+ *           type: string
+ *           format: uuid
+ *           description: ID del último usuario que actualizó la plantilla
  *         createdAt:
  *           type: string
  *           format: date-time
  *         updatedAt:
  *           type: string
  *           format: date-time
- *     RuleAssignment:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *           format: uuid
- *           description: ID único de la asignación
- *         businessId:
- *           type: string
- *           format: uuid
- *           description: ID del negocio al que se asigna la regla
- *         ruleTemplateId:
- *           type: string
- *           format: uuid
- *           description: ID de la plantilla de regla
- *         customValue:
- *           type: object
- *           description: Valor personalizado por el negocio
- *         isActive:
- *           type: boolean
- *           description: Si la regla está activa en el negocio
- *         assignedAt:
- *           type: string
- *           format: date-time
- *         lastModified:
- *           type: string
- *           format: date-time
- *         notes:
- *           type: string
- *           description: Notas sobre la personalización
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   - name: Owner Rule Templates
+ *     description: Gestión de plantillas de reglas por parte del Owner
+ *   - name: Rule Templates
+ *     description: Consulta de plantillas de reglas disponibles
+ *   - name: Business Rule Templates
+ *     description: Uso de plantillas por parte de los negocios
  */
 
 // ================================
-// OWNER ROUTES - Gestión de Plantillas de Reglas
+// OWNER ENDPOINTS - Gestión de Plantillas
 // ================================
 
 /**
  * @swagger
- * /api/rule-templates/owner/templates:
+ * /api/owner/rule-templates:
  *   post:
- *     summary: Crear nueva plantilla de regla
- *     description: Permite al Owner crear una nueva plantilla de regla que podrá ser usada por sus negocios
  *     tags: [Owner Rule Templates]
+ *     summary: Crear nueva plantilla de regla
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -123,39 +104,38 @@ const tenancy = require('../middleware/tenancy');
  *           schema:
  *             type: object
  *             required:
+ *               - key
  *               - name
+ *               - description
+ *               - type
  *               - category
- *               - ruleKey
- *               - ruleValue
+ *               - defaultValue
  *             properties:
+ *               key:
+ *                 type: string
+ *                 example: "MAX_APPOINTMENTS_PER_DAY"
  *               name:
  *                 type: string
- *                 description: Nombre descriptivo de la regla
- *                 example: "Cierre sin comprobante de pago"
+ *                 example: "Máximo de citas por día"
  *               description:
  *                 type: string
- *                 description: Descripción detallada de la regla
+ *                 example: "Limita el número máximo de citas que se pueden agendar por día"
+ *               type:
+ *                 type: string
+ *                 enum: [NUMERIC, BOOLEAN, TEXT, JSON, ARRAY]
+ *                 example: "NUMERIC"
  *               category:
  *                 type: string
- *                 enum: [PAYMENT_POLICY, CANCELLATION_POLICY, BOOKING_POLICY, WORKING_HOURS, NOTIFICATION_POLICY, REFUND_POLICY, SERVICE_POLICY, GENERAL]
- *               ruleKey:
- *                 type: string
- *                 description: Clave única de la regla
- *                 example: "allowCloseWithoutPayment"
- *               ruleValue:
+ *                 enum: [APPOINTMENTS, PAYMENTS, NOTIFICATIONS, BUSINESS_HOURS, LIMITS, CUSTOMIZATION]
+ *                 example: "APPOINTMENTS"
+ *               defaultValue:
+ *                 example: 10
+ *               validationRules:
  *                 type: object
- *                 description: Valor por defecto de la regla
- *                 example: {"enabled": true, "requiresManagerApproval": false}
- *               businessTypes:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: Tipos de negocio compatibles
- *               planTypes:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: Planes de suscripción que incluyen esta regla
+ *                 example: {"min": 1, "max": 50}
+ *               isActive:
+ *                 type: boolean
+ *                 default: true
  *     responses:
  *       201:
  *         description: Plantilla creada exitosamente
@@ -166,28 +146,57 @@ const tenancy = require('../middleware/tenancy');
  *               properties:
  *                 success:
  *                   type: boolean
+ *                 message:
+ *                   type: string
  *                 data:
  *                   $ref: '#/components/schemas/RuleTemplate'
  *       400:
- *         description: Error de validación
+ *         description: Error en los datos enviados
  *       403:
- *         description: Solo OWNER puede crear plantillas
+ *         description: No autorizado - solo Owners
  */
 router.post('/owner/templates', 
   authenticateToken, 
-  roleCheck(['OWNER']),
+  ownerOnly, 
   RuleTemplateController.createRuleTemplate
 );
 
 /**
  * @swagger
- * /api/rule-templates/owner/templates:
+ * /api/owner/rule-templates:
  *   get:
- *     summary: Listar plantillas del Owner
- *     description: Obtiene todas las plantillas de reglas creadas por el Owner
  *     tags: [Owner Rule Templates]
+ *     summary: Obtener todas las plantillas de reglas
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Página de resultados
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Elementos por página
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filtrar por categoría
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filtrar por estado activo
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Buscar en key, name o description
  *     responses:
  *       200:
  *         description: Lista de plantillas
@@ -205,48 +214,16 @@ router.post('/owner/templates',
  */
 router.get('/owner/templates', 
   authenticateToken, 
-  roleCheck(['OWNER']),
+  ownerOnly, 
   RuleTemplateController.getOwnerRuleTemplates
-);
-
-/**
- * @swagger
- * /api/rule-templates/owner/templates/{templateId}:
- *   get:
- *     summary: Obtener detalles completos de una plantilla para vista previa
- *     description: Obtiene los detalles completos de una plantilla incluyendo estadísticas de uso para el owner
- *     tags: [Owner Rule Templates]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: templateId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: ID de la plantilla
- *     responses:
- *       200:
- *         description: Detalles de la plantilla con estadísticas
- *       404:
- *         description: Plantilla no encontrada
- *       403:
- *         description: No tienes permisos para ver esta plantilla
- */
-router.get('/owner/templates/:templateId', 
-  authenticateToken, 
-  roleCheck(['OWNER']),
-  RuleTemplateController.getRuleTemplateById
 );
 
 /**
  * @swagger
  * /api/owner/rule-templates/{templateId}:
  *   get:
- *     summary: Obtener detalles completos de una plantilla
- *     description: Obtiene los detalles completos de una plantilla incluyendo estadísticas de uso
  *     tags: [Owner Rule Templates]
+ *     summary: Obtener plantilla por ID
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -259,112 +236,7 @@ router.get('/owner/templates/:templateId',
  *         description: ID de la plantilla
  *     responses:
  *       200:
- *         description: Detalles de la plantilla con estadísticas
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     template:
- *                       $ref: '#/components/schemas/RuleTemplate'
- *                     stats:
- *                       type: object
- *                       properties:
- *                         totalAssignments:
- *                           type: integer
- *                           description: Total de asignaciones de esta plantilla
- *                         activeAssignments:
- *                           type: integer
- *                           description: Asignaciones actualmente activas
- *                         businessesUsingTemplate:
- *                           type: integer
- *                           description: Número de negocios que usan esta plantilla
- *                         effectiveRules:
- *                           type: integer
- *                           description: Reglas efectivas creadas a partir de esta plantilla
- *                         lastUsed:
- *                           type: string
- *                           format: date-time
- *                           description: Última vez que se asignó esta plantilla
- *                         averagePriority:
- *                           type: string
- *                           description: Prioridad promedio de las asignaciones
- *                         usageRate:
- *                           type: string
- *                           description: Porcentaje de uso (activas/total)
- *       404:
- *         description: Plantilla no encontrada
- *       403:
- *         description: No tienes permisos para ver esta plantilla
- */
-router.get('/:templateId', 
-  authenticateToken, 
-  roleCheck(['OWNER']),
-  RuleTemplateController.getRuleTemplateById
-);
-
-/**
- * @swagger
- * /api/rule-templates/owner/templates/{templateId}:
- *   put:
- *     summary: Actualizar plantilla de regla
- *     description: Actualiza una plantilla de regla existente creada por el Owner
- *     tags: [Owner Rule Templates]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: templateId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: ID de la plantilla a actualizar
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 description: Nombre de la plantilla
- *               description:
- *                 type: string
- *                 description: Descripción de la plantilla
- *               ruleValue:
- *                 type: object
- *                 description: Valor actualizado de la regla
- *               businessTypes:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: Tipos de negocio compatibles
- *               planTypes:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: Tipos de plan compatibles
- *               allowCustomization:
- *                 type: boolean
- *                 description: Si permite personalización
- *               priority:
- *                 type: integer
- *                 description: Prioridad de la plantilla
- *               tags:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: Etiquetas de la plantilla
- *     responses:
- *       200:
- *         description: Plantilla actualizada exitosamente
+ *         description: Plantilla encontrada
  *         content:
  *           application/json:
  *             schema:
@@ -376,22 +248,19 @@ router.get('/:templateId',
  *                   $ref: '#/components/schemas/RuleTemplate'
  *       404:
  *         description: Plantilla no encontrada
- *       403:
- *         description: No tienes permisos para actualizar esta plantilla
  */
-router.put('/owner/templates/:templateId', 
+router.get('/owner/templates/:templateId', 
   authenticateToken, 
-  roleCheck(['OWNER']),
-  RuleTemplateController.updateRuleTemplate
+  ownerOnly, 
+  RuleTemplateController.getRuleTemplateById
 );
 
 /**
  * @swagger
- * /api/rule-templates/owner/templates/{templateId}:
- *   delete:
- *     summary: Eliminar plantilla de regla
- *     description: Elimina una plantilla de regla existente creada por el Owner
+ * /api/owner/rule-templates/{templateId}:
+ *   put:
  *     tags: [Owner Rule Templates]
+ *     summary: Actualizar plantilla existente
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -401,7 +270,65 @@ router.put('/owner/templates/:templateId',
  *         schema:
  *           type: string
  *           format: uuid
- *         description: ID de la plantilla a eliminar
+ *         description: ID de la plantilla
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               key:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               defaultValue:
+ *                 description: Nuevo valor por defecto
+ *               validationRules:
+ *                 type: object
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Plantilla actualizada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/RuleTemplate'
+ *       404:
+ *         description: Plantilla no encontrada
+ */
+router.put('/owner/templates/:templateId', 
+  authenticateToken, 
+  ownerOnly, 
+  RuleTemplateController.updateRuleTemplate
+);
+
+/**
+ * @swagger
+ * /api/owner/rule-templates/{templateId}:
+ *   delete:
+ *     tags: [Owner Rule Templates]
+ *     summary: Eliminar plantilla
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID de la plantilla
  *     responses:
  *       200:
  *         description: Plantilla eliminada exitosamente
@@ -414,31 +341,162 @@ router.put('/owner/templates/:templateId',
  *                   type: boolean
  *                 message:
  *                   type: string
- *                   example: "Plantilla eliminada exitosamente"
+ *       400:
+ *         description: Error al eliminar (plantilla en uso)
  *       404:
  *         description: Plantilla no encontrada
- *       403:
- *         description: No tienes permisos para eliminar esta plantilla
- *       409:
- *         description: No se puede eliminar - plantilla está siendo utilizada por negocios
  */
 router.delete('/owner/templates/:templateId', 
   authenticateToken, 
-  roleCheck(['OWNER']),
+  ownerOnly, 
   RuleTemplateController.deleteRuleTemplate
 );
 
+/**
+ * @swagger
+ * /api/owner/rule-templates/stats:
+ *   get:
+ *     tags: [Owner Rule Templates]
+ *     summary: Obtener estadísticas de plantillas
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Estadísticas de plantillas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalTemplates:
+ *                       type: integer
+ *                     activeTemplates:
+ *                       type: integer
+ *                     inactiveTemplates:
+ *                       type: integer
+ *                     categoriesStats:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           category:
+ *                             type: string
+ *                           count:
+ *                             type: integer
+ */
+router.get('/owner/templates/stats', 
+  authenticateToken, 
+  ownerOnly, 
+  RuleTemplateController.getTemplateStats
+);
+
 // ================================
-// BUSINESS RULE ASSIGNMENTS ROUTES
+// PUBLIC ENDPOINTS - Consultar plantillas disponibles
 // ================================
 
 /**
  * @swagger
- * /api/rule-templates/business/rule-templates/available:
+ * /api/rule-templates:
  *   get:
- *     summary: Obtener plantillas disponibles para el negocio
- *     description: Obtiene todas las plantillas que el negocio puede asignar
+ *     tags: [Rule Templates]
+ *     summary: Obtener todas las plantillas activas
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Página de resultados
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Elementos por página
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filtrar por categoría
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Buscar en key, name o description
+ *     responses:
+ *       200:
+ *         description: Lista de plantillas activas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/RuleTemplate'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ */
+router.get('/', RuleTemplateController.getRuleTemplates);
+
+/**
+ * @swagger
+ * /api/rule-templates/{templateId}:
+ *   get:
+ *     tags: [Rule Templates]
+ *     summary: Obtener plantilla por ID (público)
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID de la plantilla
+ *     responses:
+ *       200:
+ *         description: Plantilla encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/RuleTemplate'
+ *       404:
+ *         description: Plantilla no encontrada
+ */
+router.get('/:templateId', RuleTemplateController.getRuleTemplateById);
+
+// ================================
+// BUSINESS ENDPOINTS - Para uso de negocios
+// ================================
+
+/**
+ * @swagger
+ * /api/business/rule-templates/available:
+ *   get:
  *     tags: [Business Rule Templates]
+ *     summary: Obtener plantillas disponibles para el negocio
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -446,8 +504,12 @@ router.delete('/owner/templates/:templateId',
  *         name: category
  *         schema:
  *           type: string
- *           enum: [PAYMENT_POLICY, CANCELLATION_POLICY, BOOKING_POLICY, WORKING_HOURS, NOTIFICATION_POLICY, REFUND_POLICY, SERVICE_POLICY, GENERAL]
- *         description: Filtrar por categoría de regla
+ *         description: Filtrar por categoría
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Buscar en key, name o description
  *     responses:
  *       200:
  *         description: Lista de plantillas disponibles
@@ -463,81 +525,30 @@ router.delete('/owner/templates/:templateId',
  *                   items:
  *                     $ref: '#/components/schemas/RuleTemplate'
  */
-router.get('/business/rule-templates/available', 
+router.get('/business/templates/available', 
   authenticateToken, 
-  validateSubdomain,
-  tenancy,
-  RuleTemplateController.getAvailableTemplates
+  validateSubdomain, 
+  tenancy, 
+  RuleTemplateController.getBusinessAvailableTemplates
 );
 
 /**
  * @swagger
- * /api/rule-templates/business/rule-templates/{templateId}/assign:
- *   post:
- *     summary: Asignar plantilla de regla al negocio
- *     description: Asigna una plantilla de regla al negocio actual
- *     tags: [Business Rule Templates]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: templateId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: ID de la plantilla a asignar
- *     requestBody:
- *       required: false
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               customValue:
- *                 type: string
- *                 description: Valor personalizado para la regla (opcional)
- *               priority:
- *                 type: integer
- *                 description: Prioridad de la regla (opcional)
- *     responses:
- *       201:
- *         description: Regla asignada exitosamente
- *       409:
- *         description: La regla ya está asignada al negocio
- */
-router.post('/business/rule-templates/:templateId/assign', 
-  authenticateToken, 
-  validateSubdomain,
-  tenancy,
-  RuleTemplateController.assignRuleTemplate
-);
-
-/**
- * @swagger
- * /api/rule-templates/business/rule-assignments:
+ * /api/business/rule-templates/effective:
  *   get:
- *     summary: Obtener reglas asignadas al negocio
- *     description: Obtiene todas las reglas asignadas al negocio actual
  *     tags: [Business Rule Templates]
+ *     summary: Obtener reglas efectivas del negocio
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
- *         name: includeInactive
- *         schema:
- *           type: boolean
- *           default: false
- *         description: Incluir reglas inactivas
  *       - in: query
  *         name: category
  *         schema:
  *           type: string
- *           enum: [PAYMENT_POLICY, CANCELLATION_POLICY, BOOKING_POLICY, WORKING_HOURS, NOTIFICATION_POLICY, REFUND_POLICY, SERVICE_POLICY, GENERAL]
  *         description: Filtrar por categoría
  *     responses:
  *       200:
- *         description: Lista de reglas asignadas
+ *         description: Lista de reglas efectivas
  *         content:
  *           application/json:
  *             schema:
@@ -550,100 +561,24 @@ router.post('/business/rule-templates/:templateId/assign',
  *                   items:
  *                     type: object
  *                     properties:
- *                       id:
+ *                       key:
  *                         type: string
- *                         format: uuid
- *                       businessId:
- *                         type: string
- *                         format: uuid
- *                       templateId:
- *                         type: string
- *                         format: uuid
+ *                       effectiveValue:
+ *                         description: Valor efectivo (personalizado o por defecto)
  *                       customValue:
+ *                         description: Valor personalizado (null si usa el por defecto)
+ *                       customizedAt:
  *                         type: string
- *                       isActive:
- *                         type: boolean
- *                       effectiveRule:
- *                         $ref: '#/components/schemas/RuleTemplate'
+ *                         format: date-time
+ *                       customizedBy:
+ *                         type: string
+ *                         format: uuid
  */
-router.get('/business/rule-assignments', 
+router.get('/business/templates/effective', 
   authenticateToken, 
-  validateSubdomain,
-  tenancy,
-  RuleTemplateController.getBusinessAssignedRules
-);
-
-/**
- * @swagger
- * /api/rule-templates/business/rule-assignments/{assignmentId}/customize:
- *   put:
- *     summary: Personalizar regla asignada
- *     description: Personaliza el valor de una regla ya asignada al negocio
- *     tags: [Business Rule Templates]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: assignmentId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: ID de la asignación de regla
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               customValue:
- *                 type: string
- *                 description: Nuevo valor personalizado
- *               priority:
- *                 type: integer
- *                 description: Nueva prioridad (opcional)
- *     responses:
- *       200:
- *         description: Regla personalizada exitosamente
- *       404:
- *         description: Asignación no encontrada
- */
-router.put('/business/rule-assignments/:assignmentId/customize', 
-  authenticateToken, 
-  validateSubdomain,
-  tenancy,
-  RuleTemplateController.customizeAssignedRule
-);
-
-/**
- * @swagger
- * /api/rule-templates/business/rule-assignments/{assignmentId}/toggle:
- *   patch:
- *     summary: Activar/Desactivar regla asignada
- *     description: Cambia el estado activo/inactivo de una regla asignada
- *     tags: [Business Rule Templates]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: assignmentId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: ID de la asignación de regla
- *     responses:
- *       200:
- *         description: Estado de la regla cambiado exitosamente
- *       404:
- *         description: Asignación no encontrada
- */
-router.patch('/business/rule-assignments/:assignmentId/toggle', 
-  authenticateToken, 
-  validateSubdomain,
-  tenancy,
-  RuleTemplateController.toggleRuleAssignment
+  validateSubdomain, 
+  tenancy, 
+  RuleTemplateController.getBusinessEffectiveRules
 );
 
 module.exports = router;

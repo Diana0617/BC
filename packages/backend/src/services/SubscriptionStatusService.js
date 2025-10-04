@@ -8,7 +8,7 @@
  * - Notificaciones de vencimiento
  */
 
-const { BusinessSubscription, SubscriptionPayment, Business, SubscriptionPlan } = require('../models');
+const { BusinessSubscription, SubscriptionPayment, Business, SubscriptionPlan, Module, PlanModule } = require('../models');
 const { Op } = require('sequelize');
 
 class SubscriptionStatusService {
@@ -130,6 +130,23 @@ class SubscriptionStatusService {
         where: { businessId },
         include: [
           {
+            model: SubscriptionPlan,
+            as: 'plan',
+            include: [
+              {
+                model: Module,
+                as: 'modules',
+                through: {
+                  model: PlanModule,
+                  where: { isIncluded: true }, // Solo módulos incluidos en el plan
+                  attributes: ['isIncluded', 'limitQuantity', 'additionalPrice']
+                },
+                where: { status: 'ACTIVE' }, // Solo módulos activos
+                attributes: ['id', 'name', 'displayName', 'description', 'icon', 'category', 'version', 'requiresConfiguration']
+              }
+            ]
+          },
+          {
             model: SubscriptionPayment,
             as: 'payments',
             limit: 5,
@@ -160,6 +177,7 @@ class SubscriptionStatusService {
         status: currentStatus,
         ...accessLevels[currentStatus],
         subscription,
+        plan: subscription.plan, // Incluir el plan con módulos
         daysOverdue: Math.max(0, Math.floor((new Date() - new Date(subscription.nextPaymentDate)) / (1000 * 60 * 60 * 24)))
       };
 

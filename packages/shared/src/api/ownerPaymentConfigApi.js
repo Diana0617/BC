@@ -24,7 +24,8 @@ export const ownerPaymentConfigApi = {
     params.append('page', page.toString());
     params.append('limit', limit.toString());
     
-    return apiClient.get(`/owner/payment-config?${params.toString()}`);
+  // backend route: /api/owner/payment-configurations
+  return apiClient.get(`/api/owner/payment-configurations?${params.toString()}`);
   },
 
   /**
@@ -37,7 +38,7 @@ export const ownerPaymentConfigApi = {
    * @param {boolean} configData.isActive - Estado activo
    */
   createConfiguration: (configData) => {
-    return apiClient.post('/owner/payment-config', configData);
+  return apiClient.post('/api/owner/payment-configurations', configData);
   },
 
   /**
@@ -45,7 +46,7 @@ export const ownerPaymentConfigApi = {
    * @param {string} configId - ID de la configuración
    */
   getConfigurationById: (configId) => {
-    return apiClient.get(`/owner/payment-config/${configId}`);
+  return apiClient.get(`/api/owner/payment-configurations/${configId}`);
   },
 
   /**
@@ -54,7 +55,7 @@ export const ownerPaymentConfigApi = {
    * @param {Object} updates - Datos a actualizar
    */
   updateConfiguration: (configId, updates) => {
-    return apiClient.put(`/owner/payment-config/${configId}`, updates);
+  return apiClient.put(`/api/owner/payment-configurations/${configId}`, updates);
   },
 
   /**
@@ -62,7 +63,7 @@ export const ownerPaymentConfigApi = {
    * @param {string} configId - ID de la configuración
    */
   deleteConfiguration: (configId) => {
-    return apiClient.delete(`/owner/payment-config/${configId}`);
+  return apiClient.delete(`/api/owner/payment-configurations/${configId}`);
   },
 
   /**
@@ -71,7 +72,7 @@ export const ownerPaymentConfigApi = {
    * @param {boolean} isActive - Nuevo estado
    */
   toggleConfiguration: (configId, isActive) => {
-    return apiClient.patch(`/owner/payment-config/${configId}/toggle`, { isActive });
+  return apiClient.patch(`/api/owner/payment-configurations/${configId}/toggle`, { isActive });
   },
 
   /**
@@ -79,21 +80,22 @@ export const ownerPaymentConfigApi = {
    * @param {string} configId - ID de la configuración
    */
   testConfiguration: (configId) => {
-    return apiClient.post(`/owner/payment-config/${configId}/test`);
+  return apiClient.post(`/api/owner/payment-configurations/${configId}/test`);
   },
 
   /**
    * 🏪 Obtener proveedores de pago disponibles
    */
   getAvailableProviders: () => {
-    return apiClient.get('/owner/payment-config/providers');
+  // backend route for providers is /api/owner/payment-configurations/active
+  return apiClient.get('/api/owner/payment-configurations/active');
   },
 
   /**
    * 📊 Obtener estadísticas de configuraciones
    */
   getConfigurationStats: () => {
-    return apiClient.get('/owner/payment-config/stats');
+  return apiClient.get('/api/owner/payment-configurations/stats');
   },
 
   /**
@@ -102,7 +104,7 @@ export const ownerPaymentConfigApi = {
    * @param {string} environment - Ambiente (sandbox | production)
    */
   getProviderRequiredFields: (provider, environment = 'sandbox') => {
-    return apiClient.get(`/owner/payment-config/providers/${provider}/fields?environment=${environment}`);
+  return apiClient.get(`/api/owner/payment-configurations/providers/${provider}/fields?environment=${environment}`);
   },
 
   /**
@@ -112,7 +114,7 @@ export const ownerPaymentConfigApi = {
    * @param {string} environment - Ambiente
    */
   validateProviderCredentials: (provider, credentials, environment = 'sandbox') => {
-    return apiClient.post(`/owner/payment-config/providers/${provider}/validate`, {
+  return apiClient.post(`/api/owner/payment-configurations/providers/${provider}/validate`, {
       credentials,
       environment
     });
@@ -129,7 +131,7 @@ export const ownerPaymentConfigApi = {
     if (filters.startDate) params.append('startDate', filters.startDate);
     if (filters.endDate) params.append('endDate', filters.endDate);
     
-    return apiClient.get(`/owner/payment-config/${configId}/metrics?${params.toString()}`);
+  return apiClient.get(`/api/owner/payment-configurations/${configId}/metrics?${params.toString()}`);
   },
 
   /**
@@ -137,7 +139,7 @@ export const ownerPaymentConfigApi = {
    * @param {string} configId - ID de la configuración
    */
   syncWithProvider: (configId) => {
-    return apiClient.post(`/owner/payment-config/${configId}/sync`);
+  return apiClient.post(`/api/owner/payment-configurations/${configId}/sync`);
   },
 
   /**
@@ -153,7 +155,7 @@ export const ownerPaymentConfigApi = {
     if (filters.status) params.append('status', filters.status);
     if (filters.limit) params.append('limit', filters.limit);
     
-    return apiClient.get(`/owner/payment-config/${configId}/logs?${params.toString()}`);
+  return apiClient.get(`/api/owner/payment-configurations/${configId}/logs?${params.toString()}`);
   },
 
   /**
@@ -162,7 +164,7 @@ export const ownerPaymentConfigApi = {
    * @param {Array} events - Eventos para webhooks
    */
   generateWebhooks: (configId, events) => {
-    return apiClient.post(`/owner/payment-config/${configId}/webhooks`, { events });
+  return apiClient.post(`/api/owner/payment-configurations/${configId}/webhooks`, { events });
   },
 
   /**
@@ -171,7 +173,7 @@ export const ownerPaymentConfigApi = {
    * @param {Object} webhookConfig - Nueva configuración de webhooks
    */
   updateWebhookConfig: (configId, webhookConfig) => {
-    return apiClient.put(`/owner/payment-config/${configId}/webhooks`, webhookConfig);
+  return apiClient.put(`/api/owner/payment-configurations/${configId}/webhooks`, webhookConfig);
   },
 
   /**
@@ -187,7 +189,7 @@ export const ownerPaymentConfigApi = {
     if (filters.isActive !== undefined) params.append('isActive', filters.isActive.toString());
     if (filters.environment) params.append('environment', filters.environment);
     
-    return apiClient.get(`/owner/payment-config/export?${params.toString()}`, {
+  return apiClient.get(`/api/owner/payment-configurations/export?${params.toString()}`, {
       responseType: 'blob'
     });
   },
@@ -198,7 +200,7 @@ export const ownerPaymentConfigApi = {
    * @param {string} targetEnvironment - Ambiente destino
    */
   migrateToEnvironment: (configId, targetEnvironment) => {
-    return apiClient.post(`/owner/payment-config/${configId}/migrate`, {
+  return apiClient.post(`/api/owner/payment-configurations/${configId}/migrate`, {
       targetEnvironment
     });
   },
@@ -213,6 +215,6 @@ export const ownerPaymentConfigApi = {
     if (filters.startDate) params.append('startDate', filters.startDate);
     if (filters.endDate) params.append('endDate', filters.endDate);
     
-    return apiClient.get(`/owner/payment-config/providers/comparison?${params.toString()}`);
+  return apiClient.get(`/api/owner/payment-configurations/providers/comparison?${params.toString()}`);
   }
 };

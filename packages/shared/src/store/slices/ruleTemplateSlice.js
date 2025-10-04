@@ -3,8 +3,8 @@ import { ruleTemplateApi } from '../../api/ruleTemplateApi';
 import {
   getAvailableTemplates as apiGetAvailableTemplates,
   getBusinessAssignedRules as apiGetBusinessAssignedRules,
-  assignRuleTemplate as apiAssignRuleTemplate,
-  removeRuleAssignment as apiRemoveRuleAssignment
+  customizeBusinessRule as apiCustomizeBusinessRule,
+  setupBusinessRules as apiSetupBusinessRules
 } from '../../api/businessRuleApi';
 
 // ================================
@@ -42,34 +42,34 @@ export const getBusinessAssignedRules = createAsyncThunk(
 );
 
 /**
- * Asignar regla al negocio
+ * Asignar regla al negocio - NO IMPLEMENTADO EN BACKEND
  */
-export const assignRuleTemplate = createAsyncThunk(
-  'ruleTemplate/assignRuleTemplate',
-  async ({ businessId, ruleTemplateId }, { rejectWithValue }) => {
-    try {
-      const response = await apiAssignRuleTemplate(ruleTemplateId, { businessId });
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Error al asignar regla');
-    }
-  }
-);
+// export const assignRuleTemplate = createAsyncThunk(
+//   'ruleTemplate/assignRuleTemplate',
+//   async ({ businessId, ruleTemplateId }, { rejectWithValue }) => {
+//     try {
+//       const response = await apiAssignRuleTemplate(ruleTemplateId, { businessId });
+//       return response.data;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || 'Error al asignar regla');
+//     }
+//   }
+// );
 
 /**
- * Desasignar regla del negocio
+ * Desasignar regla del negocio - NO IMPLEMENTADO EN BACKEND
  */
-export const unassignRuleTemplate = createAsyncThunk(
-  'ruleTemplate/unassignRuleTemplate',
-  async (assignmentId, { rejectWithValue }) => {
-    try {
-      await apiRemoveRuleAssignment(assignmentId);
-      return assignmentId;
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Error al desasignar regla');
-    }
-  }
-);
+// export const unassignRuleTemplate = createAsyncThunk(
+//   'ruleTemplate/unassignRuleTemplate',
+//   async (assignmentId, { rejectWithValue }) => {
+//     try {
+//       await apiRemoveRuleAssignment(assignmentId);
+//       return assignmentId;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data?.message || 'Error al desasignar regla');
+//     }
+//   }
+// );
 
 // ================================
 // ASYNC THUNKS - Rule Template Management
@@ -219,8 +219,8 @@ const initialState = {
     sync: false,
     availableRules: false,
     assignedRules: false,
-    assign: false,
-    unassign: false
+    // assign: false,     // NO IMPLEMENTADO
+    // unassign: false    // NO IMPLEMENTADO
   },
   // Errors
   errors: {
@@ -232,8 +232,8 @@ const initialState = {
     sync: null,
     availableRules: null,
     assignedRules: null,
-    assign: null,
-    unassign: null
+    // assign: null,      // NO IMPLEMENTADO
+    // unassign: null     // NO IMPLEMENTADO
   },
   // Success messages
   success: {
@@ -241,8 +241,8 @@ const initialState = {
     update: null,
     delete: null,
     sync: null,
-    assign: null,
-    unassign: null
+    // assign: null,      // NO IMPLEMENTADO
+    // unassign: null     // NO IMPLEMENTADO
   },
   // Modal states
   modals: {
@@ -497,41 +497,41 @@ const ruleTemplateSlice = createSlice({
         state.errors.assignedRules = action.payload;
       });
 
-    // Assign Rule Template
-    builder
-      .addCase(assignRuleTemplate.pending, (state) => {
-        state.loading.assign = true;
-        state.errors.assign = null;
-      })
-      .addCase(assignRuleTemplate.fulfilled, (state, action) => {
-        state.loading.assign = false;
-        // Add the new assignment to assignedRules
-        const newAssignment = action.payload?.data || action.payload;
-        if (newAssignment) {
-          state.assignedRules.push(newAssignment);
-        }
-      })
-      .addCase(assignRuleTemplate.rejected, (state, action) => {
-        state.loading.assign = false;
-        state.errors.assign = action.payload;
-      });
+    // Assign Rule Template - NO IMPLEMENTADO EN BACKEND
+    // builder
+    //   .addCase(assignRuleTemplate.pending, (state) => {
+    //     state.loading.assign = true;
+    //     state.errors.assign = null;
+    //   })
+    //   .addCase(assignRuleTemplate.fulfilled, (state, action) => {
+    //     state.loading.assign = false;
+    //     // Add the new assignment to assignedRules
+    //     const newAssignment = action.payload?.data || action.payload;
+    //     if (newAssignment) {
+    //       state.assignedRules.push(newAssignment);
+    //     }
+    //   })
+    //   .addCase(assignRuleTemplate.rejected, (state, action) => {
+    //     state.loading.assign = false;
+    //     state.errors.assign = action.payload;
+    //   });
 
-    // Unassign Rule Template
-    builder
-      .addCase(unassignRuleTemplate.pending, (state) => {
-        state.loading.unassign = true;
-        state.errors.unassign = null;
-      })
-      .addCase(unassignRuleTemplate.fulfilled, (state, action) => {
-        state.loading.unassign = false;
-        // Remove the assignment from assignedRules
-        const assignmentId = action.payload;
-        state.assignedRules = state.assignedRules.filter(rule => rule.id !== assignmentId);
-      })
-      .addCase(unassignRuleTemplate.rejected, (state, action) => {
-        state.loading.unassign = false;
-        state.errors.unassign = action.payload;
-      });
+    // Unassign Rule Template - NO IMPLEMENTADO EN BACKEND
+    // builder
+    //   .addCase(unassignRuleTemplate.pending, (state) => {
+    //     state.loading.unassign = true;
+    //     state.errors.unassign = null;
+    //   })
+    //   .addCase(unassignRuleTemplate.fulfilled, (state, action) => {
+    //     state.loading.unassign = false;
+    //     // Remove the assignment from assignedRules
+    //     const assignmentId = action.payload;
+    //     state.assignedRules = state.assignedRules.filter(rule => rule.id !== assignmentId);
+    //   })
+    //   .addCase(unassignRuleTemplate.rejected, (state, action) => {
+    //     state.loading.unassign = false;
+    //     state.errors.unassign = action.payload;
+    //   });
   }
 });
 

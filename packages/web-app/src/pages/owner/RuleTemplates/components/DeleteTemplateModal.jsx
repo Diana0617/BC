@@ -1,7 +1,7 @@
 import React from 'react'
 import { X, Trash2, Loader2, AlertTriangle } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import useRuleTemplates from '../../../../../../shared/src/hooks/useRuleTemplates'
+import { useRuleTemplates } from '@shared/hooks'
 
 const DeleteTemplateModal = ({ isOpen, template, onClose }) => {
   const { removeTemplate, loading } = useRuleTemplates()

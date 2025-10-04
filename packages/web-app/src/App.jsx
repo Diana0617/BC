@@ -21,12 +21,15 @@ import RuleTemplatesPage from './pages/owner/RuleTemplates/RuleTemplatesPage'
 import OwnerSubscriptionsPage from './pages/owner/suscriptions/OwnerSubscriptionsPage.jsx'
 import OwnerBusinessesPage from './pages/owner/business/OwnerBusinessesPage.jsx'
 import OwnerExpensesPage from './pages/owner/Expenses/OwnerExpensesPage.jsx'
+import OwnerReports from './pages/owner/reports/OwnerReports'
 
 // Business Pages
 import BusinessProfile from './pages/business/profile/BusinessProfile.jsx'
 
 // Public Pages
 import LandingPage from './pages/public/LandingPage'
+import OnlineBookingPage from './pages/public/OnlineBookingPage'
+import BookingSuccess from './pages/public/BookingSuccess'
 
 // Test Components (temporal)
 import ReduxPlansTest from './components/test/ReduxPlansTest'
@@ -59,6 +62,8 @@ function AppLayout() {
         <Routes>
           {/* Public routes - No authentication required */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/book/:businessCode" element={<OnlineBookingPage />} />
+          <Route path="/booking/success" element={<BookingSuccess />} />
           
          
           
@@ -86,7 +91,7 @@ function AppLayout() {
             <Route path="expenses" element={<OwnerExpensesPage />} />
             <Route path="test-redux" element={<ReduxPlansTest />} />
             {/* TODO: Agregar más rutas de Owner */}
-            <Route path="reports" element={<div>Reportes - En desarrollo</div>} />
+            <Route path="reports" element={<OwnerReports />} />
             <Route path="payments" element={<div>Pagos - En desarrollo</div>} />
             <Route path="settings" element={<div>Configuración - En desarrollo</div>} />
           </Route>
@@ -111,8 +116,8 @@ function AppLayout() {
                     isAuthenticated 
                       ? (user?.role === 'OWNER' ? "/owner/dashboard" : 
                          user?.role === 'BUSINESS' ? "/business/profile" : 
-                         "/login")
-                      : "/login"
+                         "/")
+                      : "/"
                   } />
             } 
           />
@@ -125,7 +130,7 @@ function AppLayout() {
                 ? (user?.role === 'OWNER' ? "/owner/dashboard" : 
                    user?.role === 'BUSINESS' ? "/business/profile" : 
                    "/dashboard")
-                : "/login"
+                : "/"
             } />} 
           />
           
@@ -137,7 +142,7 @@ function AppLayout() {
                 ? (user?.role === 'OWNER' ? "/owner/dashboard" : 
                    user?.role === 'BUSINESS' ? "/business/profile" : 
                    "/dashboard")
-                : "/login"
+                : "/"
             } />} 
           />
         </Routes>

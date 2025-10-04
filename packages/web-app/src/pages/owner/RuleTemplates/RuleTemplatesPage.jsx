@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { Plus, Search, Filter, BarChart3, RefreshCw, AlertCircle } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import useRuleTemplates from '../../../../../shared/src/hooks/useRuleTemplates'
+import { useRuleTemplates } from '@shared/hooks'
 import RuleTemplateCard from './components/RuleTemplateCard'
 import CreateTemplateModal from './components/CreateTemplateModal'
 import EditTemplateModal from './components/EditTemplateModal'
@@ -33,8 +33,8 @@ const RuleTemplatesPage = () => {
     
     // Actions
     loadOwnerTemplates,
-    loadStats,
-    syncRules,
+    // loadStats, // NO IMPLEMENTADO EN BACKEND
+    // syncRules, // NO IMPLEMENTADO EN BACKEND
     
     // Filters
     updateFilters,

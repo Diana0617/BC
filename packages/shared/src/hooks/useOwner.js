@@ -250,3 +250,6 @@ export const useOwner = () => {
     clearAllErrors
   };
 };
+
+// Export como default también para compatibilidad
+export default useOwner;

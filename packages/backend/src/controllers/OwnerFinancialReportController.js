@@ -208,10 +208,11 @@ class OwnerFinancialReportController {
         attributes: [
           [literal('COUNT(*)'), 'totalPayments'],
           [literal('COUNT(CASE WHEN status = \'COMPLETED\' THEN 1 END)'), 'completedPayments'],
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN amount ELSE 0 END)'), 'totalRevenue'],
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN net_amount ELSE 0 END)'), 'netRevenue'],
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN commission_fee ELSE 0 END)'), 'totalCommissions'],
-          [literal('AVG(CASE WHEN status = \'COMPLETED\' THEN amount END)'), 'avgPaymentAmount']
+          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."amount" ELSE 0 END)'), 'totalRevenue'],
+          // Use quoted model attribute names to match the actual column created by the model (camelCase)
+          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."netAmount" ELSE 0 END)'), 'netRevenue'],
+          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."commissionFee" ELSE 0 END)'), 'totalCommissions'],
+          [literal('AVG(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."amount" END)'), 'avgPaymentAmount']
         ],
         where: {
           paidAt: {
@@ -241,8 +242,9 @@ class OwnerFinancialReportController {
       const topPlans = await SubscriptionPlan.findAll({
         attributes: [
           'id', 'name', 'price',
-          [literal('COUNT(business_subscriptions.id)'), 'subscriptionCount'],
-          [literal('SUM(subscription_payments.amount)'), 'totalRevenue']
+          // Use the include alias "subscriptions" and its nested alias "subscriptions->payments"
+          [literal('COUNT("subscriptions"."id")'), 'subscriptionCount'],
+          [literal('SUM("subscriptions->payments"."amount")'), 'totalRevenue']
         ],
         include: [
           {
@@ -266,7 +268,10 @@ class OwnerFinancialReportController {
           }
         ],
         group: ['SubscriptionPlan.id'],
-        order: [[literal('totalRevenue'), 'DESC']],
+        // Order by the aliased aggregate. Use a quoted identifier so Postgres
+        // doesn't try to resolve it as an unquoted column name (which caused
+        // the "no existe la columna \"totalrevenue\"" error).
+        order: [literal('"totalRevenue" DESC')],
         limit: 5,
         subQuery: false,
         raw: true
@@ -353,10 +358,10 @@ class OwnerFinancialReportController {
           [literal('COUNT(CASE WHEN status = \'PENDING\' THEN 1 END)'), 'pendingPayments'],
           [literal('COUNT(CASE WHEN status = \'FAILED\' THEN 1 END)'), 'failedPayments'],
           [literal('COUNT(CASE WHEN status IN (\'REFUNDED\', \'PARTIALLY_REFUNDED\') THEN 1 END)'), 'refundedPayments'],
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN amount ELSE 0 END)'), 'totalRevenue'],
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN net_amount ELSE 0 END)'), 'netRevenue'],
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN commission_fee ELSE 0 END)'), 'totalCommissions'],
-          [literal('AVG(CASE WHEN status = \'COMPLETED\' THEN commission_fee / amount * 100 END)'), 'avgCommissionRate']
+          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."amount" ELSE 0 END)'), 'totalRevenue'],
+          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."netAmount" ELSE 0 END)'), 'netRevenue'],
+          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."commissionFee" ELSE 0 END)'), 'totalCommissions'],
+          [literal('AVG(CASE WHEN status = \'COMPLETED\' THEN ("SubscriptionPayment"."commissionFee" / NULLIF("SubscriptionPayment"."amount",0)) * 100 END)'), 'avgCommissionRate']
         ],
         where: {
           createdAt: {

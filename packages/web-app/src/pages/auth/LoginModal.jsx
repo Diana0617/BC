@@ -40,6 +40,8 @@ const LoginModal = ({ isOpen, onClose }) => {
       if (result.token) {
         if (result.user?.role === 'OWNER') {
           navigate('/owner/dashboard')
+        } else if (result.user?.role === 'BUSINESS_OWNER' || result.user?.role === 'BUSINESS') {
+          navigate('/business/profile')
         } else {
           navigate('/dashboard')
         }

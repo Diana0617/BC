@@ -322,3 +322,6 @@ export const useOwnerDashboard = () => {
     helpers
   };
 };
+
+// Export como default para compatibilidad
+export default useOwnerDashboard;

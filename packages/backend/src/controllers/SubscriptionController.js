@@ -1,6 +1,6 @@
 const bcryptjs = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { Business, User, SubscriptionPlan, BusinessSubscription, SubscriptionPayment, BusinessRules } = require('../models')
+const { Business, User, SubscriptionPlan, BusinessSubscription, SubscriptionPayment } = require('../models')
 const { v4: uuidv4 } = require('uuid')
 
 /**
@@ -253,7 +253,7 @@ class SubscriptionController {
         ];
 
         for (const rule of defaultRules) {
-          await BusinessRules.create(rule, { transaction });
+          // await BusinessRules.create(rule, { transaction }); // Deprecated - usar RuleTemplate + BusinessRule
         }
 
         console.log('Reglas del negocio creadas para:', business.id)

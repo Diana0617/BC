@@ -960,14 +960,14 @@ router.get('/dashboard/growth-stats', OwnerDashboardController.getGrowthStats);
  *                         plans:
  *                           type: integer
  *                           example: 4
- *             example:
- *               success: true
- *               data:
- *                 exportInfo:
- *                   format: "json"
- *                   fileName: "dashboard_export_2024-12-01.json"
- *                   size: "124.5 KB"
- *                   generatedAt: "2024-12-01T15:30:00.000Z"
+ *               example:
+ *                 success: true
+ *                 data:
+ *                   exportInfo:
+ *                     format: "json"
+ *                     fileName: "dashboard_export_2024-12-01.json"
+ *                     size: "124.5 KB"
+ *                     generatedAt: "2024-12-01T15:30:00.000Z"
  *                   period:
  *                     type: "thisMonth"
  *                     startDate: "2024-12-01T00:00:00.000Z"
