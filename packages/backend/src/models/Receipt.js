@@ -35,7 +35,7 @@ const Receipt = sequelize.define('Receipt', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'Businesses',
+      model: 'businesses',
       key: 'id'
     },
     comment: 'Negocio que emite el recibo'
@@ -45,7 +45,7 @@ const Receipt = sequelize.define('Receipt', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'Appointments',
+      model: 'appointments',
       key: 'id'
     },
     comment: 'Cita asociada al recibo'
@@ -55,7 +55,7 @@ const Receipt = sequelize.define('Receipt', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     },
     comment: 'Especialista que realizó el servicio'
@@ -65,7 +65,7 @@ const Receipt = sequelize.define('Receipt', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     },
     comment: 'Cliente que recibe el servicio'
