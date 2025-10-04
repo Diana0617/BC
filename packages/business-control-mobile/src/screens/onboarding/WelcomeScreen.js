@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import ENV from '../../config/env';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,7 +22,7 @@ function WelcomeScreen({ navigation }) {
   };
 
   const handleDontHaveApp = async () => {
-    const webUrl = 'http://localhost:3000/landing'; // URL de tu web app
+    const webUrl = ENV.webUrl; // Usa la URL del entorno configurado
     try {
       await Linking.openURL(webUrl);
     } catch (error) {
