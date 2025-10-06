@@ -18,6 +18,11 @@ const { v4: uuidv4 } = require('uuid')
  *         planId:
  *           type: integer
  *           description: ID del plan seleccionado
+ *         billingCycle:
+ *           type: string
+ *           enum: [MONTHLY, ANNUAL]
+ *           default: MONTHLY
+ *           description: Ciclo de facturación (mensual o anual)
  *         businessData:
  *           type: object
  *           properties:
@@ -126,7 +131,8 @@ class SubscriptionController {
    */
   static async createSubscription(req, res) {
     const { 
-      planId, 
+      planId,
+      billingCycle = 'MONTHLY', // MONTHLY o ANNUAL - default a MONTHLY 
       businessData, 
       userData, 
       paymentData, 
@@ -157,6 +163,41 @@ class SubscriptionController {
           error: 'Plan no encontrado'
         })
       }
+
+      // Validar billingCycle
+      if (!['MONTHLY', 'ANNUAL'].includes(billingCycle)) {
+        return res.status(400).json({
+          success: false,
+          error: 'billingCycle debe ser MONTHLY o ANNUAL'
+        })
+      }
+
+      // Calcular precio según el ciclo de facturación
+      let finalPrice;
+      let finalDuration;
+      let finalDurationType;
+
+      if (billingCycle === 'ANNUAL') {
+        // Usar precio anual si está disponible, sino calcular descuento desde precio mensual
+        finalPrice = plan.annualPrice || (plan.monthlyPrice || plan.price);
+        finalDuration = 1;
+        finalDurationType = 'YEARS';
+      } else {
+        // MONTHLY - usar monthlyPrice o price como fallback
+        finalPrice = plan.monthlyPrice || plan.price;
+        finalDuration = plan.duration;
+        finalDurationType = plan.durationType;
+      }
+
+      console.log('Precio calculado:', {
+        billingCycle,
+        finalPrice,
+        finalDuration,
+        finalDurationType,
+        planPrice: plan.price,
+        planMonthlyPrice: plan.monthlyPrice,
+        planAnnualPrice: plan.annualPrice
+      });
 
       // Verificar que el businessCode (subdominio) no existe
       if (businessData.businessCode) {
@@ -277,18 +318,41 @@ class SubscriptionController {
 
         // 4. Crear la suscripción
         const startDate = new Date()
+        
+        // Calcular endDate basado en el tipo de suscripción
+        // - trialEndDate: Solo para período de prueba gratuito (trialDays del plan)
+        // - endDate: Fecha de vencimiento de la suscripción pagada
+        
+        // Para suscripciones pagadas: usar duration calculada según billingCycle
         const endDate = new Date()
-        endDate.setMonth(endDate.getMonth() + (plan.durationType === 'MONTHS' ? plan.duration : 1))
+        if (finalDurationType === 'MONTHS') {
+          endDate.setMonth(endDate.getMonth() + finalDuration)
+        } else if (finalDurationType === 'YEARS') {
+          endDate.setFullYear(endDate.getFullYear() + finalDuration)
+        } else if (finalDurationType === 'DAYS') {
+          endDate.setDate(endDate.getDate() + finalDuration)
+        } else if (finalDurationType === 'WEEKS') {
+          endDate.setDate(endDate.getDate() + (finalDuration * 7))
+        } else {
+          // Default: 1 mes
+          endDate.setMonth(endDate.getMonth() + 1)
+        }
+
+        // trialEndDate: Solo si el plan tiene días de prueba
+        const trialEndDate = plan.trialDays > 0 
+          ? new Date(Date.now() + plan.trialDays * 24 * 60 * 60 * 1000)
+          : null
 
         const subscription = await BusinessSubscription.create({
           businessId: business.id,
           subscriptionPlanId: planId,
-          status: 'TRIAL', // Inicia en trial
+          status: 'TRIAL', // Inicia en trial hasta que se complete el pago
           startDate: startDate,
-          endDate: endDate,
-          trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
-          amount: plan.price,
+          endDate: endDate, // Fecha final cuando la suscripción esté pagada
+          trialEndDate: trialEndDate, // Fecha final del período de prueba (si aplica)
+          amount: finalPrice, // Usar precio calculado según billingCycle
           currency: plan.currency || 'COP',
+          billingCycle: billingCycle, // Guardar el ciclo elegido por el cliente
           isActive: true,
           autoRenewal: true,
           createdAt: new Date(),
@@ -297,51 +361,34 @@ class SubscriptionController {
 
         console.log('Suscripción creada:', subscription.id)
 
-        // 5. Registrar o actualizar la transacción de pago
-        let paymentTransaction = await SubscriptionPayment.findOne({
-          where: { transactionId: paymentData.transactionId }
-        });
-
-        if (paymentTransaction) {
-          // Actualizar el pago existente con la nueva suscripción
-          paymentTransaction = await paymentTransaction.update({
-            businessSubscriptionId: subscription.id,
-            status: paymentData.status || 'APPROVED',
-            paymentMethod: paymentData.method || 'WOMPI_3DS',
-            netAmount: paymentData.amount,
-            dueDate: new Date(),
-            metadata: {
-              ...paymentTransaction.metadata,
-              invitationToken: invitationToken,
-              acceptedTerms: acceptedTerms,
-              paymentData: paymentData,
-              businessCreated: true
-            },
-            updatedAt: new Date()
-          }, { transaction });
-          
-          console.log('Transacción actualizada:', paymentTransaction.id);
-        } else {
-          // Crear nueva transacción si no existe
-          paymentTransaction = await SubscriptionPayment.create({
+        // 5. Guardar el token de pago para cobrar después (NO cobrar ahora)
+        // Durante el trial (7 días), el usuario usa el servicio gratis
+        // Al vencer el trial, el cron job cobrará automáticamente usando este token
+        
+        if (paymentData && paymentData.paymentSourceToken) {
+          // Crear registro de pago pendiente con el token guardado
+          const pendingPayment = await SubscriptionPayment.create({
             businessSubscriptionId: subscription.id,
             transactionId: paymentData.transactionId || uuidv4(),
-            amount: paymentData.amount,
-            currency: paymentData.currency || 'COP',
-            paymentMethod: paymentData.method || 'WOMPI_3DS',
-            netAmount: paymentData.amount,
-            dueDate: new Date(),
-            status: paymentData.status || 'APPROVED',
+            amount: finalPrice, // Usar precio calculado según billingCycle
+            currency: plan.currency || 'COP',
+            paymentMethod: 'WOMPI_3DS',
+            status: 'PENDING', // Pendiente hasta que termine el trial
+            dueDate: trialEndDate, // Se cobrará cuando venza el trial
             metadata: {
+              paymentSourceToken: paymentData.paymentSourceToken,
               invitationToken: invitationToken,
               acceptedTerms: acceptedTerms,
-              paymentData: paymentData
+              wompiData: paymentData,
+              autoRenewal: true,
+              billingCycle: billingCycle, // Guardar para referencia
+              description: `Token guardado para cobro al finalizar trial de ${plan.trialDays} días - Ciclo: ${billingCycle}`
             },
             createdAt: new Date(),
             updatedAt: new Date()
           }, { transaction });
-          
-          console.log('Transacción creada:', paymentTransaction.id);
+
+          console.log('Token de pago guardado para cobro futuro:', pendingPayment.id);
         }
 
         // Confirmar todas las operaciones

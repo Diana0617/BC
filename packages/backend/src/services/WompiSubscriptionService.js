@@ -58,13 +58,28 @@ class WompiSubscriptionService {
         payment_source_id: null // Se genera en el frontend
       };
 
+      // Calcular endDate basado en el plan (duración de la suscripción pagada)
+      const endDate = new Date()
+      if (plan.durationType === 'MONTHS') {
+        endDate.setMonth(endDate.getMonth() + plan.duration)
+      } else if (plan.durationType === 'YEARS') {
+        endDate.setFullYear(endDate.getFullYear() + plan.duration)
+      } else if (plan.durationType === 'DAYS') {
+        endDate.setDate(endDate.getDate() + plan.duration)
+      } else if (plan.durationType === 'WEEKS') {
+        endDate.setDate(endDate.getDate() + (plan.duration * 7))
+      } else {
+        // Default: 1 mes
+        endDate.setMonth(endDate.getMonth() + 1)
+      }
+
       // Crear BusinessSubscription primero
       const businessSubscription = await BusinessSubscription.create({
         businessId: businessId,
         planId: planId,
         status: 'PENDING',
         startDate: new Date(),
-        endDate: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)), // 30 días
+        endDate: endDate, // Usa duración del plan
         isAutoRenewal: false
       });
 

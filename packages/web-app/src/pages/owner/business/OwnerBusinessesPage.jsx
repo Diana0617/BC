@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useOwnerBusinesses } from '@shared/hooks/useOwnerBusinesses';
+import CreateManualSubscriptionModal from '../../../components/owner/CreateManualSubscriptionModal';
+import SubscriptionStatusBadge from '../../../components/subscription/SubscriptionStatusBadge';
 import {
   BuildingOfficeIcon,
   MagnifyingGlassIcon,
@@ -36,6 +38,7 @@ const OwnerBusinessesPage = () => {
   // Modal state for details preview
  
  const [selectedBusiness, setSelectedBusiness] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState('createdAt');
@@ -98,8 +101,21 @@ const OwnerBusinessesPage = () => {
   };
 
   const handleCreateBusiness = () => {
-    helpers.startBusinessCreation();
+    setShowCreateModal(true);
   };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
+  };
+
+  const handleSubscriptionCreated = () => {
+    setShowCreateModal(false);
+    // Recargar la lista de negocios
+    if (actions?.fetchBusinesses) {
+      actions.fetchBusinesses();
+    }
+  };
+
   // Función para obtener el ícono de estado
   const getStatusIcon = (status) => {
     switch (status) {
@@ -158,7 +174,7 @@ const OwnerBusinessesPage = () => {
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <PlusIcon className="w-4 h-4" />
-            Enviar Invitación
+            Crear Suscripción Manual
           </button>
         </div>
       </div>
@@ -387,16 +403,41 @@ const OwnerBusinessesPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {business.subscriptions?.[0] ? (
-                        <div className="text-sm">
-                          <div className="font-medium text-gray-900">
+                        <div className="space-y-2">
+                          {/* Plan name */}
+                          <div className="text-sm font-medium text-gray-900">
                             {business.subscriptions[0].plan?.name || 'Plan'}
                           </div>
-                          <div className="text-gray-500">
-                            Vence: {business.subscriptions[0].endDate ? new Date(business.subscriptions[0].endDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                          
+                          {/* Status badge with trial/payment distinction */}
+                          <SubscriptionStatusBadge 
+                            subscription={business.subscriptions[0]} 
+                            compact={false}
+                            showDetails={false}
+                          />
+                          
+                          {/* Dates */}
+                          <div className="text-xs text-gray-500 space-y-0.5">
+                            {business.subscriptions[0].status === 'TRIAL' ? (
+                              <>
+                                <div>Trial termina: {business.subscriptions[0].trialEndDate ? new Date(business.subscriptions[0].trialEndDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</div>
+                                <div className="text-blue-600 font-medium">
+                                  Primer cobro: {business.subscriptions[0].trialEndDate ? new Date(business.subscriptions[0].trialEndDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div>Inicio: {business.subscriptions[0].startDate ? new Date(business.subscriptions[0].startDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</div>
+                                <div>Vence: {business.subscriptions[0].endDate ? new Date(business.subscriptions[0].endDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</div>
+                              </>
+                            )}
                           </div>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500">Sin suscripción</span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          <XCircleIcon className="w-4 h-4" />
+                          Sin suscripción
+                        </span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -526,6 +567,7 @@ const OwnerBusinessesPage = () => {
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="px-4 py-2 text-center font-semibold text-gray-700">Plan</th>
+                      <th className="px-4 py-2 text-center font-semibold text-gray-700">Ciclo</th>
                       <th className="px-4 py-2 text-center font-semibold text-gray-700">Estado</th>
                       <th className="px-4 py-2 text-center font-semibold text-gray-700">Inicio</th>
                       <th className="px-4 py-2 text-center font-semibold text-gray-700">Fin</th>
@@ -535,6 +577,15 @@ const OwnerBusinessesPage = () => {
                     {selectedBusiness.subscriptions.map((sub, idx) => (
                       <tr key={sub.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                         <td className="px-4 py-2 text-gray-900 text-center">{sub.plan?.name || <span className="text-gray-400">N/A</span>}</td>
+                        <td className="px-4 py-2 text-center">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            sub.billingCycle === 'ANNUAL' 
+                              ? 'bg-purple-100 text-purple-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {sub.billingCycle === 'ANNUAL' ? '📅 Anual' : '📆 Mensual'}
+                          </span>
+                        </td>
                         <td className="px-4 py-2">
                           {sub.status ? (
                             <span className="inline-flex items-center text-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{sub.status}</span>
@@ -707,6 +758,13 @@ const OwnerBusinessesPage = () => {
             </div>
           </div>
         ) : null}
+
+      {/* Modal para crear suscripción manual */}
+      <CreateManualSubscriptionModal
+        isOpen={showCreateModal}
+        onClose={handleCloseModal}
+        onSuccess={handleSubscriptionCreated}
+      />
     </>
   );
 };

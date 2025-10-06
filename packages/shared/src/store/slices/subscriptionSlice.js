@@ -12,6 +12,9 @@ export const createSubscription = createAsyncThunk(
         // Plan de suscripción
         planId: subscriptionData.planId,
         
+        // Ciclo de facturación (MONTHLY o ANNUAL)
+        billingCycle: subscriptionData.billingCycle || 'MONTHLY',
+        
         // Datos del business  
         businessData: {
           name: subscriptionData.businessData.name,

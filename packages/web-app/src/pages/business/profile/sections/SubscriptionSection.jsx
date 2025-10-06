@@ -5,6 +5,7 @@ import { businessProfileApi } from '@shared'
 import { fetchPublicPlans } from '@shared/store/slices/plansSlice'
 import { fetchCurrentBusiness } from '@shared/store/slices/businessSlice'
 import { setCurrentBusiness } from '@shared/store/slices/businessSlice'
+import SubscriptionStatusBadge from '../../../../components/subscription/SubscriptionStatusBadge'
 import { 
   CreditCardIcon, 
   CheckCircleIcon, 
@@ -76,32 +77,6 @@ const SubscriptionSection = ({ isSetupMode }) => {
     return mod.displayName || mod.name || mod.title || ''
   }
 
-
-  // Obtener el plan actual de forma robusta
-  const getCurrentPlan = () => {
-    if (business.plan) return business.plan;
-    if (business.plans && currentSubscription?.planId) {
-      return business.plans.find(p => p.id === currentSubscription.planId);
-    }
-    if (business.plans && business.plans.length > 0) {
-      return business.plans[0];
-    }
-    return null;
-  }
-
-  // Obtener información específica del trial
-  const getTrialInfo = () => {
-    if (business.status === 'TRIAL') {
-      const trialEndDate = business.trialEndDate || business.trialExpiresAt;
-      return {
-        isActive: true,
-        endDate: trialEndDate,
-        daysRemaining: calculateDaysRemaining(trialEndDate)
-      }
-    }
-    return { isActive: false }
-  }
-
   // Funciones auxiliares para fechas y pagos
   const calculateDaysRemaining = (expirationDate) => {
     if (!expirationDate) return 0
@@ -113,11 +88,11 @@ const SubscriptionSection = ({ isSetupMode }) => {
   }
 
   const getNextPaymentInfo = () => {
-    if (business.status === 'TRIAL') {
-      const trialEndDate = business.trialEndDate || business.trialExpiresAt;
+    if (currentSubscription?.status === 'TRIAL') {
+      const trialEndDate = currentSubscription.trialEndDate;
       // Usar el precio y moneda de la suscripción actual
-      const price = currentSubscription?.amount || '0';
-      const currency = currentSubscription?.currency || 'COP';
+      const price = currentSubscription?.amount || currentPlan?.price || '0';
+      const currency = currentSubscription?.currency || currentPlan?.currency || 'COP';
       return {
         isTrialMode: true,
         daysRemaining: calculateDaysRemaining(trialEndDate),
@@ -130,75 +105,11 @@ const SubscriptionSection = ({ isSetupMode }) => {
     
     return {
       isTrialMode: false,
-      daysRemaining: calculateDaysRemaining(currentSubscription?.expiresAt),
-      expirationDate: currentSubscription?.expiresAt,
-      nextPaymentDate: currentSubscription?.nextPaymentDate || currentSubscription?.expiresAt,
+      daysRemaining: calculateDaysRemaining(currentSubscription?.endDate),
+      expirationDate: currentSubscription?.endDate,
+      nextPaymentDate: currentSubscription?.nextPaymentDate || currentSubscription?.endDate,
       amount: currentSubscription?.amount || currentPlan?.price || 0
     }
-  }
-
-  // Determinar el estado efectivo considerando trial
-  const getEffectiveStatus = () => {
-    // Si el negocio está en trial, mostrar como activo
-    if (business?.status === 'TRIAL') {
-      const trialEndDate = business.trialEndDate || business.trialExpiresAt
-      if (trialEndDate) {
-        const trialEnd = new Date(trialEndDate)
-        const now = new Date()
-        return trialEnd > now ? 'TRIAL_ACTIVE' : 'TRIAL_EXPIRED'
-      }
-    }
-    
-    // Si no, usar el estado de la suscripción
-    return currentSubscription?.status || 'PENDING'
-  }
-
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      'ACTIVE': {
-        color: 'text-green-700 bg-green-100',
-        icon: CheckCircleIcon,
-        label: 'Activa'
-      },
-      'TRIAL_ACTIVE': {
-        color: 'text-blue-700 bg-blue-100',
-        icon: CheckCircleIcon,
-        label: () => {
-  const trialInfo = getTrialInfo()
-  return `Trial Activo (${trialInfo.daysRemaining} días restantes)`
-}
-      },
-      'TRIAL_EXPIRED': {
-        color: 'text-red-700 bg-red-100',
-        icon: ExclamationTriangleIcon,
-        label: 'Trial Vencido'
-      },
-      'EXPIRED': {
-        color: 'text-red-700 bg-red-100',
-        icon: ExclamationTriangleIcon,
-        label: 'Vencida'
-      },
-      'SUSPENDED': {
-        color: 'text-yellow-700 bg-yellow-100',
-        icon: ExclamationTriangleIcon,
-        label: 'Suspendida'
-      },
-      'PENDING': {
-        color: 'text-blue-700 bg-blue-100',
-        icon: ClockIcon,
-        label: 'Pendiente'
-      }
-    }
-
-    const config = statusConfig[status] || statusConfig['PENDING']
-    const Icon = config.icon
-
-    return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
-        <Icon className="w-4 h-4 mr-1" />
-        {typeof config.label === 'function' ? config.label() : config.label}
-      </span>
-    )
   }
 
   const formatPrice = (price, currency = 'COP') => {
@@ -250,12 +161,16 @@ const SubscriptionSection = ({ isSetupMode }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header with Status Badge */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <h2 className="text-2xl font-bold text-gray-900">
           Estado de Suscripción
         </h2>
-        {getStatusBadge(getEffectiveStatus())}
+        <SubscriptionStatusBadge 
+          subscription={currentSubscription}
+          compact={false}
+          showDetails={true}
+        />
       </div>
 
       {/* Plan actual */}
@@ -270,16 +185,34 @@ const SubscriptionSection = ({ isSetupMode }) => {
           <CreditCardIcon className="h-8 w-8 text-blue-600" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center">
             <CalendarDaysIcon className="h-5 w-5 text-gray-400 mr-2" />
             <div>
-              <p className="text-sm text-gray-600">Fecha de vencimiento</p>
+              <p className="text-sm text-gray-600">
+                {currentSubscription?.status === 'TRIAL' ? 'Trial finaliza' : 'Fecha de vencimiento'}
+              </p>
               <p className="font-medium text-gray-900">
-                {business.status === 'TRIAL' 
-                  ? formatDate(business.trialEndDate || business.trialExpiresAt) 
-                  : formatDate(currentSubscription.expiresAt)
+                {currentSubscription?.status === 'TRIAL' 
+                  ? formatDate(currentSubscription.trialEndDate) 
+                  : formatDate(currentSubscription?.endDate)
                 }
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center">
+            <CreditCardIcon className="h-5 w-5 text-gray-400 mr-2" />
+            <div>
+              <p className="text-sm text-gray-600">Ciclo de facturación</p>
+              <p className="font-medium text-gray-900">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                  currentSubscription?.billingCycle === 'ANNUAL' 
+                    ? 'bg-purple-100 text-purple-800' 
+                    : 'bg-blue-100 text-blue-800'
+                }`}>
+                  {currentSubscription?.billingCycle === 'ANNUAL' ? '📅 Anual' : '📆 Mensual'}
+                </span>
               </p>
             </div>
           </div>
@@ -289,10 +222,10 @@ const SubscriptionSection = ({ isSetupMode }) => {
             <div>
               <p className="text-sm text-gray-600">Estado del pago</p>
               <p className="font-medium text-gray-900">
-                {getEffectiveStatus() === 'TRIAL_ACTIVE' || currentSubscription.status === 'ACTIVE' 
-                  ? 'Al día' 
-                  : 'Requiere atención'
-                }
+                {currentSubscription?.status === 'TRIAL' && 'Período de prueba - Sin cargo'}
+                {currentSubscription?.status === 'ACTIVE' && 'Al día'}
+                {currentSubscription?.status === 'PENDING' && 'Procesando pago'}
+                {(currentSubscription?.status === 'OVERDUE' || currentSubscription?.status === 'SUSPENDED') && 'Requiere atención'}
               </p>
             </div>
           </div>
@@ -302,19 +235,20 @@ const SubscriptionSection = ({ isSetupMode }) => {
       {/* Información de próximo pago / Trial */}
       {(() => {
         const paymentInfo = getNextPaymentInfo()
+        const isTrial = currentSubscription?.status === 'TRIAL'
         
         return (
           <div className={`rounded-lg p-6 ${
-            paymentInfo.isTrialMode 
+            isTrial 
               ? 'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200' 
               : 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200'
           }`}>
-            {/* Solo para trial mode - sección simplificada */}
-            {paymentInfo.isTrialMode ? (
+            {/* Sección para trial */}
+            {isTrial ? (
               <div>
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between flex-wrap gap-4">
                   <div className="flex items-start">
-                    <InformationCircleIcon className="h-5 w-5 text-amber-600 mr-2 mt-0.5" />
+                    <InformationCircleIcon className="h-5 w-5 text-amber-600 mr-2 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-amber-800 font-medium text-lg">
                         {paymentInfo.daysRemaining <= 3 
@@ -325,9 +259,12 @@ const SubscriptionSection = ({ isSetupMode }) => {
                       <p className="text-amber-700 mt-1">
                         Precio después del trial: <span className="font-semibold">{formatPrice(paymentInfo.amount, paymentInfo.currency)}</span>
                       </p>
+                      <p className="text-xs text-amber-600 mt-2">
+                        Se cobrará automáticamente el {formatDate(currentSubscription.trialEndDate)}
+                      </p>
                     </div>
                   </div>
-                  <button className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg transition-colors">
+                  <button className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg transition-colors text-sm">
                     Cancelar Trial
                   </button>
                 </div>
@@ -412,22 +349,18 @@ const SubscriptionSection = ({ isSetupMode }) => {
           <h3 className="text-lg font-semibold text-gray-900">
             Módulos Incluidos
           </h3>
-          {(() => {
-            const trialInfo = getTrialInfo()
-            return trialInfo.isActive && (
-              <div className="flex items-center text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
-                <ClockIcon className="h-4 w-4 mr-1" />
-                Trial: {trialInfo.daysRemaining} días restantes
-              </div>
-            )
-          })()}
+          {currentSubscription?.status === 'TRIAL' && (
+            <div className="flex items-center text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+              <ClockIcon className="h-4 w-4 mr-1" />
+              Trial: {calculateDaysRemaining(currentSubscription.trialEndDate)} días restantes
+            </div>
+          )}
         </div>
         
         {currentSubscription?.plan?.modules && currentSubscription.plan.modules.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {currentSubscription.plan.modules.map((module, index) => {
               const IconComponent = getModuleIcon(module.icon, module.category)
-              const trialInfo = getTrialInfo()
               return (
                 <div 
                   key={index}
@@ -493,12 +426,12 @@ const SubscriptionSection = ({ isSetupMode }) => {
                     )}
 
                     {/* Estado del trial para este módulo */}
-                    {trialInfo.isActive && (
+                    {currentSubscription?.status === 'TRIAL' && (
                       <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <div className="flex items-center text-sm">
                           <ClockIcon className="h-4 w-4 text-amber-600 mr-2" />
                           <span className="text-amber-800">
-                            <strong>Acceso de prueba:</strong> Disponible hasta el {formatDate(trialInfo.endDate)}
+                            <strong>Acceso de prueba:</strong> Disponible hasta el {formatDate(currentSubscription.trialEndDate)}
                           </span>
                         </div>
                       </div>
@@ -727,9 +660,7 @@ const SubscriptionSection = ({ isSetupMode }) => {
                     alert(result.message || 'Plan cambiado correctamente');
                     if (result.data && result.data.debug) {
                       console.log('change-plan debug:', result.data.debug);
-                      if (process.env.NODE_ENV === 'development') {
-                        alert('Debug: ' + JSON.stringify(result.data.debug));
-                      }
+                      // Debug info removed for production
                     }
                     if (result.data && result.data.currentBusiness) {
                       try {

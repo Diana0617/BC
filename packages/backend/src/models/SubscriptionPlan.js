@@ -23,7 +23,40 @@ const SubscriptionPlan = sequelize.define('SubscriptionPlan', {
     allowNull: false,
     validate: {
       min: 0
-    }
+    },
+    comment: 'Precio base/mensual del plan'
+  },
+  monthlyPrice: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    validate: {
+      min: 0
+    },
+    comment: 'Precio mensual (si se paga mes a mes)'
+  },
+  annualPrice: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    validate: {
+      min: 0
+    },
+    comment: 'Precio anual (si se paga el año completo - con descuento)'
+  },
+  billingCycle: {
+    type: DataTypes.ENUM('MONTHLY', 'ANNUAL'),
+    allowNull: false,
+    defaultValue: 'MONTHLY',
+    comment: 'Ciclo de facturación por defecto'
+  },
+  annualDiscountPercent: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    validate: {
+      min: 0,
+      max: 100
+    },
+    comment: 'Porcentaje de descuento al pagar anual (ej: 20 = 20% off)'
   },
   currency: {
     type: DataTypes.STRING,

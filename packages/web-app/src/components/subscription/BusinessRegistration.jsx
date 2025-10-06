@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { EyeIcon, EyeSlashIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 
-const BusinessRegistration = ({ selectedPlan, invitationToken, onComplete, onBack }) => {
+const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitationToken, onComplete, onBack }) => {
   const [formData, setFormData] = useState({
     // Business information
     businessName: '',
@@ -693,11 +693,32 @@ const BusinessRegistration = ({ selectedPlan, invitationToken, onComplete, onBac
               </div>
               
               <div className="flex justify-between">
-                <span className="text-gray-600">Precio mensual:</span>
+                <span className="text-gray-600">Ciclo de facturación:</span>
                 <span className="font-medium">
-                  {formatPrice(selectedPlan?.price, selectedPlan?.currency)}
+                  {billingCycle === 'MONTHLY' ? 'Mensual' : 'Anual'}
                 </span>
               </div>
+              
+              <div className="flex justify-between">
+                <span className="text-gray-600">
+                  {billingCycle === 'MONTHLY' ? 'Precio mensual:' : 'Precio anual:'}
+                </span>
+                <span className="font-medium">
+                  {formatPrice(
+                    billingCycle === 'MONTHLY' 
+                      ? (selectedPlan?.monthlyPrice || selectedPlan?.price)
+                      : (selectedPlan?.annualPrice || selectedPlan?.monthlyPrice * 12 || selectedPlan?.price * 12),
+                    selectedPlan?.currency
+                  )}
+                </span>
+              </div>
+              
+              {billingCycle === 'ANNUAL' && selectedPlan?.annualDiscountPercent > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Ahorro anual:</span>
+                  <span className="font-medium">{selectedPlan.annualDiscountPercent}%</span>
+                </div>
+              )}
               
               <div className="flex justify-between text-green-600">
                 <span>Prueba gratuita:</span>

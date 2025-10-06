@@ -5,11 +5,13 @@ import { useSearchParams } from 'react-router-dom'
 import { useSelector, useDispatch} from 'react-redux'
 import { fetchPublicPlans } from '@shared/store/slices/plansSlice'
 import { createSubscription } from '@shared/store/slices/subscriptionSlice'
-import { selectIsOwner, selectCanCreateCashSubscriptions, selectAuthToken } from '@shared/store/selectors/authSelectors'
+import { createBusinessManually } from '@shared/store/slices/ownerBusinessSlice'
+import { selectIsOwner, selectCanCreateCashSubscriptions } from '@shared/store/selectors/authSelectors'
 import PlanSelection from '../../components/subscription/PlanSelection'
 import BusinessRegistration from '../../components/subscription/BusinessRegistration'
 import PaymentFlow from '../../components/subscription/PaymentFlowWompi'
 import LoginModal from '../auth/LoginModal';
+import BillingCycleSelector from '../../components/subscription/BillingCycleSelector';
 
 const SubscriptionPage = () => {
   // Estado de autenticación y navegación
@@ -19,6 +21,7 @@ const SubscriptionPage = () => {
   const [searchParams] = useSearchParams()
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedPlan, setSelectedPlan] = useState(null)
+  const [billingCycle, setBillingCycle] = useState('MONTHLY')
   const [registrationData, setRegistrationData] = useState(null)
   const [invitationToken, setInvitationToken] = useState(null)
 
@@ -29,7 +32,6 @@ const SubscriptionPage = () => {
   // Owner permissions
   const isOwner = useSelector(selectIsOwner)
   const canCreateCashSubscriptions = useSelector(selectCanCreateCashSubscriptions)
-  const authToken = useSelector(selectAuthToken)
 
   const { isAuthenticated, user } = useSelector(state => state.auth);
  
@@ -71,7 +73,8 @@ const SubscriptionPage = () => {
 
   const handlePlanSelection = (plan) => {
     setSelectedPlan(plan)
-    setCurrentStep(2)
+    // No avanzar automáticamente - el usuario debe elegir el ciclo primero
+    // setCurrentStep(2)
   }
 
   const handleRegistrationComplete = (data) => {
@@ -103,54 +106,42 @@ const SubscriptionPage = () => {
 
     console.log('⚠️ businessCreated no es true, continuando con creación tradicional...')
 
-    // Si es pago efectivo (Owner), usar endpoint específico
+    // Si es pago efectivo (Owner), usar action de Redux para crear negocio
     if (paymentData.method === 'CASH' && isOwner && canCreateCashSubscriptions) {
       try {
         console.log('Procesando pago efectivo para Owner...')
         
-        // Primero crear el negocio (si no existe)
-        const businessResponse = await fetch('http://localhost:3001/api/owner/businesses', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({
-            businessName: registrationData.businessName,
-            businessEmail: registrationData.businessEmail,
-            businessPhone: registrationData.businessPhone,
-            address: registrationData.address,
-            city: registrationData.city,
-            country: registrationData.country,
-            ownerEmail: registrationData.email,
-            ownerFirstName: registrationData.firstName,
-            ownerLastName: registrationData.lastName,
-            ownerPhone: registrationData.phone,
-            ownerPassword: registrationData.password,
-            subscriptionPlanId: selectedPlan.id
-          })
-        });
-        
-        // Verificar si la respuesta es válida antes de parsear JSON
-        if (!businessResponse.ok) {
-          const errorText = await businessResponse.text();
-          throw new Error(`Error HTTP ${businessResponse.status}: ${errorText}`);
+        // Crear negocio usando Redux action
+        const businessData = {
+          businessName: registrationData.businessName,
+          businessEmail: registrationData.businessEmail,
+          businessPhone: registrationData.businessPhone,
+          address: registrationData.address,
+          city: registrationData.city,
+          country: registrationData.country,
+          ownerEmail: registrationData.email,
+          ownerFirstName: registrationData.firstName,
+          ownerLastName: registrationData.lastName,
+          ownerPhone: registrationData.phone,
+          ownerPassword: registrationData.password,
+          subscriptionPlanId: selectedPlan.id
         }
         
-        const businessResult = await businessResponse.json();
-        if (!businessResult.success) {
-          throw new Error(businessResult.message || 'Error creando negocio');
+        const result = await dispatch(createBusinessManually(businessData))
+        
+        if (createBusinessManually.fulfilled.match(result)) {
+          console.log('✅ Negocio y suscripción creados exitosamente:', result.payload)
+          alert('¡Suscripción con pago efectivo creada exitosamente!')
+          // TODO: Redirigir al dashboard o página de éxito
+          return
+        } else if (createBusinessManually.rejected.match(result)) {
+          throw new Error(result.payload || result.error.message || 'Error creando negocio')
         }
         
-        console.log('✅ Negocio y suscripción creados exitosamente:', businessResult.data);
-        alert('¡Suscripción con pago efectivo creada exitosamente!');
-        // TODO: Redirigir al dashboard o página de éxito
-        
-        return;
       } catch (error) {
-        console.error('❌ Error con pago efectivo:', error);
-        alert('Error al crear suscripción efectivo: ' + error.message);
-        return;
+        console.error('❌ Error con pago efectivo:', error)
+        alert('Error al crear suscripción efectivo: ' + error.message)
+        return
       }
     }
 
@@ -158,6 +149,9 @@ const SubscriptionPage = () => {
     const subscriptionData = {
       // Plan seleccionado
       planId: selectedPlan.id,
+      
+      // Ciclo de facturación elegido por el usuario
+      billingCycle: billingCycle,
       
       // Datos del negocio (incluyendo businessCode que es el subdominio)
       businessData: {
@@ -354,17 +348,39 @@ const SubscriptionPage = () => {
 
         {/* Main content steps remain unchanged */}
         {currentStep === 1 && (
-          <PlanSelection
-            plans={plans}
-            loading={loading}
-            onPlanSelect={handlePlanSelection}
-            invitationToken={invitationToken}
-          />
+          <>
+            <PlanSelection
+              plans={plans}
+              loading={loading}
+              onPlanSelect={handlePlanSelection}
+              invitationToken={invitationToken}
+            />
+            
+            {/* Billing Cycle Selector */}
+            {selectedPlan && (
+              <div className="mt-8 max-w-2xl mx-auto">
+                <BillingCycleSelector
+                  plan={selectedPlan}
+                  selectedCycle={billingCycle}
+                  onCycleChange={setBillingCycle}
+                />
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={() => setCurrentStep(2)}
+                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-3 rounded-lg font-semibold shadow-lg transition-all"
+                  >
+                    Continuar con {billingCycle === 'MONTHLY' ? 'Plan Mensual' : 'Plan Anual'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {currentStep === 2 && (
           <BusinessRegistration
             selectedPlan={selectedPlan}
+            billingCycle={billingCycle}
             invitationToken={invitationToken}
             onComplete={handleRegistrationComplete}
             onBack={handleBackStep}

@@ -185,6 +185,7 @@ class OwnerController {
         businessName,
         businessEmail,
         businessPhone,
+        businessCode,
         address,
         city,
         country,
@@ -193,14 +194,17 @@ class OwnerController {
         ownerLastName,
         ownerPhone,
         ownerPassword,
-        subscriptionPlanId
+        subscriptionPlanId,
+        billingCycle = 'MONTHLY' // MONTHLY o ANNUAL - default MONTHLY
       } = req.body;
 
       console.log('📋 Datos recibidos para crear negocio:', {
         businessName,
+        businessCode,
         ownerEmail,
         ownerPassword: ownerPassword ? '***PROVIDED***' : 'NOT_PROVIDED',
-        subscriptionPlanId
+        subscriptionPlanId,
+        billingCycle
       });
 
       // Verificar si el plan existe
@@ -212,12 +216,69 @@ class OwnerController {
         });
       }
 
+      // Validar billingCycle
+      if (!['MONTHLY', 'ANNUAL'].includes(billingCycle)) {
+        return res.status(400).json({
+          success: false,
+          message: 'billingCycle debe ser MONTHLY o ANNUAL'
+        });
+      }
+
+      // Calcular precio según el ciclo de facturación
+      let finalPrice;
+      let finalDuration;
+      let finalDurationType;
+
+      if (billingCycle === 'ANNUAL') {
+        finalPrice = plan.annualPrice || (plan.monthlyPrice || plan.price);
+        finalDuration = 1;
+        finalDurationType = 'YEARS';
+      } else {
+        // MONTHLY
+        finalPrice = plan.monthlyPrice || plan.price;
+        finalDuration = plan.duration;
+        finalDurationType = plan.durationType;
+      }
+
       console.log('📋 Plan encontrado:', {
         id: plan.id,
         name: plan.name,
         price: plan.price,
-        currency: plan.currency
+        billingCycle,
+        finalPrice,
+        finalDuration,
+        finalDurationType
       });
+
+      // Validar y preparar el subdomain (businessCode)
+      if (!businessCode) {
+        return res.status(400).json({
+          success: false,
+          message: 'El código del negocio (subdomain) es requerido'
+        });
+      }
+
+      // Normalizar el businessCode: solo letras minúsculas y números
+      const normalizedSubdomain = businessCode.toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      if (normalizedSubdomain !== businessCode) {
+        return res.status(400).json({
+          success: false,
+          message: 'El código del negocio solo puede contener letras minúsculas y números, sin espacios ni caracteres especiales'
+        });
+      }
+
+      // Verificar que el subdomain no exista
+      const existingSubdomain = await Business.findOne({
+        where: { subdomain: normalizedSubdomain }
+      });
+
+      if (existingSubdomain) {
+        return res.status(409).json({
+          success: false,
+          message: `El código '${normalizedSubdomain}' ya está en uso. Por favor elige otro.`
+        });
+      }
 
       // Verificar si ya existe un usuario con ese email
       let owner = await User.findOne({ 
@@ -282,6 +343,8 @@ class OwnerController {
         address,
         city,
         country: country || 'Colombia',
+        businessCode: normalizedSubdomain,
+        subdomain: normalizedSubdomain,
         ownerId: owner.id,
         status: 'ACTIVE'
       });
@@ -295,34 +358,69 @@ class OwnerController {
       console.log('📝 Creando suscripción con datos:', {
         businessId: business.id,
         subscriptionPlanId: subscriptionPlanId,
-        amount: plan.price,
-        currency: plan.currency
+        amount: finalPrice,
+        currency: plan.currency,
+        paymentMethod: 'CASH',
+        trialDays: plan.trialDays,
+        billingCycle
       });
+
+      // Calcular trialEndDate si el plan tiene días de prueba
+      const trialEndDate = plan.trialDays > 0 
+        ? new Date(Date.now() + plan.trialDays * 24 * 60 * 60 * 1000)
+        : null;
+
+      // Calcular endDate según la duración calculada (finalDuration/finalDurationType)
+      const endDate = new Date();
+      switch (finalDurationType) {
+        case 'MONTHS':
+          endDate.setMonth(endDate.getMonth() + finalDuration);
+          break;
+        case 'YEARS':
+          endDate.setFullYear(endDate.getFullYear() + finalDuration);
+          break;
+        case 'WEEKS':
+          endDate.setDate(endDate.getDate() + (finalDuration * 7));
+          break;
+        case 'DAYS':
+          endDate.setDate(endDate.getDate() + finalDuration);
+          break;
+        default:
+          // Fallback: 30 días
+          endDate.setDate(endDate.getDate() + 30);
+      }
+      
+      // Si tiene trial, crear como TRIAL, sino como ACTIVE (pago efectivo ya confirmado)
+      const subscriptionStatus = plan.trialDays > 0 ? 'TRIAL' : 'ACTIVE';
       
       const subscription = await BusinessSubscription.create({
         businessId: business.id,
         subscriptionPlanId: subscriptionPlanId,
-        amount: plan.price,
+        amount: finalPrice,
         currency: plan.currency,
-        status: 'ACTIVE',
+        status: subscriptionStatus,
         startDate: new Date(),
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 días
+        endDate: endDate,
+        trialEndDate: trialEndDate,
+        paymentMethod: 'CASH',
+        billingCycle: billingCycle
       });
-      console.log('📝 Suscripción creada:', subscription.id);
+      
+      console.log(`📝 Suscripción creada: ${subscription.id} - Status: ${subscriptionStatus}, Ciclo: ${billingCycle}, Trial hasta: ${trialEndDate ? trialEndDate.toISOString() : 'N/A'}, Duración: ${finalDuration} ${finalDurationType}`);
 
       // Crear el registro de pago para el pago efectivo
       console.log('💰 Creando registro de pago...');
       const payment = await SubscriptionPayment.create({
         businessSubscriptionId: subscription.id,
-        amount: plan.price,
+        amount: finalPrice,
         currency: plan.currency,
         status: 'COMPLETED',
         paymentMethod: 'CASH',
         paidAt: new Date(),
         dueDate: new Date(),
-        netAmount: plan.price,
+        netAmount: finalPrice,
         commissionFee: 0,
-        description: `Pago efectivo para suscripción al plan ${plan.name}`,
+        description: `Pago efectivo para suscripción al plan ${plan.name} - Ciclo: ${billingCycle}`,
         notes: 'Pago creado manualmente por Owner desde panel administrativo',
         paymentAttempts: 1,
         lastAttemptAt: new Date(),

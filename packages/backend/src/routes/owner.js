@@ -3513,6 +3513,7 @@ router.get('/businesses', OwnerController.getAllBusinesses);
  *               - businessName
  *               - businessEmail
  *               - businessPhone
+ *               - businessCode
  *               - address
  *               - city
  *               - country
@@ -3539,6 +3540,12 @@ router.get('/businesses', OwnerController.getAllBusinesses);
  *                     type: string
  *                     example: "+57 601 234 5678"
  *                     description: Teléfono principal del negocio
+ *                   businessCode:
+ *                     type: string
+ *                     pattern: '^[a-z0-9]+$'
+ *                     maxLength: 50
+ *                     example: "elegancebeauty"
+ *                     description: Código único del negocio (subdomain) - solo letras minúsculas y números
  *                   address:
  *                     type: string
  *                     maxLength: 200
@@ -3607,6 +3614,7 @@ router.get('/businesses', OwnerController.getAllBusinesses);
  *               businessName: "Elegance Beauty Center"
  *               businessEmail: "info@elegancebeauty.com"
  *               businessPhone: "+57 601 234 5678"
+ *               businessCode: "elegancebeauty"
  *               address: "Calle 85 #15-32, Zona Rosa"
  *               city: "Bogotá"
  *               country: "Colombia"

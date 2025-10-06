@@ -4,7 +4,7 @@
  */
 
 const { BusinessSubscription, SavedPaymentMethod, Business, SubscriptionPlan, 
-        FinancialMovement, OwnerFinancialReport } = require('../models');
+        FinancialMovement, OwnerFinancialReport, SubscriptionPayment } = require('../models');
 const WompiPaymentService = require('./WompiPaymentService');
 const EmailService = require('./EmailService');
 const { Op } = require('sequelize');
@@ -21,14 +21,19 @@ class AutoRenewalService {
     
     try {
       // Buscar suscripciones TRIAL que vencen en 1 día o menos
-      const expiringSubscriptions = await this.getExpiringTrialSubscriptions();
+      const expiringTrialSubscriptions = await this.getExpiringTrialSubscriptions();
       
-      console.log(`📊 Encontradas ${expiringSubscriptions.length} suscripciones próximas a vencer`);
+      // Buscar suscripciones ACTIVE que necesitan renovación
+      const expiringActiveSubscriptions = await this.getExpiringActiveSubscriptions();
+      
+      const allSubscriptions = [...expiringTrialSubscriptions, ...expiringActiveSubscriptions];
+      
+      console.log(`📊 Encontradas ${expiringTrialSubscriptions.length} trials expirando y ${expiringActiveSubscriptions.length} activas a renovar`);
       
       let successCount = 0;
       let failureCount = 0;
       
-      for (const subscription of expiringSubscriptions) {
+      for (const subscription of allSubscriptions) {
         try {
           const result = await this.processSubscriptionRenewal(subscription);
           if (result.success) {
@@ -46,7 +51,7 @@ class AutoRenewalService {
       
       return {
         success: true,
-        processed: expiringSubscriptions.length,
+        processed: allSubscriptions.length,
         successful: successCount,
         failed: failureCount
       };
@@ -58,7 +63,7 @@ class AutoRenewalService {
   }
   
   /**
-   * Obtener suscripciones TRIAL que vencen en 1 día o menos
+   * Obtener suscripciones TRIAL que vencen en 1 día o menos (para cobrar por primera vez)
    */
   static async getExpiringTrialSubscriptions() {
     const tomorrow = new Date();
@@ -68,6 +73,36 @@ class AutoRenewalService {
     return await BusinessSubscription.findAll({
       where: {
         status: 'TRIAL',
+        trialEndDate: {
+          [Op.lte]: tomorrow
+        }
+      },
+      include: [
+        {
+          model: Business,
+          as: 'business',
+          attributes: ['id', 'name', 'email', 'phone']
+        },
+        {
+          model: SubscriptionPlan,
+          as: 'plan',
+          attributes: ['id', 'name', 'price', 'currency', 'duration', 'durationType']
+        }
+      ]
+    });
+  }
+
+  /**
+   * Obtener suscripciones ACTIVE que vencen próximamente (renovaciones)
+   */
+  static async getExpiringActiveSubscriptions() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(23, 59, 59, 999);
+    
+    return await BusinessSubscription.findAll({
+      where: {
+        status: 'ACTIVE',
         endDate: {
           [Op.lte]: tomorrow
         }
@@ -91,7 +126,8 @@ class AutoRenewalService {
    * Procesar renovación de una suscripción específica
    */
   static async processSubscriptionRenewal(subscription) {
-    console.log(`🔄 Procesando renovación para suscripción ${subscription.id}`);
+    const isTrial = subscription.status === 'TRIAL';
+    console.log(`🔄 Procesando ${isTrial ? 'primer cobro (trial→active)' : 'renovación'} para suscripción ${subscription.id}`);
     
     const transaction = await sequelize.transaction();
     
@@ -103,91 +139,169 @@ class AutoRenewalService {
         return { success: true, action: 'cancelled' };
       }
       
-      // 2. Buscar método de pago guardado
-      const paymentMethod = await SavedPaymentMethod.findOne({
-        where: {
-          businessId: subscription.businessId,
-          isDefault: true,
-          isActive: true
+      // 2. Buscar token de pago guardado (para trials) o método de pago guardado (para renovaciones)
+      let paymentToken = null;
+      let paymentMethod = null;
+      
+      if (isTrial) {
+        // Para trials, buscar el token en SubscriptionPayment
+        const initialPayment = await SubscriptionPayment.findOne({
+          where: {
+            businessSubscriptionId: subscription.id,
+            status: 'PENDING',
+            paymentSourceToken: { [Op.ne]: null }
+          },
+          order: [['createdAt', 'DESC']]
+        });
+        
+        if (!initialPayment || !initialPayment.paymentSourceToken) {
+          await this.handleMissingPaymentMethod(subscription, transaction);
+          await transaction.commit();
+          return { success: false, reason: 'no_payment_token' };
         }
-      });
-      
-      if (!paymentMethod) {
-        await this.handleMissingPaymentMethod(subscription, transaction);
-        await transaction.commit();
-        return { success: false, reason: 'no_payment_method' };
+        
+        paymentToken = initialPayment.paymentSourceToken;
+        console.log(`💳 Token de pago encontrado para trial: ${paymentToken.substring(0, 10)}...`);
+        
+      } else {
+        // Para renovaciones, buscar método de pago guardado
+        paymentMethod = await SavedPaymentMethod.findOne({
+          where: {
+            businessId: subscription.businessId,
+            isDefault: true,
+            isActive: true
+          }
+        });
+        
+        if (!paymentMethod) {
+          await this.handleMissingPaymentMethod(subscription, transaction);
+          await transaction.commit();
+          return { success: false, reason: 'no_payment_method' };
+        }
+        
+        // Verificar que la tarjeta no esté expirada
+        if (this.isPaymentMethodExpired(paymentMethod)) {
+          await this.handleExpiredPaymentMethod(subscription, paymentMethod, transaction);
+          await transaction.commit();
+          return { success: false, reason: 'expired_payment_method' };
+        }
+        
+        paymentToken = paymentMethod.providerToken;
       }
       
-      // 3. Verificar que la tarjeta no esté expirada
-      if (this.isPaymentMethodExpired(paymentMethod)) {
-        await this.handleExpiredPaymentMethod(subscription, paymentMethod, transaction);
-        await transaction.commit();
-        return { success: false, reason: 'expired_payment_method' };
-      }
-      
-      // 4. Procesar pago de renovación
-      const paymentResult = await this.processRenewalPayment(subscription, paymentMethod);
+      // 3. Procesar pago usando el token
+      const paymentResult = await this.processRenewalPaymentWithToken(
+        subscription, 
+        paymentToken,
+        isTrial
+      );
       
       if (paymentResult.success) {
-        // 5. Renovar suscripción
-        await this.renewSubscription(subscription, paymentResult.transactionId, transaction);
+        // 4. Activar/Renovar suscripción
+        if (isTrial) {
+          await this.activateSubscriptionFromTrial(subscription, paymentResult.transactionId, transaction);
+        } else {
+          await this.renewSubscription(subscription, paymentResult.transactionId, transaction);
+        }
         
-        // 6. Registrar movimiento financiero
+        // 5. Registrar movimiento financiero
         await this.recordFinancialMovement(subscription, paymentResult, transaction);
         
+        // 6. Actualizar el SubscriptionPayment a COMPLETED si es trial
+        if (isTrial) {
+          await SubscriptionPayment.update(
+            {
+              status: 'COMPLETED',
+              transactionId: paymentResult.transactionId,
+              paidAt: new Date(),
+              providerResponse: paymentResult.providerResponse || {}
+            },
+            {
+              where: {
+                businessSubscriptionId: subscription.id,
+                status: 'PENDING'
+              },
+              transaction
+            }
+          );
+        }
+        
         // 7. Enviar confirmación
-        await this.sendRenewalConfirmation(subscription);
+        await this.sendRenewalConfirmation(subscription, isTrial);
         
         await transaction.commit();
-        console.log(`✅ Suscripción ${subscription.id} renovada exitosamente`);
-        return { success: true, action: 'renewed', transactionId: paymentResult.transactionId };
+        console.log(`✅ Suscripción ${subscription.id} ${isTrial ? 'activada' : 'renovada'} exitosamente`);
+        return { success: true, action: isTrial ? 'activated' : 'renewed', transactionId: paymentResult.transactionId };
         
       } else {
         // Pago falló
-        await this.handleFailedPayment(subscription, paymentResult, transaction);
+        await this.handleFailedPayment(subscription, paymentResult, transaction, isTrial);
         await transaction.commit();
         return { success: false, reason: 'payment_failed', error: paymentResult.error };
       }
       
     } catch (error) {
       await transaction.rollback();
-      console.error(`❌ Error renovando suscripción ${subscription.id}:`, error);
+      console.error(`❌ Error ${isTrial ? 'activando' : 'renovando'} suscripción ${subscription.id}:`, error);
       throw error;
     }
   }
-  
+
   /**
-   * Procesar pago de renovación usando Wompi
+   * Procesar pago usando token (para trials o renovaciones con 3RI)
    */
-  static async processRenewalPayment(subscription, paymentMethod) {
+  static async processRenewalPaymentWithToken(subscription, paymentToken, isTrial) {
     try {
+      const WompiSubscriptionService = require('./WompiSubscriptionService');
+      const wompiService = new WompiSubscriptionService();
+      
+      const paymentType = isTrial ? 'trial-completion' : 'auto-renewal';
+      
+      // Crear transacción usando el token guardado (3RI - Recurring Initial)
       const paymentData = {
-        amount: subscription.plan.price * 100, // Convertir a centavos
-        currency: subscription.plan.currency,
+        amount_in_cents: subscription.plan.price * 100,
+        currency: 'COP',
         customer_email: subscription.business.email,
         payment_method: {
-          token: paymentMethod.providerToken
+          type: 'CARD',
+          token: paymentToken, // Token guardado de la fuente de pago
+          installments: 1
         },
-        reference: `renewal_${subscription.id}_${Date.now()}`,
-        description: `Renovación ${subscription.plan.name} - ${subscription.business.name}`,
+        reference: `${paymentType}-${subscription.id}-${Date.now()}`,
+        customer_data: {
+          phone_number: subscription.business.phone || '',
+          full_name: subscription.business.name
+        },
         metadata: {
           subscription_id: subscription.id,
           business_id: subscription.businessId,
-          renewal_type: 'auto_renewal'
+          payment_type: paymentType,
+          plan_name: subscription.plan.name
         }
       };
-      
-      const result = await WompiPaymentService.processPayment(paymentData);
+
+      console.log(`💳 Procesando pago ${paymentType} con token: ${paymentToken.substring(0, 10)}...`);
+
+      // Llamar a Wompi para procesar el pago
+      const response = await axios.post(`${wompiService.baseURL}/transactions`, paymentData, {
+        headers: {
+          'Authorization': `Bearer ${wompiService.privateKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const transaction = response.data.data;
       
       return {
-        success: result.status === 'APPROVED',
-        transactionId: result.transaction_id,
-        reference: result.reference,
-        error: result.status !== 'APPROVED' ? result.status_message : null
+        success: transaction.status === 'APPROVED',
+        reference: transaction.reference,
+        transactionId: transaction.id,
+        providerResponse: transaction,
+        error: transaction.status !== 'APPROVED' ? transaction.status_message : null
       };
       
     } catch (error) {
-      console.error('❌ Error procesando pago de renovación:', error);
+      console.error(`❌ Error procesando pago ${isTrial ? 'trial' : 'renovación'}:`, error);
       return {
         success: false,
         error: error.message
@@ -196,7 +310,54 @@ class AutoRenewalService {
   }
 
   /**
-   * Procesar pago de renovación usando Wompi con token guardado
+   * Activar suscripción después de cobrar trial exitosamente (TRIAL → ACTIVE)
+   */
+  static async activateSubscriptionFromTrial(subscription, transactionId, transaction) {
+    const plan = subscription.plan;
+    const now = new Date();
+    
+    // Calcular fecha de finalización basada en el plan
+    let newEndDate = new Date(now);
+    
+    switch (plan.durationType) {
+      case 'MONTHS':
+        newEndDate.setMonth(newEndDate.getMonth() + plan.duration);
+        break;
+      case 'YEARS':
+        newEndDate.setFullYear(newEndDate.getFullYear() + plan.duration);
+        break;
+      case 'WEEKS':
+        newEndDate.setDate(newEndDate.getDate() + (plan.duration * 7));
+        break;
+      case 'DAYS':
+        newEndDate.setDate(newEndDate.getDate() + plan.duration);
+        break;
+      default:
+        newEndDate.setMonth(newEndDate.getMonth() + 1); // Fallback a 1 mes
+    }
+    
+    // Actualizar suscripción de TRIAL a ACTIVE
+    await subscription.update({
+      status: 'ACTIVE',
+      startDate: now,
+      endDate: newEndDate,
+      lastPaymentDate: now,
+      lastPaymentAmount: plan.price,
+      lastTransactionId: transactionId,
+      metadata: {
+        ...subscription.metadata,
+        trial_completed: true,
+        activated_at: now.toISOString(),
+        trial_end_date: subscription.trialEndDate,
+        activation_transaction_id: transactionId
+      }
+    }, { transaction });
+    
+    console.log(`✅ Suscripción ${subscription.id} activada (TRIAL→ACTIVE) hasta ${newEndDate.toISOString()}`);
+  }
+
+  /**
+   * Procesar pago de renovación usando Wompi con token guardado (LEGACY - mantener por compatibilidad)
    */
   static async processWompiPayment(subscription, paymentMethod) {
     try {
@@ -253,20 +414,33 @@ class AutoRenewalService {
   }
   
   /**
-   * Renovar suscripción después de pago exitoso
+   * Renovar suscripción después de pago exitoso (ACTIVE → ACTIVE)
    */
   static async renewSubscription(subscription, transactionId, transaction) {
     const plan = subscription.plan;
     const now = new Date();
     
-    // Calcular nueva fecha de finalización
+    // Calcular nueva fecha de finalización basada en el tipo de duración
     let newEndDate = new Date(now);
-    if (plan.durationType === 'MONTHLY') {
-      newEndDate.setMonth(newEndDate.getMonth() + plan.duration);
-    } else if (plan.durationType === 'YEARLY') {
-      newEndDate.setFullYear(newEndDate.getFullYear() + plan.duration);
-    } else if (plan.durationType === 'WEEKLY') {
-      newEndDate.setDate(newEndDate.getDate() + (plan.duration * 7));
+    
+    switch (plan.durationType) {
+      case 'MONTHS':
+      case 'MONTHLY': // Compatibilidad
+        newEndDate.setMonth(newEndDate.getMonth() + plan.duration);
+        break;
+      case 'YEARS':
+      case 'YEARLY': // Compatibilidad
+        newEndDate.setFullYear(newEndDate.getFullYear() + plan.duration);
+        break;
+      case 'WEEKS':
+      case 'WEEKLY': // Compatibilidad
+        newEndDate.setDate(newEndDate.getDate() + (plan.duration * 7));
+        break;
+      case 'DAYS':
+        newEndDate.setDate(newEndDate.getDate() + plan.duration);
+        break;
+      default:
+        newEndDate.setMonth(newEndDate.getMonth() + 1); // Fallback a 1 mes
     }
     
     // Actualizar suscripción
@@ -374,12 +548,14 @@ class AutoRenewalService {
   }
   
   /**
-   * Manejar pago fallido
+   * Manejar pago fallido (trial o renovación)
    */
-  static async handleFailedPayment(subscription, paymentResult, transaction) {
+  static async handleFailedPayment(subscription, paymentResult, transaction, isTrial = false) {
     // Incrementar contador de intentos fallidos
     const failedAttempts = (subscription.metadata?.failed_payment_attempts || 0) + 1;
     const maxAttempts = 3;
+    
+    const paymentType = isTrial ? 'trial_payment' : 'renewal_payment';
     
     if (failedAttempts >= maxAttempts) {
       // Suspender después de 3 intentos fallidos
@@ -390,11 +566,29 @@ class AutoRenewalService {
           failed_payment_attempts: failedAttempts,
           last_payment_failure: paymentResult.error,
           suspended_at: new Date().toISOString(),
-          suspension_reason: 'payment_failed_max_attempts'
+          suspension_reason: `${paymentType}_failed_max_attempts`,
+          was_trial: isTrial
         }
       }, { transaction });
       
-      await this.sendPaymentFailedSuspension(subscription);
+      // Actualizar SubscriptionPayment a FAILED si es trial
+      if (isTrial) {
+        await SubscriptionPayment.update(
+          {
+            status: 'FAILED',
+            failureReason: `Max attempts reached: ${paymentResult.error}`
+          },
+          {
+            where: {
+              businessSubscriptionId: subscription.id,
+              status: 'PENDING'
+            },
+            transaction
+          }
+        );
+      }
+      
+      await this.sendPaymentFailedSuspension(subscription, isTrial);
       
     } else {
       // Marcar como pendiente y programar reintento
@@ -404,14 +598,15 @@ class AutoRenewalService {
           ...subscription.metadata,
           failed_payment_attempts: failedAttempts,
           last_payment_failure: paymentResult.error,
-          next_retry_date: this.calculateNextRetryDate(failedAttempts)
+          next_retry_date: this.calculateNextRetryDate(failedAttempts),
+          payment_type: paymentType
         }
       }, { transaction });
       
-      await this.sendPaymentFailedRetry(subscription, failedAttempts, maxAttempts);
+      await this.sendPaymentFailedRetry(subscription, failedAttempts, maxAttempts, isTrial);
     }
     
-    console.log(`❌ Pago fallido para suscripción ${subscription.id} - Intento ${failedAttempts}/${maxAttempts}`);
+    console.log(`❌ Pago ${paymentType} fallido para suscripción ${subscription.id} - Intento ${failedAttempts}/${maxAttempts}`);
   }
   
   /**
@@ -517,9 +712,10 @@ class AutoRenewalService {
   
   // ====== MÉTODOS DE EMAIL ======
   
-  static async sendRenewalConfirmation(subscription) {
+  static async sendRenewalConfirmation(subscription, isTrial = false) {
     // TODO: Implementar cuando tengas EmailService
-    console.log(`📧 [EMAIL] Confirmación de renovación enviada a ${subscription.business.email}`);
+    const messageType = isTrial ? 'activación (trial completado)' : 'renovación';
+    console.log(`📧 [EMAIL] Confirmación de ${messageType} enviada a ${subscription.business.email}`);
   }
   
   static async sendCancellationConfirmation(subscription) {
@@ -534,12 +730,14 @@ class AutoRenewalService {
     console.log(`📧 [EMAIL] Notificación de tarjeta expirada enviada a ${subscription.business.email}`);
   }
   
-  static async sendPaymentFailedSuspension(subscription) {
-    console.log(`📧 [EMAIL] Notificación de suspensión por pago fallido enviada a ${subscription.business.email}`);
+  static async sendPaymentFailedSuspension(subscription, isTrial = false) {
+    const context = isTrial ? 'activación de trial' : 'renovación';
+    console.log(`📧 [EMAIL] Notificación de suspensión por fallo en ${context} enviada a ${subscription.business.email}`);
   }
   
-  static async sendPaymentFailedRetry(subscription, attempt, maxAttempts) {
-    console.log(`📧 [EMAIL] Notificación de pago fallido (intento ${attempt}/${maxAttempts}) enviada a ${subscription.business.email}`);
+  static async sendPaymentFailedRetry(subscription, attempt, maxAttempts, isTrial = false) {
+    const context = isTrial ? 'activación de trial' : 'renovación';
+    console.log(`📧 [EMAIL] Notificación de fallo en ${context} (intento ${attempt}/${maxAttempts}) enviada a ${subscription.business.email}`);
   }
   
   static async sendTrialExpiringNotification(subscription) {

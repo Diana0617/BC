@@ -34,7 +34,7 @@ export const ownerBusinessesApi = {
    * @returns {Promise} Negocio creado
    */
   createBusinessManually: async (businessData) => {
-    const response = await api.post('/api/owner/businesses/create-manually', businessData);
+    const response = await api.post('/api/owner/businesses', businessData);
     return response.data.data;
   },
 
