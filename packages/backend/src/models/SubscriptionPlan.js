@@ -46,7 +46,7 @@ const SubscriptionPlan = sequelize.define('SubscriptionPlan', {
     type: DataTypes.ENUM('MONTHLY', 'ANNUAL'),
     allowNull: false,
     defaultValue: 'MONTHLY',
-    comment: 'Ciclo de facturación por defecto'
+    
   },
   annualDiscountPercent: {
     type: DataTypes.INTEGER,

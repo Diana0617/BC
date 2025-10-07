@@ -75,8 +75,8 @@ const BusinessSubscription = sequelize.define('BusinessSubscription', {
   billingCycle: {
     type: DataTypes.ENUM('MONTHLY', 'ANNUAL'),
     allowNull: false,
-    defaultValue: 'MONTHLY',
-    comment: 'Ciclo de facturación elegido: MONTHLY o ANNUAL'
+    defaultValue: 'MONTHLY'
+    
   },
   discountApplied: {
     type: DataTypes.DECIMAL(5, 2),
