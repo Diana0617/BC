@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { subscriptionStatusApi } from '../../api/subscriptionStatusApi'
+import { businessBrandingApi } from '../../api/businessBrandingApi'
 
 // AsyncThunk para cargar la configuración del negocio
 export const loadBusinessConfiguration = createAsyncThunk(
@@ -9,10 +10,20 @@ export const loadBusinessConfiguration = createAsyncThunk(
       // Cargar datos de suscripción
       const subscriptionResponse = await subscriptionStatusApi.checkSubscriptionStatus(businessId)
       
+      // Cargar branding
+      let branding = null
+      try {
+        const brandingResponse = await businessBrandingApi.getBranding(businessId)
+        branding = brandingResponse.data
+      } catch (error) {
+        console.warn('No se pudo cargar branding, usando valores por defecto')
+      }
+      
       // Cargar configuraciones específicas
       // TODO: Implementar APIs específicas para cada módulo
       const configuration = {
         subscription: subscriptionResponse.data,
+        branding: branding,
         basicInfo: null, // TODO: API para datos básicos
         specialists: [], // TODO: API para especialistas
         services: [], // TODO: API para servicios
@@ -135,9 +146,49 @@ export const saveSuppliersConfig = createAsyncThunk(
   }
 )
 
+// AsyncThunk para cargar branding
+export const loadBranding = createAsyncThunk(
+  'businessConfiguration/loadBranding',
+  async (businessId, { rejectWithValue }) => {
+    try {
+      const response = await businessBrandingApi.getBranding(businessId)
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.message || 'Error al cargar branding')
+    }
+  }
+)
+
+// AsyncThunk para subir logo
+export const uploadLogo = createAsyncThunk(
+  'businessConfiguration/uploadLogo',
+  async ({ businessId, logoFile }, { rejectWithValue }) => {
+    try {
+      const response = await businessBrandingApi.uploadBusinessLogo(businessId, logoFile)
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.message || 'Error al subir logo')
+    }
+  }
+)
+
+// AsyncThunk para actualizar branding (colores)
+export const saveBranding = createAsyncThunk(
+  'businessConfiguration/saveBranding',
+  async ({ businessId, brandingData }, { rejectWithValue }) => {
+    try {
+      const response = await businessBrandingApi.updateBranding(businessId, brandingData)
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.message || 'Error al guardar branding')
+    }
+  }
+)
+
 const initialState = {
   // Datos de configuración
   subscription: null,
+  branding: null,
   basicInfo: null,
   specialists: [],
   services: [],
@@ -149,6 +200,7 @@ const initialState = {
   // Estados de carga
   loading: false,
   saving: false,
+  uploadingLogo: false,
   error: null,
   saveError: null,
   
@@ -217,6 +269,10 @@ export const businessConfigurationSlice = createSlice({
       state.basicInfo = action.payload
     },
     
+    updateBranding: (state, action) => {
+      state.branding = action.payload
+    },
+    
     updateSpecialists: (state, action) => {
       state.specialists = action.payload
     },
@@ -251,6 +307,7 @@ export const businessConfigurationSlice = createSlice({
       .addCase(loadBusinessConfiguration.fulfilled, (state, action) => {
         state.loading = false
         state.subscription = action.payload.subscription
+        state.branding = action.payload.branding
         state.basicInfo = action.payload.basicInfo
         state.specialists = action.payload.specialists
         state.services = action.payload.services
@@ -261,6 +318,10 @@ export const businessConfigurationSlice = createSlice({
         
         // Determinar pasos completados basado en datos cargados
         const completed = []
+        
+        if (state.branding && Object.keys(state.branding).length > 0) {
+          completed.push('branding')
+        }
         
         if (state.basicInfo && Object.keys(state.basicInfo).length > 0) {
           completed.push('basic-info')
@@ -468,6 +529,72 @@ export const businessConfigurationSlice = createSlice({
         state.saving = false
         state.saveError = action.payload || 'Error al guardar configuración de proveedores'
       })
+      
+      // loadBranding
+      .addCase(loadBranding.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(loadBranding.fulfilled, (state, action) => {
+        state.loading = false
+        state.branding = action.payload
+      })
+      .addCase(loadBranding.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload || 'Error al cargar branding'
+      })
+      
+      // uploadLogo
+      .addCase(uploadLogo.pending, (state) => {
+        state.uploadingLogo = true
+        state.saveError = null
+      })
+      .addCase(uploadLogo.fulfilled, (state, action) => {
+        state.uploadingLogo = false
+        // Actualizar el logo en el branding
+        if (!state.branding) {
+          state.branding = {}
+        }
+        state.branding.logo = action.payload.logoUrl
+        
+        // Marcar branding como completado si tiene datos
+        if (state.branding && Object.keys(state.branding).length > 0) {
+          if (!state.completedSteps.includes('branding')) {
+            state.completedSteps.push('branding')
+          }
+        }
+        
+        const totalSteps = 8
+        state.setupProgress = Math.round((state.completedSteps.length / totalSteps) * 100)
+      })
+      .addCase(uploadLogo.rejected, (state, action) => {
+        state.uploadingLogo = false
+        state.saveError = action.payload || 'Error al subir logo'
+      })
+      
+      // saveBranding
+      .addCase(saveBranding.pending, (state) => {
+        state.saving = true
+        state.saveError = null
+      })
+      .addCase(saveBranding.fulfilled, (state, action) => {
+        state.saving = false
+        state.branding = action.payload
+        
+        // Marcar como completado si hay branding configurado
+        if (action.payload && Object.keys(action.payload).length > 0) {
+          if (!state.completedSteps.includes('branding')) {
+            state.completedSteps.push('branding')
+          }
+        }
+        
+        const totalSteps = 8
+        state.setupProgress = Math.round((state.completedSteps.length / totalSteps) * 100)
+      })
+      .addCase(saveBranding.rejected, (state, action) => {
+        state.saving = false
+        state.saveError = action.payload || 'Error al guardar branding'
+      })
   }
 })
 
@@ -480,6 +607,7 @@ export const {
   uncompleteStep,
   resetConfiguration,
   updateBasicInfo,
+  updateBranding,
   updateSpecialists,
   updateServices,
   updateSchedule,

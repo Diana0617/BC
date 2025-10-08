@@ -7,13 +7,14 @@ Esta guía proporciona un flujo paso a paso para configurar un negocio después 
 ## Índice
 
 1. [Configuración de Reglas de Negocio](#1-configuración-de-reglas-de-negocio)
-2. [Gestión de Especialistas](#2-gestión-de-especialistas)
-3. [Gestión de Servicios](#3-gestión-de-servicios)
-4. [Configuración de Horarios](#4-configuración-de-horarios)
-5. [Gestión de Slots de Tiempo](#5-gestión-de-slots-de-tiempo)
-6. [Configuración de Pagos](#6-configuración-de-pagos)
-7. [Gestión de Inventario y Proveedores](#7-gestión-de-inventario-y-proveedores)
-8. [Testing con Insomnia](#8-testing-con-insomnia)
+2. [Configuración de Branding y Personalización](#2-configuración-de-branding-y-personalización)
+3. [Gestión de Especialistas](#3-gestión-de-especialistas)
+4. [Gestión de Servicios](#4-gestión-de-servicios)
+5. [Configuración de Horarios](#5-configuración-de-horarios)
+6. [Gestión de Slots de Tiempo](#6-gestión-de-slots-de-tiempo)
+7. [Configuración de Pagos](#7-configuración-de-pagos)
+8. [Gestión de Inventario y Proveedores](#8-gestión-de-inventario-y-proveedores)
+9. [Testing con Insomnia](#9-testing-con-insomnia)
 
 ---
 
@@ -265,9 +266,300 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 
 ---
 
-## 2. Gestión de Especialistas
+## 2. Configuración de Branding y Personalización
 
-### 2.1 Obtener Especialistas del Negocio
+> **🎨 Importante**: Esta funcionalidad permite a cada negocio personalizar la apariencia de su aplicación con su propio logo y colores corporativos.
+
+### 2.1 Estructura de Datos
+
+Los datos de branding se almacenan en el campo JSONB `settings` del modelo `Business`:
+
+```javascript
+// Modelo Business
+{
+  logo: String,  // URL del logo principal (Cloudinary)
+  settings: {
+    branding: {
+      primaryColor: '#FF6B9D',      // Color principal de la marca
+      secondaryColor: '#4ECDC4',    // Color secundario
+      accentColor: '#FFE66D',       // Color de acento
+      logo: 'https://...',          // URL del logo (duplicado para acceso rápido)
+      favicon: 'https://...',       // URL del favicon (opcional)
+      fontFamily: 'Poppins'         // Fuente personalizada (opcional)
+    },
+    theme: {
+      mode: 'light',                // 'light' o 'dark'
+      borderRadius: 'rounded-lg',   // Estilo de bordes
+      shadowStyle: 'soft'           // Estilo de sombras
+    }
+  }
+}
+```
+
+### 2.2 Obtener Configuración de Branding Actual
+
+**GET** `/api/business/{businessId}/branding`
+
+```json
+// Response
+{
+  "success": true,
+  "data": {
+    "primaryColor": "#FF6B9D",
+    "secondaryColor": "#4ECDC4",
+    "accentColor": "#FFE66D",
+    "logo": "https://res.cloudinary.com/dxfgdwmwd/image/upload/v1234567890/beauty-control/businesses/business-uuid/logos/logo.jpg",
+    "favicon": null,
+    "fontFamily": "Poppins"
+  }
+}
+```
+
+> **Nota**: Si el negocio no ha configurado branding personalizado, se devuelven valores por defecto.
+
+### 2.3 Subir Logo del Negocio
+
+**POST** `/api/business/{businessId}/upload-logo`
+
+**Content-Type**: `multipart/form-data`
+
+**Form Data:**
+- `logo` (File): Archivo de imagen (JPG, PNG, WEBP)
+
+```bash
+# Ejemplo con cURL
+curl -X POST \
+  'http://localhost:3001/api/business/business-uuid/upload-logo' \
+  -H 'Authorization: Bearer YOUR_JWT_TOKEN' \
+  -F 'logo=@/path/to/logo.png'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "logoUrl": "https://res.cloudinary.com/dxfgdwmwd/image/upload/v1234567890/beauty-control/businesses/business-uuid/logos/logo.jpg",
+    "thumbnails": {
+      "small": "https://..._w_200.jpg",
+      "medium": "https://..._w_500.jpg",
+      "large": "https://..._w_1000.jpg"
+    }
+  },
+  "message": "Logo subido exitosamente"
+}
+```
+
+**Características del Upload:**
+- ✅ Subida automática a Cloudinary
+- ✅ Optimización automática de imagen
+- ✅ Generación de múltiples resoluciones (responsive)
+- ✅ Compresión sin pérdida de calidad
+- ✅ Formatos soportados: JPG, PNG, WEBP
+- ✅ Tamaño máximo: 10MB
+
+### 2.4 Actualizar Colores Corporativos
+
+**PUT** `/api/business/{businessId}/branding`
+
+```json
+{
+  "primaryColor": "#E91E63",
+  "secondaryColor": "#00BCD4",
+  "accentColor": "#FFC107",
+  "fontFamily": "Montserrat"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "primaryColor": "#E91E63",
+    "secondaryColor": "#00BCD4",
+    "accentColor": "#FFC107",
+    "logo": "https://res.cloudinary.com/dxfgdwmwd/...",
+    "fontFamily": "Montserrat"
+  },
+  "message": "Configuración de branding actualizada exitosamente"
+}
+```
+
+### 2.5 Actualizar Logo y Colores Simultáneamente
+
+**Opción 1: Subir logo primero, luego actualizar colores**
+
+```bash
+# 1. Subir logo
+POST /api/business/{businessId}/upload-logo
+Form-Data: logo=@logo.png
+
+# 2. Actualizar colores
+PUT /api/business/{businessId}/branding
+Body: { "primaryColor": "#E91E63", ... }
+```
+
+**Opción 2: Actualizar solo colores (mantener logo existente)**
+
+```bash
+PUT /api/business/{businessId}/branding
+Body: { "primaryColor": "#E91E63", "secondaryColor": "#00BCD4" }
+```
+
+### 2.6 Validaciones y Restricciones
+
+#### Colores (formato hexadecimal)
+```javascript
+// ✅ Válido
+"#FF6B9D"
+"#fff"
+"#FFFFFF"
+
+// ❌ Inválido
+"FF6B9D"     // Sin #
+"rgb(255, 107, 157)"
+"red"
+```
+
+#### Formatos de Imagen Soportados
+- ✅ JPG/JPEG
+- ✅ PNG
+- ✅ WEBP
+- ❌ GIF (no recomendado para logos)
+- ❌ SVG (próximamente)
+
+#### Tamaños Recomendados
+- **Logo Principal**: 500x500px (cuadrado) o 800x200px (rectangular)
+- **Favicon**: 32x32px o 64x64px
+- **Peso**: Máximo 10MB, recomendado < 2MB
+
+### 2.7 Uso en Frontend (Mobile App y Web App)
+
+#### Obtener Branding del Negocio Activo
+
+```javascript
+// En React (Web App o Mobile)
+import { useSelector } from 'react-redux'
+import { getBranding } from '@shared/api/businessBrandingApi'
+
+const MyComponent = () => {
+  const { activeBusiness } = useSelector(state => state.business)
+  const [branding, setBranding] = useState(null)
+
+  useEffect(() => {
+    const loadBranding = async () => {
+      const response = await getBranding(activeBusiness.id)
+      setBranding(response.data)
+    }
+    loadBranding()
+  }, [activeBusiness])
+
+  return (
+    <div style={{ 
+      backgroundColor: branding?.primaryColor,
+      color: branding?.secondaryColor 
+    }}>
+      <img src={branding?.logo} alt="Logo" />
+      {/* Contenido */}
+    </div>
+  )
+}
+```
+
+#### Aplicar Colores Dinámicamente
+
+```javascript
+// Generar CSS Variables dinámicas
+const applyBranding = (branding) => {
+  document.documentElement.style.setProperty('--primary-color', branding.primaryColor)
+  document.documentElement.style.setProperty('--secondary-color', branding.secondaryColor)
+  document.documentElement.style.setProperty('--accent-color', branding.accentColor)
+}
+
+// Usar en componentes
+<button className="bg-[var(--primary-color)] text-white">
+  Botón con color personalizado
+</button>
+```
+
+### 2.8 Ejemplo Completo de Configuración
+
+```javascript
+// Paso 1: Subir logo
+const logoFile = document.getElementById('logoInput').files[0]
+const formData = new FormData()
+formData.append('logo', logoFile)
+
+const uploadResponse = await fetch('/api/business/current/upload-logo', {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${token}` },
+  body: formData
+})
+
+// Paso 2: Configurar colores
+const brandingResponse = await fetch('/api/business/current/branding', {
+  method: 'PUT',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    primaryColor: '#E91E63',
+    secondaryColor: '#00BCD4',
+    accentColor: '#FFC107',
+    fontFamily: 'Poppins'
+  })
+})
+
+// Paso 3: Aplicar en la UI
+const branding = await brandingResponse.json()
+applyBranding(branding.data)
+```
+
+### 2.9 Mejores Prácticas
+
+✅ **DO:**
+- Usar colores con buen contraste para accesibilidad
+- Optimizar imágenes antes de subirlas
+- Probar la paleta en diferentes pantallas
+- Mantener consistencia con la identidad de marca
+- Usar formato WebP para mejor rendimiento
+
+❌ **DON'T:**
+- Usar colores muy similares entre sí
+- Subir logos con fondo no transparente (si es posible)
+- Cambiar branding con mucha frecuencia
+- Usar imágenes de baja calidad
+- Ignorar la accesibilidad (contraste WCAG)
+
+### 2.10 Troubleshooting
+
+#### Error: "Formato de archivo no soportado"
+- Verificar que el archivo sea JPG, PNG o WEBP
+- Confirmar que la extensión del archivo sea correcta
+- Validar que el archivo no esté corrupto
+
+#### Error: "Archivo muy grande"
+- Reducir el tamaño de la imagen (máximo 10MB)
+- Comprimir la imagen usando herramientas online
+- Considerar cambiar el formato a WebP
+
+#### Error: "Color inválido"
+- Usar formato hexadecimal con # inicial
+- Verificar que tenga 6 dígitos (o 3 para shorthand)
+- Ejemplo correcto: `#FF6B9D` o `#FFF`
+
+#### Los colores no se aplican en la app
+- Verificar que la app esté recargando el branding
+- Confirmar que las CSS variables estén correctamente definidas
+- Revisar que no haya colores hardcodeados que sobrescriban
+
+---
+
+## 3. Gestión de Especialistas
+
+### 3.1 Obtener Especialistas del Negocio
 
 **GET** `/api/business/{businessId}/config/specialists`
 
@@ -275,7 +567,7 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 - `includeInactive` (boolean): Incluir especialistas inactivos
 - `serviceId` (UUID): Filtrar por servicio específico
 
-### 2.2 Crear Nuevo Especialista
+### 3.2 Crear Nuevo Especialista
 
 **POST** `/api/business/{businessId}/config/specialists`
 
@@ -327,7 +619,7 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 }
 ```
 
-### 2.3 Actualizar Especialista
+### 3.3 Actualizar Especialista
 
 **PUT** `/api/business/{businessId}/config/specialists/{specialistId}`
 
@@ -343,15 +635,15 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 }
 ```
 
-### 2.4 Desactivar Especialista
+### 3.4 Desactivar Especialista
 
 **DELETE** `/api/business/{businessId}/config/specialists/{specialistId}`
 
 ---
 
-## 3. Gestión de Servicios
+## 4. Gestión de Servicios
 
-### 3.1 Obtener Servicios del Negocio
+### 4.1 Obtener Servicios del Negocio
 
 **GET** `/api/business/{businessId}/config/services`
 
@@ -360,7 +652,7 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 - `isActive` (boolean): Filtrar por estado activo/inactivo
 - `specialistId` (UUID): Servicios de un especialista específico
 
-### 3.2 Crear Nuevo Servicio
+### 4.2 Crear Nuevo Servicio
 
 **POST** `/api/business/{businessId}/config/services`
 
@@ -390,7 +682,7 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 }
 ```
 
-### 3.3 Actualizar Servicio
+### 4.3 Actualizar Servicio
 
 **PUT** `/api/business/{businessId}/config/services/{serviceId}`
 
@@ -403,22 +695,22 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 }
 ```
 
-### 3.4 Desactivar Servicio
+### 4.4 Desactivar Servicio
 
 **DELETE** `/api/business/{businessId}/config/services/{serviceId}`
 
 ---
 
-## 4. Configuración de Horarios
+## 5. Configuración de Horarios
 
-### 4.1 Obtener Horarios
+### 5.1 Obtener Horarios
 
 **GET** `/api/business/{businessId}/config/schedules`
 
 **Query Parameters:**
 - `specialistId` (UUID): Horarios de un especialista específico
 
-### 4.2 Crear Horario de Negocio (General)
+### 5.2 Crear Horario de Negocio (General)
 
 **POST** `/api/business/{businessId}/config/schedules`
 
@@ -510,7 +802,7 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 }
 ```
 
-### 4.3 Crear Horario Personalizado para Especialista
+### 5.3 Crear Horario Personalizado para Especialista
 
 **POST** `/api/business/{businessId}/config/schedules`
 
@@ -552,7 +844,7 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 }
 ```
 
-### 4.4 Actualizar Horario
+### 5.4 Actualizar Horario
 
 **PUT** `/api/business/{businessId}/config/schedules/{scheduleId}`
 
@@ -577,7 +869,7 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 }
 ```
 
-### 4.5 Eliminar Horario
+### 5.5 Eliminar Horario
 
 **DELETE** `/api/business/{businessId}/config/schedules/{scheduleId}`
 
@@ -585,9 +877,9 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 
 ---
 
-## 5. Gestión de Slots de Tiempo
+## 6. Gestión de Slots de Tiempo
 
-### 5.1 Obtener Slots Disponibles
+### 6.1 Obtener Slots Disponibles
 
 **GET** `/api/business/{businessId}/config/slots/available`
 
@@ -602,7 +894,7 @@ Si quieres usar el sistema avanzado donde el **Owner de BC** crea plantillas que
 GET /api/business/123e4567-e89b-12d3-a456-426614174000/config/slots/available?specialistId=456e7890-e89b-12d3-a456-426614174000&date=2024-01-15&serviceId=789e0123-e89b-12d3-a456-426614174000
 ```
 
-### 5.2 Bloquear Slot
+### 6.2 Bloquear Slot
 
 **POST** `/api/business/{businessId}/config/slots/{slotId}/block`
 
@@ -613,7 +905,7 @@ GET /api/business/123e4567-e89b-12d3-a456-426614174000/config/slots/available?sp
 }
 ```
 
-### 5.3 Desbloquear Slot
+### 6.3 Desbloquear Slot
 
 **POST** `/api/business/{businessId}/config/slots/{slotId}/unblock`
 
@@ -625,13 +917,13 @@ GET /api/business/123e4567-e89b-12d3-a456-426614174000/config/slots/available?sp
 
 ---
 
-## 6. Configuración de Pagos
+## 7. Configuración de Pagos
 
-### 6.1 Obtener Configuración Actual
+### 7.1 Obtener Configuración Actual
 
 **GET** `/api/business/{businessId}/config/payments`
 
-### 6.2 Configurar Wompi
+### 7.2 Configurar Wompi
 
 **PUT** `/api/business/{businessId}/config/payments`
 
@@ -659,7 +951,7 @@ GET /api/business/123e4567-e89b-12d3-a456-426614174000/config/slots/available?sp
 }
 ```
 
-### 6.3 Configurar Stripe
+### 7.3 Configurar Stripe
 
 **PUT** `/api/business/{businessId}/config/payments`
 
@@ -685,15 +977,15 @@ GET /api/business/123e4567-e89b-12d3-a456-426614174000/config/slots/available?sp
 }
 ```
 
-### 6.4 Probar Configuración de Pagos
+### 7.4 Probar Configuración de Pagos
 
 **POST** `/api/business/{businessId}/config/payments/test`
 
 ---
 
-## 7. Gestión de Inventario y Proveedores
+## 8. Gestión de Inventario y Proveedores
 
-### 7.1 Gestión de Productos
+### 8.1 Gestión de Productos
 
 #### Obtener Productos
 **GET** `/api/business/{businessId}/config/products`
@@ -725,7 +1017,7 @@ GET /api/business/123e4567-e89b-12d3-a456-426614174000/config/slots/available?sp
 }
 ```
 
-### 7.2 Gestión de Proveedores
+### 8.2 Gestión de Proveedores
 
 #### Obtener Proveedores
 **GET** `/api/business/{businessId}/config/suppliers`
@@ -764,9 +1056,9 @@ GET /api/business/123e4567-e89b-12d3-a456-426614174000/config/slots/available?sp
 
 ---
 
-## 8. Testing con Insomnia
+## 9. Testing con Insomnia
 
-### 8.1 Configuración del Environment
+### 9.1 Configuración del Environment
 
 Crear un environment en Insomnia con las siguientes variables:
 
@@ -783,17 +1075,18 @@ Crear un environment en Insomnia con las siguientes variables:
 }
 ```
 
-### 8.2 Orden de Testing Recomendado
+### 9.2 Orden de Testing Recomendado
 
 #### Para Testing Básico (Reglas Simples):
 1. **Autenticación** - Obtener token JWT como usuario BUSINESS/OWNER
 2. **Configuración de Reglas Básicas** - GET y PUT en `/config/rules`
-3. **Crear Especialistas** - Agregar al menos 2 especialistas
-4. **Crear Servicios** - Agregar servicios que ofrecerán los especialistas
-5. **Configurar Horarios** - Crear horario general y horarios específicos
-6. **Verificar Slots** - Confirmar que se generan slots de tiempo correctamente
-7. **Configurar Pagos** - Establecer método de pago (Wompi o Stripe)
-8. **Gestión de Inventario** - Agregar productos y proveedores si es necesario
+3. **Configuración de Branding** - Upload logo y configurar colores
+4. **Crear Especialistas** - Agregar al menos 2 especialistas
+5. **Crear Servicios** - Agregar servicios que ofrecerán los especialistas
+6. **Configurar Horarios** - Crear horario general y horarios específicos
+7. **Verificar Slots** - Confirmar que se generan slots de tiempo correctamente
+8. **Configurar Pagos** - Establecer método de pago (Wompi o Stripe)
+9. **Gestión de Inventario** - Agregar productos y proveedores si es necesario
 
 #### Para Testing Avanzado (Rule Templates):
 1. **Autenticación Owner** - Token JWT como usuario OWNER
@@ -801,9 +1094,10 @@ Crear un environment en Insomnia con las siguientes variables:
 3. **Autenticación Business** - Token JWT como usuario BUSINESS
 4. **Ver Plantillas Disponibles** - GET en `/rule-templates/available`
 5. **Asignar Plantillas** - POST en `/rule-templates/{templateId}/assign`
-6. **Continuar con especialistas, servicios, etc.**
+6. **Configurar Branding** - Logo y colores corporativos
+7. **Continuar con especialistas, servicios, etc.**
 
-### 8.3 Requests Base para Insomnia
+### 9.3 Requests Base para Insomnia
 
 #### Headers Globales
 ```json
@@ -818,42 +1112,55 @@ Crear un environment en Insomnia con las siguientes variables:
 {{ base_url }}/api/business/{{ business_id }}/config
 ```
 
-### 8.4 Validaciones Importantes
+### 9.4 Validaciones Importantes
 
 - **Permisos**: Verificar que solo usuarios con rol BUSINESS, OWNER o SPECIALIST pueden acceder
 - **Relaciones**: Confirmar que especialistas están asociados correctamente a servicios
 - **Horarios**: Validar que los slots se generen según la configuración de horarios
 - **Fechas**: Verificar que las fechas futuras tengan slots disponibles
 - **Pagos**: Probar la configuración con transacciones de prueba
+- **Branding**: Confirmar que el logo se sube correctamente a Cloudinary
+- **Colores**: Validar formato hexadecimal de los colores
 
 ---
 
-## 9. Troubleshooting Común
+## 10. Troubleshooting Común
 
-### 9.1 Error: "No tienes permisos"
+### 10.1 Error: "No tienes permisos"
 - Verificar que el token JWT sea válido
 - Confirmar que el usuario tenga el rol correcto (BUSINESS, OWNER, SPECIALIST)
 - Validar que el `businessId` corresponda al negocio del usuario
 
-### 9.2 Error: "Especialista no encontrado"
+### 10.2 Error: "Especialista no encontrado"
 - Verificar que el `specialistId` existe en la base de datos
 - Confirmar que el especialista pertenece al negocio correcto
 - Validar que el especialista esté activo (`isActive: true`)
 
-### 9.3 Error: "No se generaron slots"
+### 10.3 Error: "No se generaron slots"
 - Verificar que el horario tenga días habilitados (`enabled: true`)
 - Confirmar que los turnos estén correctamente configurados
 - Validar que `slotDuration` sea mayor a 0
 - Verificar que la fecha esté en el futuro
 
-### 9.4 Error en configuración de pagos
+### 10.4 Error en configuración de pagos
 - Verificar las credenciales del proveedor de pagos
 - Confirmar que el ambiente (test/production) sea correcto
 - Validar que las URLs de webhook sean accesibles
 
+### 10.5 Error al subir logo
+- Verificar que el archivo sea JPG, PNG o WEBP
+- Confirmar que el tamaño sea menor a 10MB
+- Validar que el Content-Type sea multipart/form-data
+- Revisar permisos de Cloudinary en el .env
+
+### 10.6 Colores no se aplican
+- Verificar formato hexadecimal (#RRGGBB)
+- Confirmar que la app recargue el branding después de guardar
+- Validar que no haya colores hardcodeados en CSS
+
 ---
 
-## 10. Notas Importantes
+## 11. Notas Importantes
 
 - Los horarios se generan automáticamente para 30 días a futuro
 - Los slots de tiempo se crean automáticamente cuando se configura un horario

@@ -11,7 +11,8 @@ import {
   BuildingStorefrontIcon,
   WrenchScrewdriverIcon,
   ShieldCheckIcon,
- ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  PaintBrushIcon
 } from '@heroicons/react/24/outline'
 
 // Redux actions
@@ -26,6 +27,7 @@ import { logout } from '@shared/store/slices/authSlice'
 // Componentes de secciones
 import SubscriptionSection from './sections/SubscriptionSection'
 import BasicInfoSection from './sections/BasicInfoSection'
+import BrandingSection from './sections/BrandingSection'
 import SpecialistsSection from './sections/SpecialistsSection'
 import ServicesSection from './sections/ServicesSection'
 import TaxxaConfigSection from './sections/TaxxaConfigSection'
@@ -67,7 +69,8 @@ const BusinessProfile = () => {
     error,
     setupProgress,
     completedSteps,
-    isSetupMode
+    isSetupMode,
+    branding
   } = useSelector(state => state.businessConfiguration)
 
   console.log('👤 User:', user)
@@ -143,6 +146,14 @@ const BusinessProfile = () => {
       icon: BuildingStorefrontIcon,
       component: BasicInfoSection,
       setupStep: 'basic-info',
+      alwaysVisible: true
+    },
+    {
+      id: 'branding',
+      name: 'Branding',
+      icon: PaintBrushIcon,
+      component: BrandingSection,
+      setupStep: 'branding',
       alwaysVisible: true
     },
     {
@@ -428,9 +439,24 @@ const BusinessProfile = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <BuildingStorefrontIcon className="h-8 w-8 text-blue-600 mr-3" />
+              {/* Logo del negocio o icono por defecto */}
+              {branding?.logo ? (
+                <img 
+                  src={branding.logo} 
+                  alt={business?.name || 'Logo'} 
+                  className="h-10 w-10 rounded-full object-cover mr-3"
+                />
+              ) : (
+                <BuildingStorefrontIcon 
+                  className="h-8 w-8 mr-3" 
+                  style={{ color: branding?.primaryColor || '#2563eb' }}
+                />
+              )}
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 
+                  className="text-xl font-semibold text-gray-900"
+                  style={{ color: branding?.primaryColor || '#111827' }}
+                >
                   {business?.name || 'Mi Negocio'}
                 </h1>
                 {isSetupMode && (
@@ -443,7 +469,8 @@ const BusinessProfile = () => {
             {/* Botón de logout */}
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-2 text-cyan-500 hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition"
+              className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition hover:bg-gray-100"
+              style={{ color: branding?.secondaryColor || '#06b6d4' }}
             >
               <ArrowRightOnRectangleIcon className="h-5 w-5" />
               <span>Salir</span>
@@ -452,8 +479,11 @@ const BusinessProfile = () => {
               <div className="flex items-center space-x-4">
                 <div className="w-48 bg-gray-200 rounded-full h-2">
                   <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${setupProgress}%` }}
+                    className="h-2 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${setupProgress}%`,
+                      backgroundColor: branding?.primaryColor || '#2563eb'
+                    }}
                   ></div>
                 </div>
                 <span className="text-sm font-medium text-gray-600">
@@ -484,9 +514,14 @@ const BusinessProfile = () => {
                     className={`w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors relative ${!isAvailable
                         ? 'text-gray-400 bg-gray-50 cursor-not-allowed opacity-60'
                         : isActive
-                          ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700'
+                          ? 'bg-opacity-10 border-l-4'
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
+                    style={isActive && isAvailable ? {
+                      backgroundColor: `${branding?.primaryColor || '#dbeafe'}20`,
+                      borderLeftColor: branding?.primaryColor || '#2563eb',
+                      color: branding?.primaryColor || '#1d4ed8'
+                    } : {}}
                   >
                     <Icon className="h-5 w-5 mr-3" />
                     <span className="flex-1 text-left">{section.name}</span>

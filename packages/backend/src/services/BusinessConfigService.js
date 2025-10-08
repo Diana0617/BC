@@ -47,9 +47,60 @@ class BusinessConfigService {
     return days[date.getDay()];
   }
 
-  async hasActivAppointments(specialistId) {
+  async hasActiveAppointments(specialistId) {
     // Temporary stub
     return false;
+  }
+
+  // ==================== BUSINESS BASIC OPERATIONS ====================
+
+  /**
+   * Get business by ID
+   */
+  async getBusiness(businessId) {
+    try {
+      const business = await Business.findByPk(businessId);
+      return business;
+    } catch (error) {
+      console.error('Error getting business:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update business basic info
+   */
+  async updateBusiness(businessId, data) {
+    try {
+      const business = await Business.findByPk(businessId);
+      if (!business) {
+        throw new Error('Negocio no encontrado');
+      }
+      
+      await business.update(data);
+      return business;
+    } catch (error) {
+      console.error('Error updating business:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update business settings (JSONB field)
+   */
+  async updateBusinessSettings(businessId, settings) {
+    try {
+      const business = await Business.findByPk(businessId);
+      if (!business) {
+        throw new Error('Negocio no encontrado');
+      }
+      
+      await business.update({ settings });
+      return business;
+    } catch (error) {
+      console.error('Error updating business settings:', error);
+      throw error;
+    }
   }
 
   async deleteSpecialistSchedulesAndSlots(specialistId) {
@@ -163,4 +214,4 @@ class BusinessConfigService {
   }
 }
 
-module.exports = BusinessConfigService;
+module.exports = new BusinessConfigService();

@@ -1,7 +1,9 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/solid'
 
-const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken }) => {
+const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken, billingCycle, onCycleChange }) => {
+  // Estado local para el ciclo seleccionado en cada plan
+  const [planCycles, setPlanCycles] = useState({});
   
   // Debug: Ver qué viene del backend
   console.log('PlanSelection - Plans from backend:', plans)
@@ -51,6 +53,32 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken }) =
       style: 'currency',
       currency: currency || 'COP'
     }).format(price)
+  }
+
+  // Función para obtener el ciclo seleccionado para un plan específico
+  const getCycleForPlan = (planId) => {
+    return planCycles[planId] || billingCycle || 'MONTHLY'
+  }
+
+  // Función para cambiar el ciclo de un plan específico
+  const handleCycleChange = (planId, cycle) => {
+    setPlanCycles(prev => ({
+      ...prev,
+      [planId]: cycle
+    }))
+    // También actualizar el ciclo global si se proporciona la función
+    if (onCycleChange) {
+      onCycleChange(cycle)
+    }
+  }
+
+  // Función para calcular el precio según el ciclo
+  const getPriceForCycle = (plan, cycle) => {
+    if (cycle === 'ANNUAL') {
+      // Aplicar descuento del 15% para plan anual
+      return plan.price * 0.85
+    }
+    return plan.price
   }
 
   return (
@@ -104,14 +132,54 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken }) =
               <p className="text-xs sm:text-gray-600 mb-2 sm:mb-4">
                 {plan.description}
               </p>
+
+              {/* Billing Cycle Selector dentro de la card */}
+              <div className="mb-4">
+                <div className="inline-flex rounded-lg border-2 border-gray-300 bg-gray-50 p-1">
+                  <button
+                    type="button"
+                    onClick={() => handleCycleChange(plan.id, 'MONTHLY')}
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-semibold transition-all ${
+                      getCycleForPlan(plan.id) === 'MONTHLY'
+                        ? 'bg-white text-gray-900 shadow-md'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Mensual
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCycleChange(plan.id, 'ANNUAL')}
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-semibold transition-all ${
+                      getCycleForPlan(plan.id) === 'ANNUAL'
+                        ? 'bg-white text-gray-900 shadow-md'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Anual
+                    <span className="ml-1 text-green-600 text-xs font-bold">-15%</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Price */}
               <div className="mb-2 sm:mb-4">
                 <span className="text-xl sm:text-3xl font-bold text-gray-900">
-                  {formatPrice(plan.price, plan.currency)}
+                  {formatPrice(getPriceForCycle(plan, getCycleForPlan(plan.id)), plan.currency)}
                 </span>
                 <span className="text-gray-600 ml-1 sm:ml-2 text-xs sm:text-base">
                   /mes
                 </span>
+                {getCycleForPlan(plan.id) === 'ANNUAL' && (
+                  <div className="mt-1">
+                    <span className="text-xs text-gray-500 line-through">
+                      {formatPrice(plan.price, plan.currency)}
+                    </span>
+                    <span className="ml-2 text-xs text-green-600 font-semibold">
+                      ¡Ahorras {formatPrice(plan.price * 12 * 0.15, plan.currency)} al año!
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -211,7 +279,10 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken }) =
             <div className="mt-auto pt-2 sm:pt-4">
               {/* CTA Button */}
               <button
-                onClick={() => onPlanSelect(plan)}
+                onClick={() => {
+                  const selectedCycle = getCycleForPlan(plan.id)
+                  onPlanSelect(plan, selectedCycle)
+                }}
                 className={`w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200 transform hover:-translate-y-1 shadow-lg hover:shadow-xl inline-flex items-center justify-center ${
                   idx === 0 ? 'bg-cyan-400 hover:bg-cyan-500 text-white' :
                   idx === 1 ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900' :
@@ -219,6 +290,9 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken }) =
                 }`}
               >
                 {plan.popular ? 'Comenzar Ahora' : 'Seleccionar Plan'}
+                <span className="ml-2 text-xs">
+                  ({getCycleForPlan(plan.id) === 'MONTHLY' ? 'Mensual' : 'Anual'})
+                </span>
               </button>
               {/* Free trial note */}
               <p className="text-center text-gray-500 text-xs mt-2 sm:mt-3">

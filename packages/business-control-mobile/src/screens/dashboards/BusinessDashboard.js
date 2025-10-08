@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Image,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,23 +15,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '@shared/store/reactNativeStore';
 import WebView from 'react-native-webview';
+import { useBranding } from '../../contexts/BrandingContext';
+import BrandedButton from '../../components/BrandedButton';
+import BrandedHeader from '../../components/BrandedHeader';
 
 // Componentes de métricas
 const MetricCard = ({ title, value, subtitle, icon, color, onPress }) => (
-  <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+  <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={styles.metricCard}>
     <LinearGradient
       colors={[color, `${color}DD`]}
-      className="p-4 rounded-2xl shadow-lg mb-4"
+      style={styles.metricGradient}
     >
-      <View className="flex-row items-center justify-between">
-        <View className="flex-1">
-          <Text className="text-white/80 text-sm font-medium mb-1">{title}</Text>
-          <Text className="text-white text-2xl font-bold mb-1">{value}</Text>
+      <View style={styles.metricContent}>
+        <View style={styles.metricTextContainer}>
+          <Text style={styles.metricTitle}>{title}</Text>
+          <Text style={styles.metricValue}>{value}</Text>
           {subtitle && (
-            <Text className="text-white/70 text-xs">{subtitle}</Text>
+            <Text style={styles.metricSubtitle}>{subtitle}</Text>
           )}
         </View>
-        <View className="w-12 h-12 bg-white/20 rounded-xl items-center justify-center">
+        <View style={styles.metricIconContainer}>
           <Ionicons name={icon} size={24} color="#ffffff" />
         </View>
       </View>
@@ -37,24 +42,16 @@ const MetricCard = ({ title, value, subtitle, icon, color, onPress }) => (
   </TouchableOpacity>
 );
 
-const FilterButton = ({ title, isActive, onPress }) => (
-  <TouchableOpacity
-    onPress={onPress}
-    className={`px-4 py-2 rounded-full mr-3 ${
-      isActive ? 'bg-purple-600' : 'bg-gray-100'
-    }`}
-  >
-    <Text className={`text-sm font-medium ${
-      isActive ? 'text-white' : 'text-gray-600'
-    }`}>
-      {title}
-    </Text>
-  </TouchableOpacity>
-);
-
 export default function BusinessDashboard({ navigation }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const { branding, colors, isLoading: brandingLoading } = useBranding();
+  
+  console.log('📱 Business Dashboard - User:', user);
+  console.log('📱 Business Dashboard - User.businessId:', user?.businessId);
+  console.log('📱 Business Dashboard - Branding:', branding);
+  console.log('📱 Business Dashboard - Colors:', colors);
+  console.log('📱 Business Dashboard - Logo:', branding?.logo);
   
   // 🛡️ VALIDACIÓN DE ACCESO POR ROL
   useEffect(() => {
@@ -90,8 +87,6 @@ export default function BusinessDashboard({ navigation }) {
   }, [user, navigation]);
   
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState('today');
-  const [selectedSpecialist, setSelectedSpecialist] = useState('all');
   const [showWebView, setShowWebView] = useState(false);
   
   // Estado de métricas (temporal - luego conectar con Redux)
@@ -103,23 +98,9 @@ export default function BusinessDashboard({ navigation }) {
     expenses: { value: '$270,000', subtitle: 'Gastos del día' }
   });
 
-  const periods = [
-    { id: 'today', title: 'Hoy' },
-    { id: 'yesterday', title: 'Ayer' },
-    { id: 'week', title: 'Esta Semana' },
-    { id: 'month', title: 'Este Mes' },
-  ];
-
-  const specialists = [
-    { id: 'all', title: 'Todos' },
-    { id: 'maria', title: 'María' },
-    { id: 'lucia', title: 'Lucía' },
-    { id: 'ana', title: 'Ana' },
-  ];
-
   useEffect(() => {
     loadMetrics();
-  }, [selectedPeriod, selectedSpecialist]);
+  }, []);
 
   const loadMetrics = async () => {
     // Aquí irá la llamada a la API para cargar métricas
@@ -204,95 +185,62 @@ export default function BusinessDashboard({ navigation }) {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-white px-5 py-4 border-b border-gray-100">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-2xl font-bold text-gray-800">
-              ¡Hola, {user?.firstName || 'Propietario'}!
-            </Text>
-            <Text className="text-sm text-gray-600">
-              Resumen de tu negocio
-            </Text>
-          </View>
-          <View className="flex-row items-center space-x-3">
-            <TouchableOpacity
-              onPress={openWebApp}
-              className="bg-purple-600 px-4 py-2 rounded-xl flex-row items-center"
-            >
-              <Ionicons name="desktop" size={16} color="#ffffff" />
-              <Text className="text-white text-sm font-medium ml-2">
-                Panel Completo
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleLogout}
-              className="bg-red-500 px-3 py-2 rounded-xl flex-row items-center"
-            >
-              <Ionicons name="log-out-outline" size={16} color="#ffffff" />
-              <Text className="text-white text-sm font-medium ml-1">
-                Salir
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+    <SafeAreaView style={styles.container}>
+      {/* Header con branding */}
+      <BrandedHeader 
+        title={branding?.businessName || user?.business?.name || 'Beauty Control'}
+        subtitle={`¡Hola, ${user?.firstName || 'Propietario'}!`}
+        rightComponent={
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutIconButton}>
+            <Ionicons name="log-out-outline" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView
-        className="flex-1"
+        style={styles.scrollView}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
       >
-        <View className="p-5">
-          {/* Filtros de Período */}
-          <View className="mb-6">
-            <Text className="text-lg font-semibold text-gray-800 mb-3">
-              Período
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {periods.map((period) => (
-                <FilterButton
-                  key={period.id}
-                  title={period.title}
-                  isActive={selectedPeriod === period.id}
-                  onPress={() => setSelectedPeriod(period.id)}
-                />
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Filtros de Especialista */}
-          <View className="mb-6">
-            <Text className="text-lg font-semibold text-gray-800 mb-3">
-              Especialista
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {specialists.map((specialist) => (
-                <FilterButton
-                  key={specialist.id}
-                  title={specialist.title}
-                  isActive={selectedSpecialist === specialist.id}
-                  onPress={() => setSelectedSpecialist(specialist.id)}
-                />
-              ))}
-            </ScrollView>
+        <View style={styles.content}>
+          {/* Card de Bienvenida con Logo */}
+          <View style={styles.welcomeCard}>
+            <LinearGradient
+              colors={[colors.primary + '15', colors.secondary + '15']}
+              style={styles.welcomeGradient}
+            >
+              {branding?.logo && (
+                <View style={styles.logoContainer}>
+                  <Image 
+                    source={{ uri: branding.logo }}
+                    style={styles.logo}
+                    resizeMode="contain"
+                  />
+                </View>
+              )}
+              
+              <Text style={[styles.welcomeTitle, { color: colors.primary }]}>
+                Panel de Control
+              </Text>
+              
+              <Text style={styles.welcomeSubtitle}>
+                Resumen de tu negocio
+              </Text>
+            </LinearGradient>
           </View>
 
           {/* Métricas Principales */}
-          <View className="mb-6">
-            <Text className="text-lg font-semibold text-gray-800 mb-4">
-              Métricas de Ventas
-            </Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Métricas de Ventas</Text>
             
             <MetricCard
               title="Ventas Totales"
               value={metrics.sales.value}
               subtitle={metrics.sales.subtitle}
               icon="trending-up"
-              color="#8b5cf6"
+              color={colors.primary}
             />
             
             <MetricCard
@@ -300,27 +248,25 @@ export default function BusinessDashboard({ navigation }) {
               value={metrics.income.value}
               subtitle={metrics.income.subtitle}
               icon="wallet"
-              color="#10b981"
+              color={colors.secondary}
             />
           </View>
 
           {/* Métricas de Turnos */}
-          <View className="mb-6">
-            <Text className="text-lg font-semibold text-gray-800 mb-4">
-              Gestión de Turnos
-            </Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Gestión de Turnos</Text>
             
-            <View className="flex-row justify-between mb-4">
-              <View className="flex-1 mr-2">
+            <View style={styles.statsGrid}>
+              <View style={styles.statHalf}>
                 <MetricCard
                   title="Turnos del Día"
                   value={metrics.appointments.value}
                   subtitle={metrics.appointments.subtitle}
                   icon="calendar"
-                  color="#3b82f6"
+                  color={colors.accent}
                 />
               </View>
-              <View className="flex-1 ml-2">
+              <View style={styles.statHalf}>
                 <MetricCard
                   title="Cancelados"
                   value={metrics.cancelled.value}
@@ -332,66 +278,169 @@ export default function BusinessDashboard({ navigation }) {
             </View>
           </View>
 
-          {/* Análisis Financiero */}
-          <View className="mb-6">
-            <Text className="text-lg font-semibold text-gray-800 mb-4">
-              Análisis Financiero
-            </Text>
+          {/* Botones de Acción */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
             
-            <MetricCard
-              title="Gastos del Período"
-              value={metrics.expenses.value}
-              subtitle={metrics.expenses.subtitle}
-              icon="receipt"
-              color="#f59e0b"
-            />
-            
-            {/* Balance Resumen */}
-            <View className="bg-white rounded-2xl p-4 shadow-sm">
-              <Text className="text-base font-semibold text-gray-800 mb-2">
-                Balance Resumen
-              </Text>
-              <View className="flex-row justify-between items-center">
-                <View>
-                  <Text className="text-sm text-gray-600">Ingresos - Gastos</Text>
-                  <Text className="text-xl font-bold text-green-600">
-                    $710,000
-                  </Text>
-                </View>
-                <View className="bg-green-100 px-3 py-1 rounded-full">
-                  <Text className="text-sm font-medium text-green-700">
-                    +72% ganancia
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-
-          {/* Acceso Rápido */}
-          <View className="mb-8">
-            <Text className="text-lg font-semibold text-gray-800 mb-4">
-              Acceso Rápido
-            </Text>
-            
-            <TouchableOpacity
+            <BrandedButton
+              variant="primary"
               onPress={openWebApp}
-              className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-purple-600"
+              style={styles.actionButton}
             >
-              <View className="flex-row items-center justify-between">
-                <View>
-                  <Text className="text-base font-semibold text-gray-800">
-                    Gestión Completa
-                  </Text>
-                  <Text className="text-sm text-gray-600 mt-1">
-                    Accede a todas las funcionalidades avanzadas
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#8b5cf6" />
+              <View style={styles.buttonContent}>
+                <Ionicons name="desktop" size={20} color="#fff" />
+                <Text style={styles.buttonText}>Panel Completo Web</Text>
               </View>
-            </TouchableOpacity>
+            </BrandedButton>
+            
+            <BrandedButton
+              variant="outline"
+              onPress={handleLogout}
+              style={styles.actionButton}
+            >
+              <View style={styles.buttonContent}>
+                <Ionicons name="log-out-outline" size={20} color={colors.primary} />
+                <Text style={[styles.buttonText, { color: colors.primary }]}>Cerrar Sesión</Text>
+              </View>
+            </BrandedButton>
           </View>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+  },
+  logoutIconButton: {
+    padding: 8,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  welcomeCard: {
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  welcomeGradient: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  logoContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  welcomeTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: '#64748b',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 16,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statHalf: {
+    flex: 1,
+  },
+  metricCard: {
+    marginBottom: 16,
+  },
+  metricGradient: {
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  metricContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  metricTextContainer: {
+    flex: 1,
+  },
+  metricTitle: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  metricValue: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  metricSubtitle: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 12,
+  },
+  metricIconContainer: {
+    width: 48,
+    height: 48,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionButton: {
+    marginBottom: 12,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+});

@@ -1,17 +1,17 @@
 import { configureStore, createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { StorageHelper } from '../utils/storage.js';
-import { STORAGE_KEYS } from '../constants/api.js';
+import { STORAGE_KEYS, API_CONFIG } from '../constants/api.js';
 // Import shared slices needed for React Native
 import businessRuleReducer from './slices/businessRuleSlice.js';
+import businessConfigurationReducer from './slices/businessConfigurationSlice.js';
+import businessReducer from './slices/businessSlice.js';
 
 // Temporal async thunk for login (React Native specific)
 export const loginUserRN = createAsyncThunk(
   'auth/loginUserRN',
   async ({ credentials, rememberMe }, { rejectWithValue }) => {
     try {
-      // Use IP address instead of localhost for React Native
-      const API_URL = 'http://192.168.0.213:3001';
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -64,11 +64,10 @@ export const fetchPublicPlans = createAsyncThunk(
   'publicPlans/fetchAll',
   async (params = {}, { rejectWithValue }) => {
     try {
-      const API_URL = 'http://192.168.0.213:3001';
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `/api/plans?${queryString}` : '/api/plans';
       
-      const response = await fetch(`${API_URL}${url}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${url}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -91,11 +90,10 @@ export const fetchPublicPlanById = createAsyncThunk(
   'publicPlans/fetchById',
   async ({ planId, params = {} }, { rejectWithValue }) => {
     try {
-      const API_URL = 'http://192.168.0.213:3001';
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `/api/plans/${planId}?${queryString}` : `/api/plans/${planId}`;
       
-      const response = await fetch(`${API_URL}${url}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${url}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -245,7 +243,9 @@ export const createReactNativeStore = () => {
     reducer: {
       auth: authSlice.reducer,
       publicPlans: publicPlansSlice.reducer,
-      businessRule: businessRuleReducer
+      businessRule: businessRuleReducer,
+      businessConfiguration: businessConfigurationReducer,
+      business: businessReducer
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({

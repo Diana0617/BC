@@ -11,7 +11,6 @@ import PlanSelection from '../../components/subscription/PlanSelection'
 import BusinessRegistration from '../../components/subscription/BusinessRegistration'
 import PaymentFlow from '../../components/subscription/PaymentFlowWompi'
 import LoginModal from '../auth/LoginModal';
-import BillingCycleSelector from '../../components/subscription/BillingCycleSelector';
 
 const SubscriptionPage = () => {
   // Estado de autenticación y navegación
@@ -71,10 +70,14 @@ const SubscriptionPage = () => {
     }
   }, [dispatch, searchParams])
 
-  const handlePlanSelection = (plan) => {
+  const handlePlanSelection = (plan, selectedCycle) => {
     setSelectedPlan(plan)
-    // No avanzar automáticamente - el usuario debe elegir el ciclo primero
-    // setCurrentStep(2)
+    // Actualizar el ciclo de facturación seleccionado desde la card
+    if (selectedCycle) {
+      setBillingCycle(selectedCycle)
+    }
+    // Avanzar automáticamente al siguiente paso
+    setCurrentStep(2)
   }
 
   const handleRegistrationComplete = (data) => {
@@ -348,33 +351,14 @@ const SubscriptionPage = () => {
 
         {/* Main content steps remain unchanged */}
         {currentStep === 1 && (
-          <>
-            <PlanSelection
-              plans={plans}
-              loading={loading}
-              onPlanSelect={handlePlanSelection}
-              invitationToken={invitationToken}
-            />
-            
-            {/* Billing Cycle Selector */}
-            {selectedPlan && (
-              <div className="mt-8 max-w-2xl mx-auto">
-                <BillingCycleSelector
-                  plan={selectedPlan}
-                  selectedCycle={billingCycle}
-                  onCycleChange={setBillingCycle}
-                />
-                <div className="mt-6 text-center">
-                  <button
-                    onClick={() => setCurrentStep(2)}
-                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-3 rounded-lg font-semibold shadow-lg transition-all"
-                  >
-                    Continuar con {billingCycle === 'MONTHLY' ? 'Plan Mensual' : 'Plan Anual'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
+          <PlanSelection
+            plans={plans}
+            loading={loading}
+            onPlanSelect={handlePlanSelection}
+            invitationToken={invitationToken}
+            billingCycle={billingCycle}
+            onCycleChange={setBillingCycle}
+          />
         )}
 
         {currentStep === 2 && (

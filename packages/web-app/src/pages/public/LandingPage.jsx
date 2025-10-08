@@ -112,7 +112,7 @@ const LandingPage = () => {
             <div className="flex justify-center mb-4 sm:mb-6">
               <div className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-cyan-400/20 backdrop-blur-sm rounded-full border border-yellow-400/30">
                 <SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-yellow-400" />
-                <span className="text-xs sm:text-sm font-medium text-yellow-100">Prueba gratis 14 días</span>
+                <span className="text-xs sm:text-sm font-medium text-yellow-100">Prueba gratis</span>
               </div>
             </div>
             
@@ -207,7 +207,7 @@ const LandingPage = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-4">
             <div className="inline-flex items-center px-4 py-2 bg-yellow-400 text-gray-900 text-sm font-semibold rounded-full mb-6">
-              Prueba gratuita de 14 días
+              Prueba gratuita
             </div>
           </div>
           <div className="text-center mb-12 sm:mb-16">

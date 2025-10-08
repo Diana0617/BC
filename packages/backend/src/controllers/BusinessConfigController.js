@@ -935,6 +935,249 @@ class BusinessConfigController {
     return Math.round((completed / total) * 100);
   }
 
+  // ==================== BRANDING Y PERSONALIZACIÓN ====================
+
+  /**
+   * Obtener configuración de branding
+   * GET /api/business/:businessId/branding
+   */
+  async getBranding(req, res) {
+    try {
+      const { businessId } = req.params;
+      
+      // Verificar permisos
+      if (req.user.businessId !== businessId && req.user.role !== 'OWNER') {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para acceder a este negocio'
+        });
+      }
+      
+      const business = await BusinessConfigService.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({
+          success: false,
+          message: 'Negocio no encontrado'
+        });
+      }
+      
+      const settings = business.settings || {};
+      const branding = settings.branding || {};
+      
+      // Combinar branding con valores por defecto y asegurar que incluye el logo
+      const brandingResponse = {
+        primaryColor: branding.primaryColor || '#FF6B9D',
+        secondaryColor: branding.secondaryColor || '#4ECDC4',
+        accentColor: branding.accentColor || '#FFE66D',
+        fontFamily: branding.fontFamily || 'Poppins',
+        logo: branding.logo || business.logo || null,
+        favicon: branding.favicon || null
+      };
+      
+      console.log('📋 getBranding response:', {
+        businessId,
+        businessLogo: business.logo,
+        brandingLogo: branding.logo,
+        finalLogo: brandingResponse.logo
+      });
+      
+      res.json({
+        success: true,
+        data: brandingResponse
+      });
+      
+    } catch (error) {
+      console.error('Error fetching branding:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Actualizar configuración de branding (colores)
+   * PUT /api/business/:businessId/branding
+   */
+  async updateBranding(req, res) {
+    try {
+      const { businessId } = req.params;
+      const { primaryColor, secondaryColor, accentColor, fontFamily } = req.body;
+      
+      // Verificar permisos
+      if (req.user.businessId !== businessId && req.user.role !== 'OWNER') {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para modificar este negocio'
+        });
+      }
+      
+      const business = await BusinessConfigService.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({
+          success: false,
+          message: 'Negocio no encontrado'
+        });
+      }
+      
+      // Validar formato de colores hexadecimales
+      const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+      
+      if (primaryColor && !hexColorRegex.test(primaryColor)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Color primario inválido. Debe ser formato hexadecimal (#RRGGBB)'
+        });
+      }
+      
+      if (secondaryColor && !hexColorRegex.test(secondaryColor)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Color secundario inválido. Debe ser formato hexadecimal (#RRGGBB)'
+        });
+      }
+      
+      if (accentColor && !hexColorRegex.test(accentColor)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Color de acento inválido. Debe ser formato hexadecimal (#RRGGBB)'
+        });
+      }
+      
+      const currentSettings = business.settings || {};
+      const currentBranding = currentSettings.branding || {};
+      
+      // Actualizar configuraciones de branding
+      const updatedSettings = {
+        ...currentSettings,
+        branding: {
+          ...currentBranding,
+          ...(primaryColor && { primaryColor }),
+          ...(secondaryColor && { secondaryColor }),
+          ...(accentColor && { accentColor }),
+          ...(fontFamily && { fontFamily }),
+          // Mantener logo actual - priorizar branding.logo, luego business.logo
+          logo: currentBranding.logo || business.logo || null
+        }
+      };
+      
+      await BusinessConfigService.updateBusinessSettings(businessId, updatedSettings);
+      
+      res.json({
+        success: true,
+        data: updatedSettings.branding,
+        message: 'Configuración de branding actualizada exitosamente'
+      });
+      
+    } catch (error) {
+      console.error('Error updating branding:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Subir logo del negocio
+   * POST /api/business/:businessId/upload-logo
+   */
+  async uploadLogo(req, res) {
+    try {
+      const { businessId } = req.params;
+      const file = req.file;
+      
+      if (!file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No se proporcionó ningún archivo'
+        });
+      }
+      
+      // Verificar permisos
+      if (req.user.businessId !== businessId && req.user.role !== 'OWNER') {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para modificar este negocio'
+        });
+      }
+      
+      const business = await BusinessConfigService.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({
+          success: false,
+          message: 'Negocio no encontrado'
+        });
+      }
+      
+      // Subir a Cloudinary usando el servicio existente
+      const CloudinaryService = require('../services/CloudinaryService');
+      const uploadResult = await CloudinaryService.uploadBusinessLogo(file.path, businessId);
+      
+      console.log('☁️  Cloudinary upload result:', uploadResult);
+      
+      if (!uploadResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: 'Error al subir el logo a Cloudinary'
+        });
+      }
+      
+      // La URL está en uploadResult.data.main.url
+      const logoUrl = uploadResult.data.main?.url || uploadResult.data.url;
+      const thumbnailUrl = uploadResult.data.thumbnail?.url;
+      
+      console.log('💾 Updating business.logo with URL:', logoUrl);
+      
+      // Actualizar logo en el modelo Business
+      const updateBusinessResult = await BusinessConfigService.updateBusiness(businessId, {
+        logo: logoUrl
+      });
+      
+      console.log('✅ Business updated, logo value:', updateBusinessResult.logo);
+      
+      // Recargar business para obtener la versión actualizada
+      const updatedBusiness = await BusinessConfigService.getBusiness(businessId);
+      
+      console.log('🔄 Reloaded business, logo value:', updatedBusiness.logo);
+      
+      // Actualizar también en settings.branding
+      const currentSettings = updatedBusiness.settings || {};
+      const updatedSettings = {
+        ...currentSettings,
+        branding: {
+          ...(currentSettings.branding || {}),
+          logo: logoUrl,
+          logoThumbnail: thumbnailUrl
+        }
+      };
+      
+      console.log('📝 Updating settings.branding with:', updatedSettings.branding);
+      
+      await BusinessConfigService.updateBusinessSettings(businessId, updatedSettings);
+      
+      res.json({
+        success: true,
+        data: {
+          logoUrl: logoUrl,
+          thumbnailUrl: thumbnailUrl,
+          thumbnails: {
+            main: uploadResult.data.main,
+            thumbnail: uploadResult.data.thumbnail
+          }
+        },
+        message: 'Logo subido exitosamente'
+      });
+      
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Error interno del servidor'
+      });
+    }
+  }
+
   // ==================== CONFIGURACIONES DE NUMERACIÓN ====================
 
   /**

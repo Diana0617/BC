@@ -1,12 +1,164 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
+const { uploadImageMiddleware } = require('../config/cloudinary');
 const BusinessConfigController = require('../controllers/BusinessConfigController');
 const BusinessInventoryController = require('../controllers/BusinessInventoryController');
 const BusinessSupplierController = require('../controllers/BusinessSupplierController');
 
 // Middleware de autenticación para todas las rutas
 router.use(authenticateToken);
+
+// ==================== BRANDING Y PERSONALIZACIÓN ====================
+
+/**
+ * @swagger
+ * /api/business/{businessId}/branding:
+ *   get:
+ *     summary: Obtener configuración de branding del negocio
+ *     tags: [Business Config - Branding]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Configuración de branding obtenida exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     primaryColor:
+ *                       type: string
+ *                       example: "#FF6B9D"
+ *                     secondaryColor:
+ *                       type: string
+ *                       example: "#4ECDC4"
+ *                     accentColor:
+ *                       type: string
+ *                       example: "#FFE66D"
+ *                     logo:
+ *                       type: string
+ *                       format: uri
+ *                     fontFamily:
+ *                       type: string
+ *                       example: "Poppins"
+ *       403:
+ *         description: No tienes permisos
+ *       404:
+ *         description: Negocio no encontrado
+ */
+router.get('/:businessId/branding', BusinessConfigController.getBranding);
+
+/**
+ * @swagger
+ * /api/business/{businessId}/branding:
+ *   put:
+ *     summary: Actualizar colores corporativos del negocio
+ *     tags: [Business Config - Branding]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               primaryColor:
+ *                 type: string
+ *                 pattern: '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'
+ *                 example: "#E91E63"
+ *               secondaryColor:
+ *                 type: string
+ *                 pattern: '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'
+ *                 example: "#00BCD4"
+ *               accentColor:
+ *                 type: string
+ *                 pattern: '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'
+ *                 example: "#FFC107"
+ *               fontFamily:
+ *                 type: string
+ *                 example: "Montserrat"
+ *     responses:
+ *       200:
+ *         description: Branding actualizado exitosamente
+ *       400:
+ *         description: Color inválido
+ *       403:
+ *         description: No tienes permisos
+ */
+router.put('/:businessId/branding', BusinessConfigController.updateBranding);
+
+/**
+ * @swagger
+ * /api/business/{businessId}/upload-logo:
+ *   post:
+ *     summary: Subir logo del negocio
+ *     tags: [Business Config - Branding]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - logo
+ *             properties:
+ *               logo:
+ *                 type: string
+ *                 format: binary
+ *                 description: Archivo de imagen del logo (JPG, PNG, WEBP)
+ *     responses:
+ *       200:
+ *         description: Logo subido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     logoUrl:
+ *                       type: string
+ *                       format: uri
+ *                     thumbnails:
+ *                       type: object
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: No se proporcionó archivo
+ *       403:
+ *         description: No tienes permisos
+ */
+router.post('/:businessId/upload-logo', 
+  uploadImageMiddleware.single('logo'), 
+  BusinessConfigController.uploadLogo
+);
 
 // ==================== REGLAS DEL NEGOCIO ====================
 

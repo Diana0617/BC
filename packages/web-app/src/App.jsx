@@ -4,6 +4,9 @@ import { useSelector, useDispatch } from 'react-redux'
 import { Toaster } from 'react-hot-toast'
 import { checkExistingSession, OwnerOnlyRoute, AdminRoute } from '../../shared/src/index.js'
 
+// Branding Context
+import { BrandingProvider } from './contexts/BrandingContext'
+
 // Pages
 import DashboardPage from './pages/dashboard/DashboardPage'
 
@@ -57,8 +60,9 @@ function AppLayout() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Routes>
+      <BrandingProvider>
+        <div className="min-h-screen bg-gray-50">
+          <Routes>
           {/* Public routes - No authentication required */}
           {!isAuthenticated && <Route path="/" element={<LandingPage />} />}
           <Route path="/book/:businessCode" element={<OnlineBookingPage />} />
@@ -169,6 +173,7 @@ function AppLayout() {
           }}
         />
       </div>
+      </BrandingProvider>
     </Router>
   )
 }
