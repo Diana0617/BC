@@ -47,6 +47,17 @@ export { default as businessRuleSlice } from './businessRuleSlice';
 // 🏨 PUBLIC BOOKING SYSTEM SLICES
 export { default as publicBookingSlice } from './publicBookingSlice';
 
+// 🏢 MULTI-BRANCH SYSTEM SLICES
+export { default as userBranchSlice } from './userBranchSlice';
+
+// 💰 SPECIALIST SERVICE PRICING SLICES
+export { default as specialistServiceSlice } from './specialistServiceSlice';
+
+// 📅 CALENDAR SYSTEM SLICES
+export { default as scheduleSlice } from './scheduleSlice';
+export { default as appointmentCalendarSlice } from './appointmentCalendarSlice';
+export { default as timeSlotSlice } from './timeSlotSlice';
+
 // Export all OWNER slices as a group
 export const ownerSlices = {
   ownerStatsSlice,

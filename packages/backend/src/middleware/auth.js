@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { User, Business } = require('../models');
+const { User, Business, UserBranch, Branch } = require('../models');
 
 /**
  * Middleware para validar businessId en query params o body
@@ -70,6 +70,20 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
+    // Cargar branches asignados para especialistas y recepcionistas (incluyendo RECEPTIONIST_SPECIALIST)
+    let branchIds = [];
+    if (['SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'].includes(user.role)) {
+      const userBranches = await UserBranch.findAll({
+        where: { userId: user.id },
+        include: [{
+          model: Branch,
+          as: 'branch',
+          attributes: ['id', 'name']
+        }]
+      });
+      branchIds = userBranches.map(ub => ub.branchId);
+    }
+
     // Verificar que el negocio esté activo o en período de prueba válido (excepto para OWNER)
     if (user.role !== 'OWNER' && user.business) {
       const business = user.business;
@@ -102,7 +116,8 @@ const authenticateToken = async (req, res, next) => {
       role: user.role,
       status: user.status,
       businessId: user.businessId,
-      business: user.business
+      business: user.business,
+      branchIds: branchIds // Array de IDs de branches asignados (vacío para otros roles)
     };
 
     next();
@@ -259,11 +274,11 @@ const requireSpecialistOrReceptionist = async (req, res, next) => {
       });
     }
 
-    // Verificar que el rol sea SPECIALIST o RECEPTIONIST
-    if (!['SPECIALIST', 'RECEPTIONIST'].includes(req.user.role)) {
+    // Verificar que el rol sea SPECIALIST, RECEPTIONIST o RECEPTIONIST_SPECIALIST
+    if (!['SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'].includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        error: 'Acceso denegado. Rol SPECIALIST o RECEPTIONIST requerido'
+        error: 'Acceso denegado. Rol SPECIALIST, RECEPTIONIST o RECEPTIONIST_SPECIALIST requerido'
       });
     }
 
@@ -285,20 +300,27 @@ const requireSpecialistOrReceptionist = async (req, res, next) => {
     }
 
     // Agregar información del usuario según su rol
-    if (req.user.role === 'SPECIALIST') {
+    // RECEPTIONIST_SPECIALIST tiene ambos permisos
+    if (req.user.role === 'SPECIALIST' || req.user.role === 'RECEPTIONIST_SPECIALIST') {
       req.specialist = {
         id: req.user.id,
-        businessId: req.user.businessId
+        businessId: req.user.businessId,
+        branchIds: req.user.branchIds || []
       };
-      // Evitar acceso cruzado para especialistas
-      if (req.body.specialistId || req.params.specialistId) {
-        delete req.body.specialistId;
-        delete req.params.specialistId;
+      // Evitar acceso cruzado para especialistas puros
+      if (req.user.role === 'SPECIALIST') {
+        if (req.body.specialistId || req.params.specialistId) {
+          delete req.body.specialistId;
+          delete req.params.specialistId;
+        }
       }
-    } else if (req.user.role === 'RECEPTIONIST') {
+    }
+    
+    if (req.user.role === 'RECEPTIONIST' || req.user.role === 'RECEPTIONIST_SPECIALIST') {
       req.receptionist = {
         id: req.user.id,
-        businessId: req.user.businessId
+        businessId: req.user.businessId,
+        branchIds: req.user.branchIds || []
       };
     }
 

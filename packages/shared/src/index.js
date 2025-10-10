@@ -64,11 +64,27 @@ export * from './store/slices/ruleTemplateSlice.js';
 export * from './store/slices/advancePaymentSlice.js';
 // 🔐 BUSINESS VALIDATION SYSTEM SLICES
 export * from './store/slices/businessValidationSlice.js';
+// 🏢 MULTI-BRANCH SYSTEM SLICES
+export * from './store/slices/userBranchSlice.js';
+// 💰 SPECIALIST SERVICE PRICING SLICES
+export * from './store/slices/specialistServiceSlice.js';
+// 📅 CALENDAR SYSTEM SLICES
+export * from './store/slices/scheduleSlice.js';
+export * from './store/slices/appointmentCalendarSlice.js';
+export * from './store/slices/timeSlotSlice.js';
 
 // Export selectors
 export * from './store/selectors/authSelectors.js';
 export * from './store/selectors/userSelectors.js';
 export * from './store/selectors/ownerSelectors.js';
+// 🏢 MULTI-BRANCH SELECTORS
+export * from './store/selectors/userBranchSelectors.js';
+// 💰 SPECIALIST SERVICE PRICING SELECTORS
+export * from './store/selectors/specialistServiceSelectors.js';
+// 📅 CALENDAR SYSTEM SELECTORS
+export * from './store/selectors/scheduleSelectors.js';
+export * from './store/selectors/appointmentCalendarSelectors.js';
+export * from './store/selectors/timeSlotSelectors.js';
 
 // Export hooks
 export * from './hooks/useOwner.js';
@@ -84,6 +100,14 @@ export * from './hooks/useOwnerFinancialReports.js';
 export * from './hooks/useOwnerExpenses.js';
 // Rule Template System hooks
 export * from './hooks/useRuleTemplates.js';
+// 🏢 MULTI-BRANCH SYSTEM HOOKS
+export * from './hooks/useUserBranch.js';
+// 💰 SPECIALIST SERVICE PRICING HOOKS
+export * from './hooks/useSpecialistService.js';
+// 📅 CALENDAR SYSTEM HOOKS
+export * from './hooks/useSchedule.js';
+export * from './hooks/useAppointmentCalendar.js';
+export * from './hooks/useTimeSlot.js';
 
 // Export constants and configuration
 export * from './config/routes.js';

@@ -4,7 +4,9 @@ const {
   Client, 
   SpecialistProfile, 
   User,
-  Business
+  Business,
+  SpecialistService,
+  UserBranch
 } = require('../models');
 const { Op } = require('sequelize');
 const multer = require('multer');
@@ -45,14 +47,28 @@ class AppointmentController {
       if (req.specialist) {
         // SPECIALIST: Solo sus propias citas
         where.specialistId = req.specialist.id;
+        
+        // Si el especialista tiene asignadas varias sucursales, filtrar por ellas
+        if (req.user.branchIds && req.user.branchIds.length > 0) {
+          where.branchId = {
+            [Op.in]: req.user.branchIds
+          };
+        }
       } else if (req.receptionist) {
         // RECEPTIONIST: Puede especificar especialista o ver todas
         if (specialistId) {
           where.specialistId = specialistId;
         }
+        
+        // Si el recepcionista tiene asignadas varias sucursales, filtrar por ellas
+        if (req.user.branchIds && req.user.branchIds.length > 0) {
+          where.branchId = {
+            [Op.in]: req.user.branchIds
+          };
+        }
       }
 
-      // Filtro opcional por sucursal
+      // Filtro opcional por sucursal específica (sobrescribe el filtro multi-branch)
       if (branchId) {
         where.branchId = branchId;
       }
@@ -233,7 +249,7 @@ class AppointmentController {
         where: {
           id: specialistId,
           businessId,
-          role: 'SPECIALIST',
+          role: { [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST'] },
           status: 'ACTIVE'
         }
       });
@@ -291,21 +307,18 @@ class AppointmentController {
           });
         }
 
-        // Verificar que el especialista trabaje en esa sucursal
-        const specialistProfile = await require('../models/SpecialistProfile').findOne({
-          where: { userId: specialistId },
-          include: [{
-            model: Branch,
-            as: 'branches',
-            where: { id: branchId },
-            required: true
-          }]
+        // Verificar que el especialista tenga acceso a esa sucursal
+        const specialistBranchAccess = await UserBranch.findOne({
+          where: {
+            userId: specialistId,
+            branchId: branchId
+          }
         });
 
-        if (!specialistProfile) {
+        if (!specialistBranchAccess) {
           return res.status(400).json({
             success: false,
-            error: 'El especialista no trabaja en la sucursal seleccionada'
+            error: 'El especialista no tiene acceso a la sucursal seleccionada'
           });
         }
       }
@@ -346,6 +359,20 @@ class AppointmentController {
         });
       }
 
+      // Consultar precio personalizado del especialista para este servicio
+      const specialistService = await SpecialistService.findOne({
+        where: {
+          specialistId,
+          serviceId,
+          isActive: true
+        }
+      });
+
+      // Usar precio personalizado si existe, sino usar el precio del servicio
+      const finalPrice = specialistService && specialistService.customPrice !== null 
+        ? specialistService.customPrice 
+        : service.price;
+
       // Generar número de cita único
       const appointmentNumber = `CITA-${Date.now()}`;
 
@@ -359,7 +386,7 @@ class AppointmentController {
         appointmentNumber,
         startTime: new Date(startTime),
         endTime: new Date(endTime),
-        totalAmount: service.price,
+        totalAmount: finalPrice,
         status: 'PENDING',
         notes,
         clientNotes

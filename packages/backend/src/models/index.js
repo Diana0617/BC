@@ -24,6 +24,8 @@ const PasswordResetToken = require('./PasswordResetToken');
 // Modelos de configuración del negocio
 const SpecialistProfile = require('./SpecialistProfile');
 const SpecialistBranchSchedule = require('./SpecialistBranchSchedule');
+const UserBranch = require('./UserBranch');
+const SpecialistService = require('./SpecialistService');
 const Schedule = require('./Schedule');
 const TimeSlot = require('./TimeSlot');
 const BusinessPaymentConfig = require('./BusinessPaymentConfig');
@@ -222,6 +224,85 @@ SpecialistProfile.hasMany(SpecialistBranchSchedule, {
   foreignKey: 'specialistId',
   as: 'branchSchedules'
 });
+
+// ==================== NUEVAS ASOCIACIONES MULTI-BRANCH ====================
+
+// User - Branch (muchos a muchos a través de UserBranch)
+// Permite que recepcionistas y especialistas trabajen en múltiples sucursales
+User.belongsToMany(Branch, {
+  through: UserBranch,
+  foreignKey: 'userId',
+  otherKey: 'branchId',
+  as: 'branches'
+});
+Branch.belongsToMany(User, {
+  through: UserBranch,
+  foreignKey: 'branchId',
+  otherKey: 'userId',
+  as: 'assignedUsers'
+});
+
+// Relaciones directas con UserBranch
+UserBranch.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+UserBranch.belongsTo(Branch, {
+  foreignKey: 'branchId',
+  as: 'branch'
+});
+UserBranch.belongsTo(User, {
+  foreignKey: 'assignedBy',
+  as: 'assigner'
+});
+User.hasMany(UserBranch, {
+  foreignKey: 'userId',
+  as: 'userBranches'
+});
+Branch.hasMany(UserBranch, {
+  foreignKey: 'branchId',
+  as: 'branchUsers'
+});
+
+// User (Specialist) - Service (muchos a muchos a través de SpecialistService)
+// Permite que cada especialista tenga precios personalizados por servicio
+User.belongsToMany(Service, {
+  through: SpecialistService,
+  foreignKey: 'specialistId',
+  otherKey: 'serviceId',
+  as: 'specialistServices'
+});
+Service.belongsToMany(User, {
+  through: SpecialistService,
+  foreignKey: 'serviceId',
+  otherKey: 'specialistId',
+  as: 'specialists'
+});
+
+// Relaciones directas con SpecialistService
+SpecialistService.belongsTo(User, {
+  foreignKey: 'specialistId',
+  as: 'specialist'
+});
+SpecialistService.belongsTo(Service, {
+  foreignKey: 'serviceId',
+  as: 'service'
+});
+SpecialistService.belongsTo(User, {
+  foreignKey: 'assignedBy',
+  as: 'assigner'
+});
+User.hasMany(SpecialistService, {
+  foreignKey: 'specialistId',
+  as: 'serviceAssignments'
+});
+Service.hasMany(SpecialistService, {
+  foreignKey: 'serviceId',
+  as: 'specialistAssignments'
+});
+
+// ==================== FIN NUEVAS ASOCIACIONES ====================
+
 
 // Business - Service
 Business.hasMany(Service, { 
@@ -945,6 +1026,9 @@ module.exports = {
   Schedule,
   TimeSlot,
   BusinessPaymentConfig,
+  SpecialistBranchSchedule,
+  UserBranch,
+  SpecialistService,
   // Nuevos modelos simplificados de reglas
   RuleTemplate,
   BusinessRule,

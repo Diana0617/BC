@@ -22,6 +22,7 @@ async function startServer() {
         Service,
         Product,
         Appointment,
+        Branch,
         PlanModule,
         BusinessSubscription,
         BusinessClient,
@@ -29,6 +30,9 @@ async function startServer() {
         FinancialMovement,
         PaymentIntegration,
         PasswordResetToken,
+        // Nuevos modelos multi-branch y pricing
+        UserBranch,
+        SpecialistService,
         // Nuevos modelos de comisiones
         SpecialistDocument,
         SpecialistCommission,
@@ -84,10 +88,16 @@ async function startServer() {
         console.log('✅ Nuevos modelos de reglas sincronizados');
         
         // 5. Tablas principales
+        await Branch.sync(syncOptions);
         await Client.sync(syncOptions);
         await Service.sync(syncOptions);
         await Product.sync(syncOptions);
         console.log('✅ Tablas principales sincronizadas');
+        
+        // 5.1. NUEVAS TABLAS MULTI-BRANCH Y PRICING PERSONALIZADO
+        await UserBranch.sync(syncOptions);
+        await SpecialistService.sync(syncOptions);
+        console.log('✅ Tablas de multi-branch y pricing personalizado sincronizadas');
         
         // 6. Modelos de especialistas (nuevos)
         await SpecialistDocument.sync(syncOptions);

@@ -4,9 +4,9 @@ const getApiUrl = () => {
   const isReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
   
   if (isReactNative) {
-    // React Native environment - use your local IP address
-    // TODO: Update this IP if your network changes
-    return 'http://192.168.1.8:3001';
+    // React Native environment - use environment variable or fallback to localhost
+    const localIP = process.env.EXPO_PUBLIC_LOCAL_IP || 'localhost';
+    return `http://${localIP}:3001`;
   } else if (typeof window !== 'undefined') {
     // Web browser environment
     return window.__BC_API_URL__ || 'http://localhost:3001';

@@ -101,25 +101,25 @@ app.use('/api/', limiter);
 
 // 📚 SWAGGER DOCUMENTATION - SOLO PARA OWNERS (excepto en desarrollo)
 // Middleware condicional para desarrollo vs producción
-// const swaggerMiddleware = process.env.NODE_ENV === 'development'
-//   ? [] // Sin restricciones en desarrollo
-//   : [authenticateToken, ownerOnly]; // Con restricciones en producción
+const swaggerMiddleware = process.env.NODE_ENV === 'development'
+  ? [] // Sin restricciones en desarrollo
+  : [authenticateToken, ownerOnly]; // Con restricciones en producción
 
-// app.use('/api-docs', ...swaggerMiddleware, swaggerUi.serve, swaggerUi.setup(specs, swaggerConfig));
+app.use('/api-docs', ...swaggerMiddleware, swaggerUi.serve, swaggerUi.setup(specs, swaggerConfig));
 
 // Ruta adicional para desarrollo sin restricciones
-// if (process.env.NODE_ENV === 'development') {
-//   app.use('/api-docs-dev', swaggerUi.serve, swaggerUi.setup(specs, {
-//     ...swaggerConfig,
-//     customSiteTitle: "Beauty Control API Docs - DESARROLLO (Sin restricciones)"
-//   }));
-// }
+if (process.env.NODE_ENV === 'development') {
+  app.use('/api-docs-dev', swaggerUi.serve, swaggerUi.setup(specs, {
+    ...swaggerConfig,
+    customSiteTitle: "Beauty Control API Docs - DESARROLLO (Sin restricciones)"
+  }));
+}
 
 // Ruta para acceder al JSON de la documentación - También con restricción condicional
-// app.get('/api-docs.json', ...swaggerMiddleware, (req, res) => {
-//   res.setHeader('Content-Type', 'application/json');
-//   res.send(specs);
-// });
+app.get('/api-docs.json', ...swaggerMiddleware, (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(specs);
+});
 
 // Rate limiting más estricto para autenticación
 const authLimiter = rateLimit({
@@ -216,6 +216,7 @@ const payment3DSRoutes = require('./routes/payment3DS');
 const testingRoutes = require('./routes/testing');
 const scheduleRoutes = require('./routes/schedules');
 const timeSlotRoutes = require('./routes/time-slots');
+const specialistServicesRoutes = require('./routes/specialistServices');
 
 
 app.use('/api/auth', authRoutes);
@@ -230,6 +231,7 @@ app.use('/api/modules', moduleRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/services', serviceRoutes);
+app.use('/api/specialists', specialistServicesRoutes); // Rutas de servicios de especialistas
 app.use('/api/products', productRoutes);
 app.use('/api/financial', financialRoutes);
 app.use('/api/owner', ownerRoutes);

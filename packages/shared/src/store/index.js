@@ -32,6 +32,14 @@ import subscriptionReducer from './slices/subscriptionSlice';
 import businessConfigurationReducer from './slices/businessConfigurationSlice';
 // 🏨 PUBLIC BOOKING SYSTEM REDUCERS
 import publicBookingReducer from './slices/publicBookingSlice';
+// 🏢 MULTI-BRANCH SYSTEM REDUCERS
+import userBranchReducer from './slices/userBranchSlice';
+// 💰 SPECIALIST SERVICE PRICING REDUCERS
+import specialistServiceReducer from './slices/specialistServiceSlice';
+// 📅 CALENDAR SYSTEM REDUCERS
+import scheduleReducer from './slices/scheduleSlice';
+import appointmentCalendarReducer from './slices/appointmentCalendarSlice';
+import timeSlotReducer from './slices/timeSlotSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -69,7 +77,15 @@ export const createStore = (preloadedState = {}) => {
       // 🏢 BUSINESS CONFIGURATION REDUCERS
       businessConfiguration: businessConfigurationReducer,
       // 🏨 PUBLIC BOOKING SYSTEM REDUCERS
-      publicBooking: publicBookingReducer
+      publicBooking: publicBookingReducer,
+      // 🏢 MULTI-BRANCH SYSTEM REDUCERS
+      userBranch: userBranchReducer,
+      // 💰 SPECIALIST SERVICE PRICING REDUCERS
+      specialistService: specialistServiceReducer,
+      // 📅 CALENDAR SYSTEM REDUCERS
+      schedule: scheduleReducer,
+      appointmentCalendar: appointmentCalendarReducer,
+      timeSlot: timeSlotReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>

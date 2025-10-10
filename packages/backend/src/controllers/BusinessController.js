@@ -561,7 +561,7 @@ class BusinessController {
       } = req.body;
 
       // Validar rol del empleado
-      if (!['SPECIALIST', 'RECEPTIONIST'].includes(employeeRole)) {
+      if (!['SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'].includes(employeeRole)) {
         return res.status(400).json({
           success: false,
           error: 'Rol de empleado inválido'
