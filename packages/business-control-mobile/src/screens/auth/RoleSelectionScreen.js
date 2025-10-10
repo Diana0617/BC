@@ -33,6 +33,15 @@ const ROLES = [
     features: ['Agenda personal', 'Historial de clientes', 'Gestión de servicios', 'Comisiones'],
   },
   {
+    id: 'receptionist_specialist',
+    title: 'Recepcionista-Especialista',
+    subtitle: 'Doble rol: Recepción y Servicios',
+    description: 'Gestiona la recepción y también presta servicios como especialista.',
+    icon: 'people-circle',
+    color: '#10b981',
+    features: ['Gestión de citas', 'Agenda personal', 'Atención al cliente', 'Servicios propios'],
+  },
+  {
     id: 'receptionist',
     title: 'Recepcionista',
     subtitle: 'Gestiona la recepción y citas',

@@ -27,6 +27,11 @@ const ROLE_CONFIG = {
     icon: 'cut',
     gradient: ['#ec4899', '#db2777'],
   },
+  receptionist_specialist: {
+    title: 'Recepcionista-Especialista',
+    icon: 'people-circle',
+    gradient: ['#10b981', '#059669'],
+  },
   receptionist: {
     title: 'Recepcionista',
     icon: 'desktop',

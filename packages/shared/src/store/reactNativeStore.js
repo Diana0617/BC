@@ -5,6 +5,10 @@ import { STORAGE_KEYS, API_CONFIG } from '../constants/api.js';
 import businessRuleReducer from './slices/businessRuleSlice.js';
 import businessConfigurationReducer from './slices/businessConfigurationSlice.js';
 import businessReducer from './slices/businessSlice.js';
+// Import calendar system slices
+import scheduleReducer from './slices/scheduleSlice.js';
+import appointmentCalendarReducer from './slices/appointmentCalendarSlice.js';
+import timeSlotReducer from './slices/timeSlotSlice.js';
 
 // Temporal async thunk for login (React Native specific)
 export const loginUserRN = createAsyncThunk(
@@ -245,7 +249,11 @@ export const createReactNativeStore = () => {
       publicPlans: publicPlansSlice.reducer,
       businessRule: businessRuleReducer,
       businessConfiguration: businessConfigurationReducer,
-      business: businessReducer
+      business: businessReducer,
+      // Calendar system reducers
+      schedule: scheduleReducer,
+      appointmentCalendar: appointmentCalendarReducer,
+      timeSlot: timeSlotReducer
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
