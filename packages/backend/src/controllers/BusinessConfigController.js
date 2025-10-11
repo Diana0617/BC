@@ -633,11 +633,12 @@ class BusinessConfigController {
 
       const result = await BusinessConfigService.getServices(businessId, filters);
 
-      res.json({
-        success: true,
-        data: result.services,
-        pagination: result.pagination
-      });
+      // Si el servicio devuelve un array directamente, envuélvelo en un objeto
+      const response = Array.isArray(result) 
+        ? { success: true, data: result }
+        : { success: true, data: result.services, pagination: result.pagination };
+
+      res.json(response);
     } catch (error) {
       res.status(500).json({
         success: false,

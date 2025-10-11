@@ -70,7 +70,7 @@ const SpecialistProfile = sequelize.define('SpecialistProfile', {
     type: DataTypes.ENUM('PERCENTAGE', 'FIXED_AMOUNT'),
     allowNull: false,
     defaultValue: 'PERCENTAGE',
-    comment: 'Tipo de comisión: porcentaje o monto fijo'
+    
   },
   fixedCommissionAmount: {
     type: DataTypes.DECIMAL(10, 2),
@@ -172,7 +172,7 @@ const SpecialistProfile = sequelize.define('SpecialistProfile', {
     type: DataTypes.ENUM('ACTIVE', 'INACTIVE', 'ON_VACATION', 'SICK_LEAVE', 'SUSPENDED'),
     allowNull: false,
     defaultValue: 'ACTIVE',
-    comment: 'Estado actual del especialista'
+    
   },
   hireDate: {
     type: DataTypes.DATE,
@@ -183,7 +183,7 @@ const SpecialistProfile = sequelize.define('SpecialistProfile', {
     type: DataTypes.ENUM('EMPLOYEE', 'CONTRACTOR', 'PARTNER'),
     allowNull: false,
     defaultValue: 'EMPLOYEE',
-    comment: 'Tipo de contrato laboral'
+    
   },
   notes: {
     type: DataTypes.TEXT,

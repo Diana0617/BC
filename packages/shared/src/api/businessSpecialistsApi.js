@@ -34,7 +34,7 @@ class BusinessSpecialistsAPI {
         sortOrder
       });
 
-      const response = await apiClient.get(`/business/${businessId}/config/specialists?${queryParams}`);
+      const response = await apiClient.get(`/api/business/${businessId}/config/specialists?${queryParams}`);
       return response.data;
     } catch (error) {
       console.error('Error obteniendo especialistas:', error);
@@ -47,7 +47,7 @@ class BusinessSpecialistsAPI {
    */
   static async getSpecialistById(businessId, specialistId) {
     try {
-      const response = await apiClient.get(`/business/${businessId}/config/specialists/${specialistId}`);
+      const response = await apiClient.get(`/api/business/${businessId}/config/specialists/${specialistId}`);
       return response.data;
     } catch (error) {
       console.error('Error obteniendo especialista:', error);
@@ -67,7 +67,7 @@ class BusinessSpecialistsAPI {
         throw new Error('Email, nombre y apellido son obligatorios');
       }
 
-      const response = await apiClient.post(`/business/${businessId}/config/specialists`, {
+      const response = await apiClient.post(`/api/business/${businessId}/config/specialists`, {
         userData: {
           ...userData,
           role: 'SPECIALIST',
@@ -91,7 +91,7 @@ class BusinessSpecialistsAPI {
   static async updateSpecialistProfile(businessId, profileId, profileData) {
     try {
       const response = await apiClient.put(
-        `/business/${businessId}/config/specialists/${profileId}`, 
+        `/api/business/${businessId}/config/specialists/${profileId}`, 
         profileData
       );
       return response.data;
@@ -106,7 +106,7 @@ class BusinessSpecialistsAPI {
    */
   static async updateSpecialistUser(businessId, userId, userData) {
     try {
-      const response = await apiClient.put(`/users/${userId}`, userData);
+      const response = await apiClient.put(`/api/users/${userId}`, userData);
       return response.data;
     } catch (error) {
       console.error('Error actualizando datos del usuario:', error);
@@ -121,7 +121,7 @@ class BusinessSpecialistsAPI {
     try {
       const queryParams = force ? '?force=true' : '';
       const response = await apiClient.delete(
-        `/business/${businessId}/config/specialists/${profileId}${queryParams}`
+        `/api/business/${businessId}/config/specialists/${profileId}${queryParams}`
       );
       return response.data;
     } catch (error) {
@@ -136,7 +136,7 @@ class BusinessSpecialistsAPI {
   static async toggleSpecialistStatus(businessId, profileId, isActive) {
     try {
       const response = await apiClient.patch(
-        `/business/${businessId}/config/specialists/${profileId}/status`,
+        `/api/business/${businessId}/config/specialists/${profileId}/status`,
         { isActive }
       );
       return response.data;
@@ -155,7 +155,7 @@ class BusinessSpecialistsAPI {
    */
   static async getSpecialistSchedule(businessId, specialistId) {
     try {
-      const response = await apiClient.get(`/business/${businessId}/config/specialists/${specialistId}/schedule`);
+      const response = await apiClient.get(`/api/business/${businessId}/config/specialists/${specialistId}/schedule`);
       return response.data;
     } catch (error) {
       console.error('Error obteniendo horarios:', error);
@@ -169,7 +169,7 @@ class BusinessSpecialistsAPI {
   static async updateSpecialistSchedule(businessId, specialistId, scheduleData) {
     try {
       const response = await apiClient.put(
-        `/business/${businessId}/config/specialists/${specialistId}/schedule`,
+        `/api/business/${businessId}/config/specialists/${specialistId}/schedule`,
         scheduleData
       );
       return response.data;
@@ -190,7 +190,7 @@ class BusinessSpecialistsAPI {
       });
 
       const response = await apiClient.get(
-        `/business/${businessId}/config/specialists/${specialistId}/availability?${queryParams}`
+        `/api/business/${businessId}/config/specialists/${specialistId}/availability?${queryParams}`
       );
       return response.data;
     } catch (error) {
@@ -208,7 +208,7 @@ class BusinessSpecialistsAPI {
    */
   static async getSpecialistDocuments(businessId, specialistId) {
     try {
-      const response = await apiClient.get(`/business/${businessId}/config/specialists/${specialistId}/documents`);
+      const response = await apiClient.get(`/api/business/${businessId}/config/specialists/${specialistId}/documents`);
       return response.data;
     } catch (error) {
       console.error('Error obteniendo documentos:', error);
@@ -232,7 +232,7 @@ class BusinessSpecialistsAPI {
       formData.append('expirationDate', documentData.expirationDate || '');
 
       const response = await apiClient.post(
-        `/business/${businessId}/config/specialists/${specialistId}/documents`,
+        `/api/business/${businessId}/config/specialists/${specialistId}/documents`,
         formData,
         {
           headers: {
@@ -253,7 +253,7 @@ class BusinessSpecialistsAPI {
   static async updateSpecialistDocument(businessId, specialistId, documentId, documentData) {
     try {
       const response = await apiClient.put(
-        `/business/${businessId}/config/specialists/${specialistId}/documents/${documentId}`,
+        `/api/business/${businessId}/config/specialists/${specialistId}/documents/${documentId}`,
         documentData
       );
       return response.data;
@@ -269,7 +269,7 @@ class BusinessSpecialistsAPI {
   static async deleteSpecialistDocument(businessId, specialistId, documentId) {
     try {
       const response = await apiClient.delete(
-        `/business/${businessId}/config/specialists/${specialistId}/documents/${documentId}`
+        `/api/business/${businessId}/config/specialists/${specialistId}/documents/${documentId}`
       );
       return response.data;
     } catch (error) {
@@ -288,7 +288,7 @@ class BusinessSpecialistsAPI {
   static async getSpecialistCommissions(businessId, specialistId, period = 'current') {
     try {
       const response = await apiClient.get(
-        `/business/${businessId}/config/specialists/${specialistId}/commissions?period=${period}`
+        `/api/business/${businessId}/config/specialists/${specialistId}/commissions?period=${period}`
       );
       return response.data;
     } catch (error) {
@@ -303,7 +303,7 @@ class BusinessSpecialistsAPI {
   static async updateSpecialistCommissions(businessId, specialistId, commissionsData) {
     try {
       const response = await apiClient.put(
-        `/business/${businessId}/config/specialists/${specialistId}/commissions`,
+        `/api/business/${businessId}/config/specialists/${specialistId}/commissions`,
         commissionsData
       );
       return response.data;
@@ -327,7 +327,7 @@ class BusinessSpecialistsAPI {
       });
 
       const response = await apiClient.get(
-        `/business/${businessId}/config/specialists/${specialistId}/commissions/pending?${queryParams}`
+        `/api/business/${businessId}/config/specialists/${specialistId}/commissions/pending?${queryParams}`
       );
       return response.data;
     } catch (error) {
@@ -342,7 +342,7 @@ class BusinessSpecialistsAPI {
   static async processCommissionPayment(businessId, specialistId, paymentData) {
     try {
       const response = await apiClient.post(
-        `/business/${businessId}/config/specialists/${specialistId}/commissions/pay`,
+        `/api/business/${businessId}/config/specialists/${specialistId}/commissions/pay`,
         paymentData
       );
       return response.data;
@@ -362,7 +362,7 @@ class BusinessSpecialistsAPI {
   static async getSpecialistStats(businessId, specialistId, period = 'month') {
     try {
       const response = await apiClient.get(
-        `/business/${businessId}/config/specialists/${specialistId}/stats?period=${period}`
+        `/api/business/${businessId}/config/specialists/${specialistId}/stats?period=${period}`
       );
       return response.data;
     } catch (error) {
@@ -377,7 +377,7 @@ class BusinessSpecialistsAPI {
   static async getSpecialistsSummary(businessId, period = 'month') {
     try {
       const response = await apiClient.get(
-        `/business/${businessId}/config/specialists/summary?period=${period}`
+        `/api/business/${businessId}/config/specialists/summary?period=${period}`
       );
       return response.data;
     } catch (error) {

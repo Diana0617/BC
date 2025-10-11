@@ -5,6 +5,7 @@ const { uploadImageMiddleware } = require('../config/cloudinary');
 const BusinessConfigController = require('../controllers/BusinessConfigController');
 const BusinessInventoryController = require('../controllers/BusinessInventoryController');
 const BusinessSupplierController = require('../controllers/BusinessSupplierController');
+const SpecialistServiceController = require('../controllers/SpecialistServiceController');
 
 // Middleware de autenticación para todas las rutas
 router.use(authenticateToken);
@@ -354,6 +355,191 @@ router.put('/:businessId/config/specialists/:profileId', BusinessConfigControlle
  *         description: Especialista eliminado exitosamente
  */
 router.delete('/:businessId/config/specialists/:profileId', BusinessConfigController.deleteSpecialist);
+
+// ==================== SPECIALIST SERVICES ====================
+
+/**
+ * @swagger
+ * /api/business/{businessId}/specialists/{specialistId}/services:
+ *   get:
+ *     summary: Obtener servicios asignados a un especialista
+ *     tags: [Business Config - Specialist Services]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: specialistId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: Lista de servicios del especialista
+ */
+router.get('/:businessId/specialists/:specialistId/services', SpecialistServiceController.getSpecialistServices);
+
+/**
+ * @swagger
+ * /api/business/{businessId}/specialists/{specialistId}/services:
+ *   post:
+ *     summary: Asignar servicio a especialista
+ *     tags: [Business Config - Specialist Services]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: specialistId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - serviceId
+ *             properties:
+ *               serviceId:
+ *                 type: string
+ *                 format: uuid
+ *               customPrice:
+ *                 type: number
+ *               skillLevel:
+ *                 type: string
+ *                 enum: [BEGINNER, INTERMEDIATE, ADVANCED, EXPERT]
+ *               commissionPercentage:
+ *                 type: number
+ *               canBeBooked:
+ *                 type: boolean
+ *               requiresApproval:
+ *                 type: boolean
+ *               maxBookingsPerDay:
+ *                 type: integer
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Servicio asignado exitosamente
+ */
+router.post('/:businessId/specialists/:specialistId/services', SpecialistServiceController.assignService);
+
+/**
+ * @swagger
+ * /api/business/{businessId}/specialists/{specialistId}/services/{serviceId}:
+ *   put:
+ *     summary: Actualizar configuración de servicio del especialista
+ *     tags: [Business Config - Specialist Services]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: specialistId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: serviceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Configuración actualizada exitosamente
+ */
+router.put('/:businessId/specialists/:specialistId/services/:serviceId', SpecialistServiceController.updateSpecialistService);
+
+/**
+ * @swagger
+ * /api/business/{businessId}/specialists/{specialistId}/services/{serviceId}:
+ *   delete:
+ *     summary: Remover servicio de especialista
+ *     tags: [Business Config - Specialist Services]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: specialistId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: serviceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Servicio removido exitosamente
+ */
+router.delete('/:businessId/specialists/:specialistId/services/:serviceId', SpecialistServiceController.removeService);
+
+/**
+ * @swagger
+ * /api/business/{businessId}/specialists/{specialistId}/services/{serviceId}/toggle-status:
+ *   patch:
+ *     summary: Activar/Desactivar servicio del especialista
+ *     tags: [Business Config - Specialist Services]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: specialistId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: serviceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Estado actualizado exitosamente
+ */
+router.patch('/:businessId/specialists/:specialistId/services/:serviceId/toggle-status', SpecialistServiceController.toggleServiceStatus);
 
 // ==================== HORARIOS ====================
 

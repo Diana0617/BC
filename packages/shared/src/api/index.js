@@ -50,6 +50,10 @@ export { default as businessServicesApi } from './businessServicesApi';
 import businessServicesApi from './businessServicesApi';
 export { default as businessBrandingApi } from './businessBrandingApi';
 import businessBrandingApi from './businessBrandingApi';
+export { default as businessBranchesApi } from './businessBranchesApi';
+import businessBranchesApi from './businessBranchesApi';
+export { default as specialistServicesApi } from './specialistServicesApi';
+import specialistServicesApi from './specialistServicesApi';
 
 // 🔄 NEW SYSTEM APIS
 export { autoRenewalApi } from './autoRenewalApi';
@@ -103,5 +107,7 @@ export const ownerApis = {
 export const businessApis = {
   businessSpecialistsApi,
   businessServicesApi,
-  businessBrandingApi
+  businessBrandingApi,
+  businessBranchesApi,
+  specialistServicesApi
 };

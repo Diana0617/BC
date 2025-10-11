@@ -22,7 +22,7 @@ class ApiClient {
         token = StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
       }
       
-      console.log('ApiClient getAuthToken:', { isReactNative, hasToken: !!token, tokenPreview: token ? `${token.substring(0, 20)}...` : null });
+     
       return token;
     } catch (error) {
       console.warn('Error getting auth token:', error);
@@ -72,14 +72,14 @@ class ApiClient {
       body
     };
 
-    console.log('ApiClient request:', {
-      url,
-      method: config.method || 'GET',
-      hasAuthHeader: !!headers.Authorization,
-      authPreview: headers.Authorization ? `${headers.Authorization.substring(0, 20)}...` : null,
-      contentType: headers['Content-Type'] || null,
-      isFormData: body instanceof FormData
-    });
+    // console.log('ApiClient request:', {
+    //   url,
+    //   method: config.method || 'GET',
+    //   hasAuthHeader: !!headers.Authorization,
+    //   authPreview: headers.Authorization ? `${headers.Authorization.substring(0, 20)}...` : null,
+    //   contentType: headers['Content-Type'] || null,
+    //   isFormData: body instanceof FormData
+    // });
 
     try {
       const controller = new AbortController();
