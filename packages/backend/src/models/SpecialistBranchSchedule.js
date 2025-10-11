@@ -26,7 +26,7 @@ const SpecialistBranchSchedule = sequelize.define('SpecialistBranchSchedule', {
   dayOfWeek: {
     type: DataTypes.ENUM('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'),
     allowNull: false,
-    comment: 'Día de la semana en que el especialista trabaja en esta sucursal'
+    
   },
   startTime: {
     type: DataTypes.TIME,

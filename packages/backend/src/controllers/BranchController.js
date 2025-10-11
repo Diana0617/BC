@@ -19,22 +19,10 @@ class BranchController {
         });
       }
 
+      // Por ahora, obtener solo las sucursales sin los especialistas
+      // La relación con especialistas se manejará por separado
       const branches = await Branch.findAll({
-        where: { businessId, isActive: true },
-        include: [
-          {
-            model: SpecialistProfile,
-            as: 'specialists',
-            through: { attributes: [] }, // Excluir atributos de la tabla intermedia
-            include: [
-              {
-                model: require('../models').User,
-                as: 'user',
-                attributes: ['id', 'name', 'email']
-              }
-            ]
-          }
-        ],
+        where: { businessId, status: 'ACTIVE' },
         order: [['name', 'ASC']]
       });
 
@@ -67,22 +55,9 @@ class BranchController {
         });
       }
 
+      // Por ahora, obtener solo la sucursal sin los especialistas
       const branch = await Branch.findOne({
-        where: { id: branchId, businessId },
-        include: [
-          {
-            model: SpecialistProfile,
-            as: 'specialists',
-            through: { attributes: [] },
-            include: [
-              {
-                model: require('../models').User,
-                as: 'user',
-                attributes: ['id', 'name', 'email']
-              }
-            ]
-          }
-        ]
+        where: { id: branchId, businessId }
       });
 
       if (!branch) {
@@ -258,7 +233,7 @@ class BranchController {
       }
 
       // Desactivar la sucursal (soft delete)
-      await branch.update({ isActive: false });
+      await branch.update({ status: 'INACTIVE' });
 
       res.json({
         success: true,

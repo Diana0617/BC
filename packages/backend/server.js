@@ -33,6 +33,9 @@ async function startServer() {
         // Nuevos modelos multi-branch y pricing
         UserBranch,
         SpecialistService,
+        // Modelo de especialistas
+        SpecialistProfile,
+        SpecialistBranchSchedule,
         // Nuevos modelos de comisiones
         SpecialistDocument,
         SpecialistCommission,
@@ -98,6 +101,14 @@ async function startServer() {
         await UserBranch.sync(syncOptions);
         await SpecialistService.sync(syncOptions);
         console.log('✅ Tablas de multi-branch y pricing personalizado sincronizadas');
+        
+        // 5.2. TABLA DE PERFILES DE ESPECIALISTAS
+        await SpecialistProfile.sync(syncOptions);
+        console.log('✅ Tabla specialist_profiles sincronizada');
+        
+        // 5.3. TABLA DE HORARIOS DE ESPECIALISTAS POR SUCURSAL (many-to-many)
+        await SpecialistBranchSchedule.sync(syncOptions);
+        console.log('✅ Tabla specialist_branch_schedules sincronizada');
         
         // 6. Modelos de especialistas (nuevos)
         await SpecialistDocument.sync(syncOptions);

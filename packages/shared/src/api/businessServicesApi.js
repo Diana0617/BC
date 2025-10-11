@@ -53,6 +53,7 @@ export const SERVICE_CONSTANTS = {
 
 /**
  * Obtener lista de servicios del negocio
+ * @param {string} businessId - ID del negocio
  * @param {Object} params - Parámetros de filtrado
  * @param {string} [params.category] - Filtrar por categoría
  * @param {boolean} [params.isActive] - Filtrar por estado activo
@@ -63,7 +64,7 @@ export const SERVICE_CONSTANTS = {
  * @param {string} [params.sortOrder] - Orden (asc, desc)
  * @returns {Promise<Object>} Lista de servicios con metadatos de paginación
  */
-export const getServices = async (params = {}) => {
+export const getServices = async (businessId, params = {}) => {
   try {
     const queryParams = new URLSearchParams();
     
@@ -75,7 +76,7 @@ export const getServices = async (params = {}) => {
     if (params.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
-    const response = await apiClient.get(`/business/config/services?${queryParams}`);
+    const response = await apiClient.get(`/api/business/${businessId}/config/services?${queryParams}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching services:', error);
@@ -85,12 +86,13 @@ export const getServices = async (params = {}) => {
 
 /**
  * Obtener servicio específico por ID
+ * @param {string} businessId - ID del negocio
  * @param {string} serviceId - ID del servicio
  * @returns {Promise<Object>} Datos del servicio
  */
-export const getService = async (serviceId) => {
+export const getService = async (businessId, serviceId) => {
   try {
-    const response = await apiClient.get(`/business/config/services/${serviceId}`);
+    const response = await apiClient.get(`/api/business/${businessId}/config/services/${serviceId}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching service:', error);
@@ -119,9 +121,9 @@ export const getService = async (serviceId) => {
  * @param {Object} [serviceData.bookingSettings] - Configuración de reservas
  * @returns {Promise<Object>} Servicio creado
  */
-export const createService = async (serviceData) => {
+export const createService = async (businessId, serviceData) => {
   try {
-    const response = await apiClient.post('/business/config/services', serviceData);
+    const response = await apiClient.post(`/api/business/${businessId}/config/services`, serviceData);
     return response.data;
   } catch (error) {
     console.error('Error creating service:', error);
@@ -131,13 +133,14 @@ export const createService = async (serviceData) => {
 
 /**
  * Actualizar servicio existente
+ * @param {string} businessId - ID del negocio
  * @param {string} serviceId - ID del servicio
  * @param {Object} serviceData - Datos a actualizar
  * @returns {Promise<Object>} Servicio actualizado
  */
-export const updateService = async (serviceId, serviceData) => {
+export const updateService = async (businessId, serviceId, serviceData) => {
   try {
-    const response = await apiClient.put(`/business/config/services/${serviceId}`, serviceData);
+    const response = await apiClient.put(`/api/business/${businessId}/config/services/${serviceId}`, serviceData);
     return response.data;
   } catch (error) {
     console.error('Error updating service:', error);
@@ -147,12 +150,13 @@ export const updateService = async (serviceId, serviceData) => {
 
 /**
  * Eliminar servicio
+ * @param {string} businessId - ID del negocio
  * @param {string} serviceId - ID del servicio
  * @returns {Promise<Object>} Confirmación de eliminación
  */
-export const deleteService = async (serviceId) => {
+export const deleteService = async (businessId, serviceId) => {
   try {
-    const response = await apiClient.delete(`/business/config/services/${serviceId}`);
+    const response = await apiClient.delete(`/api/business/${businessId}/config/services/${serviceId}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting service:', error);
@@ -162,13 +166,14 @@ export const deleteService = async (serviceId) => {
 
 /**
  * Activar/Desactivar servicio
+ * @param {string} businessId - ID del negocio
  * @param {string} serviceId - ID del servicio
  * @param {boolean} isActive - Estado activo
  * @returns {Promise<Object>} Servicio actualizado
  */
-export const toggleServiceStatus = async (serviceId, isActive) => {
+export const toggleServiceStatus = async (businessId, serviceId, isActive) => {
   try {
-    const response = await apiClient.patch(`/business/config/services/${serviceId}/status`, { isActive });
+    const response = await apiClient.patch(`/api/business/${businessId}/config/services/${serviceId}/status`, { isActive });
     return response.data;
   } catch (error) {
     console.error('Error toggling service status:', error);
@@ -194,7 +199,7 @@ export const uploadServiceImage = async (serviceId, imageFile, description = '')
     if (description) formData.append('description', description);
 
     const response = await apiClient.post(
-      `/business/config/services/${serviceId}/images`,
+      `/api/business/config/services/${serviceId}/images`,
       formData,
       {
         headers: {
@@ -217,7 +222,7 @@ export const uploadServiceImage = async (serviceId, imageFile, description = '')
  */
 export const deleteServiceImage = async (serviceId, imageId) => {
   try {
-    const response = await apiClient.delete(`/business/config/services/${serviceId}/images/${imageId}`);
+    const response = await apiClient.delete(`/api/business/config/services/${serviceId}/images/${imageId}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting service image:', error);
@@ -233,7 +238,7 @@ export const deleteServiceImage = async (serviceId, imageId) => {
  */
 export const reorderServiceImages = async (serviceId, imageIds) => {
   try {
-    const response = await apiClient.patch(`/business/config/services/${serviceId}/images/reorder`, { imageIds });
+    const response = await apiClient.patch(`/api/business/config/services/${serviceId}/images/reorder`, { imageIds });
     return response.data;
   } catch (error) {
     console.error('Error reordering service images:', error);
@@ -251,7 +256,7 @@ export const reorderServiceImages = async (serviceId, imageIds) => {
  */
 export const getServiceCategories = async () => {
   try {
-    const response = await apiClient.get('/business/config/services/categories');
+    const response = await apiClient.get('/api/business/config/services/categories');
     return response.data;
   } catch (error) {
     console.error('Error fetching service categories:', error);
@@ -269,7 +274,7 @@ export const getServiceCategories = async () => {
  */
 export const createServiceCategory = async (categoryData) => {
   try {
-    const response = await apiClient.post('/business/config/services/categories', categoryData);
+    const response = await apiClient.post('/api/business/config/services/categories', categoryData);
     return response.data;
   } catch (error) {
     console.error('Error creating service category:', error);
@@ -285,7 +290,7 @@ export const createServiceCategory = async (categoryData) => {
  */
 export const updateServiceCategory = async (categoryId, categoryData) => {
   try {
-    const response = await apiClient.put(`/business/config/services/categories/${categoryId}`, categoryData);
+    const response = await apiClient.put(`/api/business/config/services/categories/${categoryId}`, categoryData);
     return response.data;
   } catch (error) {
     console.error('Error updating service category:', error);
@@ -300,7 +305,7 @@ export const updateServiceCategory = async (categoryId, categoryData) => {
  */
 export const deleteServiceCategory = async (categoryId) => {
   try {
-    const response = await apiClient.delete(`/business/config/services/categories/${categoryId}`);
+    const response = await apiClient.delete(`/api/business/config/services/categories/${categoryId}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting service category:', error);
@@ -319,7 +324,7 @@ export const deleteServiceCategory = async (categoryId) => {
  */
 export const getServiceCommissions = async (serviceId) => {
   try {
-    const response = await apiClient.get(`/business/config/services/${serviceId}/commissions`);
+    const response = await apiClient.get(`/api/business/config/services/${serviceId}/commissions`);
     return response.data;
   } catch (error) {
     console.error('Error fetching service commissions:', error);
@@ -339,7 +344,7 @@ export const getServiceCommissions = async (serviceId) => {
  */
 export const updateServiceCommissions = async (serviceId, commissionData) => {
   try {
-    const response = await apiClient.put(`/business/config/services/${serviceId}/commissions`, commissionData);
+    const response = await apiClient.put(`/api/business/config/services/${serviceId}/commissions`, commissionData);
     return response.data;
   } catch (error) {
     console.error('Error updating service commissions:', error);
@@ -357,7 +362,7 @@ export const updateServiceCommissions = async (serviceId, commissionData) => {
 export const setSpecialistServiceCommission = async (serviceId, specialistId, commissionData) => {
   try {
     const response = await apiClient.post(
-      `/business/config/services/${serviceId}/commissions/specialist/${specialistId}`,
+      `/api/business/config/services/${serviceId}/commissions/specialist/${specialistId}`,
       commissionData
     );
     return response.data;
@@ -378,7 +383,7 @@ export const setSpecialistServiceCommission = async (serviceId, specialistId, co
  */
 export const getServiceBookingSettings = async (serviceId) => {
   try {
-    const response = await apiClient.get(`/business/config/services/${serviceId}/booking-settings`);
+    const response = await apiClient.get(`/api/business/config/services/${serviceId}/booking-settings`);
     return response.data;
   } catch (error) {
     console.error('Error fetching service booking settings:', error);
@@ -398,7 +403,7 @@ export const getServiceBookingSettings = async (serviceId) => {
  */
 export const updateServiceBookingSettings = async (serviceId, bookingSettings) => {
   try {
-    const response = await apiClient.put(`/business/config/services/${serviceId}/booking-settings`, bookingSettings);
+    const response = await apiClient.put(`/api/business/config/services/${serviceId}/booking-settings`, bookingSettings);
     return response.data;
   } catch (error) {
     console.error('Error updating service booking settings:', error);
@@ -417,7 +422,7 @@ export const updateServiceBookingSettings = async (serviceId, bookingSettings) =
  */
 export const getServiceSpecialists = async (serviceId) => {
   try {
-    const response = await apiClient.get(`/business/config/services/${serviceId}/specialists`);
+    const response = await apiClient.get(`/api/business/config/services/${serviceId}/specialists`);
     return response.data;
   } catch (error) {
     console.error('Error fetching service specialists:', error);
@@ -433,7 +438,7 @@ export const getServiceSpecialists = async (serviceId) => {
  */
 export const assignSpecialistToService = async (serviceId, specialistId) => {
   try {
-    const response = await apiClient.post(`/business/config/services/${serviceId}/specialists/${specialistId}`);
+    const response = await apiClient.post(`/api/business/config/services/${serviceId}/specialists/${specialistId}`);
     return response.data;
   } catch (error) {
     console.error('Error assigning specialist to service:', error);
@@ -449,7 +454,7 @@ export const assignSpecialistToService = async (serviceId, specialistId) => {
  */
 export const unassignSpecialistFromService = async (serviceId, specialistId) => {
   try {
-    const response = await apiClient.delete(`/business/config/services/${serviceId}/specialists/${specialistId}`);
+    const response = await apiClient.delete(`/api/business/config/services/${serviceId}/specialists/${specialistId}`);
     return response.data;
   } catch (error) {
     console.error('Error unassigning specialist from service:', error);
@@ -471,7 +476,7 @@ export const getServiceAvailableSlots = async (serviceId, date, specialistId = n
     queryParams.append('date', date);
     if (specialistId) queryParams.append('specialistId', specialistId);
 
-    const response = await apiClient.get(`/business/config/available-slots?${queryParams}`);
+    const response = await apiClient.get(`/api/business/config/available-slots?${queryParams}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching service available slots:', error);
@@ -500,7 +505,7 @@ export const getServicesStats = async (params = {}) => {
     if (params.endDate) queryParams.append('endDate', params.endDate);
     if (params.serviceId) queryParams.append('serviceId', params.serviceId);
 
-    const response = await apiClient.get(`/business/config/services/stats?${queryParams}`);
+    const response = await apiClient.get(`/api/business/config/services/stats?${queryParams}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching services stats:', error);
@@ -523,7 +528,7 @@ export const getServicesPerformanceReport = async (params) => {
     queryParams.append('endDate', params.endDate);
     if (params.groupBy) queryParams.append('groupBy', params.groupBy);
 
-    const response = await apiClient.get(`/business/config/services/performance-report?${queryParams}`);
+    const response = await apiClient.get(`/api/business/config/services/performance-report?${queryParams}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching services performance report:', error);
@@ -544,7 +549,7 @@ export const getServicesPopularityAnalysis = async (params = {}) => {
     if (params.period) queryParams.append('period', params.period);
     if (params.limit) queryParams.append('limit', params.limit);
 
-    const response = await apiClient.get(`/business/config/services/popularity-analysis?${queryParams}`);
+    const response = await apiClient.get(`/api/business/config/services/popularity-analysis?${queryParams}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching services popularity analysis:', error);

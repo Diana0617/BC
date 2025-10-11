@@ -9,6 +9,7 @@ import {
   CalendarDaysIcon,
   UsersIcon,
   BuildingStorefrontIcon,
+  BuildingOfficeIcon,
   WrenchScrewdriverIcon,
   ShieldCheckIcon,
   ArrowRightOnRectangleIcon,
@@ -28,6 +29,7 @@ import { logout } from '@shared/store/slices/authSlice'
 import SubscriptionSection from './sections/SubscriptionSection'
 import BasicInfoSection from './sections/BasicInfoSection'
 import BrandingSection from './sections/BrandingSection'
+import BranchesSection from './sections/BranchesSection'
 import SpecialistsSection from './sections/SpecialistsSection'
 import ServicesSection from './sections/ServicesSection'
 import TaxxaConfigSection from './sections/TaxxaConfigSection'
@@ -43,8 +45,7 @@ import BusinessRuleModal from '../../../components/BusinessRuleModal'
 // import { useBusinessSetup } from './hooks/useBusinessSetup'
 
 const BusinessProfile = () => {
-  console.log('🟢 BusinessProfile component is rendering...')
-  console.log('🔧 Current path:', window.location.pathname)
+
 
   // Logout handler
   const handleLogout = () => {
@@ -108,11 +109,7 @@ const BusinessProfile = () => {
   const allModules = business?.allModules || []
   const availableModules = allModules.filter(module => module.isAvailable).map(module => module.name) || []
 
-  console.log('📦 All Modules:', allModules)
-  console.log('✅ Available Modules:', availableModules)
-  console.log('🎯 Current Subscription:', currentSubscription)
-  console.log('💼 Current Plan Details:', currentPlan)
-  console.log('🏢 Full Business Data:', business)
+ 
 
   // Función para verificar si un paso está completado
   const isStepCompleted = (stepId) => completedSteps.includes(stepId)
@@ -157,19 +154,28 @@ const BusinessProfile = () => {
       alwaysVisible: true
     },
     {
-      id: 'specialists',
-      name: 'Especialistas',
-      icon: UsersIcon,
-      component: SpecialistsSection,
-      setupStep: 'specialists',
+      id: 'branches',
+      name: 'Sucursales',
+      icon: BuildingOfficeIcon,
+      component: BranchesSection,
+      setupStep: 'branches',
       alwaysVisible: true
     },
+   
     {
       id: 'services',
       name: 'Servicios',
       icon: ClipboardDocumentListIcon,
       component: ServicesSection,
       setupStep: 'services',
+      alwaysVisible: true
+    },
+     {
+      id: 'specialists',
+      name: 'Especialistas',
+      icon: UsersIcon,
+      component: SpecialistsSection,
+      setupStep: 'specialists',
       alwaysVisible: true
     },
     {
@@ -280,8 +286,7 @@ const BusinessProfile = () => {
       availableModules.includes(section.moduleRequired)
   }))
 
-  console.log('📋 All Sections:', allSections)
-  console.log('✅ Sections with Availability:', sectionsWithAvailability)
+ 
 
   // Función para cambiar de sección
   const handleSectionChange = (sectionId) => {

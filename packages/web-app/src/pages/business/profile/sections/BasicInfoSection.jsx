@@ -39,6 +39,26 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
     }
   }, [basicInfo])
 
+  // Generar código automáticamente basado en el nombre
+  // Compatible con backend: solo letras minúsculas y números (sin guiones ni espacios)
+  const generateBusinessCode = (name) => {
+    if (!name || name.trim().length === 0) return ''
+    
+    // Remover acentos y caracteres especiales
+    const cleanName = name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()  // Minúsculas para compatibilidad con backend
+      .replace(/[^a-z0-9]/g, '')  // Solo letras y números
+      .substring(0, 6)
+    
+    // Generar sufijo aleatorio (4 dígitos)
+    const randomSuffix = Math.floor(Math.random() * 9000 + 1000)
+    
+    // Sin guión, solo concatenar: ej "yani1234"
+    return `${cleanName}${randomSuffix}`
+  }
+
   // Sincronizar con Redux store en tiempo real
   useEffect(() => {
     if (isEditing) {
@@ -58,14 +78,14 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target
     
-    // Prevenir modificación del código del negocio
-    if (name === 'businessCode') {
-      return // Ignorar cualquier intento de cambio
-    }
-    
-    const updatedData = {
+    let updatedData = {
       ...formData,
       [name]: value
+    }
+    
+    // Si se está editando el nombre y NO hay código aún (o estamos en setup), generar código automático
+    if (name === 'name' && (!formData.businessCode || isSetupMode)) {
+      updatedData.businessCode = generateBusinessCode(value)
     }
     
     setFormData(updatedData)

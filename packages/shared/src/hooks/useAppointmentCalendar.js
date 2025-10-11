@@ -10,7 +10,7 @@ import {
   getAppointmentsByDateRange,
   clearAppointmentError,
   clearAppointmentSuccess,
-  resetAppointmentCalendarState,
+  resetAppointmentState,
   setSelectedAppointment,
   setCalendarView,
   setAppointmentFilters,
@@ -132,7 +132,7 @@ export const useAppointmentCalendar = () => {
   }, [dispatch]);
 
   const handleResetState = useCallback(() => {
-    dispatch(resetAppointmentCalendarState());
+    dispatch(resetAppointmentState());
   }, [dispatch]);
 
   const handleSetSelectedAppointment = useCallback(

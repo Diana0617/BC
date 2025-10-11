@@ -1,4 +1,4 @@
-const { SpecialistService, User, Service } = require('../models');
+const { SpecialistService, SpecialistProfile, User, Service } = require('../models');
 const { Op } = require('sequelize');
 
 class SpecialistServiceController {
@@ -31,17 +31,27 @@ class SpecialistServiceController {
    *         description: Especialista no encontrado
    */
   static async getSpecialistServices(req, res) {
+    console.log('🔍 getSpecialistServices called with params:', req.params);
+    console.log('🔍 User:', req.user);
+    
     try {
-      const { specialistId } = req.params;
+      const { businessId, specialistId } = req.params;
       const { isActive } = req.query;
-      const { userId, role, businessId } = req.user;
+      const { userId, role, businessId: userBusinessId } = req.user;
+
+      // Validar que el businessId del path coincida con el del usuario (seguridad)
+      if (userBusinessId && businessId !== userBusinessId) {
+        return res.status(403).json({
+          success: false,
+          error: 'No tienes acceso a este negocio'
+        });
+      }
 
       // Verificar que el especialista existe y pertenece al negocio
-      const specialist = await User.findOne({
+      const specialist = await SpecialistProfile.findOne({
         where: {
           id: specialistId,
-          role: { [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST'] },
-          businessId
+          businessId: businessId || userBusinessId
         }
       });
 
@@ -53,14 +63,15 @@ class SpecialistServiceController {
       }
 
       // Solo el especialista mismo, BUSINESS u OWNER pueden ver
-      if (!['BUSINESS', 'OWNER'].includes(role) && userId !== parseInt(specialistId)) {
+      if (!['BUSINESS', 'OWNER'].includes(role) && userId !== specialist.userId) {
         return res.status(403).json({
           success: false,
           error: 'No tienes permiso para ver estos servicios'
         });
       }
 
-      const whereClause = { specialistId };
+      // ⚠️ IMPORTANTE: buscar por specialist.userId ya que specialistId en la tabla apunta a users
+      const whereClause = { specialistId: specialist.userId };
       if (isActive !== undefined) {
         whereClause.isActive = isActive === 'true';
       }
@@ -71,7 +82,7 @@ class SpecialistServiceController {
           {
             model: Service,
             as: 'service',
-            attributes: ['id', 'name', 'description', 'price', 'duration', 'categoryId']
+            attributes: ['id', 'name', 'description', 'price', 'duration', 'category']
           }
         ],
         order: [['createdAt', 'DESC']]
@@ -155,10 +166,14 @@ class SpecialistServiceController {
    *       409:
    *         description: El servicio ya está asignado al especialista
    */
-  static async assignServiceToSpecialist(req, res) {
+  static async assignService(req, res) {
+    console.log('🔍 assignService called with params:', req.params);
+    console.log('🔍 Body:', req.body);
+    console.log('🔍 User:', req.user);
+    
     try {
-      const { specialistId } = req.params;
-      const { userId, role, businessId } = req.user;
+      const { businessId, specialistId } = req.params;
+      const { userId, role, businessId: userBusinessId } = req.user;
       const {
         serviceId,
         customPrice = null,
@@ -171,6 +186,14 @@ class SpecialistServiceController {
         notes = null
       } = req.body;
 
+      // Validar que el businessId del path coincida con el del usuario (seguridad)
+      if (userBusinessId && businessId !== userBusinessId) {
+        return res.status(403).json({
+          success: false,
+          error: 'No tienes acceso a este negocio'
+        });
+      }
+
       // Solo BUSINESS u OWNER pueden asignar servicios
       if (!['BUSINESS', 'OWNER'].includes(role)) {
         return res.status(403).json({
@@ -180,11 +203,10 @@ class SpecialistServiceController {
       }
 
       // Verificar que el especialista existe y pertenece al negocio
-      const specialist = await User.findOne({
+      const specialist = await SpecialistProfile.findOne({
         where: {
           id: specialistId,
-          role: { [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST'] },
-          businessId
+          businessId: businessId || userBusinessId
         }
       });
 
@@ -199,7 +221,7 @@ class SpecialistServiceController {
       const service = await Service.findOne({
         where: {
           id: serviceId,
-          businessId
+          businessId: businessId || userBusinessId
         }
       });
 
@@ -225,9 +247,9 @@ class SpecialistServiceController {
         });
       }
 
-      // Crear la asignación
+      // Crear la asignación (usar specialist.userId ya que specialistId en la tabla apunta a users)
       const specialistService = await SpecialistService.create({
-        specialistId,
+        specialistId: specialist.userId, // ⚠️ IMPORTANTE: usar userId del perfil
         serviceId,
         customPrice,
         skillLevel,
@@ -329,9 +351,17 @@ class SpecialistServiceController {
    */
   static async updateSpecialistService(req, res) {
     try {
-      const { specialistId, serviceId } = req.params;
-      const { role, businessId } = req.user;
+      const { businessId, specialistId, serviceId } = req.params;
+      const { role, businessId: userBusinessId } = req.user;
       const updateData = req.body;
+
+      // Validar que el businessId del path coincida con el del usuario (seguridad)
+      if (userBusinessId && businessId !== userBusinessId) {
+        return res.status(403).json({
+          success: false,
+          error: 'No tienes acceso a este negocio'
+        });
+      }
 
       // Solo BUSINESS u OWNER pueden actualizar
       if (!['BUSINESS', 'OWNER'].includes(role)) {
@@ -342,11 +372,10 @@ class SpecialistServiceController {
       }
 
       // Verificar que el especialista pertenece al negocio
-      const specialist = await User.findOne({
+      const specialist = await SpecialistProfile.findOne({
         where: {
           id: specialistId,
-          role: { [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST'] },
-          businessId
+          businessId: businessId || userBusinessId
         }
       });
 
@@ -357,10 +386,10 @@ class SpecialistServiceController {
         });
       }
 
-      // Buscar la asignación
+      // Buscar la asignación (usar specialist.userId ya que specialistId en la tabla apunta a users)
       const specialistService = await SpecialistService.findOne({
         where: {
-          specialistId,
+          specialistId: specialist.userId,
           serviceId
         }
       });
@@ -430,10 +459,18 @@ class SpecialistServiceController {
    *       404:
    *         description: Asignación no encontrada
    */
-  static async removeServiceFromSpecialist(req, res) {
+  static async removeService(req, res) {
     try {
-      const { specialistId, serviceId } = req.params;
-      const { role, businessId } = req.user;
+      const { businessId, specialistId, serviceId } = req.params;
+      const { role, businessId: userBusinessId } = req.user;
+
+      // Validar que el businessId del path coincida con el del usuario (seguridad)
+      if (userBusinessId && businessId !== userBusinessId) {
+        return res.status(403).json({
+          success: false,
+          error: 'No tienes acceso a este negocio'
+        });
+      }
 
       // Solo BUSINESS u OWNER pueden eliminar
       if (!['BUSINESS', 'OWNER'].includes(role)) {
@@ -444,11 +481,10 @@ class SpecialistServiceController {
       }
 
       // Verificar que el especialista pertenece al negocio
-      const specialist = await User.findOne({
+      const specialist = await SpecialistProfile.findOne({
         where: {
           id: specialistId,
-          role: { [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST'] },
-          businessId
+          businessId: businessId || userBusinessId
         }
       });
 
@@ -459,10 +495,10 @@ class SpecialistServiceController {
         });
       }
 
-      // Buscar la asignación
+      // Buscar la asignación (usar specialist.userId ya que specialistId en la tabla apunta a users)
       const specialistService = await SpecialistService.findOne({
         where: {
-          specialistId,
+          specialistId: specialist.userId,
           serviceId
         }
       });
@@ -486,6 +522,90 @@ class SpecialistServiceController {
       return res.status(500).json({
         success: false,
         error: 'Error al eliminar servicio',
+        details: error.message
+      });
+    }
+  }
+
+  /**
+   * Activar/Desactivar servicio del especialista
+   */
+  static async toggleServiceStatus(req, res) {
+    try {
+      const { businessId, specialistId, serviceId } = req.params;
+      const { role, businessId: userBusinessId } = req.user;
+      const { isActive } = req.body;
+
+      // Validar que el businessId del path coincida con el del usuario (seguridad)
+      if (userBusinessId && businessId !== userBusinessId) {
+        return res.status(403).json({
+          success: false,
+          error: 'No tienes acceso a este negocio'
+        });
+      }
+
+      // Solo BUSINESS u OWNER pueden cambiar estado
+      if (!['BUSINESS', 'OWNER'].includes(role)) {
+        return res.status(403).json({
+          success: false,
+          error: 'No tienes permiso para cambiar el estado de servicios'
+        });
+      }
+
+      // Verificar que el especialista pertenece al negocio
+      const specialist = await SpecialistProfile.findOne({
+        where: {
+          id: specialistId,
+          businessId: businessId || userBusinessId
+        }
+      });
+
+      if (!specialist) {
+        return res.status(404).json({
+          success: false,
+          error: 'Especialista no encontrado'
+        });
+      }
+
+      // Buscar la asignación (usar specialist.userId ya que specialistId en la tabla apunta a users)
+      const specialistService = await SpecialistService.findOne({
+        where: {
+          specialistId: specialist.userId,
+          serviceId
+        }
+      });
+
+      if (!specialistService) {
+        return res.status(404).json({
+          success: false,
+          error: 'Servicio no asignado a este especialista'
+        });
+      }
+
+      // Actualizar estado
+      await specialistService.update({ isActive });
+
+      // Recargar con datos del servicio
+      await specialistService.reload({
+        include: [
+          {
+            model: Service,
+            as: 'service',
+            attributes: ['id', 'name', 'description', 'price', 'duration']
+          }
+        ]
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Servicio ${isActive ? 'activado' : 'desactivado'} exitosamente`,
+        data: specialistService
+      });
+    } catch (error) {
+      console.error('Error en toggleServiceStatus:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Error al cambiar estado del servicio',
         details: error.message
       });
     }

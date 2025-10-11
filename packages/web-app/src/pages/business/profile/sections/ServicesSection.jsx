@@ -1,13 +1,18 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useSelector } from 'react-redux'
 import { 
   ClipboardDocumentListIcon,
   PlusIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline'
+import { businessServicesApi } from '@shared/api'
 
 const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
+  const activeBusiness = useSelector(state => state.business.currentBusiness)
   const [services, setServices] = useState([])
   const [isAddingService, setIsAddingService] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null)
   const [newService, setNewService] = useState({
     name: '',
     description: '',
@@ -24,6 +29,32 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
     { value: 'BODY', label: 'Corporal' }
   ]
 
+  // Cargar servicios al montar el componente
+  useEffect(() => {
+    loadServices()
+  }, [activeBusiness])
+
+  const loadServices = async () => {
+    if (!activeBusiness?.id) return
+    
+    try {
+      setIsLoading(true)
+      setError(null)
+      // Agregar timestamp para evitar caché
+      const response = await businessServicesApi.getServices(activeBusiness.id, { 
+        isActive: true,
+        _t: Date.now() // Cache buster
+      })
+      console.log('📦 Services loaded:', response)
+      setServices(response.data || [])
+    } catch (err) {
+      console.error('Error loading services:', err)
+      setError('Error al cargar servicios')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setNewService(prev => ({
@@ -32,16 +63,29 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
     }))
   }
 
-  const handleAddService = () => {
-    if (newService.name && newService.price) {
-      const service = {
-        id: Date.now(),
-        ...newService,
+  const handleAddService = async () => {
+    if (!newService.name || !newService.price || !activeBusiness?.id) return
+
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      // Crear servicio en el backend
+      const serviceData = {
+        name: newService.name,
+        description: newService.description,
+        duration: parseInt(newService.duration),
         price: parseFloat(newService.price),
-        createdAt: new Date().toISOString()
+        category: newService.category,
+        isActive: true
       }
       
-      setServices(prev => [...prev, service])
+      await businessServicesApi.createService(activeBusiness.id, serviceData)
+      
+      // Recargar servicios
+      await loadServices()
+      
+      // Resetear formulario
       setNewService({
         name: '',
         description: '',
@@ -51,9 +95,15 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
       })
       setIsAddingService(false)
       
+      // Completar paso en modo setup si es el primer servicio
       if (isSetupMode && services.length === 0 && onComplete) {
         onComplete()
       }
+    } catch (err) {
+      console.error('Error creating service:', err)
+      setError(err.message || 'Error al crear servicio')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -61,6 +111,13 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
   return (
     <div className="space-y-6">
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-sm text-red-800">{error}</p>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center">
@@ -85,7 +142,11 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
       </div>
 
       {/* Lista de servicios */}
-      {services.length > 0 && (
+      {isLoading && services.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500">Cargando servicios...</p>
+        </div>
+      ) : services.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {services.map((service) => (
             <div key={service.id} className="bg-white border border-gray-200 rounded-lg p-4">
@@ -100,7 +161,7 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
             </div>
           ))}
         </div>
-      )}
+      ) : null}
 
       {/* Formulario para agregar servicio */}
       {isAddingService && (
@@ -170,15 +231,16 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
           <div className="flex gap-3 mt-4">
             <button
               onClick={handleAddService}
-              disabled={!isFormValid}
+              disabled={!isFormValid || isLoading}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Agregar Servicio
+              {isLoading ? 'Guardando...' : 'Agregar Servicio'}
             </button>
             
             <button
               onClick={() => setIsAddingService(false)}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+              disabled={isLoading}
+              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 disabled:opacity-50"
             >
               Cancelar
             </button>
@@ -187,7 +249,7 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
       )}
 
       {/* Estado vacío */}
-      {services.length === 0 && !isAddingService && (
+      {!isLoading && services.length === 0 && !isAddingService && (
         <div className="text-center py-8 bg-gray-50 rounded-lg">
           <ClipboardDocumentListIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">

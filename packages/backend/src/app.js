@@ -216,7 +216,7 @@ const payment3DSRoutes = require('./routes/payment3DS');
 const testingRoutes = require('./routes/testing');
 const scheduleRoutes = require('./routes/schedules');
 const timeSlotRoutes = require('./routes/time-slots');
-const specialistServicesRoutes = require('./routes/specialistServices');
+// const specialistServicesRoutes = require('./routes/specialistServices'); // DEPRECATED: Ahora usando rutas RESTful en businessConfig.js
 
 
 app.use('/api/auth', authRoutes);
@@ -231,7 +231,7 @@ app.use('/api/modules', moduleRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/services', serviceRoutes);
-app.use('/api/specialists', specialistServicesRoutes); // Rutas de servicios de especialistas
+// app.use('/api/specialists', specialistServicesRoutes); // DEPRECATED: Ahora usando /api/business/:businessId/specialists/:specialistId/services
 app.use('/api/products', productRoutes);
 app.use('/api/financial', financialRoutes);
 app.use('/api/owner', ownerRoutes);
