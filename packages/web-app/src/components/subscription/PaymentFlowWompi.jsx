@@ -36,7 +36,8 @@ const PaymentFlowWompi = ({
         transaction,
         businessData,
         selectedPlan,
-        paymentMethod: 'wompi'
+        paymentMethod: 'wompi',
+        businessCreated: transaction.businessCreated || false  // ← AGREGAR ESTO
       })
     }, 2000)
   }

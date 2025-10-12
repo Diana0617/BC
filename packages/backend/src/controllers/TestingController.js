@@ -115,25 +115,38 @@ class TestingController {
 
         const creationResult = await SubscriptionController.createSubscription(mockReq, mockRes);
         
+        console.log('🔍 DEBUG businessResult:', JSON.stringify(businessResult, null, 2));
+        
         if (businessResult && businessResult.statusCode === 201) {
           console.log('✅ Negocio creado exitosamente después del pago simulado');
           
           // Actualizar el pago con la suscripción creada (FUERA de la transacción de createSubscription)
-          const businessSubscriptionId = businessResult.data?.subscription?.id;
+          const businessSubscriptionId = businessResult.data?.data?.subscription?.id;
+          console.log('🔍 Buscando businessSubscriptionId:', businessSubscriptionId);
+          
           if (businessSubscriptionId) {
             // Usar update sin transacción ya que createSubscription ya terminó
             await payment.reload(); // Recargar el payment para evitar conflictos
+            
+            // Actualizar metadata correctamente para JSONB
+            const updatedMetadata = {
+              ...payment.metadata,
+              businessCreated: true,
+              businessCreatedAt: new Date().toISOString(),
+              simulatedApproval: true
+            };
+            
             await payment.update({
               businessSubscriptionId: businessSubscriptionId,
-              metadata: {
-                ...payment.metadata,
-                businessCreated: true,
-                businessCreatedAt: new Date().toISOString(),
-                simulatedApproval: true
-              }
+              metadata: updatedMetadata
             });
 
             console.log('✅ Pago actualizado con businessSubscriptionId:', businessSubscriptionId);
+            console.log('✅ Metadata actualizado:', JSON.stringify(updatedMetadata, null, 2));
+            
+            // Recargar para confirmar
+            await payment.reload();
+            console.log('🔍 Verificando metadata después de update:', payment.metadata?.businessCreated);
           }
 
           return res.json({
@@ -146,9 +159,9 @@ class TestingController {
                 status: payment.status,
                 businessSubscriptionId: businessSubscriptionId
               },
-              business: businessResult.data.business,
-              subscription: businessResult.data.subscription,
-              user: businessResult.data.user
+              business: businessResult.data?.data?.business,
+              subscription: businessResult.data?.data?.subscription,
+              user: businessResult.data?.data?.user
             }
           });
         } else {

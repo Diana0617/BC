@@ -761,6 +761,14 @@ class Payment3DSController {
       if (payment.status === 'APPROVED') {
         console.log('✅ Pago ya aprobado en BD - devolviendo estado exitoso');
         
+        // Recargar el pago para obtener metadata actualizado
+        await payment.reload();
+        
+        console.log('🔍 Metadata al devolver estado:', {
+          businessCreated: payment.metadata?.businessCreated,
+          metadata: payment.metadata
+        });
+        
         return res.json({
           success: true,
           data: {

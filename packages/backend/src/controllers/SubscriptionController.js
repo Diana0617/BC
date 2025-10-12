@@ -365,9 +365,11 @@ class SubscriptionController {
         // Durante el trial (7 días), el usuario usa el servicio gratis
         // Al vencer el trial, el cron job cobrará automáticamente usando este token
         
+        let paymentTransaction = null; // Inicializar para usar en response
+        
         if (paymentData && paymentData.paymentSourceToken) {
           // Crear registro de pago pendiente con el token guardado
-          const pendingPayment = await SubscriptionPayment.create({
+          paymentTransaction = await SubscriptionPayment.create({
             businessSubscriptionId: subscription.id,
             transactionId: paymentData.transactionId || uuidv4(),
             amount: finalPrice, // Usar precio calculado según billingCycle
@@ -388,7 +390,7 @@ class SubscriptionController {
             updatedAt: new Date()
           }, { transaction });
 
-          console.log('Token de pago guardado para cobro futuro:', pendingPayment.id);
+          console.log('Token de pago guardado para cobro futuro:', paymentTransaction.id);
         }
 
         // Confirmar todas las operaciones
@@ -405,40 +407,46 @@ class SubscriptionController {
           { expiresIn: '24h' }
         )
 
+        // Preparar datos de respuesta
+        const responseData = {
+          business: {
+            id: business.id,
+            name: business.name,
+            subdomain: business.subdomain,
+            email: business.email
+          },
+          user: {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role
+          },
+          subscription: {
+            id: subscription.id,
+            subscriptionPlanId: subscription.subscriptionPlanId,
+            status: subscription.status,
+            startDate: subscription.startDate,
+            endDate: subscription.endDate
+          },
+          transaction: paymentTransaction ? {
+            id: paymentTransaction.id,
+            transactionId: paymentTransaction.transactionId,
+            amount: paymentTransaction.amount,
+            status: paymentTransaction.status
+          } : null,
+          token: token
+        };
+
+        console.log('📤 Enviando respuesta exitosa:', JSON.stringify(responseData, null, 2));
+
         // Respuesta exitosa
-        res.status(201).json({
+        return res.status(201).json({
           success: true,
           message: 'Suscripción creada exitosamente',
-          data: {
-            business: {
-              id: business.id,
-              name: business.name,
-              businessCode: business.businessCode,
-              email: business.email
-            },
-            user: {
-              id: user.id,
-              firstName: user.firstName,
-              lastName: user.lastName,
-              email: user.email,
-              role: user.role
-            },
-            subscription: {
-              id: subscription.id,
-              subscriptionPlanId: subscription.subscriptionPlanId,
-              status: subscription.status,
-              startDate: subscription.startDate,
-              endDate: subscription.endDate
-            },
-            transaction: {
-              id: paymentTransaction.id,
-              transactionId: paymentTransaction.transactionId,
-              amount: paymentTransaction.amount,
-              status: paymentTransaction.status
-            },
-            token: token // Para auto-login
-          }
-        })
+          data: responseData
+        });
+
 
       } catch (error) {
         // Solo hacer rollback si la transacción todavía está activa

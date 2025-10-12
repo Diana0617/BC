@@ -100,19 +100,7 @@ class Wompi3DSService {
       }
 
       // DEBUG: Log del requestBody completo antes de enviar
-      console.log('📤 DEBUG - RequestBody completo a Wompi:', {
-        ...requestBody,
-        customer_data_debug: {
-          full_name: requestBody.customer_data?.full_name,
-          browser_info_present: !!requestBody.customer_data?.browser_info,
-          browser_info_keys: requestBody.customer_data?.browser_info ? Object.keys(requestBody.customer_data.browser_info) : null
-        },
-        payment_method_debug: {
-          type: requestBody.payment_method?.type,
-          token: requestBody.payment_method?.token ? requestBody.payment_method.token.substring(0, 20) + '...' : 'NO_TOKEN',
-          token_length: requestBody.payment_method?.token?.length
-        }
-      });
+      console.log('📤 DEBUG - RequestBody completo a Wompi:', requestBody);
 
       const response = await axios.post(`${this.baseURL}/transactions`, requestBody, {
         headers: {

@@ -343,6 +343,10 @@ const WompiWidgetMinimal = ({
           // Manejar resultado del polling
           if (pollingResult && pollingResult.transaction.status === 'APPROVED') {
             console.log('✅ Pago 3DS público aprobado - ejecutando onSuccess')
+            console.log('🔍 DEBUG pollingResult completo:', pollingResult)
+            console.log('🔍 DEBUG business_creation:', pollingResult.business_creation)
+            console.log('🔍 DEBUG business_creation.completed:', pollingResult.business_creation?.completed)
+            
             if (onSuccess) {
               onSuccess({
                 id: pollingResult.transaction.id,
