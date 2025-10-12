@@ -33,11 +33,9 @@ class ModuleController {
       
       const paginationOptions = {
         req,
-        query: {
-          where,
-          attributes: {
-            exclude: ['configurationSchema'] // Excluir esquemas de configuración por defecto
-          }
+        where,
+        attributes: {
+          exclude: ['configurationSchema'] // Excluir esquemas de configuración por defecto
         },
         include: [],
         order: [['name', 'ASC']]

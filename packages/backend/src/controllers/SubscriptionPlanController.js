@@ -55,7 +55,7 @@ class SubscriptionPlanController {
       
       const result = await PaginationService.paginate(SubscriptionPlan, {
         req,
-        query: where,
+        where: where,
         include: options.include,
         order: options.order
       });

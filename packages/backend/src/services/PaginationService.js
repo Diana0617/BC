@@ -19,17 +19,22 @@ class PaginationService {
    * @returns {Object} Resultado paginado
    */
   static async paginate(model, options = {}) {
-    const { req, query = {}, include = [], order = [['createdAt', 'DESC']] } = options;
+    const { req, where = {}, include = [], order = [['createdAt', 'DESC']], attributes } = options;
     const { page, limit, offset } = this.getPaginationParams(req || {});
     
     const searchQuery = {
-      ...query,
+      where,
       include,
       order,
       limit,
       offset,
       distinct: true
     };
+    
+    // Agregar attributes si se proporciona
+    if (attributes) {
+      searchQuery.attributes = attributes;
+    }
 
     const { count, rows } = await model.findAndCountAll(searchQuery);
     
