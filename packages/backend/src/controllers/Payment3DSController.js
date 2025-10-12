@@ -787,7 +787,11 @@ class Payment3DSController {
             },
             business_creation: {
               required: true,
-              completed: payment.metadata?.businessCreated || false
+              completed: payment.metadata?.businessCreated || false,
+              // Incluir datos de autenticación si el negocio fue creado
+              business: payment.metadata?.businessCreated ? payment.metadata?.business : null,
+              user: payment.metadata?.businessCreated ? payment.metadata?.user : null,
+              token: payment.metadata?.businessCreated ? payment.metadata?.token : null
             }
           }
         });

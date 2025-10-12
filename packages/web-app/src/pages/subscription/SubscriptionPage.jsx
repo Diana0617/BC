@@ -6,11 +6,13 @@ import { useSelector, useDispatch} from 'react-redux'
 import { fetchPublicPlans } from '@shared/store/slices/plansSlice'
 import { createSubscription } from '@shared/store/slices/subscriptionSlice'
 import { createBusinessManually } from '@shared/store/slices/ownerBusinessSlice'
+import { setCredentials } from '@shared/store/slices/authSlice'
 import { selectIsOwner, selectCanCreateCashSubscriptions } from '@shared/store/selectors/authSelectors'
 import PlanSelection from '../../components/subscription/PlanSelection'
 import BusinessRegistration from '../../components/subscription/BusinessRegistration'
 import PaymentFlow from '../../components/subscription/PaymentFlowWompi'
 import LoginModal from '../auth/LoginModal';
+import { CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const SubscriptionPage = () => {
   // Estado de autenticación y navegación
@@ -23,6 +25,8 @@ const SubscriptionPage = () => {
   const [billingCycle, setBillingCycle] = useState('MONTHLY')
   const [registrationData, setRegistrationData] = useState(null)
   const [invitationToken, setInvitationToken] = useState(null)
+  const [showSuccessToast, setShowSuccessToast] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
   // Redux state
   const { plans, loading } = useSelector(state => state.plans)
@@ -70,6 +74,17 @@ const SubscriptionPage = () => {
     }
   }, [dispatch, searchParams])
 
+  // Auto-cerrar el toast antes de la redirección para mejor UX
+  useEffect(() => {
+    if (showSuccessToast) {
+      const timer = setTimeout(() => {
+        setShowSuccessToast(false)
+      }, 2300) // Cerrar 200ms antes de la redirección para transición suave
+      
+      return () => clearTimeout(timer)
+    }
+  }, [showSuccessToast])
+
   const handlePlanSelection = (plan, selectedCycle) => {
     setSelectedPlan(plan)
     // Actualizar el ciclo de facturación seleccionado desde la card
@@ -103,8 +118,31 @@ const SubscriptionPage = () => {
     // El widget devuelve businessCreated en la raíz de paymentData
     if (paymentData.businessCreated === true) {
       console.log('✅ Negocio ya creado durante 3DS - saltando creación adicional')
-      alert('¡Suscripción completada exitosamente! El negocio ya está listo.')
-      // TODO: Redirigir al dashboard del negocio creado
+      console.log('🔄 Redirigiendo al perfil del negocio...')
+      
+      // 🔐 Autenticar al usuario automáticamente con los datos recibidos
+      if (paymentData.token && paymentData.user) {
+        console.log('🔐 Guardando credenciales de autenticación...')
+        dispatch(setCredentials({
+          token: paymentData.token,
+          user: paymentData.user,
+          refreshToken: null
+        }))
+        console.log('✅ Usuario autenticado automáticamente')
+      } else {
+        console.warn('⚠️ No se recibieron credenciales de autenticación')
+      }
+      
+      // Mostrar toast de éxito
+      setSuccessMessage('¡Suscripción completada exitosamente! Redirigiendo a tu perfil de negocio...')
+      setShowSuccessToast(true)
+      
+      // Redirigir al perfil del negocio con parámetro setup=true
+      // Esto iniciará el wizard de configuración inicial
+      setTimeout(() => {
+        navigate('/business/profile?setup=true', { replace: true })
+      }, 2500) // Dar 2.5 segundos para que vean el mensaje
+      
       return
     }
 
@@ -405,6 +443,70 @@ const SubscriptionPage = () => {
           </div>
         </footer>
       </main>
+
+      {/* Success Toast Notification - Mejorado */}
+      {showSuccessToast && (
+        <div className="fixed inset-0 flex items-center justify-center px-4 pointer-events-none z-50">
+          <div className="max-w-md w-full pointer-events-auto">
+            {/* Backdrop con blur */}
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm animate-fade-in"></div>
+            
+            {/* Notificación principal */}
+            <div className="relative bg-gradient-to-br from-green-50 to-emerald-50 shadow-2xl rounded-2xl overflow-hidden border-2 border-green-200 animate-bounce-in">
+              {/* Borde superior decorativo */}
+              <div className="h-2 bg-gradient-to-r from-green-400 via-emerald-500 to-green-400"></div>
+              
+              <div className="p-6">
+                <div className="flex items-start">
+                  {/* Icono de éxito con animación */}
+                  <div className="flex-shrink-0">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
+                      <div className="relative bg-green-500 rounded-full p-2">
+                        <CheckCircleIcon className="h-8 w-8 text-white" aria-hidden="true" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Contenido */}
+                  <div className="ml-4 flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">
+                      🎉 ¡Suscripción Completada!
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-4">
+                      {successMessage}
+                    </p>
+                    
+                    {/* Barra de progreso animada */}
+                    <div className="relative">
+                      <div className="w-full bg-green-200 rounded-full h-2 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full transition-all duration-[2500ms] ease-linear"
+                          style={{ width: '100%' }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-gray-600 mt-2 text-center animate-pulse">
+                        Preparando tu espacio de trabajo...
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Botón cerrar (opcional) */}
+                  <div className="ml-4 flex-shrink-0">
+                    <button
+                      className="bg-white/80 hover:bg-white rounded-full p-1 inline-flex text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all"
+                      onClick={() => setShowSuccessToast(false)}
+                    >
+                      <span className="sr-only">Cerrar</span>
+                      <XMarkIcon className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

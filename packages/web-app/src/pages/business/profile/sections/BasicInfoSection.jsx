@@ -31,13 +31,15 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
   })
 
   const [isEditing, setIsEditing] = useState(isSetupMode)
+  const [isInitialized, setIsInitialized] = useState(false)
 
-  // Cargar datos del store al montar el componente
+  // Cargar datos del store al montar el componente (solo una vez)
   useEffect(() => {
-    if (basicInfo && Object.keys(basicInfo).length > 0) {
+    if (basicInfo && Object.keys(basicInfo).length > 0 && !isInitialized) {
       setFormData(basicInfo)
+      setIsInitialized(true)
     }
-  }, [basicInfo])
+  }, [basicInfo, isInitialized])
 
   // Generar código automáticamente basado en el nombre
   // Compatible con backend: solo letras minúsculas y números (sin guiones ni espacios)
@@ -59,12 +61,12 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
     return `${cleanName}${randomSuffix}`
   }
 
-  // Sincronizar con Redux store en tiempo real
+  // Sincronizar con Redux store en tiempo real (solo cuando el usuario está editando)
   useEffect(() => {
-    if (isEditing) {
+    if (isEditing && isInitialized) {
       dispatch(updateBasicInfo(formData))
     }
-  }, [formData, dispatch, isEditing])
+  }, [formData, dispatch, isEditing, isInitialized])
 
   const businessTypes = [
     { value: 'BEAUTY_SALON', label: 'Salón de Belleza' },

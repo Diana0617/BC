@@ -37,7 +37,11 @@ const PaymentFlowWompi = ({
         businessData,
         selectedPlan,
         paymentMethod: 'wompi',
-        businessCreated: transaction.businessCreated || false  // ← AGREGAR ESTO
+        businessCreated: transaction.businessCreated || false,
+        // Datos para autenticación automática
+        business: transaction.business || null,
+        user: transaction.user || null,
+        token: transaction.token || null
       })
     }, 2000)
   }

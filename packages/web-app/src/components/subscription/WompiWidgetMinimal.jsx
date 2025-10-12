@@ -353,7 +353,11 @@ const WompiWidgetMinimal = ({
                 reference: pollingResult.transaction.reference,
                 status: 'APPROVED',
                 method: '3DS_PUBLIC_SUCCESS',
-                businessCreated: pollingResult.business_creation?.completed || false
+                businessCreated: pollingResult.business_creation?.completed || false,
+                // Datos para autenticación automática
+                business: pollingResult.business_creation?.business || null,
+                user: pollingResult.business_creation?.user || null,
+                token: pollingResult.business_creation?.token || null
               })
             }
           } else if (pollingResult && pollingResult.transaction.status === 'DECLINED') {

@@ -296,6 +296,31 @@ const authSlice = createSlice({
           StorageHelper.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(state.user), true);
         }
       }
+    },
+    
+    // Set credentials manually (para login automático después de registro)
+    setCredentials: (state, action) => {
+      const { user, token, refreshToken } = action.payload;
+      
+      state.isAuthenticated = true;
+      state.token = token;
+      state.refreshToken = refreshToken || null;
+      state.user = user;
+      state.loading = false;
+      state.error = null;
+      
+      // Store in localStorage/sessionStorage
+      if (typeof window !== 'undefined') {
+        try {
+          StorageHelper.setItem(STORAGE_KEYS.AUTH_TOKEN, token, true);
+          StorageHelper.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user), true);
+          if (refreshToken) {
+            StorageHelper.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken, true);
+          }
+        } catch (storageError) {
+          console.warn('Error storing auth credentials:', storageError);
+        }
+      }
     }
   },
   extraReducers: (builder) => {
@@ -450,7 +475,8 @@ export const {
   clearErrors, 
   clearSuccess, 
   logout, 
-  updateUserData 
+  updateUserData,
+  setCredentials
 } = authSlice.actions;
 
 export default authSlice.reducer;

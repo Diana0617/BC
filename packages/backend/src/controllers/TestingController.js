@@ -133,7 +133,11 @@ class TestingController {
               ...payment.metadata,
               businessCreated: true,
               businessCreatedAt: new Date().toISOString(),
-              simulatedApproval: true
+              simulatedApproval: true,
+              // Guardar datos para autenticación automática
+              business: businessResult.data?.data?.business || null,
+              user: businessResult.data?.data?.user || null,
+              token: businessResult.data?.data?.token || null
             };
             
             await payment.update({
