@@ -118,6 +118,13 @@ const Business = sequelize.define('Business', {
     type: DataTypes.JSONB,
     allowNull: true,
     defaultValue: {}
+  },
+  useCommissionSystem: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+    field: 'use_commission_system',
+    comment: 'Define si el negocio usa sistema de comisiones (true) o pago fijo/sueldo (false)'
   }
 }, {
   tableName: 'businesses',

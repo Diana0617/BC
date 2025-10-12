@@ -33,7 +33,8 @@ export const loadBusinessConfiguration = createAsyncThunk(
         address: business.address || '',
         city: business.city || '',
         country: business.country || 'Colombia',
-        description: business.description || ''
+        description: business.description || '',
+        useCommissionSystem: business.useCommissionSystem !== undefined ? business.useCommissionSystem : true
       } : null
       
       // Cargar configuraciones específicas

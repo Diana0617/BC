@@ -232,9 +232,13 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
         experience: formData.experience ? parseInt(formData.experience) : null,
         certifications: certifications,
         biography: formData.biography,
-        commissionRate: formData.commissionRate ? parseFloat(formData.commissionRate) : null,
         isActive: formData.isActive
       };
+
+      // Solo incluir commissionRate si el negocio usa sistema de comisiones
+      if (activeBusiness?.useCommissionSystem) {
+        profileData.commissionRate = formData.commissionRate ? parseFloat(formData.commissionRate) : null;
+      }
 
       // Solo incluir branchId si hay uno seleccionado
       if (formData.branchId) {
@@ -720,25 +724,37 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
           />
         </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Comisión (%)
-          </label>
-          <input
-            type="number"
-            name="commissionRate"
-            value={formData.commissionRate}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="30"
-            min="0"
-            max="100"
-            step="5"
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            Porcentaje de comisión por servicio (0-100%). Dejar en blanco para usar 50% por defecto.
-          </p>
-        </div>
+        {/* Campo de Comisión - Solo si el negocio usa sistema de comisiones */}
+        {activeBusiness?.useCommissionSystem && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Comisión (%)
+            </label>
+            <input
+              type="number"
+              name="commissionRate"
+              value={formData.commissionRate}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="30"
+              min="0"
+              max="100"
+              step="5"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Porcentaje de comisión por servicio (0-100%). Dejar en blanco para usar 50% por defecto.
+            </p>
+          </div>
+        )}
+        
+        {/* Mensaje informativo si NO usa comisiones */}
+        {!activeBusiness?.useCommissionSystem && (
+          <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm text-blue-800">
+              ℹ️ Tu negocio no usa sistema de comisiones. Los especialistas recibirán pago fijo según tu configuración.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
