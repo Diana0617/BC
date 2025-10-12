@@ -179,7 +179,7 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
         return !!(formData.firstName && formData.lastName && formData.email && 
                (!!editingSpecialist || formData.password));
       case 2: // Rol y sucursal
-        return !!(formData.role && formData.branchId);
+        return !!formData.role; // Solo requiere rol, la sucursal es opcional (se crea automáticamente si no existe)
       case 3: // Datos profesionales (opcional)
         return true;
       default:
@@ -233,10 +233,18 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
         certifications: certifications,
         biography: formData.biography,
         commissionRate: formData.commissionRate ? parseFloat(formData.commissionRate) : null,
-        branchId: formData.branchId,
-        additionalBranches: formData.additionalBranches,
         isActive: formData.isActive
       };
+
+      // Solo incluir branchId si hay uno seleccionado
+      if (formData.branchId) {
+        profileData.branchId = formData.branchId;
+      }
+
+      // Solo incluir additionalBranches si hay seleccionadas
+      if (formData.additionalBranches && formData.additionalBranches.length > 0) {
+        profileData.additionalBranches = formData.additionalBranches;
+      }
 
       if (editingSpecialist) {
         // Actualizar especialista existente
@@ -583,7 +591,7 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
       {/* Sucursal Principal */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Sucursal Principal *
+          Sucursal Principal {branches.length > 0 ? '(Opcional)' : ''}
         </label>
         <div className="relative">
           <BuildingOfficeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -592,9 +600,13 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
             value={formData.branchId}
             onChange={handleInputChange}
             className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            required
+            disabled={branches.length === 0}
           >
-            <option value="">Selecciona una sucursal</option>
+            <option value="">
+              {branches.length === 0 
+                ? 'Se creará automáticamente con la ubicación del negocio' 
+                : 'Selecciona una sucursal (se usará la ubicación del negocio por defecto)'}
+            </option>
             {branches.filter(b => b.status === 'ACTIVE').map(branch => (
               <option key={branch.id} value={branch.id}>
                 {branch.name} {branch.isMainBranch ? '(Principal)' : ''}
@@ -603,7 +615,9 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
           </select>
         </div>
         <p className="mt-1 text-xs text-gray-500">
-          Esta será la sucursal por defecto donde trabaja el especialista
+          {branches.length === 0 
+            ? 'No te preocupes, se creará automáticamente una sucursal principal con los datos de tu negocio'
+            : 'Si no seleccionas una sucursal, se usará la ubicación del negocio por defecto'}
         </p>
       </div>
 
@@ -940,9 +954,8 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
         {!isAddingSpecialist && (
           <button
             onClick={() => setIsAddingSpecialist(true)}
-            disabled={branches.length === 0}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-            title={branches.length === 0 ? 'Primero crea una sucursal' : 'Agregar especialista'}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+            title="Agregar especialista"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
             Agregar Especialista
@@ -954,35 +967,6 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-sm text-red-800">{error}</p>
-        </div>
-      )}
-
-      {/* Warning: No hay sucursales */}
-      {branches.length === 0 && !loading && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <BuildingOfficeIcon className="h-5 w-5 text-yellow-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-yellow-900 mb-1">
-                No hay sucursales disponibles
-              </h4>
-              <p className="text-sm text-yellow-800 mb-3">
-                Antes de crear especialistas, necesitas tener al menos una sucursal configurada.
-              </p>
-              <button
-                onClick={() => {
-                  // Cambiar a la sección de sucursales
-                  const branchesSection = document.querySelector('[data-section="branches"]');
-                  if (branchesSection) {
-                    branchesSection.click();
-                  }
-                }}
-                className="text-sm font-medium text-yellow-900 hover:text-yellow-700 underline"
-              >
-                Ir a Sucursales →
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
@@ -1064,7 +1048,7 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
                         </p>
                       ) : (
                         <div className="space-y-0.5">
-                          {specialist.branches.map((branch, idx) => (
+                          {specialist.branches.map((branch) => (
                             <p key={branch.id} className="text-gray-600 text-xs">
                               {branch.name}
                               {branch.isDefault && <span className="ml-1 text-blue-600">(Principal)</span>}

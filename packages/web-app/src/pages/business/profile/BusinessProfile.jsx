@@ -159,7 +159,8 @@ const BusinessProfile = () => {
       icon: BuildingOfficeIcon,
       component: BranchesSection,
       setupStep: 'branches',
-      alwaysVisible: true
+      moduleRequired: 'multi_branch', // ✅ Requiere módulo multi-sucursal
+      alwaysVisible: false // ❌ No siempre visible
     },
    
     {

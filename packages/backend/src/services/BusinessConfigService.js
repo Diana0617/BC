@@ -326,15 +326,43 @@ class BusinessConfigService {
         throw new Error('El correo electrónico ya está registrado');
       }
 
-      // Validar que se especificó al menos una sucursal
-      if (!profileData.branchId) {
-        throw new Error('Debe especificar una sucursal principal');
-      }
-
-      // Verificar que la sucursal principal existe
-      const mainBranch = await Branch.findByPk(profileData.branchId);
-      if (!mainBranch || mainBranch.businessId !== businessId) {
-        throw new Error('Sucursal principal no encontrada o no pertenece al negocio');
+      // Manejar la sucursal principal
+      let mainBranchId = profileData.branchId;
+      
+      // Si no se especificó sucursal, buscar o crear la sucursal principal del negocio
+      if (!mainBranchId) {
+        // Buscar si existe una sucursal principal
+        let mainBranch = await Branch.findOne({
+          where: { 
+            businessId: businessId,
+            isMain: true
+          }
+        });
+        
+        // Si no existe, crear la sucursal principal con los datos del negocio
+        if (!mainBranch) {
+          mainBranch = await Branch.create({
+            businessId: businessId,
+            name: `${business.name} - Principal`,
+            address: business.address || 'Dirección no especificada',
+            city: business.city || 'Ciudad no especificada',
+            country: business.country || 'Colombia',
+            phone: business.phone || null,
+            email: business.email || null,
+            isMain: true,
+            isActive: true
+          }, { transaction });
+          
+          console.log(`✅ Sucursal principal creada automáticamente: ${mainBranch.id}`);
+        }
+        
+        mainBranchId = mainBranch.id;
+      } else {
+        // Verificar que la sucursal especificada existe
+        const specifiedBranch = await Branch.findByPk(mainBranchId);
+        if (!specifiedBranch || specifiedBranch.businessId !== businessId) {
+          throw new Error('Sucursal especificada no encontrada o no pertenece al negocio');
+        }
       }
 
       // Crear el usuario con los datos enviados desde el frontend
@@ -371,7 +399,7 @@ class BusinessConfigService {
       // Asignar sucursal principal a través de UserBranch
       await UserBranch.create({
         userId: user.id,
-        branchId: profileData.branchId,
+        branchId: mainBranchId, // Usar la sucursal principal (automática o especificada)
         isDefault: true,
         canManageSchedule: true,
         canCreateAppointments: true
