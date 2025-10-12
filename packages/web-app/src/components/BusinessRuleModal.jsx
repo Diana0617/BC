@@ -254,16 +254,56 @@ const BusinessRuleModal = ({ isOpen, onClose, business }) => {
           `Regla: "${rule.key}"\nValor actual: ${currentBool ? 'Activado' : 'Desactivado'}\n\n¿Deseas activar esta regla?`
         );
       } else if (ruleType === 'NUMBER') {
-        newValueInput = window.prompt(
-          `Editar regla: "${rule.key}"\nDescripción: ${rule.description}\n\nIngresa el nuevo valor numérico:`,
-          String(currentValue)
-        );
+        // Construir mensaje con información de validación si existe
+        let promptMessage = `Editar regla: "${rule.key}"\nDescripción: ${rule.description}\n`;
+        
+        // Agregar información de validación si existe
+        if (rule.validationRules) {
+          try {
+            const validation = typeof rule.validationRules === 'string' 
+              ? JSON.parse(rule.validationRules) 
+              : rule.validationRules;
+            
+            if (validation.min !== undefined || validation.max !== undefined) {
+              promptMessage += `\nRango permitido: ${validation.min ?? '-∞'} - ${validation.max ?? '∞'}`;
+            }
+          } catch {
+            // Si falla el parsing, continuar sin validación
+          }
+        }
+        
+        promptMessage += '\n\nIngresa el nuevo valor numérico:';
+        
+        newValueInput = window.prompt(promptMessage, String(currentValue));
+        
         if (newValueInput !== null) {
           const numValue = parseFloat(newValueInput);
           if (isNaN(numValue)) {
             alert('❌ Por favor ingresa un número válido.');
             return;
           }
+          
+          // Validar contra las reglas si existen
+          if (rule.validationRules) {
+            try {
+              const validation = typeof rule.validationRules === 'string' 
+                ? JSON.parse(rule.validationRules) 
+                : rule.validationRules;
+              
+              if (validation.min !== undefined && numValue < validation.min) {
+                alert(`❌ El valor debe ser mayor o igual a ${validation.min}`);
+                return;
+              }
+              if (validation.max !== undefined && numValue > validation.max) {
+                alert(`❌ El valor debe ser menor o igual a ${validation.max}`);
+                return;
+              }
+            } catch {
+              // Si falla el parsing de validación, continuar
+              console.warn('Error al validar regla');
+            }
+          }
+          
           newValueInput = numValue;
         }
       } else {
