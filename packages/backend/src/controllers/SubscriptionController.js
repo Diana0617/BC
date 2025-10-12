@@ -441,7 +441,10 @@ class SubscriptionController {
         })
 
       } catch (error) {
-        await transaction.rollback()
+        // Solo hacer rollback si la transacción todavía está activa
+        if (!transaction.finished) {
+          await transaction.rollback()
+        }
         throw error
       }
 

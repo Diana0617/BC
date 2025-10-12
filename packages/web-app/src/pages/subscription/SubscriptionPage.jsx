@@ -97,10 +97,11 @@ const SubscriptionPage = () => {
     console.log('🔍 DEBUG paymentData completo:', paymentData)
     console.log('🔍 DEBUG paymentData.businessCreated:', paymentData.businessCreated)
     console.log('🔍 DEBUG paymentData.transaction.businessCreated:', paymentData.transaction?.businessCreated)
-    console.log('🔍 DEBUG typeof businessCreated:', typeof paymentData.transaction?.businessCreated)
+    console.log('🔍 DEBUG typeof businessCreated:', typeof paymentData.businessCreated)
 
     // ✅ VERIFICAR SI EL NEGOCIO YA FUE CREADO DURANTE 3DS
-    if (paymentData.transaction?.businessCreated === true) {
+    // El widget devuelve businessCreated en la raíz de paymentData
+    if (paymentData.businessCreated === true) {
       console.log('✅ Negocio ya creado durante 3DS - saltando creación adicional')
       alert('¡Suscripción completada exitosamente! El negocio ya está listo.')
       // TODO: Redirigir al dashboard del negocio creado

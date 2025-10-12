@@ -118,15 +118,17 @@ class TestingController {
         if (businessResult && businessResult.statusCode === 201) {
           console.log('✅ Negocio creado exitosamente después del pago simulado');
           
-          // Actualizar el pago con la suscripción creada
+          // Actualizar el pago con la suscripción creada (FUERA de la transacción de createSubscription)
           const businessSubscriptionId = businessResult.data?.subscription?.id;
           if (businessSubscriptionId) {
+            // Usar update sin transacción ya que createSubscription ya terminó
+            await payment.reload(); // Recargar el payment para evitar conflictos
             await payment.update({
               businessSubscriptionId: businessSubscriptionId,
               metadata: {
                 ...payment.metadata,
                 businessCreated: true,
-                businessCreatedAt: new Date(),
+                businessCreatedAt: new Date().toISOString(),
                 simulatedApproval: true
               }
             });
@@ -142,7 +144,7 @@ class TestingController {
                 id: payment.id,
                 transactionId: payment.transactionId,
                 status: payment.status,
-                businessSubscriptionId: payment.businessSubscriptionId
+                businessSubscriptionId: businessSubscriptionId
               },
               business: businessResult.data.business,
               subscription: businessResult.data.subscription,

@@ -9,140 +9,214 @@ require('dotenv').config();
 const { SubscriptionPlan, Module, PlanModule, sequelize } = require('../src/models');
 
 const basePlans = [
+  // =====================
+  // PLAN BÁSICO - Solo lo esencial
+  // =====================
   {
     planData: {
       name: 'Básico',
       description: 'Plan ideal para salones pequeños que están comenzando. Incluye funcionalidades esenciales para gestionar citas y clientes.',
-      price: 49900,
+      price: 39900,
       currency: 'COP',
       duration: 1,
       durationType: 'MONTHS',
       maxUsers: 3,
       maxClients: 100,
       maxAppointments: 200,
-      storageLimit: 1073741824, // 1GB en bytes
+      storageLimit: 1073741824, // 1GB
       status: 'ACTIVE',
       isPopular: false,
       trialDays: 15,
       features: {
         appointments: 'Gestión básica de citas',
-        clients: 'Base de datos de clientes',
+        clients: 'Base de datos de hasta 100 clientes',
         payments: 'Pagos en efectivo',
-        reports: 'Reportes básicos',
         support: 'Soporte por email'
       },
       limitations: {
-        integrations: 'Sin integraciones de pago',
-        advanced_features: 'Sin funciones avanzadas',
-        marketing: 'Sin herramientas de marketing'
+        single_branch: 'Solo 1 sucursal',
+        no_integrations: 'Sin integraciones de pago online',
+        no_analytics: 'Sin reportes avanzados',
+        no_inventory: 'Sin gestión de inventario'
       }
     },
     modules: [
+      // CORE (obligatorios)
       { moduleName: 'authentication', isIncluded: true },
       { moduleName: 'dashboard', isIncluded: true },
       { moduleName: 'user-management', isIncluded: true },
+      // APPOINTMENTS
       { moduleName: 'appointment-booking', isIncluded: true },
-      { moduleName: 'basic-inventory', isIncluded: true },
-      { moduleName: 'basic-payments', isIncluded: true },
-      { moduleName: 'basic-reports', isIncluded: true }
+      // PAYMENTS
+      { moduleName: 'basic-payments', isIncluded: true }
     ]
   },
-  
+
+  // =====================
+  // PLAN ESTÁNDAR - Salón en crecimiento
+  // =====================
   {
     planData: {
       name: 'Estándar',
-      description: 'Plan perfecto para salones en crecimiento. Incluye recordatorios automáticos y mejor gestión de inventario.',
-      price: 89900,
+      description: 'Plan perfecto para salones en crecimiento. Incluye recordatorios automáticos, inventario y control de gastos.',
+      price: 79900,
       currency: 'COP',
       duration: 1,
       durationType: 'MONTHS',
       maxUsers: 8,
       maxClients: 500,
       maxAppointments: 1000,
-      storageLimit: 5368709120, // 5GB en bytes
+      storageLimit: 5368709120, // 5GB
       status: 'ACTIVE',
       isPopular: true,
       trialDays: 15,
       features: {
-        appointments: 'Gestión avanzada de citas con recordatorios',
-        clients: 'Base de datos expandida de clientes',
-        inventory: 'Control de stock con alertas',
-        payments: 'Pagos en efectivo + Wompi',
-        reports: 'Reportes avanzados',
+        appointments: 'Gestión de citas con recordatorios automáticos',
+        clients: 'Base de datos de hasta 500 clientes con historial',
+        inventory: 'Gestión de inventario básico',
+        expenses: 'Control de gastos del negocio',
+        payments: 'Pagos en efectivo',
         support: 'Soporte prioritario'
       },
       limitations: {
-        advanced_integrations: 'Integraciones limitadas',
-        marketing_tools: 'Herramientas de marketing básicas'
+        single_branch: 'Solo 1 sucursal',
+        no_online_payments: 'Sin pagos online',
+        basic_reports: 'Reportes básicos únicamente'
       }
     },
     modules: [
+      // CORE
       { moduleName: 'authentication', isIncluded: true },
       { moduleName: 'dashboard', isIncluded: true },
       { moduleName: 'user-management', isIncluded: true },
+      // APPOINTMENTS
       { moduleName: 'appointment-booking', isIncluded: true },
       { moduleName: 'appointment-reminders', isIncluded: true },
-      { moduleName: 'basic-inventory', isIncluded: true },
-      { moduleName: 'stock-control', isIncluded: true },
+      // INVENTORY
+      { moduleName: 'inventory', isIncluded: true },
+      // PAYMENTS
       { moduleName: 'basic-payments', isIncluded: true },
-      { moduleName: 'wompi-integration', isIncluded: true },
-      { moduleName: 'basic-reports', isIncluded: true }
+      // REPORTS
+      { moduleName: 'expenses', isIncluded: true },
+      { moduleName: 'client_history', isIncluded: true }
     ]
   },
-  
+
+  // =====================
+  // PLAN PROFESIONAL - Con pagos online
+  // =====================
   {
     planData: {
-      name: 'Premium',
-      description: 'Plan completo para salones establecidos. Incluye todas las integraciones, análisis avanzado y herramientas de marketing.',
-      price: 149900,
+      name: 'Profesional',
+      description: 'Plan profesional con pagos online a través de Wompi. Ideal para salones que quieren modernizar sus cobros.',
+      price: 119900,
       currency: 'COP',
       duration: 1,
       durationType: 'MONTHS',
-      maxUsers: 20,
-      maxClients: 2000,
-      maxAppointments: null, // Sin límite
-      storageLimit: 21474836480, // 20GB en bytes
+      maxUsers: 12,
+      maxClients: 1000,
+      maxAppointments: 2000,
+      storageLimit: 10737418240, // 10GB
       status: 'ACTIVE',
       isPopular: true,
       trialDays: 30,
       features: {
-        appointments: 'Programación avanzada con recursos múltiples',
-        clients: 'Base de datos ilimitada con segmentación',
-        inventory: 'Control completo de inventario',
-        payments: 'Todas las opciones de pago disponibles',
-        integrations: 'Todas las integraciones incluidas',
-        marketing: 'Suite completa de marketing',
-        analytics: 'Análisis avanzado con IA',
-        support: 'Soporte 24/7 con gerente dedicado'
+        appointments: 'Gestión completa de citas con recordatorios',
+        clients: 'Base de datos de hasta 1000 clientes con historial completo',
+        inventory: 'Gestión de inventario con control de stock',
+        expenses: 'Control completo de gastos',
+        balance: 'Balance general financiero',
+        payments: 'Pagos en efectivo + Wompi (tarjetas y PSE)',
+        support: 'Soporte prioritario 24/7'
       },
       limitations: {
-        custom_development: 'Desarrollos personalizados bajo cotización'
+        single_branch: 'Solo 1 sucursal',
+        basic_analytics: 'Análisis básico'
       }
     },
     modules: [
+      // CORE
       { moduleName: 'authentication', isIncluded: true },
       { moduleName: 'dashboard', isIncluded: true },
       { moduleName: 'user-management', isIncluded: true },
+      // APPOINTMENTS
       { moduleName: 'appointment-booking', isIncluded: true },
       { moduleName: 'appointment-reminders', isIncluded: true },
-      { moduleName: 'advanced-scheduling', isIncluded: true },
-      { moduleName: 'basic-inventory', isIncluded: true },
+      // INVENTORY
+      { moduleName: 'inventory', isIncluded: true },
       { moduleName: 'stock-control', isIncluded: true },
+      // PAYMENTS
       { moduleName: 'basic-payments', isIncluded: true },
-      { moduleName: 'wompi-integration', isIncluded: true },
-      { moduleName: 'taxxa-integration', isIncluded: true },
-      { moduleName: 'mercadopago-integration', isIncluded: true },
-      { moduleName: 'basic-reports', isIncluded: true },
-      { moduleName: 'advanced-analytics', isIncluded: true },
-      { moduleName: 'email-marketing', isIncluded: true },
-      { moduleName: 'sms-notifications', isIncluded: true }
+      { moduleName: 'wompi_integration', isIncluded: true },
+      // REPORTS
+      { moduleName: 'expenses', isIncluded: true },
+      { moduleName: 'balance', isIncluded: true },
+      { moduleName: 'client_history', isIncluded: true }
     ]
   },
-  
+
+  // =====================
+  // PLAN PREMIUM - Todo incluido + facturación
+  // =====================
+  {
+    planData: {
+      name: 'Premium',
+      description: 'Plan completo con facturación electrónica Taxxa, análisis avanzado y todas las integraciones de pago.',
+      price: 169900,
+      currency: 'COP',
+      duration: 1,
+      durationType: 'MONTHS',
+      maxUsers: 20,
+      maxClients: 5000,
+      maxAppointments: null, // Sin límite
+      storageLimit: 21474836480, // 20GB
+      status: 'ACTIVE',
+      isPopular: true,
+      trialDays: 30,
+      features: {
+        appointments: 'Gestión completa de citas con recordatorios',
+        clients: 'Base de datos ilimitada con historial completo',
+        inventory: 'Gestión completa de inventario y proveedores',
+        expenses: 'Control completo de gastos y balance',
+        payments: 'Todas las opciones de pago (efectivo + Wompi)',
+        invoicing: 'Facturación electrónica con Taxxa',
+        analytics: 'Análisis avanzado con reportes personalizados',
+        support: 'Soporte VIP 24/7'
+      },
+      limitations: {
+        single_branch: 'Solo 1 sucursal (multi-sucursal disponible en Enterprise)'
+      }
+    },
+    modules: [
+      // CORE
+      { moduleName: 'authentication', isIncluded: true },
+      { moduleName: 'dashboard', isIncluded: true },
+      { moduleName: 'user-management', isIncluded: true },
+      // APPOINTMENTS
+      { moduleName: 'appointment-booking', isIncluded: true },
+      { moduleName: 'appointment-reminders', isIncluded: true },
+      // INVENTORY
+      { moduleName: 'inventory', isIncluded: true },
+      { moduleName: 'stock-control', isIncluded: true },
+      // PAYMENTS & INTEGRATIONS
+      { moduleName: 'basic-payments', isIncluded: true },
+      { moduleName: 'wompi_integration', isIncluded: true },
+      { moduleName: 'taxxa_integration', isIncluded: true },
+      // REPORTS & ANALYTICS
+      { moduleName: 'expenses', isIncluded: true },
+      { moduleName: 'balance', isIncluded: true },
+      { moduleName: 'client_history', isIncluded: true },
+      { moduleName: 'advanced-analytics', isIncluded: true }
+    ]
+  },
+
+  // =====================
+  // PLAN ENTERPRISE - Cadenas de salones
+  // =====================
   {
     planData: {
       name: 'Enterprise',
-      description: 'Plan empresarial para cadenas de salones. Incluye todas las funcionalidades más integraciones con redes sociales y soporte dedicado.',
+      description: 'Plan empresarial para cadenas de salones. Incluye múltiples sucursales, todas las integraciones y soporte dedicado.',
       price: 249900,
       currency: 'COP',
       duration: 1,
@@ -150,40 +224,44 @@ const basePlans = [
       maxUsers: null, // Sin límite
       maxClients: null, // Sin límite
       maxAppointments: null, // Sin límite
-      storageLimit: 107374182400, // 100GB en bytes
+      storageLimit: 107374182400, // 100GB
       status: 'ACTIVE',
       isPopular: false,
       trialDays: 30,
       features: {
         everything_premium: 'Todas las funciones del plan Premium',
-        social_integrations: 'Integración completa con redes sociales',
-        multi_location: 'Gestión de múltiples ubicaciones',
-        advanced_roles: 'Roles y permisos avanzados',
+        multi_branch: 'Gestión de múltiples sucursales',
+        unlimited: 'Sin límites de usuarios, clientes o citas',
+        advanced_analytics: 'Análisis empresarial con comparativas entre sucursales',
+        custom_integrations: 'Integraciones personalizadas',
         api_access: 'Acceso completo a APIs',
-        custom_branding: 'Marca personalizada',
-        priority_support: 'Soporte premium con SLA garantizado',
-        training: 'Entrenamiento personalizado incluido'
+        priority_support: 'Soporte empresarial con SLA garantizado',
+        training: 'Entrenamiento personalizado incluido',
+        dedicated_manager: 'Gerente de cuenta dedicado'
       },
       limitations: {}
     },
     modules: [
+      // CORE
       { moduleName: 'authentication', isIncluded: true },
       { moduleName: 'dashboard', isIncluded: true },
       { moduleName: 'user-management', isIncluded: true },
+      { moduleName: 'multi_branch', isIncluded: true }, // EXCLUSIVO
+      // APPOINTMENTS
       { moduleName: 'appointment-booking', isIncluded: true },
       { moduleName: 'appointment-reminders', isIncluded: true },
-      { moduleName: 'advanced-scheduling', isIncluded: true },
-      { moduleName: 'basic-inventory', isIncluded: true },
+      // INVENTORY
+      { moduleName: 'inventory', isIncluded: true },
       { moduleName: 'stock-control', isIncluded: true },
+      // PAYMENTS & INTEGRATIONS
       { moduleName: 'basic-payments', isIncluded: true },
-      { moduleName: 'wompi-integration', isIncluded: true },
-      { moduleName: 'taxxa-integration', isIncluded: true },
-      { moduleName: 'mercadopago-integration', isIncluded: true },
-      { moduleName: 'basic-reports', isIncluded: true },
-      { moduleName: 'advanced-analytics', isIncluded: true },
-      { moduleName: 'email-marketing', isIncluded: true },
-      { moduleName: 'sms-notifications', isIncluded: true },
-      { moduleName: 'social-media-booking', isIncluded: true }
+      { moduleName: 'wompi_integration', isIncluded: true },
+      { moduleName: 'taxxa_integration', isIncluded: true },
+      // REPORTS & ANALYTICS
+      { moduleName: 'expenses', isIncluded: true },
+      { moduleName: 'balance', isIncluded: true },
+      { moduleName: 'client_history', isIncluded: true },
+      { moduleName: 'advanced-analytics', isIncluded: true }
     ]
   }
 ];

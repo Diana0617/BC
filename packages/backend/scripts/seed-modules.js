@@ -9,7 +9,9 @@ require('dotenv').config();
 const { Module, sequelize } = require('../src/models');
 
 const baseModules = [
-  // MÓDULOS CORE (Fundamentales)
+  // =====================
+  // MÓDULOS CORE (Fundamentales - Siempre incluidos)
+  // =====================
   {
     name: 'authentication',
     displayName: 'Autenticación',
@@ -49,8 +51,29 @@ const baseModules = [
     dependencies: [],
     pricing: { type: 'FREE', price: 0, currency: 'COP' }
   },
+  {
+    name: 'multi_branch',
+    displayName: 'Múltiples Sucursales',
+    description: 'Permite gestionar más de una sucursal en un mismo negocio',
+    icon: 'map-pin',
+    category: 'CORE',
+    status: 'ACTIVE',
+    version: '1.0.0',
+    requiresConfiguration: true,
+    configurationSchema: {
+      type: 'object',
+      properties: {
+        maxBranches: { type: 'number', default: 1 }
+      }
+    },
+    permissions: ['branches.view', 'branches.create', 'branches.edit', 'branches.delete'],
+    dependencies: [],
+    pricing: { type: 'PREMIUM', price: 45000, currency: 'COP' }
+  },
 
+  // =====================
   // MÓDULOS DE CITAS
+  // =====================
   {
     name: 'appointment-booking',
     displayName: 'Reserva de Citas',
@@ -70,12 +93,12 @@ const baseModules = [
     },
     permissions: ['appointments.view', 'appointments.create', 'appointments.edit', 'appointments.cancel'],
     dependencies: [],
-    pricing: { type: 'BASIC', price: 15000, currency: 'COP' }
+    pricing: { type: 'FREE', price: 0, currency: 'COP' }
   },
   {
     name: 'appointment-reminders',
     displayName: 'Recordatorios de Citas',
-    description: 'Envío automático de recordatorios por SMS/Email',
+    description: 'Envío automático de recordatorios por WhatsApp/SMS',
     icon: 'bell',
     category: 'APPOINTMENTS',
     status: 'ACTIVE',
@@ -84,7 +107,7 @@ const baseModules = [
     configurationSchema: {
       type: 'object',
       properties: {
-        emailReminders: { type: 'boolean', default: true },
+        whatsappReminders: { type: 'boolean', default: true },
         smsReminders: { type: 'boolean', default: false },
         reminderHoursBefore: { type: 'number', default: 24 }
       }
@@ -93,39 +116,20 @@ const baseModules = [
     dependencies: [],
     pricing: { type: 'PREMIUM', price: 25000, currency: 'COP' }
   },
-  {
-    name: 'advanced-scheduling',
-    displayName: 'Programación Avanzada',
-    description: 'Gestión de horarios complejos, recursos y servicios múltiples',
-    icon: 'calendar-plus',
-    category: 'APPOINTMENTS',
-    status: 'ACTIVE',
-    version: '1.0.0',
-    requiresConfiguration: true,
-    configurationSchema: {
-      type: 'object',
-      properties: {
-        resourceBooking: { type: 'boolean', default: false },
-        multiServiceBooking: { type: 'boolean', default: false },
-        waitingList: { type: 'boolean', default: false }
-      }
-    },
-    permissions: ['appointments.advanced', 'resources.manage'],
-    dependencies: [],
-    pricing: { type: 'PREMIUM', price: 35000, currency: 'COP' }
-  },
 
+  // =====================
   // MÓDULOS DE INVENTARIO
+  // =====================
   {
-    name: 'basic-inventory',
-    displayName: 'Inventario Básico',
-    description: 'Gestión básica de productos y servicios',
-    icon: 'package',
+    name: 'inventory',
+    displayName: 'Inventario',
+    description: 'Gestión de stock de insumos y productos vendibles, incluyendo proveedores',
+    icon: 'box',
     category: 'INVENTORY',
     status: 'ACTIVE',
     version: '1.0.0',
     requiresConfiguration: false,
-    permissions: ['inventory.view', 'products.manage', 'services.manage'],
+    permissions: ['inventory.view', 'inventory.create', 'inventory.edit', 'inventory.delete', 'suppliers.manage'],
     dependencies: [],
     pricing: { type: 'BASIC', price: 20000, currency: 'COP' }
   },
@@ -147,11 +151,13 @@ const baseModules = [
       }
     },
     permissions: ['stock.view', 'stock.adjust', 'alerts.configure'],
-    dependencies: [],
+    dependencies: ['inventory'],
     pricing: { type: 'PREMIUM', price: 30000, currency: 'COP' }
   },
 
-  // MÓDULOS DE PAGOS
+  // =====================
+  // MÓDULOS DE PAGOS Y FACTURACIÓN
+  // =====================
   {
     name: 'basic-payments',
     displayName: 'Pagos Básicos',
@@ -166,9 +172,9 @@ const baseModules = [
     pricing: { type: 'FREE', price: 0, currency: 'COP' }
   },
   {
-    name: 'wompi-integration',
-    displayName: 'Wompi',
-    description: 'Integración con Wompi para pagos con tarjetas y PSE',
+    name: 'wompi_integration',
+    displayName: 'Integración Wompi',
+    description: 'Pagos en línea a través de Wompi (tarjetas y PSE)',
     icon: 'credit-card',
     category: 'INTEGRATIONS',
     status: 'ACTIVE',
@@ -190,9 +196,9 @@ const baseModules = [
     pricing: { type: 'PREMIUM', price: 35000, currency: 'COP' }
   },
   {
-    name: 'taxxa-integration',
-    displayName: 'Taxxa',
-    description: 'Integración con Taxxa para facturación electrónica',
+    name: 'taxxa_integration',
+    displayName: 'Integración Taxxa',
+    description: 'Facturación electrónica con Taxxa',
     icon: 'file-text',
     category: 'INTEGRATIONS',
     status: 'ACTIVE',
@@ -212,42 +218,48 @@ const baseModules = [
     dependencies: [],
     pricing: { type: 'PREMIUM', price: 25000, currency: 'COP' }
   },
-  {
-    name: 'mercadopago-integration',
-    displayName: 'MercadoPago',
-    description: 'Integración con MercadoPago para pagos online',
-    icon: 'shopping-cart',
-    category: 'INTEGRATIONS',
-    status: 'DEVELOPMENT',
-    version: '1.0.0',
-    requiresConfiguration: true,
-    configurationSchema: {
-      type: 'object',
-      properties: {
-        accessToken: { type: 'string', default: '' },
-        publicKey: { type: 'string', default: '' },
-        environment: { type: 'string', default: 'sandbox' },
-        installments: { type: 'number', default: 12 }
-      }
-    },
-    permissions: ['payments.mercadopago', 'integrations.configure'],
-    dependencies: [],
-    pricing: { type: 'PREMIUM', price: 30000, currency: 'COP' }
-  },
 
-  // MÓDULOS DE REPORTES
+  // =====================
+  // MÓDULOS DE REPORTES Y ANÁLISIS
+  // =====================
   {
-    name: 'basic-reports',
-    displayName: 'Reportes Básicos',
-    description: 'Reportes básicos de ventas y citas',
-    icon: 'file-text',
+    name: 'expenses',
+    displayName: 'Control de Gastos',
+    description: 'Registro y categorización de gastos del negocio',
+    icon: 'dollar-sign',
     category: 'REPORTS',
     status: 'ACTIVE',
     version: '1.0.0',
     requiresConfiguration: false,
-    permissions: ['reports.basic', 'reports.export'],
+    permissions: ['expenses.view', 'expenses.create', 'expenses.edit', 'expenses.delete'],
     dependencies: [],
+    pricing: { type: 'BASIC', price: 15000, currency: 'COP' }
+  },
+  {
+    name: 'balance',
+    displayName: 'Balance General',
+    description: 'Reporte financiero completo del negocio',
+    icon: 'bar-chart-2',
+    category: 'REPORTS',
+    status: 'ACTIVE',
+    version: '1.0.0',
+    requiresConfiguration: false,
+    permissions: ['balance.view', 'reports.financial'],
+    dependencies: ['expenses', 'basic-payments'],
     pricing: { type: 'BASIC', price: 18000, currency: 'COP' }
+  },
+  {
+    name: 'client_history',
+    displayName: 'Historial de Clientes',
+    description: 'Turnos cumplidos, cancelados y procedimientos realizados',
+    icon: 'users',
+    category: 'ANALYTICS',
+    status: 'ACTIVE',
+    version: '1.0.0',
+    requiresConfiguration: false,
+    permissions: ['clients.history', 'analytics.view'],
+    dependencies: ['appointment-booking'],
+    pricing: { type: 'BASIC', price: 12000, currency: 'COP' }
   },
   {
     name: 'advanced-analytics',
@@ -267,75 +279,8 @@ const baseModules = [
       }
     },
     permissions: ['analytics.view', 'analytics.configure'],
-    dependencies: [],
+    dependencies: ['client_history', 'balance'],
     pricing: { type: 'PREMIUM', price: 40000, currency: 'COP' }
-  },
-
-  // MÓDULOS DE COMUNICACIONES
-  {
-    name: 'email-marketing',
-    displayName: 'Email Marketing',
-    description: 'Envío de campañas de email marketing a clientes',
-    icon: 'mail',
-    category: 'COMMUNICATIONS',
-    status: 'DEVELOPMENT',
-    version: '1.0.0',
-    requiresConfiguration: true,
-    configurationSchema: {
-      type: 'object',
-      properties: {
-        templateCustomization: { type: 'boolean', default: true },
-        automatedCampaigns: { type: 'boolean', default: false },
-        segmentation: { type: 'boolean', default: false }
-      }
-    },
-    permissions: ['marketing.send', 'marketing.configure', 'templates.manage'],
-    dependencies: [],
-    pricing: { type: 'PREMIUM', price: 35000, currency: 'COP' }
-  },
-  {
-    name: 'sms-notifications',
-    displayName: 'Notificaciones SMS',
-    description: 'Envío de notificaciones y recordatorios por SMS',
-    icon: 'message-circle',
-    category: 'COMMUNICATIONS',
-    status: 'DEVELOPMENT',
-    version: '1.0.0',
-    requiresConfiguration: true,
-    configurationSchema: {
-      type: 'object',
-      properties: {
-        enableAutomaticSMS: { type: 'boolean', default: false },
-        smsProvider: { type: 'string', default: '' },
-        allowCustomMessages: { type: 'boolean', default: true }
-      }
-    },
-    permissions: ['sms.send', 'sms.configure'],
-    dependencies: [],
-    pricing: { type: 'PREMIUM', price: 28000, currency: 'COP' }
-  },
-
-  // MÓDULOS DE INTEGRACIONES
-  {
-    name: 'social-media-booking',
-    displayName: 'Reservas Redes Sociales',
-    description: 'Integración con Facebook, Instagram para reservas',
-    icon: 'share-2',
-    category: 'INTEGRATIONS',
-    status: 'DEVELOPMENT',
-    version: '1.0.0',
-    requiresConfiguration: true,
-    configurationSchema: {
-      type: 'object',
-      properties: {
-        facebookIntegration: { type: 'boolean', default: false },
-        instagramIntegration: { type: 'boolean', default: false },
-        autoSyncAvailability: { type: 'boolean', default: true }
-      }
-    },
-    permissions: ['integrations.social', 'integrations.configure'],
-    dependencies: [],
-    pricing: { type: 'PREMIUM', price: 50000, currency: 'COP' }
   }
 ];
 
@@ -351,21 +296,19 @@ async function seedModules() {
     let skippedCount = 0;
     
     for (const moduleData of baseModules) {
-      // Verificar si el módulo ya existe
-      const existingModule = await Module.findOne({ 
-        where: { name: moduleData.name } 
+      // Usar findOrCreate para evitar duplicados
+      const [module, wasCreated] = await Module.findOrCreate({
+        where: { name: moduleData.name },
+        defaults: moduleData
       });
       
-      if (existingModule) {
+      if (wasCreated) {
+        console.log(`✅ Módulo '${module.name}' creado exitosamente.`);
+        createdCount++;
+      } else {
         console.log(`⏭️  Módulo '${moduleData.name}' ya existe, saltando...`);
         skippedCount++;
-        continue;
       }
-      
-      // Crear el módulo
-      const newModule = await Module.create(moduleData);
-      console.log(`✅ Módulo '${newModule.name}' creado exitosamente.`);
-      createdCount++;
     }
     
     console.log('\n📊 Resumen del seeding:');
