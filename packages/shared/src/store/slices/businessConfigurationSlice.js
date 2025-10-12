@@ -5,8 +5,12 @@ import { businessBrandingApi } from '../../api/businessBrandingApi'
 // AsyncThunk para cargar la configuración del negocio
 export const loadBusinessConfiguration = createAsyncThunk(
   'businessConfiguration/loadConfiguration',
-  async (businessId, { rejectWithValue }) => {
+  async (businessId, { rejectWithValue, getState }) => {
     try {
+      // Obtener el negocio del estado de Redux
+      const state = getState()
+      const business = state.business?.currentBusiness
+      
       // Cargar datos de suscripción
       const subscriptionResponse = await subscriptionStatusApi.checkSubscriptionStatus(businessId)
       
@@ -19,12 +23,25 @@ export const loadBusinessConfiguration = createAsyncThunk(
         console.warn('No se pudo cargar branding, usando valores por defecto')
       }
       
+      // Inicializar basicInfo con los datos del negocio si existen
+      const basicInfo = business ? {
+        name: business.name || '',
+        businessCode: business.subdomain || business.businessCode || '',
+        type: business.type || '',
+        phone: business.phone || '',
+        email: business.email || '',
+        address: business.address || '',
+        city: business.city || '',
+        country: business.country || 'Colombia',
+        description: business.description || ''
+      } : null
+      
       // Cargar configuraciones específicas
       // TODO: Implementar APIs específicas para cada módulo
       const configuration = {
         subscription: subscriptionResponse.data,
         branding: branding,
-        basicInfo: null, // TODO: API para datos básicos
+        basicInfo: basicInfo, // ✅ Inicializado con datos del negocio
         specialists: [], // TODO: API para especialistas
         services: [], // TODO: API para servicios
         schedule: null, // TODO: API para horarios
