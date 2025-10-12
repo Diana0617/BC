@@ -18,9 +18,18 @@ import { businessSpecialistsApi, businessBranchesApi, specialistServicesApi, bus
 
 const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const dispatch = useDispatch();
-  // Corrección: el estado en businessSlice se llama currentBusiness, no activeBusiness
+  // Corrección: el estado en businessSlice se llama currentBusiness, not activeBusiness
   const activeBusiness = useSelector(state => state.business.currentBusiness);
   const isLoadingBusiness = useSelector(state => state.business.isLoading);
+  
+  // Leer reglas de negocio para sistema de comisiones
+  const businessRules = useSelector(state => state.businessRules?.rules || []);
+  const commissionRule = businessRules.find(r => r.key === 'SPECIALIST_COMMISSION_ENABLED');
+  const defaultCommissionRule = businessRules.find(r => r.key === 'SPECIALIST_DEFAULT_COMMISSION_RATE');
+  
+  // Determinar si el negocio usa comisiones (por defecto true si no hay regla)
+  const useCommissionSystem = commissionRule?.effectiveValue ?? commissionRule?.defaultValue ?? true;
+  const defaultCommissionRate = defaultCommissionRule?.effectiveValue ?? defaultCommissionRule?.defaultValue ?? 50;
   
   const [specialists, setSpecialists] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -236,8 +245,8 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
       };
 
       // Solo incluir commissionRate si el negocio usa sistema de comisiones
-      if (activeBusiness?.useCommissionSystem) {
-        profileData.commissionRate = formData.commissionRate ? parseFloat(formData.commissionRate) : null;
+      if (useCommissionSystem) {
+        profileData.commissionRate = formData.commissionRate ? parseFloat(formData.commissionRate) : defaultCommissionRate;
       }
 
       // Solo incluir branchId si hay uno seleccionado
@@ -725,7 +734,7 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
         </div>
         
         {/* Campo de Comisión - Solo si el negocio usa sistema de comisiones */}
-        {activeBusiness?.useCommissionSystem && (
+        {useCommissionSystem && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Comisión (%)
@@ -736,19 +745,19 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
               value={formData.commissionRate}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="30"
+              placeholder={defaultCommissionRate.toString()}
               min="0"
               max="100"
               step="5"
             />
             <p className="mt-1 text-xs text-gray-500">
-              Porcentaje de comisión por servicio (0-100%). Dejar en blanco para usar 50% por defecto.
+              Porcentaje de comisión por servicio (0-100%). Dejar en blanco para usar {defaultCommissionRate}% por defecto.
             </p>
           </div>
         )}
         
         {/* Mensaje informativo si NO usa comisiones */}
-        {!activeBusiness?.useCommissionSystem && (
+        {!useCommissionSystem && (
           <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-800">
               ℹ️ Tu negocio no usa sistema de comisiones. Los especialistas recibirán pago fijo según tu configuración.

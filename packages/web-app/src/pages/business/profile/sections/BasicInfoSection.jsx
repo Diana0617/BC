@@ -27,8 +27,7 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
     address: '',
     city: '',
     country: 'Colombia',
-    description: '',
-    useCommissionSystem: true
+    description: ''
   })
 
   const [isEditing, setIsEditing] = useState(isSetupMode)
@@ -79,11 +78,11 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
   ]
 
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target
+    const { name, value } = e.target
     
     let updatedData = {
       ...formData,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
     }
     
     // Si se está editando el nombre y NO hay código aún (o estamos en setup), generar código automático
@@ -300,41 +299,6 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
             placeholder="Describe tu negocio y los servicios que ofreces..."
           />
-        </div>
-
-        {/* Sistema de Comisiones */}
-        <div className="md:col-span-2">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                name="useCommissionSystem"
-                id="useCommissionSystem"
-                checked={formData.useCommissionSystem}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-                className="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-              />
-              <div className="flex-1">
-                <label 
-                  htmlFor="useCommissionSystem" 
-                  className="block text-sm font-medium text-gray-900 cursor-pointer"
-                >
-                  💰 Usar sistema de comisiones para especialistas
-                </label>
-                <p className="text-xs text-gray-600 mt-1">
-                  {formData.useCommissionSystem 
-                    ? 'Los especialistas recibirán un porcentaje de comisión por cada servicio realizado.'
-                    : 'Los especialistas recibirán un sueldo fijo (sin comisiones por servicios).'}
-                </p>
-                {formData.useCommissionSystem && (
-                  <p className="text-xs text-blue-700 mt-2 font-medium">
-                    ℹ️ Podrás configurar el porcentaje de comisión individual para cada especialista
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

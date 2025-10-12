@@ -338,6 +338,37 @@ const ruleTemplates = [
     }
   },
   {
+    key: 'SPECIALIST_COMMISSION_ENABLED',
+    type: 'BOOLEAN',
+    defaultValue: true,
+    description: 'Usar sistema de comisiones para el pago de especialistas',
+    category: 'PAYMENT_POLICY',
+    allowCustomization: true,
+    version: '1.0.0',
+    examples: {
+      values: [true, false],
+      descriptions: ['Comisiones por servicio', 'Sueldo fijo']
+    }
+  },
+  {
+    key: 'SPECIALIST_DEFAULT_COMMISSION_RATE',
+    type: 'NUMBER',
+    defaultValue: 50,
+    description: 'Porcentaje de comisión por defecto para especialistas (%)',
+    category: 'PAYMENT_POLICY',
+    allowCustomization: true,
+    version: '1.0.0',
+    validationRules: {
+      min: 0,
+      max: 100,
+      type: 'number'
+    },
+    examples: {
+      values: [30, 40, 50, 60, 70],
+      descriptions: ['30%', '40%', '50%', '60%', '70%']
+    }
+  },
+  {
     key: 'REFUND_POLICY_ENABLED',
     type: 'BOOLEAN',
     defaultValue: true,
