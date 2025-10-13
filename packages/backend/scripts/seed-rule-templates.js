@@ -10,16 +10,17 @@ const { RuleTemplate, sequelize } = require('../src/models');
 
 const ruleTemplates = [
   // =====================
-  // APPOINTMENT MANAGEMENT (GESTION DE TURNOS)
+  // GESTIÓN DE CITAS
   // =====================
   {
-    key: 'APPOINTMENT_ADVANCE_BOOKING',
+    key: 'CITAS_DIAS_ANTICIPACION_MAXIMA',
     type: 'NUMBER',
     defaultValue: 30,
-    description: 'Número máximo de días con anticipación para reservar citas',
+    description: 'Días máximos de anticipación para agendar citas',
     category: 'BOOKING_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
     validationRules: {
       min: 1,
       max: 365,
@@ -31,13 +32,14 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'APPOINTMENT_MIN_ADVANCE_HOURS',
+    key: 'CITAS_HORAS_ANTICIPACION_MINIMA',
     type: 'NUMBER', 
     defaultValue: 2,
-    description: 'Horas mínimas de anticipación para reservar una cita',
+    description: 'Horas mínimas de anticipación para agendar citas',
     category: 'BOOKING_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
     validationRules: {
       min: 0,
       max: 72,
@@ -49,13 +51,14 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'APPOINTMENT_CANCELLATION_HOURS',
+    key: 'CITAS_HORAS_CANCELACION',
     type: 'NUMBER',
     defaultValue: 24,
-    description: 'Horas mínimas de anticipación para cancelar sin penalidad',
+    description: 'Horas de anticipación para cancelar sin penalización',
     category: 'CANCELLATION_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
     validationRules: {
       min: 0,
       max: 168,
@@ -67,13 +70,14 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'APPOINTMENT_MAX_PER_DAY',
+    key: 'CITAS_MAXIMAS_POR_DIA',
     type: 'NUMBER',
     defaultValue: 10,
-    description: 'Número máximo de citas que puede reservar un cliente por día',
+    description: 'Número máximo de citas por cliente al día',
     category: 'BOOKING_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
     validationRules: {
       min: 1,
       max: 50,
@@ -85,26 +89,28 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'APPOINTMENT_REMINDER_ENABLED',
+    key: 'CITAS_RECORDATORIOS_ACTIVADOS',
     type: 'BOOLEAN',
     defaultValue: true,
     description: 'Activar recordatorios automáticos de citas',
     category: 'NOTIFICATION_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
     examples: {
       values: [true, false],
-      descriptions: ['Recordatorios activos', 'Sin recordatorios']
+      descriptions: ['Recordatorios activados', 'Sin recordatorios']
     }
   },
   {
-    key: 'APPOINTMENT_REMINDER_HOURS',
+    key: 'CITAS_HORAS_RECORDATORIO',
     type: 'NUMBER',
     defaultValue: 24,
-    description: 'Horas de anticipación para enviar recordatorio de cita',
+    description: 'Horas de anticipación para enviar recordatorios',
     category: 'NOTIFICATION_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
     validationRules: {
       min: 1,
       max: 168,
@@ -116,26 +122,28 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'APPOINTMENT_ALLOW_OVERLAPPING',
+    key: 'CITAS_PERMITIR_SIMULTANEAS',
     type: 'BOOLEAN',
     defaultValue: false,
-    description: 'Permitir citas superpuestas para especialistas diferentes',
+    description: 'Permitir citas simultáneas con diferentes especialistas',
     category: 'BOOKING_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
     examples: {
       values: [true, false],
-      descriptions: ['Permitir superposición', 'Sin superposición']
+      descriptions: ['Permitir citas simultáneas', 'Solo una cita a la vez']
     }
   },
   {
-    key: 'APPOINTMENT_BUFFER_MINUTES',
+    key: 'CITAS_TIEMPO_LIBRE_ENTRE_CITAS',
     type: 'NUMBER',
     defaultValue: 15,
-    description: 'Minutos de espacio entre citas consecutivas',
+    description: 'Tiempo libre entre citas (en minutos)',
     category: 'BOOKING_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
     validationRules: {
       min: 0,
       max: 60,
@@ -143,34 +151,36 @@ const ruleTemplates = [
     },
     examples: {
       values: [0, 5, 10, 15, 30],
-      descriptions: ['Sin espacio', '5 minutos', '10 minutos', '15 minutos', '30 minutos']
+      descriptions: ['Sin tiempo libre', '5 minutos', '10 minutos', '15 minutos', '30 minutos']
     }
   },
 
   // =====================
-  // ELECTRONIC BILLING (FACTURACION ELECTRONICA)
+  // FACTURACIÓN ELECTRÓNICA
   // =====================
   {
-    key: 'INVOICE_AUTO_GENERATION',
+    key: 'FACTURA_GENERACION_AUTOMATICA',
     type: 'BOOLEAN',
     defaultValue: true,
-    description: 'Generar automáticamente facturas al completar servicios',
+    description: 'Generar facturas automáticamente al completar servicios',
     category: 'SERVICE_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'facturacion_electronica',
     examples: {
       values: [true, false],
       descriptions: ['Facturación automática', 'Facturación manual']
     }
   },
   {
-    key: 'INVOICE_PAYMENT_TERMS',
+    key: 'FACTURA_PLAZO_PAGO_DIAS',
     type: 'NUMBER',
     defaultValue: 0,
-    description: 'Días de plazo para el pago de facturas (0 = pago inmediato)',
+    description: 'Plazo de pago de facturas en días (0 = pago inmediato)',
     category: 'PAYMENT_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'facturacion_electronica',
     validationRules: {
       min: 0,
       max: 180,
@@ -182,26 +192,28 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'INVOICE_INCLUDE_TAX',
+    key: 'FACTURA_INCLUIR_IVA',
     type: 'BOOLEAN',
     defaultValue: true,
-    description: 'Incluir impuestos (IVA) en las facturas',
+    description: 'Incluir IVA en las facturas',
     category: 'SERVICE_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'facturacion_electronica',
     examples: {
       values: [true, false],
       descriptions: ['Incluir IVA', 'Sin IVA']
     }
   },
   {
-    key: 'INVOICE_TAX_RATE',
+    key: 'FACTURA_PORCENTAJE_IVA',
     type: 'NUMBER',
     defaultValue: 19,
-    description: 'Porcentaje de IVA a aplicar en las facturas',
+    description: 'Porcentaje de IVA a aplicar (%)',
     category: 'SERVICE_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'facturacion_electronica',
     validationRules: {
       min: 0,
       max: 100,
@@ -214,13 +226,14 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'INVOICE_LATE_PAYMENT_FEE',
+    key: 'FACTURA_RECARGO_MORA',
     type: 'NUMBER',
     defaultValue: 0,
-    description: 'Recargo por mora en porcentaje sobre el valor total',
+    description: 'Recargo por pago tardío (%)',
     category: 'PAYMENT_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'facturacion_electronica',
     validationRules: {
       min: 0,
       max: 50,
@@ -233,39 +246,42 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'INVOICE_SEND_EMAIL',
+    key: 'FACTURA_ENVIAR_EMAIL',
     type: 'BOOLEAN',
     defaultValue: true,
     description: 'Enviar facturas por correo electrónico automáticamente',
     category: 'NOTIFICATION_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'facturacion_electronica',
     examples: {
       values: [true, false],
       descriptions: ['Envío automático', 'Envío manual']
     }
   },
   {
-    key: 'INVOICE_REQUIRE_SIGNATURE',
+    key: 'FACTURA_REQUIERE_FIRMA',
     type: 'BOOLEAN',
     defaultValue: false,
-    description: 'Requerir firma digital en las facturas electrónicas',
+    description: 'Requerir firma digital en facturas electrónicas',
     category: 'SERVICE_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'facturacion_electronica',
     examples: {
       values: [true, false],
       descriptions: ['Requiere firma', 'Sin firma requerida']
     }
   },
   {
-    key: 'INVOICE_NUMBERING_FORMAT',
+    key: 'FACTURA_FORMATO_NUMERACION',
     type: 'STRING',
     defaultValue: 'F-{YEAR}-{NUMBER}',
-    description: 'Formato para la numeración de facturas',
+    description: 'Formato de numeración de facturas',
     category: 'SERVICE_POLICY',
     allowCustomization: true,
     version: '1.0.0',
+    requiredModule: 'facturacion_electronica',
     validationRules: {
       pattern: '^[A-Za-z0-9\\-{}]+$',
       maxLength: 50
@@ -277,10 +293,10 @@ const ruleTemplates = [
   },
 
   // =====================
-  // GENERAL BUSINESS POLICIES
+  // POLÍTICAS GENERALES DEL NEGOCIO
   // =====================
   {
-    key: 'BUSINESS_OPERATING_HOURS_START',
+    key: 'NEGOCIO_HORA_APERTURA',
     type: 'STRING',
     defaultValue: '08:00',
     description: 'Hora de inicio de operaciones del negocio',
@@ -296,7 +312,7 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'BUSINESS_OPERATING_HOURS_END',
+    key: 'NEGOCIO_HORA_CIERRE',
     type: 'STRING',
     defaultValue: '18:00',
     description: 'Hora de fin de operaciones del negocio',
@@ -312,7 +328,7 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'PAYMENT_METHODS_CASH',
+    key: 'PAGO_ACEPTAR_EFECTIVO',
     type: 'BOOLEAN',
     defaultValue: true,
     description: 'Aceptar pagos en efectivo',
@@ -325,7 +341,7 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'PAYMENT_METHODS_CARD',
+    key: 'PAGO_ACEPTAR_TARJETA',
     type: 'BOOLEAN',
     defaultValue: true,
     description: 'Aceptar pagos con tarjeta de crédito/débito',
@@ -338,7 +354,7 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'SPECIALIST_COMMISSION_ENABLED',
+    key: 'ESPECIALISTA_USAR_COMISIONES',
     type: 'BOOLEAN',
     defaultValue: true,
     description: 'Usar sistema de comisiones para el pago de especialistas',
@@ -351,7 +367,7 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'SPECIALIST_DEFAULT_COMMISSION_RATE',
+    key: 'ESPECIALISTA_PORCENTAJE_COMISION',
     type: 'NUMBER',
     defaultValue: 50,
     description: 'Porcentaje de comisión por defecto para especialistas (%)',
@@ -369,7 +385,7 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'REFUND_POLICY_ENABLED',
+    key: 'DEVOLUCION_PERMITIR',
     type: 'BOOLEAN',
     defaultValue: true,
     description: 'Permitir devoluciones y reembolsos',
@@ -382,7 +398,7 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'REFUND_POLICY_DAYS',
+    key: 'DEVOLUCION_PLAZO_DIAS',
     type: 'NUMBER',
     defaultValue: 7,
     description: 'Días límite para solicitar devoluciones',

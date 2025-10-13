@@ -24,8 +24,8 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
   
   // Leer reglas de negocio para sistema de comisiones
   const businessRules = useSelector(state => state.businessRules?.rules || []);
-  const commissionRule = businessRules.find(r => r.key === 'SPECIALIST_COMMISSION_ENABLED');
-  const defaultCommissionRule = businessRules.find(r => r.key === 'SPECIALIST_DEFAULT_COMMISSION_RATE');
+  const commissionRule = businessRules.find(r => r.key === 'ESPECIALISTA_USAR_COMISIONES');
+  const defaultCommissionRule = businessRules.find(r => r.key === 'ESPECIALISTA_PORCENTAJE_COMISION');
   
   // Determinar si el negocio usa comisiones (por defecto true si no hay regla)
   const useCommissionSystem = commissionRule?.effectiveValue ?? commissionRule?.defaultValue ?? true;

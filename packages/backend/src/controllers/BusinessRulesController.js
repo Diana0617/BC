@@ -300,8 +300,14 @@ class BusinessRulesController {
   static async getRuleTemplates(req, res) {
     try {
       const { category } = req.query;
+      
+      // Obtener businessId si está disponible (para filtrar por módulos)
+      const businessId = req.user?.business?.businessId || req.user?.business?.id || req.user?.businessId || req.business?.id;
 
-      const templates = await BusinessRulesService.getAvailableRuleTemplates({ category });
+      const templates = await BusinessRulesService.getAvailableRuleTemplates({ 
+        category,
+        businessId // Pasar businessId para filtrar por módulos del plan
+      });
 
       res.json({
         success: true,

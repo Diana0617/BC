@@ -2,6 +2,11 @@ const { QueryTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 const RuleTemplate = require('../models/RuleTemplate');
 const BusinessRule = require('../models/BusinessRule');
+const Business = require('../models/Business');
+const Subscription = require('../models/Subscription');
+const SubscriptionPlan = require('../models/SubscriptionPlan');
+const PlanModule = require('../models/PlanModule');
+const Module = require('../models/Module');
 
 /**
  * Business Rules Service - Simplified version using new RuleTemplate + BusinessRule structure
@@ -190,13 +195,14 @@ class BusinessRulesService {
   }
 
   /**
-   * Get all available rule templates
+   * Get all available rule templates filtered by business plan modules
    * 
+   * @param {string} businessId - UUID of the business (optional, for module filtering)
    * @param {object} options - Query options
    * @returns {Promise<Array>} Array of rule templates
    */
   static async getAvailableRuleTemplates(options = {}) {
-    const { category, activeOnly = true } = options;
+    const { category, activeOnly = true, businessId } = options;
 
     const where = {};
     if (activeOnly) where.isActive = true;
@@ -208,7 +214,65 @@ class BusinessRulesService {
         order: [['category', 'ASC'], ['key', 'ASC']]
       });
 
-      return templates;
+      // Si no hay businessId, devolver todas las reglas activas
+      if (!businessId) {
+        return templates;
+      }
+
+      // Obtener módulos del plan del negocio
+      const business = await Business.findByPk(businessId, {
+        include: [{
+          model: Subscription,
+          as: 'subscriptions',
+          where: { 
+            status: ['ACTIVE', 'TRIALING'],
+            isActive: true
+          },
+          required: false,
+          limit: 1,
+          order: [['createdAt', 'DESC']],
+          include: [{
+            model: SubscriptionPlan,
+            as: 'plan',
+            include: [{
+              model: PlanModule,
+              as: 'planModules',
+              where: { isIncluded: true },
+              required: false,
+              include: [{
+                model: Module,
+                as: 'module'
+              }]
+            }]
+          }]
+        }]
+      });
+
+      if (!business || !business.subscriptions || business.subscriptions.length === 0) {
+        // Sin suscripción activa, solo devolver reglas sin requiredModule
+        return templates.filter(t => !t.requiredModule);
+      }
+
+      // Obtener nombres de módulos incluidos en el plan
+      const subscription = business.subscriptions[0];
+      const planModules = subscription.plan?.planModules || [];
+      const includedModuleNames = planModules.map(pm => pm.module?.name).filter(Boolean);
+
+      console.log('📦 Módulos incluidos en el plan:', includedModuleNames);
+
+      // Filtrar reglas: incluir las que no requieren módulo O las que tienen módulo incluido
+      const filteredTemplates = templates.filter(template => {
+        // Si no requiere módulo, siempre incluir
+        if (!template.requiredModule) {
+          return true;
+        }
+        // Si requiere módulo, verificar que esté en el plan
+        return includedModuleNames.includes(template.requiredModule);
+      });
+
+      console.log(`✅ Reglas filtradas: ${filteredTemplates.length}/${templates.length}`);
+
+      return filteredTemplates;
     } catch (error) {
       console.error('Error getting rule templates:', error);
       throw error;
