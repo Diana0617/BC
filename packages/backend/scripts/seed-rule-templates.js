@@ -12,44 +12,7 @@ const ruleTemplates = [
   // =====================
   // GESTIÓN DE CITAS
   // =====================
-  {
-    key: 'CITAS_DIAS_ANTICIPACION_MAXIMA',
-    type: 'NUMBER',
-    defaultValue: 30,
-    description: 'Días máximos de anticipación para agendar citas',
-    category: 'BOOKING_POLICY',
-    allowCustomization: true,
-    version: '1.0.0',
-    requiredModule: 'gestion_de_turnos',
-    validationRules: {
-      min: 1,
-      max: 365,
-      type: 'integer'
-    },
-    examples: {
-      values: [7, 15, 30, 60],
-      descriptions: ['1 semana', '2 semanas', '1 mes', '2 meses']
-    }
-  },
-  {
-    key: 'CITAS_HORAS_ANTICIPACION_MINIMA',
-    type: 'NUMBER', 
-    defaultValue: 2,
-    description: 'Horas mínimas de anticipación para agendar citas',
-    category: 'BOOKING_POLICY',
-    allowCustomization: true,
-    version: '1.0.0',
-    requiredModule: 'gestion_de_turnos',
-    validationRules: {
-      min: 0,
-      max: 72,
-      type: 'integer'
-    },
-    examples: {
-      values: [0, 1, 2, 4, 24],
-      descriptions: ['Sin restricción', '1 hora', '2 horas', '4 horas', '1 día']
-    }
-  },
+  
   {
     key: 'CITAS_HORAS_CANCELACION',
     type: 'NUMBER',
@@ -186,79 +149,7 @@ const ruleTemplates = [
       descriptions: ['Facturación automática', 'Facturación manual']
     }
   },
-  {
-    key: 'FACTURA_PLAZO_PAGO_DIAS',
-    type: 'NUMBER',
-    defaultValue: 0,
-    description: 'Plazo de pago de facturas en días (0 = pago inmediato)',
-    category: 'PAYMENT_POLICY',
-    allowCustomization: true,
-    version: '1.0.0',
-    requiredModule: 'facturacion_electronica',
-    validationRules: {
-      min: 0,
-      max: 180,
-      type: 'integer'
-    },
-    examples: {
-      values: [0, 15, 30, 45, 60],
-      descriptions: ['Pago inmediato', '15 días', '30 días', '45 días', '60 días']
-    }
-  },
-  {
-    key: 'FACTURA_INCLUIR_IVA',
-    type: 'BOOLEAN',
-    defaultValue: true,
-    description: 'Incluir IVA en las facturas',
-    category: 'SERVICE_POLICY',
-    allowCustomization: true,
-    version: '1.0.0',
-    requiredModule: 'facturacion_electronica',
-    examples: {
-      values: [true, false],
-      descriptions: ['Incluir IVA', 'Sin IVA']
-    }
-  },
-  {
-    key: 'FACTURA_PORCENTAJE_IVA',
-    type: 'NUMBER',
-    defaultValue: 19,
-    description: 'Porcentaje de IVA a aplicar (%)',
-    category: 'SERVICE_POLICY',
-    allowCustomization: true,
-    version: '1.0.0',
-    requiredModule: 'facturacion_electronica',
-    validationRules: {
-      min: 0,
-      max: 100,
-      type: 'decimal',
-      step: 0.1
-    },
-    examples: {
-      values: [0, 5, 10, 19, 21],
-      descriptions: ['Sin IVA', '5%', '10%', '19% (Colombia)', '21%']
-    }
-  },
-  {
-    key: 'FACTURA_RECARGO_MORA',
-    type: 'NUMBER',
-    defaultValue: 0,
-    description: 'Recargo por pago tardío (%)',
-    category: 'PAYMENT_POLICY',
-    allowCustomization: true,
-    version: '1.0.0',
-    requiredModule: 'facturacion_electronica',
-    validationRules: {
-      min: 0,
-      max: 50,
-      type: 'decimal',
-      step: 0.1
-    },
-    examples: {
-      values: [0, 1, 2.5, 5, 10],
-      descriptions: ['Sin recargo', '1%', '2.5%', '5%', '10%']
-    }
-  },
+  
   {
     key: 'FACTURA_ENVIAR_EMAIL',
     type: 'BOOLEAN',
@@ -273,74 +164,13 @@ const ruleTemplates = [
       descriptions: ['Envío automático', 'Envío manual']
     }
   },
-  {
-    key: 'FACTURA_REQUIERE_FIRMA',
-    type: 'BOOLEAN',
-    defaultValue: false,
-    description: 'Requerir firma digital en facturas electrónicas',
-    category: 'SERVICE_POLICY',
-    allowCustomization: true,
-    version: '1.0.0',
-    requiredModule: 'facturacion_electronica',
-    examples: {
-      values: [true, false],
-      descriptions: ['Requiere firma', 'Sin firma requerida']
-    }
-  },
-  {
-    key: 'FACTURA_FORMATO_NUMERACION',
-    type: 'STRING',
-    defaultValue: 'F-{YEAR}-{NUMBER}',
-    description: 'Formato de numeración de facturas',
-    category: 'SERVICE_POLICY',
-    allowCustomization: true,
-    version: '1.0.0',
-    requiredModule: 'facturacion_electronica',
-    validationRules: {
-      pattern: '^[A-Za-z0-9\\-{}]+$',
-      maxLength: 50
-    },
-    examples: {
-      values: ['F-{YEAR}-{NUMBER}', '{NUMBER}', 'FAC-{YEAR}{MONTH}-{NUMBER}', 'INV-{NUMBER}'],
-      descriptions: ['F-2024-001', '001', 'FAC-202401-001', 'INV-001']
-    }
-  },
+  
+ 
 
   // =====================
   // POLÍTICAS GENERALES DEL NEGOCIO
   // =====================
-  {
-    key: 'NEGOCIO_HORA_APERTURA',
-    type: 'STRING',
-    defaultValue: '08:00',
-    description: 'Hora de inicio de operaciones del negocio',
-    category: 'WORKING_HOURS',
-    allowCustomization: true,
-    version: '1.0.0',
-    validationRules: {
-      pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
-    },
-    examples: {
-      values: ['06:00', '08:00', '09:00', '10:00'],
-      descriptions: ['6:00 AM', '8:00 AM', '9:00 AM', '10:00 AM']
-    }
-  },
-  {
-    key: 'NEGOCIO_HORA_CIERRE',
-    type: 'STRING',
-    defaultValue: '18:00',
-    description: 'Hora de fin de operaciones del negocio',
-    category: 'WORKING_HOURS',
-    allowCustomization: true,
-    version: '1.0.0',
-    validationRules: {
-      pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
-    },
-    examples: {
-      values: ['17:00', '18:00', '20:00', '22:00'],
-      descriptions: ['5:00 PM', '6:00 PM', '8:00 PM', '10:00 PM']
-    }
-  },
+ 
   {
     key: 'PAGO_ACEPTAR_EFECTIVO',
     type: 'BOOLEAN',

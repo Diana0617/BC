@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { sequelize } = require('../config/database');
+const { Op } = require('sequelize');
 const Business = require('../models/Business');
 // const BusinessRules = require('../models/BusinessRules'); // Deprecated - usar RuleTemplate + BusinessRule
 const User = require('../models/User');
@@ -479,51 +480,68 @@ class BusinessController {
         name,
         description,
         phone,
+        email,
         address,
         city,
         state,
         country,
         zipCode,
         website,
-        subdomain
+        type,
+        subdomain // Este campo NO se permite modificar
       } = req.body;
 
-      // Verificar subdominio si se está cambiando
-      if (subdomain) {
-        const business = await Business.findByPk(businessId);
-        if (business.subdomain !== subdomain) {
-          const { isSubdomainAvailable } = require('../middleware/subdomain');
-          const available = await isSubdomainAvailable(subdomain);
-          
-          if (!available) {
-            return res.status(409).json({
-              success: false,
-              error: 'El subdominio no está disponible'
-            });
+      // SEGURIDAD: Bloquear modificación del subdominio
+      if (subdomain !== undefined) {
+        return res.status(400).json({
+          success: false,
+          error: 'No se puede modificar el subdominio por razones de seguridad'
+        });
+      }
+
+      // Validar que el email no esté en uso por otro negocio (si se está cambiando)
+      if (email) {
+        const existingBusiness = await Business.findOne({
+          where: { 
+            email,
+            id: { [Op.ne]: businessId } // Excluir el negocio actual
           }
+        });
+
+        if (existingBusiness) {
+          return res.status(409).json({
+            success: false,
+            error: 'El email ya está registrado por otro negocio'
+          });
         }
       }
 
-      const updatedBusiness = await Business.update({
-        name,
-        description,
-        phone,
-        address,
-        city,
-        state,
-        country,
-        zipCode,
-        website,
-        subdomain
-      }, {
-        where: { id: businessId },
-        returning: true
+      // Preparar datos a actualizar (todos los campos editables)
+      const updateData = {};
+      if (name !== undefined) updateData.name = name;
+      if (description !== undefined) updateData.description = description;
+      if (phone !== undefined) updateData.phone = phone;
+      if (email !== undefined) updateData.email = email;
+      if (address !== undefined) updateData.address = address;
+      if (city !== undefined) updateData.city = city;
+      if (state !== undefined) updateData.state = state;
+      if (country !== undefined) updateData.country = country;
+      if (zipCode !== undefined) updateData.zipCode = zipCode;
+      if (website !== undefined) updateData.website = website;
+      if (type !== undefined) updateData.type = type;
+
+      // Actualizar negocio
+      await Business.update(updateData, {
+        where: { id: businessId }
       });
+
+      // Obtener negocio actualizado con toda su información
+      const updatedBusiness = await Business.findByPk(businessId);
 
       res.json({
         success: true,
         message: 'Negocio actualizado exitosamente',
-        data: updatedBusiness[1][0]
+        data: updatedBusiness
       });
 
     } catch (error) {

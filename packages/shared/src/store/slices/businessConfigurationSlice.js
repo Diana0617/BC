@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { subscriptionStatusApi } from '../../api/subscriptionStatusApi'
 import { businessBrandingApi } from '../../api/businessBrandingApi'
+import { updateBusinessProfile } from '../../api/businessProfileApi'
 
 // AsyncThunk para cargar la configuración del negocio
 export const loadBusinessConfiguration = createAsyncThunk(
@@ -60,15 +61,18 @@ export const loadBusinessConfiguration = createAsyncThunk(
 // AsyncThunk para guardar información básica
 export const saveBasicInfo = createAsyncThunk(
   'businessConfiguration/saveBasicInfo',
-  async (basicInfoData, { rejectWithValue }) => {
+  async ({ businessId, data }, { rejectWithValue }) => {
     try {
-      // TODO: Implementar API para guardar información básica
-      console.log('Guardando información básica:', basicInfoData)
+      // Llamar a la API de actualización del negocio
+      const response = await updateBusinessProfile(data)
       
-      // Simular respuesta de API
-      return basicInfoData
+      // La API devuelve la data actualizada del negocio
+      return response.data
     } catch (error) {
-      return rejectWithValue(error.message)
+      console.error('Error guardando información básica:', error)
+      return rejectWithValue(
+        error.response?.data?.error || error.message || 'Error guardando información básica'
+      )
     }
   }
 )

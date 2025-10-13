@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import toast from 'react-hot-toast'
 import { 
   BuildingStorefrontIcon,
   MapPinIcon,
@@ -9,14 +10,13 @@ import {
   LockClosedIcon
 } from '@heroicons/react/24/outline'
 import { 
-  updateBasicInfo,
   completeStep,
   saveBasicInfo
 } from '../../../../../../shared/src/store/slices/businessConfigurationSlice'
 
 const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const dispatch = useDispatch()
-  const { basicInfo, isLoading, isSaving, error } = useSelector(state => state.businessConfiguration)
+  const { basicInfo, loading, saving, saveError } = useSelector(state => state.businessConfiguration)
   
   const [formData, setFormData] = useState({
     name: '',
@@ -31,15 +31,14 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
   })
 
   const [isEditing, setIsEditing] = useState(isSetupMode)
-  const [isInitialized, setIsInitialized] = useState(false)
 
   // Cargar datos del store al montar el componente (solo una vez)
   useEffect(() => {
-    if (basicInfo && Object.keys(basicInfo).length > 0 && !isInitialized) {
+    if (basicInfo && Object.keys(basicInfo).length > 0) {
+      console.log('🔍 basicInfo recibido:', basicInfo)
       setFormData(basicInfo)
-      setIsInitialized(true)
     }
-  }, [basicInfo, isInitialized])
+  }, [basicInfo])
 
   // Generar código automáticamente basado en el nombre
   // Compatible con backend: solo letras minúsculas y números (sin guiones ni espacios)
@@ -61,20 +60,13 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
     return `${cleanName}${randomSuffix}`
   }
 
-  // Sincronizar con Redux store en tiempo real (solo cuando el usuario está editando)
-  useEffect(() => {
-    if (isEditing && isInitialized) {
-      dispatch(updateBasicInfo(formData))
-    }
-  }, [formData, dispatch, isEditing, isInitialized])
-
   const businessTypes = [
     { value: 'BEAUTY_SALON', label: 'Salón de Belleza' },
     { value: 'BARBERSHOP', label: 'Barbería' },
     { value: 'SPA', label: 'Spa' },
     { value: 'NAIL_SALON', label: 'Salón de Uñas' },
     { value: 'AESTHETIC_CENTER', label: 'Centro Estético' },
-    { value: 'WELLNESS_CENTER', label: 'Centro de Bienestar' }
+    { value: 'PET_CENTER', label: 'Centro de Cuidado de Mascotas' }
   ]
 
   const handleInputChange = (e) => {
@@ -85,8 +77,11 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
       [name]: value
     }
     
-    // Si se está editando el nombre y NO hay código aún (o estamos en setup), generar código automático
-    if (name === 'name' && (!formData.businessCode || isSetupMode)) {
+    // SOLO generar código automáticamente si:
+    // 1. Estamos editando el nombre
+    // 2. NO existe un código ya (primer setup)
+    // 3. Estamos en modo setup inicial
+    if (name === 'name' && !formData.businessCode && isSetupMode) {
       updatedData.businessCode = generateBusinessCode(value)
     }
     
@@ -95,29 +90,75 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
   const handleSave = async () => {
     try {
+      // Filtrar solo los campos que el backend acepta
+      const allowedFields = {
+        name: formData.name,
+        description: formData.description,
+        phone: formData.phone,
+        email: formData.email,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        country: formData.country,
+        zipCode: formData.zipCode,
+        website: formData.website,
+        type: formData.type
+      }
+
       // Usar el AsyncThunk para guardar los datos
       const resultAction = await dispatch(saveBasicInfo({
-        businessId: 'current', // TODO: Obtener businessId real
-        data: formData
+        businessId: 'current',
+        data: allowedFields // Enviar solo campos permitidos
       }))
       
       if (saveBasicInfo.fulfilled.match(resultAction)) {
         setIsEditing(false)
+        
+        // Mostrar notificación de éxito
+        toast.success('✅ Información guardada correctamente', {
+          duration: 3000,
+          position: 'top-right',
+        })
         
         // Si estamos en modo setup, marcar como completado
         if (isSetupMode && onComplete) {
           dispatch(completeStep('basicInfo'))
           onComplete()
         }
+      } else if (saveBasicInfo.rejected.match(resultAction)) {
+        // Mostrar error específico del servidor
+        toast.error(resultAction.payload || 'Error al guardar la información', {
+          duration: 4000,
+          position: 'top-right',
+        })
       }
       
     } catch (error) {
       console.error('Error guardando datos:', error)
+      toast.error('Error inesperado al guardar', {
+        duration: 4000,
+        position: 'top-right',
+      })
     }
   }
 
-  const isFormValid = formData.name && formData.businessCode && formData.type && 
-                     formData.phone && formData.email
+  // Validación: solo campos realmente obligatorios
+  // type es opcional porque puede que no esté guardado aún
+  const isFormValid = Boolean(
+    formData.name && 
+    formData.businessCode && 
+    formData.phone && 
+    formData.email
+  )
+
+  // Debug
+  console.log('🔍 Validación:', {
+    name: formData.name,
+    businessCode: formData.businessCode,
+    phone: formData.phone,
+    email: formData.email,
+    isFormValid
+  })
 
   return (
     <div className="space-y-6">
@@ -307,10 +348,10 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
         <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
           <button
             onClick={handleSave}
-            disabled={!isFormValid || isSaving}
+            disabled={!isFormValid || saving}
             className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSaving ? (
+            {saving ? (
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Guardando...
@@ -323,7 +364,7 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
           {!isSetupMode && (
             <button
               onClick={() => setIsEditing(false)}
-              disabled={isSaving}
+              disabled={saving}
               className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
             >
               Cancelar
@@ -333,16 +374,16 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
       )}
 
       {/* Mensajes de error */}
-      {error && (
+      {saveError && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-sm text-red-800">
-            Error: {error}
+            Error: {saveError}
           </p>
         </div>
       )}
 
       {/* Loading inicial */}
-      {isLoading && !isSaving && (
+      {loading && !saving && (
         <div className="text-center py-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
           <p className="text-sm text-gray-600">Cargando información...</p>
