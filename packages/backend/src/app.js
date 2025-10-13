@@ -209,6 +209,7 @@ const ruleTemplateRoutes = require('./routes/ruleTemplate');
 const branchRoutes = require('./routes/branches');
 const ownerExpenseRoutes = require('./routes/ownerExpenses');
 const businessExpenseRoutes = require('./routes/businessExpenses');
+const voucherRoutes = require('./routes/vouchers');
 const cacheRoutes = require('./routes/cache');
 const receiptRoutes = require('./routes/receipts');
 const subscriptionRoutes = require('./routes/subscription');
@@ -239,6 +240,7 @@ app.use('/api/owner', ownerRoutes);
 app.use('/api/owner/business', ownerBusinessManagementRoutes);
 app.use('/api/owner/expenses', ownerExpenseRoutes);
 app.use('/api/business/expenses', businessExpenseRoutes); // Rutas de gastos del negocio
+app.use('/api/vouchers', voucherRoutes); // Rutas de vouchers y penalizaciones
 app.use('/api/cache', cacheRoutes); // Rutas de gestión de cache
 app.use('/api/subscriptions', subscriptionRoutes); // Rutas de suscripciones
 app.use('/api/owner/subscription-status', subscriptionStatusRoutes); // Rutas de estado de suscripciones para Owner

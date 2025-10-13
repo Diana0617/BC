@@ -80,6 +80,10 @@ export * from './publicBookingApi';
 export { default as advancePaymentApi } from './advancePaymentApi';
 export { default as businessValidationApi } from './businessValidationApi';
 
+// 🎫 VOUCHER SYSTEM API
+export { default as voucherApi } from './voucherApi';
+import voucherApi from './voucherApi';
+
 // Export all OWNER APIs as a group
 export const ownerApis = {
   ownerApi,
@@ -100,7 +104,9 @@ export const ownerApis = {
   subscriptionStatusApi,
   // Rule Template APIs
   ruleTemplateApi,
-  businessRuleApi
+  businessRuleApi,
+  // Voucher System API
+  voucherApi
 };
 
 // Export all BUSINESS APIs as a group

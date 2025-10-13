@@ -58,6 +58,9 @@ export { default as scheduleSlice } from './scheduleSlice';
 export { default as appointmentCalendarSlice } from './appointmentCalendarSlice';
 export { default as timeSlotSlice } from './timeSlotSlice';
 
+// 🎫 VOUCHER SYSTEM SLICES
+export { default as voucherSlice } from './voucherSlice';
+
 // Export all OWNER slices as a group
 export const ownerSlices = {
   ownerStatsSlice,
@@ -134,3 +137,25 @@ export {
   selectCachedValidation,
   selectNeedsBusinessSwitch
 } from './businessValidationSlice';
+
+// 🎫 VOUCHER SYSTEM EXPORTS
+export {
+  // Thunks - Cliente
+  fetchMyVouchers,
+  validateVoucherCode,
+  applyVoucherToBooking,
+  checkCustomerBlockStatus,
+  fetchCancellationHistory,
+  // Thunks - Negocio
+  fetchBusinessVouchers,
+  cancelBusinessVoucher,
+  createManualVoucher,
+  fetchBlockedCustomers,
+  liftCustomerBlock,
+  fetchCustomerStats,
+  // Actions
+  clearValidation,
+  clearApplyState,
+  clearOperationMessages,
+  resetVoucherState
+} from './voucherSlice';

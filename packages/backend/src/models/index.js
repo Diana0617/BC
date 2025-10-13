@@ -64,6 +64,11 @@ const BusinessInvitation = require('./BusinessInvitation');
 const BusinessExpenseCategory = require('./BusinessExpenseCategory');
 const BusinessExpense = require('./BusinessExpense');
 
+// Modelos de vouchers y penalizaciones
+const Voucher = require('./Voucher');
+const CustomerCancellationHistory = require('./CustomerCancellationHistory');
+const CustomerBookingBlock = require('./CustomerBookingBlock');
+
 // Definir asociaciones
 // User - Business
 User.belongsTo(Business, { 
@@ -636,6 +641,120 @@ BusinessExpense.hasOne(FinancialMovement, {
 
 // ==================== END BUSINESS EXPENSE RELATIONSHIPS ====================
 
+// ==================== VOUCHER & CANCELLATION RELATIONSHIPS ====================
+
+// Voucher - Business
+Voucher.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+Business.hasMany(Voucher, {
+  foreignKey: 'businessId',
+  as: 'vouchers'
+});
+
+// Voucher - Customer (User)
+Voucher.belongsTo(User, {
+  foreignKey: 'customerId',
+  as: 'customer'
+});
+User.hasMany(Voucher, {
+  foreignKey: 'customerId',
+  as: 'vouchers'
+});
+
+// Voucher - Appointment (Original)
+Voucher.belongsTo(Appointment, {
+  foreignKey: 'originalBookingId',
+  as: 'originalBooking'
+});
+Appointment.hasOne(Voucher, {
+  foreignKey: 'originalBookingId',
+  as: 'generatedVoucher'
+});
+
+// Voucher - Appointment (Used in)
+Voucher.belongsTo(Appointment, {
+  foreignKey: 'usedInBookingId',
+  as: 'usedInBooking'
+});
+Appointment.hasOne(Voucher, {
+  foreignKey: 'usedInBookingId',
+  as: 'appliedVoucher'
+});
+
+// CustomerCancellationHistory - Business
+CustomerCancellationHistory.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+Business.hasMany(CustomerCancellationHistory, {
+  foreignKey: 'businessId',
+  as: 'cancellationHistory'
+});
+
+// CustomerCancellationHistory - Customer (User)
+CustomerCancellationHistory.belongsTo(User, {
+  foreignKey: 'customerId',
+  as: 'customer'
+});
+User.hasMany(CustomerCancellationHistory, {
+  foreignKey: 'customerId',
+  as: 'cancellationHistory'
+});
+
+// CustomerCancellationHistory - Appointment
+CustomerCancellationHistory.belongsTo(Appointment, {
+  foreignKey: 'bookingId',
+  as: 'booking'
+});
+Appointment.hasOne(CustomerCancellationHistory, {
+  foreignKey: 'bookingId',
+  as: 'cancellationRecord'
+});
+
+// CustomerCancellationHistory - Voucher
+CustomerCancellationHistory.belongsTo(Voucher, {
+  foreignKey: 'voucherId',
+  as: 'voucher'
+});
+Voucher.hasOne(CustomerCancellationHistory, {
+  foreignKey: 'voucherId',
+  as: 'cancellationRecord'
+});
+
+// CustomerBookingBlock - Business
+CustomerBookingBlock.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+Business.hasMany(CustomerBookingBlock, {
+  foreignKey: 'businessId',
+  as: 'customerBlocks'
+});
+
+// CustomerBookingBlock - Customer (User)
+CustomerBookingBlock.belongsTo(User, {
+  foreignKey: 'customerId',
+  as: 'customer'
+});
+User.hasMany(CustomerBookingBlock, {
+  foreignKey: 'customerId',
+  as: 'bookingBlocks'
+});
+
+// CustomerBookingBlock - LiftedBy (User)
+CustomerBookingBlock.belongsTo(User, {
+  foreignKey: 'liftedBy',
+  as: 'lifter'
+});
+User.hasMany(CustomerBookingBlock, {
+  foreignKey: 'liftedBy',
+  as: 'liftedBlocks'
+});
+
+// ==================== END VOUCHER & CANCELLATION RELATIONSHIPS ====================
+
 // PaymentIntegration relationships
 Business.hasMany(PaymentIntegration, { 
   foreignKey: 'businessId', 
@@ -1121,5 +1240,9 @@ module.exports = {
   BusinessInvitation,
   // Modelos de gastos del negocio
   BusinessExpenseCategory,
-  BusinessExpense
+  BusinessExpense,
+  // Modelos de vouchers y penalizaciones
+  Voucher,
+  CustomerCancellationHistory,
+  CustomerBookingBlock
 };

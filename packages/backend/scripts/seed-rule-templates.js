@@ -133,6 +133,138 @@ const ruleTemplates = [
   },
 
   // =====================
+  // SISTEMA DE VOUCHERS Y PENALIZACIONES
+  // =====================
+  {
+    key: 'CITAS_HORAS_VOUCHER_CANCELACION',
+    type: 'NUMBER',
+    defaultValue: 24,
+    description: 'Horas mínimas de anticipación para generar voucher al cancelar',
+    category: 'CANCELLATION_POLICY',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    validationRules: {
+      min: 0,
+      max: 168,
+      type: 'integer'
+    },
+    examples: {
+      values: [2, 4, 12, 24, 48],
+      descriptions: ['2 horas antes', '4 horas antes', '12 horas antes', '24 horas antes', '48 horas antes']
+    }
+  },
+  {
+    key: 'CITAS_VOUCHER_VALIDEZ_DIAS',
+    type: 'NUMBER',
+    defaultValue: 30,
+    description: 'Días de validez del voucher generado por cancelación',
+    category: 'CANCELLATION_POLICY',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    validationRules: {
+      min: 7,
+      max: 365,
+      type: 'integer'
+    },
+    examples: {
+      values: [7, 15, 30, 60, 90],
+      descriptions: ['1 semana', '2 semanas', '1 mes', '2 meses', '3 meses']
+    }
+  },
+  {
+    key: 'CITAS_VOUCHER_PORCENTAJE_VALOR',
+    type: 'NUMBER',
+    defaultValue: 100,
+    description: 'Porcentaje del valor de la cita que se convierte en voucher',
+    category: 'CANCELLATION_POLICY',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    validationRules: {
+      min: 0,
+      max: 100,
+      type: 'number'
+    },
+    examples: {
+      values: [50, 75, 100],
+      descriptions: ['50% del valor', '75% del valor', '100% del valor']
+    }
+  },
+  {
+    key: 'CITAS_MAX_CANCELACIONES_PERMITIDAS',
+    type: 'NUMBER',
+    defaultValue: 3,
+    description: 'Número máximo de cancelaciones antes de bloquear acceso a agenda',
+    category: 'CANCELLATION_POLICY',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    validationRules: {
+      min: 1,
+      max: 10,
+      type: 'integer'
+    },
+    examples: {
+      values: [2, 3, 5, 7, 10],
+      descriptions: ['2 cancelaciones', '3 cancelaciones', '5 cancelaciones', '7 cancelaciones', '10 cancelaciones']
+    }
+  },
+  {
+    key: 'CITAS_PERIODO_RESETEO_CANCELACIONES',
+    type: 'NUMBER',
+    defaultValue: 30,
+    description: 'Días después de los cuales se resetea el contador de cancelaciones',
+    category: 'CANCELLATION_POLICY',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    validationRules: {
+      min: 7,
+      max: 365,
+      type: 'integer'
+    },
+    examples: {
+      values: [7, 15, 30, 60, 90],
+      descriptions: ['1 semana', '2 semanas', '1 mes', '2 meses', '3 meses']
+    }
+  },
+  {
+    key: 'CITAS_BLOQUEO_TEMPORAL_DIAS',
+    type: 'NUMBER',
+    defaultValue: 15,
+    description: 'Días de bloqueo temporal tras exceder cancelaciones permitidas',
+    category: 'CANCELLATION_POLICY',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    validationRules: {
+      min: 1,
+      max: 90,
+      type: 'integer'
+    },
+    examples: {
+      values: [7, 15, 30, 60, 90],
+      descriptions: ['1 semana', '2 semanas', '1 mes', '2 meses', '3 meses']
+    }
+  },
+  {
+    key: 'CITAS_NOTIFICAR_VOUCHER_EMAIL',
+    type: 'BOOLEAN',
+    defaultValue: true,
+    description: 'Enviar email con código de voucher al generarse',
+    category: 'NOTIFICATION_POLICY',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    examples: {
+      values: [true, false],
+      descriptions: ['Notificar por email', 'Sin notificación']
+    }
+  },
+
+  // =====================
   // FACTURACIÓN ELECTRÓNICA
   // =====================
   {

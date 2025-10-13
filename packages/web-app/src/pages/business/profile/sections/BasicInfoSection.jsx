@@ -32,10 +32,9 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
   const [isEditing, setIsEditing] = useState(isSetupMode)
 
-  // Cargar datos del store al montar el componente (solo una vez)
+  // Cargar datos del store al montar el componente
   useEffect(() => {
     if (basicInfo && Object.keys(basicInfo).length > 0) {
-      console.log('🔍 basicInfo recibido:', basicInfo)
       setFormData(basicInfo)
     }
   }, [basicInfo])
@@ -150,15 +149,6 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
     formData.phone && 
     formData.email
   )
-
-  // Debug
-  console.log('🔍 Validación:', {
-    name: formData.name,
-    businessCode: formData.businessCode,
-    phone: formData.phone,
-    email: formData.email,
-    isFormValid
-  })
 
   return (
     <div className="space-y-6">

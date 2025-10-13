@@ -40,6 +40,8 @@ import specialistServiceReducer from './slices/specialistServiceSlice';
 import scheduleReducer from './slices/scheduleSlice';
 import appointmentCalendarReducer from './slices/appointmentCalendarSlice';
 import timeSlotReducer from './slices/timeSlotSlice';
+// 🎫 VOUCHER SYSTEM REDUCERS
+import voucherReducer from './slices/voucherSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -85,7 +87,9 @@ export const createStore = (preloadedState = {}) => {
       // 📅 CALENDAR SYSTEM REDUCERS
       schedule: scheduleReducer,
       appointmentCalendar: appointmentCalendarReducer,
-      timeSlot: timeSlotReducer
+      timeSlot: timeSlotReducer,
+      // 🎫 VOUCHER SYSTEM REDUCERS
+      voucher: voucherReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>

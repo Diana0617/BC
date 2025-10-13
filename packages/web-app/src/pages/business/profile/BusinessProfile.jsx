@@ -39,6 +39,7 @@ import SuppliersConfigSection from './sections/SuppliersConfigSection'
 import AppointmentsConfigSection from './sections/AppointmentsConfigSection'
 import AppointmentPaymentsConfigSection from './sections/AppointmentPaymentsConfigSection'
 import CalendarAccessSection from './sections/CalendarAccessSection'
+import CustomerHistorySection from './sections/CustomerHistorySection'
 import BusinessRuleModal from '../../../components/BusinessRuleModal'
 
 // Hook personalizado para la configuración del negocio
@@ -184,6 +185,13 @@ const BusinessProfile = () => {
       name: 'Calendario y Acceso',
       icon: CalendarDaysIcon,
       component: CalendarAccessSection,
+      alwaysVisible: true
+    },
+    {
+      id: 'customer-history',
+      name: 'Historial de Clientes',
+      icon: UsersIcon,
+      component: CustomerHistorySection,
       alwaysVisible: true
     },
     {
