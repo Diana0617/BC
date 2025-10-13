@@ -83,6 +83,7 @@ const RuleTemplate = sequelize.define('RuleTemplate', {
   requiredModule: {
     type: DataTypes.STRING(100),
     allowNull: true,
+    field: 'required_module',
     comment: 'Nombre del módulo requerido para usar esta regla (ej: facturacion_electronica, gestion_de_turnos)'
   },
   createdBy: {

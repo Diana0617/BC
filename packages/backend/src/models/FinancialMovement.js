@@ -27,23 +27,29 @@ const FinancialMovement = sequelize.define('FinancialMovement', {
     type: DataTypes.ENUM('INCOME', 'EXPENSE'),
     allowNull: false
   },
+ 
   category: {
-    type: DataTypes.ENUM(
-      'SERVICE_PAYMENT',
-      'PRODUCT_SALE',
-      'SUBSCRIPTION_PAYMENT',
-      'REFUND',
-      'RENT',
-      'UTILITIES',
-      'SUPPLIES',
-      'MARKETING',
-      'EQUIPMENT',
-      'SALARY',
-      'COMMISSION',
-      'TAX',
-      'OTHER'
-    ),
-    allowNull: false
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    
+  },
+  businessExpenseCategoryId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'business_expense_categories',
+      key: 'id'
+    },
+   
+  },
+  businessExpenseId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'business_expenses',
+      key: 'id'
+    },
+   
   },
   amount: {
     type: DataTypes.DECIMAL(10, 2),
@@ -84,11 +90,11 @@ const FinancialMovement = sequelize.define('FinancialMovement', {
   },
   referenceId: {
     type: DataTypes.UUID,
-    allowNull: true // ID del appointment, sale, etc.
+    allowNull: true 
   },
   referenceType: {
     type: DataTypes.STRING,
-    allowNull: true // 'APPOINTMENT', 'PRODUCT_SALE', etc.
+    allowNull: true 
   },
   clientId: {
     type: DataTypes.UUID,

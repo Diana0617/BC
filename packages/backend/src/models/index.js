@@ -60,6 +60,10 @@ const OwnerExpense = require('./OwnerExpense');
 const SavedPaymentMethod = require('./SavedPaymentMethod');
 const BusinessInvitation = require('./BusinessInvitation');
 
+// Modelos de gastos del negocio
+const BusinessExpenseCategory = require('./BusinessExpenseCategory');
+const BusinessExpense = require('./BusinessExpense');
+
 // Definir asociaciones
 // User - Business
 User.belongsTo(Business, { 
@@ -556,6 +560,82 @@ Client.hasMany(FinancialMovement, {
   as: 'financialMovements' 
 });
 
+// ==================== BUSINESS EXPENSE RELATIONSHIPS ====================
+
+// BusinessExpenseCategory - Business
+Business.hasMany(BusinessExpenseCategory, {
+  foreignKey: 'businessId',
+  as: 'expenseCategories'
+});
+BusinessExpenseCategory.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+BusinessExpenseCategory.belongsTo(User, {
+  foreignKey: 'createdBy',
+  as: 'creator'
+});
+
+// BusinessExpenseCategory - BusinessExpense
+BusinessExpenseCategory.hasMany(BusinessExpense, {
+  foreignKey: 'categoryId',
+  as: 'expenses'
+});
+BusinessExpense.belongsTo(BusinessExpenseCategory, {
+  foreignKey: 'categoryId',
+  as: 'category'
+});
+
+// BusinessExpense - Business
+Business.hasMany(BusinessExpense, {
+  foreignKey: 'businessId',
+  as: 'expenses'
+});
+BusinessExpense.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+
+// BusinessExpense - User (creator and approver)
+BusinessExpense.belongsTo(User, {
+  foreignKey: 'createdBy',
+  as: 'creator'
+});
+BusinessExpense.belongsTo(User, {
+  foreignKey: 'approvedBy',
+  as: 'approver'
+});
+User.hasMany(BusinessExpense, {
+  foreignKey: 'createdBy',
+  as: 'createdBusinessExpenses'
+});
+User.hasMany(BusinessExpense, {
+  foreignKey: 'approvedBy',
+  as: 'approvedBusinessExpenses'
+});
+
+// FinancialMovement - BusinessExpenseCategory
+FinancialMovement.belongsTo(BusinessExpenseCategory, {
+  foreignKey: 'businessExpenseCategoryId',
+  as: 'expenseCategory'
+});
+BusinessExpenseCategory.hasMany(FinancialMovement, {
+  foreignKey: 'businessExpenseCategoryId',
+  as: 'financialMovements'
+});
+
+// FinancialMovement - BusinessExpense
+FinancialMovement.belongsTo(BusinessExpense, {
+  foreignKey: 'businessExpenseId',
+  as: 'expense'
+});
+BusinessExpense.hasOne(FinancialMovement, {
+  foreignKey: 'businessExpenseId',
+  as: 'financialMovement'
+});
+
+// ==================== END BUSINESS EXPENSE RELATIONSHIPS ====================
+
 // PaymentIntegration relationships
 Business.hasMany(PaymentIntegration, { 
   foreignKey: 'businessId', 
@@ -1038,5 +1118,8 @@ module.exports = {
   OwnerFinancialReport,
   OwnerExpense,
   SavedPaymentMethod,
-  BusinessInvitation
+  BusinessInvitation,
+  // Modelos de gastos del negocio
+  BusinessExpenseCategory,
+  BusinessExpense
 };

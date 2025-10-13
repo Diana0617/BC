@@ -44,13 +44,16 @@ async function startServer() {
         // Nuevos modelos de pagos OWNER
         OwnerPaymentConfiguration,
         SubscriptionPayment,
-  OwnerFinancialReport,
-  OwnerExpense,
+        OwnerFinancialReport,
+        OwnerExpense,
         // Nuevos modelos simplificados de reglas
         // RuleTemplate, // Temporalmente comentado
         BusinessRule,
         // Nuevo modelo de recibos
-        Receipt
+        Receipt,
+        // Modelos de gastos del negocio
+        BusinessExpenseCategory,
+        BusinessExpense
       } = require('./src/models');
 
       // Configuración de sincronización
@@ -119,17 +122,22 @@ async function startServer() {
         await OwnerPaymentConfiguration.sync(syncOptions);
         console.log('✅ Configuración de pagos OWNER sincronizada');
         
+        // 7.1. Tablas de gastos del negocio (ANTES de FinancialMovement porque FinancialMovement tiene FK a estas)
+        await BusinessExpenseCategory.sync(syncOptions);
+        await BusinessExpense.sync(syncOptions);
+        console.log('✅ Tablas de gastos del negocio sincronizadas');
+        
         // 8. Tablas que dependen de múltiples entidades
         await Appointment.sync(syncOptions);
         await PlanModule.sync(syncOptions);
         await BusinessSubscription.sync(syncOptions);
         await BusinessClient.sync(syncOptions);
         await InventoryMovement.sync(syncOptions);
-        await FinancialMovement.sync(syncOptions);
+        await FinancialMovement.sync(syncOptions); // Ahora puede referenciar business_expense_categories
         await PaymentIntegration.sync(syncOptions);
         await PasswordResetToken.sync(syncOptions);
         
-        // 7. Tablas de comisiones (al final porque dependen de otras)
+        // 9. Tablas de comisiones (al final porque dependen de otras)
         await CommissionPaymentRequest.sync(syncOptions);
         await CommissionDetail.sync(syncOptions);
         console.log('✅ Tablas de comisiones sincronizadas');
