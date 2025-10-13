@@ -3,7 +3,7 @@ const { sequelize } = require('../config/database');
 const RuleTemplate = require('../models/RuleTemplate');
 const BusinessRule = require('../models/BusinessRule');
 const Business = require('../models/Business');
-const Subscription = require('../models/Subscription');
+const BusinessSubscription = require('../models/BusinessSubscription');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 const PlanModule = require('../models/PlanModule');
 const Module = require('../models/Module');
@@ -222,11 +222,10 @@ class BusinessRulesService {
       // Obtener módulos del plan del negocio
       const business = await Business.findByPk(businessId, {
         include: [{
-          model: Subscription,
+          model: BusinessSubscription,
           as: 'subscriptions',
           where: { 
-            status: ['ACTIVE', 'TRIALING'],
-            isActive: true
+            status: ['ACTIVE', 'TRIAL']
           },
           required: false,
           limit: 1,
