@@ -61,6 +61,10 @@ export { default as timeSlotSlice } from './timeSlotSlice';
 // 🎫 VOUCHER SYSTEM SLICES
 export { default as voucherSlice } from './voucherSlice';
 
+// 💰 COMMISSION & CONSENT SYSTEM SLICES (FM-26)
+export { default as commissionSlice } from './commissionSlice';
+export { default as consentSlice } from './consentSlice';
+
 // Export all OWNER slices as a group
 export const ownerSlices = {
   ownerStatsSlice,

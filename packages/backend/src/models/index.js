@@ -69,6 +69,12 @@ const Voucher = require('./Voucher');
 const CustomerCancellationHistory = require('./CustomerCancellationHistory');
 const CustomerBookingBlock = require('./CustomerBookingBlock');
 
+// Modelos de comisiones y consentimientos
+const BusinessCommissionConfig = require('./BusinessCommissionConfig');
+const ServiceCommission = require('./ServiceCommission');
+const ConsentTemplate = require('./ConsentTemplate');
+const ConsentSignature = require('./ConsentSignature');
+
 // Definir asociaciones
 // User - Business
 User.belongsTo(Business, { 
@@ -364,6 +370,114 @@ User.hasMany(Appointment, {
 Service.hasMany(Appointment, { 
   foreignKey: 'serviceId', 
   as: 'appointments' 
+});
+
+// ================================
+// COMISIONES - Relaciones
+// ================================
+
+// Business - BusinessCommissionConfig (uno a uno)
+Business.hasOne(BusinessCommissionConfig, {
+  foreignKey: 'businessId',
+  as: 'commissionConfig'
+});
+BusinessCommissionConfig.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+
+// Service - ServiceCommission (uno a uno)
+Service.hasOne(ServiceCommission, {
+  foreignKey: 'serviceId',
+  as: 'commission'
+});
+ServiceCommission.belongsTo(Service, {
+  foreignKey: 'serviceId',
+  as: 'service'
+});
+
+// ================================
+// CONSENTIMIENTOS - Relaciones
+// ================================
+
+// Business - ConsentTemplate (uno a muchos)
+Business.hasMany(ConsentTemplate, {
+  foreignKey: 'businessId',
+  as: 'consentTemplates'
+});
+ConsentTemplate.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+
+// Service - ConsentTemplate (muchos a uno - servicio puede tener un template por defecto)
+Service.belongsTo(ConsentTemplate, {
+  foreignKey: 'consentTemplateId',
+  as: 'consentTemplate'
+});
+ConsentTemplate.hasMany(Service, {
+  foreignKey: 'consentTemplateId',
+  as: 'services'
+});
+
+// ConsentTemplate - ConsentSignature (uno a muchos)
+ConsentTemplate.hasMany(ConsentSignature, {
+  foreignKey: 'consentTemplateId',
+  as: 'signatures'
+});
+ConsentSignature.belongsTo(ConsentTemplate, {
+  foreignKey: 'consentTemplateId',
+  as: 'template'
+});
+
+// Business - ConsentSignature (uno a muchos)
+Business.hasMany(ConsentSignature, {
+  foreignKey: 'businessId',
+  as: 'consentSignatures'
+});
+ConsentSignature.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+
+// Client - ConsentSignature (uno a muchos)
+Client.hasMany(ConsentSignature, {
+  foreignKey: 'customerId',
+  as: 'consentSignatures'
+});
+ConsentSignature.belongsTo(Client, {
+  foreignKey: 'customerId',
+  as: 'customer'
+});
+
+// Service - ConsentSignature (uno a muchos - opcional)
+Service.hasMany(ConsentSignature, {
+  foreignKey: 'serviceId',
+  as: 'consentSignatures'
+});
+ConsentSignature.belongsTo(Service, {
+  foreignKey: 'serviceId',
+  as: 'service'
+});
+
+// Appointment - ConsentSignature (uno a muchos - opcional)
+Appointment.hasMany(ConsentSignature, {
+  foreignKey: 'appointmentId',
+  as: 'consentSignatures'
+});
+ConsentSignature.belongsTo(Appointment, {
+  foreignKey: 'appointmentId',
+  as: 'appointment'
+});
+
+// User - ConsentSignature (quien revocó)
+User.hasMany(ConsentSignature, {
+  foreignKey: 'revokedBy',
+  as: 'revokedConsentSignatures'
+});
+ConsentSignature.belongsTo(User, {
+  foreignKey: 'revokedBy',
+  as: 'revokedByUser'
 });
 
 // Receipt relationships
@@ -1244,5 +1358,10 @@ module.exports = {
   // Modelos de vouchers y penalizaciones
   Voucher,
   CustomerCancellationHistory,
-  CustomerBookingBlock
+  CustomerBookingBlock,
+  // Modelos de comisiones y consentimientos
+  BusinessCommissionConfig,
+  ServiceCommission,
+  ConsentTemplate,
+  ConsentSignature
 };

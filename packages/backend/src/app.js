@@ -218,6 +218,8 @@ const payment3DSRoutes = require('./routes/payment3DS');
 const testingRoutes = require('./routes/testing');
 const scheduleRoutes = require('./routes/schedules');
 const timeSlotRoutes = require('./routes/time-slots');
+const commissionRoutes = require('./routes/commissionRoutes');
+const consentRoutes = require('./routes/consentRoutes');
 // const specialistServicesRoutes = require('./routes/specialistServices'); // DEPRECATED: Ahora usando rutas RESTful en businessConfig.js
 
 
@@ -226,6 +228,8 @@ app.use('/api/business', businessRoutes);
 app.use('/api/business', businessConfigRoutes); // Rutas de configuración del negocio
 app.use('/api/business', branchRoutes); // Rutas de sucursales
 app.use('/api/business/:businessId/clients', clientRoutes); // Rutas de clientes del negocio
+app.use('/api/business/:businessId', commissionRoutes); // Rutas de comisiones
+app.use('/api/business/:businessId', consentRoutes); // Rutas de consentimientos
 app.use('/api', businessRulesRoutes); // Nuevas rutas simplificadas de reglas
 app.use('/api/rule-templates', ruleTemplateRoutes); // Rutas de plantillas de reglas (legacy)
 app.use('/api/receipts', receiptRoutes); // Rutas de recibos

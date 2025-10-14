@@ -84,6 +84,12 @@ export { default as businessValidationApi } from './businessValidationApi';
 export { default as voucherApi } from './voucherApi';
 import voucherApi from './voucherApi';
 
+// 💰 COMMISSION & CONSENT SYSTEM APIS (FM-26)
+export { default as commissionApi } from './commissionApi';
+import commissionApi from './commissionApi';
+export { default as consentApi } from './consentApi';
+import consentApi from './consentApi';
+
 // Export all OWNER APIs as a group
 export const ownerApis = {
   ownerApi,
@@ -115,5 +121,8 @@ export const businessApis = {
   businessServicesApi,
   businessBrandingApi,
   businessBranchesApi,
-  specialistServicesApi
+  specialistServicesApi,
+  // Commission & Consent APIs (FM-26)
+  commissionApi,
+  consentApi
 };

@@ -98,25 +98,7 @@ const ruleTemplates = [
       descriptions: ['Permitir citas simultáneas', 'Solo una cita a la vez']
     }
   },
-  {
-    key: 'CITAS_TIEMPO_LIBRE_ENTRE_CITAS',
-    type: 'NUMBER',
-    defaultValue: 15,
-    description: 'Tiempo libre entre citas (en minutos)',
-    category: 'BOOKING_POLICY',
-    allowCustomization: true,
-    version: '1.0.0',
-    requiredModule: 'gestion_de_turnos',
-    validationRules: {
-      min: 0,
-      max: 60,
-      type: 'integer'
-    },
-    examples: {
-      values: [0, 5, 10, 15, 30],
-      descriptions: ['Sin tiempo libre', '5 minutos', '10 minutos', '15 minutos', '30 minutos']
-    }
-  },
+  
   {
     key: 'CITAS_REQUIERE_COMPROBANTE_PAGO',
     type: 'BOOLEAN',
@@ -330,34 +312,55 @@ const ruleTemplates = [
     }
   },
   {
-    key: 'ESPECIALISTA_USAR_COMISIONES',
+    key: 'COMISIONES_HABILITADAS',
     type: 'BOOLEAN',
     defaultValue: true,
-    description: 'Usar sistema de comisiones para el pago de especialistas',
-    category: 'PAYMENT_POLICY',
+    description: '¿En tu negocio se manejan comisiones para especialistas?',
+    category: 'SERVICE_POLICY',
     allowCustomization: true,
     version: '1.0.0',
     examples: {
       values: [true, false],
-      descriptions: ['Comisiones por servicio', 'Sueldo fijo']
+      descriptions: ['Negocio con comisiones', 'Negocio sin comisiones (empleados con salario fijo)']
     }
   },
   {
-    key: 'ESPECIALISTA_PORCENTAJE_COMISION',
+    key: 'COMISIONES_TIPO_CALCULO',
+    type: 'STRING',
+    defaultValue: 'POR_SERVICIO',
+    description: 'Tipo de cálculo de comisiones para especialistas',
+    category: 'SERVICE_POLICY',
+    allowCustomization: true,
+    version: '1.0.0',
+    validationRules: {
+      enum: ['GENERAL', 'POR_SERVICIO', 'MIXTO']
+    },
+    examples: {
+      values: ['GENERAL', 'POR_SERVICIO', 'MIXTO'],
+      descriptions: [
+        'Mismo % para todos los servicios',
+        'Cada servicio tiene su propio %',
+        'Algunos servicios usan % general, otros personalizados'
+      ]
+    }
+  },
+  {
+    key: 'COMISIONES_PORCENTAJE_GENERAL',
     type: 'NUMBER',
     defaultValue: 50,
-    description: 'Porcentaje de comisión por defecto para especialistas (%)',
-    category: 'PAYMENT_POLICY',
+    description: 'Porcentaje de comisión general para especialistas (%)',
+    category: 'SERVICE_POLICY',
     allowCustomization: true,
     version: '1.0.0',
     validationRules: {
       min: 0,
       max: 100,
-      type: 'number'
+      type: 'decimal',
+      step: 0.5
     },
     examples: {
       values: [30, 40, 50, 60, 70],
-      descriptions: ['30%', '40%', '50%', '60%', '70%']
+      descriptions: ['30% especialista', '40% especialista', '50/50', '60% especialista', '70% especialista']
     }
   },
   {

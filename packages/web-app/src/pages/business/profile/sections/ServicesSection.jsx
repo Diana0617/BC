@@ -3,35 +3,51 @@ import { useSelector } from 'react-redux'
 import { 
   ClipboardDocumentListIcon,
   PlusIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  CurrencyDollarIcon,
+  DocumentTextIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline'
-import { businessServicesApi } from '@shared/api'
+import { businessServicesApi, commissionApi, consentApi } from '@shared/api'
+import ServiceFormModal from '../../../../components/services/ServiceFormModal'
+import CommissionConfigModal from '../../../../components/services/CommissionConfigModal'
+import ConsentTemplateModal from '../../../../components/services/ConsentTemplateModal'
 
 const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const activeBusiness = useSelector(state => state.business.currentBusiness)
+  
+  // Estados principales
   const [services, setServices] = useState([])
-  const [isAddingService, setIsAddingService] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [newService, setNewService] = useState({
-    name: '',
-    description: '',
-    duration: 30,
-    price: '',
-    category: 'GENERAL'
-  })
+  
+  // Estados de UI
+  const [expandedService, setExpandedService] = useState(null)
+  const [showServiceModal, setShowServiceModal] = useState(false)
+  const [showCommissionModal, setShowCommissionModal] = useState(false)
+  const [showConsentModal, setShowConsentModal] = useState(false)
+  const [selectedService, setSelectedService] = useState(null)
+  
+  // Configuración global de comisiones
+  const [commissionConfig, setCommissionConfig] = useState(null)
+  const [consentTemplates, setConsentTemplates] = useState([])
 
-  const serviceCategories = [
-    { value: 'GENERAL', label: 'General' },
-    { value: 'HAIR', label: 'Cabello' },
-    { value: 'NAILS', label: 'Uñas' },
-    { value: 'FACIAL', label: 'Facial' },
-    { value: 'BODY', label: 'Corporal' }
-  ]
-
-  // Cargar servicios al montar el componente
+  // Cargar datos iniciales
   useEffect(() => {
-    loadServices()
+    const loadAllData = async () => {
+      await Promise.all([
+        loadServices(),
+        loadCommissionConfig(),
+        loadConsentTemplates()
+      ])
+    }
+    
+    if (activeBusiness?.id) {
+      loadAllData()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeBusiness])
 
   const loadServices = async () => {
@@ -40,10 +56,9 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
     try {
       setIsLoading(true)
       setError(null)
-      // Agregar timestamp para evitar caché
       const response = await businessServicesApi.getServices(activeBusiness.id, { 
         isActive: true,
-        _t: Date.now() // Cache buster
+        _t: Date.now()
       })
       console.log('📦 Services loaded:', response)
       setServices(response.data || [])
@@ -55,59 +70,197 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
     }
   }
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setNewService(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
-
-  const handleAddService = async () => {
-    if (!newService.name || !newService.price || !activeBusiness?.id) return
-
+  const loadCommissionConfig = async () => {
+    if (!activeBusiness?.id) return
+    
     try {
-      setIsLoading(true)
-      setError(null)
-      
-      // Crear servicio en el backend
-      const serviceData = {
-        name: newService.name,
-        description: newService.description,
-        duration: parseInt(newService.duration),
-        price: parseFloat(newService.price),
-        category: newService.category,
-        isActive: true
-      }
-      
-      await businessServicesApi.createService(activeBusiness.id, serviceData)
-      
-      // Recargar servicios
-      await loadServices()
-      
-      // Resetear formulario
-      setNewService({
-        name: '',
-        description: '',
-        duration: 30,
-        price: '',
-        category: 'GENERAL'
-      })
-      setIsAddingService(false)
-      
-      // Completar paso en modo setup si es el primer servicio
-      if (isSetupMode && services.length === 0 && onComplete) {
-        onComplete()
-      }
+      const response = await commissionApi.getBusinessConfig(activeBusiness.id)
+      setCommissionConfig(response.data)
     } catch (err) {
-      console.error('Error creating service:', err)
-      setError(err.message || 'Error al crear servicio')
-    } finally {
-      setIsLoading(false)
+      console.error('Error loading commission config:', err)
+      // No mostrar error si no existe config aún
     }
   }
 
-  const isFormValid = newService.name && newService.price
+  const loadConsentTemplates = async () => {
+    if (!activeBusiness?.id) return
+    
+    try {
+      const response = await consentApi.getTemplates(activeBusiness.id, { activeOnly: true })
+      setConsentTemplates(response.data || [])
+    } catch (err) {
+      console.error('Error loading consent templates:', err)
+    }
+  }
+
+  const handleCreateService = () => {
+    setSelectedService(null)
+    setShowServiceModal(true)
+  }
+
+  const handleEditService = (service) => {
+    setSelectedService(service)
+    setShowServiceModal(true)
+  }
+
+  const handleServiceSaved = async () => {
+    setShowServiceModal(false)
+    setSelectedService(null)
+    await loadServices()
+    
+    // Completar paso en modo setup si es el primer servicio
+    if (isSetupMode && services.length === 0 && onComplete) {
+      onComplete()
+    }
+  }
+
+  const handleConfigureCommission = (service) => {
+    setSelectedService(service)
+    setShowCommissionModal(true)
+  }
+
+  const handleCommissionSaved = async () => {
+    setShowCommissionModal(false)
+    setSelectedService(null)
+    await loadServices()
+  }
+
+  const handleConfigureConsent = (service) => {
+    setSelectedService(service)
+    setShowConsentModal(true)
+  }
+
+  const handleConsentSaved = async () => {
+    setShowConsentModal(false)
+    setSelectedService(null)
+    await loadServices()
+  }
+
+  const toggleServiceExpand = (serviceId) => {
+    setExpandedService(expandedService === serviceId ? null : serviceId)
+  }
+
+  const getCommissionTypeLabel = (calculationType) => {
+    const types = {
+      'PERCENTAGE': 'Por porcentaje',
+      'FIXED_AMOUNT': 'Monto fijo',
+      'NO_COMMISSION': 'Sin comisión'
+    }
+    return types[calculationType] || 'No configurado'
+  }
+
+  const ServiceCard = ({ service }) => {
+    const isExpanded = expandedService === service.id
+    const hasCommission = service.ServiceCommission || commissionConfig?.commissionsEnabled
+    const hasConsent = service.consentTemplateId
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+        {/* Header */}
+        <div className="p-4">
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 text-lg">{service.name}</h3>
+              <p className="text-sm text-gray-600 mt-1">{service.description}</p>
+            </div>
+            
+            <button
+              onClick={() => handleEditService(service)}
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg ml-4"
+              title="Editar servicio"
+            >
+              <PencilIcon className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Info básica */}
+          <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-gray-500">⏱️ {service.duration} min</span>
+              <span className="font-semibold text-green-600 text-lg">
+                ${service.price.toLocaleString('es-CO')}
+              </span>
+            </div>
+
+            <button
+              onClick={() => toggleServiceExpand(service.id)}
+              className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm"
+            >
+              {isExpanded ? 'Menos' : 'Configurar'}
+              {isExpanded ? (
+                <ChevronUpIcon className="h-4 w-4" />
+              ) : (
+                <ChevronDownIcon className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+
+          {/* Badges de configuración */}
+          <div className="flex gap-2 mt-3">
+            {hasCommission && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <CurrencyDollarIcon className="h-3 w-3 mr-1" />
+                Comisión configurada
+              </span>
+            )}
+            {hasConsent && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <DocumentTextIcon className="h-3 w-3 mr-1" />
+                Consentimiento
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Panel expandible */}
+        {isExpanded && (
+          <div className="border-t border-gray-200 bg-gray-50 p-4 space-y-3">
+            {/* Configurar comisión */}
+            <button
+              onClick={() => handleConfigureCommission(service)}
+              className="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+            >
+              <div className="flex items-center gap-3">
+                <CurrencyDollarIcon className="h-5 w-5 text-green-600" />
+                <div className="text-left">
+                  <p className="font-medium text-gray-900">Configurar Comisión</p>
+                  <p className="text-xs text-gray-500">
+                    {service.ServiceCommission 
+                      ? `${service.ServiceCommission.specialistPercentage}% especialista / ${service.ServiceCommission.businessPercentage}% negocio`
+                      : commissionConfig?.commissionsEnabled 
+                        ? `Usando config general: ${getCommissionTypeLabel(commissionConfig.calculationType)}`
+                        : 'Sin configurar'
+                    }
+                  </p>
+                </div>
+              </div>
+              <ChevronDownIcon className="h-4 w-4 text-gray-400 -rotate-90" />
+            </button>
+
+            {/* Configurar consentimiento */}
+            <button
+              onClick={() => handleConfigureConsent(service)}
+              className="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+            >
+              <div className="flex items-center gap-3">
+                <DocumentTextIcon className="h-5 w-5 text-blue-600" />
+                <div className="text-left">
+                  <p className="font-medium text-gray-900">Consentimiento Informado</p>
+                  <p className="text-xs text-gray-500">
+                    {service.consentTemplateId 
+                      ? 'Plantilla asignada'
+                      : 'Asignar plantilla de consentimiento'
+                    }
+                  </p>
+                </div>
+              </div>
+              <ChevronDownIcon className="h-4 w-4 text-gray-400 -rotate-90" />
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -123,147 +276,77 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
         <div className="flex items-center">
           <ClipboardDocumentListIcon className="h-6 w-6 text-blue-600 mr-2" />
           <h2 className="text-2xl font-bold text-gray-900">
-            Servicios
+            Procedimientos y Servicios
           </h2>
           {isCompleted && !isSetupMode && (
             <CheckCircleIcon className="h-6 w-6 text-green-500 ml-2" />
           )}
         </div>
         
-        {!isAddingService && (
-          <button
-            onClick={() => setIsAddingService(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Agregar Servicio
-          </button>
-        )}
+        <button
+          onClick={handleCreateService}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+        >
+          <PlusIcon className="h-4 w-4 mr-2" />
+          Nuevo Procedimiento
+        </button>
       </div>
 
-      {/* Lista de servicios */}
-      {isLoading && services.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">Cargando servicios...</p>
-        </div>
-      ) : services.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {services.map((service) => (
-            <div key={service.id} className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-1">{service.name}</h3>
-              <p className="text-sm text-gray-600 mb-2">{service.description}</p>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{service.duration} min</span>
-                <span className="font-semibold text-green-600">
-                  ${service.price.toLocaleString()}
-                </span>
+      {/* Stats Card - Configuración global */}
+      {commissionConfig && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Configuración Global de Comisiones</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {commissionConfig.commissionsEnabled 
+                  ? getCommissionTypeLabel(commissionConfig.calculationType)
+                  : 'Deshabilitadas'
+                }
+              </p>
+            </div>
+            {commissionConfig.commissionsEnabled && commissionConfig.calculationType === 'PERCENTAGE' && (
+              <div className="text-right">
+                <p className="text-2xl font-bold text-blue-600">
+                  {commissionConfig.generalPercentage}%
+                </p>
+                <p className="text-xs text-gray-500">Para especialistas</p>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {/* Formulario para agregar servicio */}
-      {isAddingService && (
-        <div className="bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Nuevo Servicio</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nombre del Servicio *
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={newService.name}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Ej: Corte de cabello"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Duración (minutos)
-              </label>
-              <input
-                type="number"
-                name="duration"
-                value={newService.duration}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                min="15"
-                step="15"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Precio *
-              </label>
-              <input
-                type="number"
-                name="price"
-                value={newService.price}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="50000"
-                min="0"
-              />
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Descripción
-              </label>
-              <textarea
-                name="description"
-                value={newService.description}
-                onChange={handleInputChange}
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Descripción del servicio..."
-              />
-            </div>
-          </div>
-          
-          <div className="flex gap-3 mt-4">
-            <button
-              onClick={handleAddService}
-              disabled={!isFormValid || isLoading}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Guardando...' : 'Agregar Servicio'}
-            </button>
-            
-            <button
-              onClick={() => setIsAddingService(false)}
-              disabled={isLoading}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
+            )}
           </div>
         </div>
       )}
 
+      {/* Lista de servicios */}
+      {isLoading && services.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500">Cargando procedimientos...</p>
+        </div>
+      ) : services.length > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {services.map((service) => (
+            <ServiceCard key={service.id} service={service} />
+          ))}
+        </div>
+      ) : null}
+
       {/* Estado vacío */}
-      {!isLoading && services.length === 0 && !isAddingService && (
-        <div className="text-center py-8 bg-gray-50 rounded-lg">
+      {!isLoading && services.length === 0 && (
+        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
           <ClipboardDocumentListIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Sin servicios registrados
+            Sin procedimientos registrados
           </h3>
-          <p className="text-gray-500 mb-4">
-            Agrega los servicios que ofreces en tu negocio
+          <p className="text-gray-500 mb-4 max-w-md mx-auto">
+            Crea tus primeros procedimientos con configuración completa de comisiones 
+            y consentimientos informados
           </p>
           <button
-            onClick={() => setIsAddingService(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            onClick={handleCreateService}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 inline-flex items-center"
           >
-            <PlusIcon className="h-4 w-4 inline mr-2" />
-            Agregar Primer Servicio
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Crear Primer Procedimiento
           </button>
         </div>
       )}
@@ -272,10 +355,53 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
       {isSetupMode && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">
-            <strong>Paso 3 de la configuración:</strong> Define los servicios que ofreces. 
-            Puedes agregar más servicios después y configurar precios especiales.
+            <strong>✨ Nuevo sistema mejorado:</strong> Ahora puedes configurar comisiones 
+            personalizadas y plantillas de consentimiento informado para cada procedimiento. 
+            ¡Comienza creando tus primeros procedimientos!
           </p>
         </div>
+      )}
+
+      {/* Modals */}
+      {showServiceModal && (
+        <ServiceFormModal
+          isOpen={showServiceModal}
+          onClose={() => {
+            setShowServiceModal(false)
+            setSelectedService(null)
+          }}
+          onSave={handleServiceSaved}
+          service={selectedService}
+          businessId={activeBusiness?.id}
+        />
+      )}
+
+      {showCommissionModal && selectedService && (
+        <CommissionConfigModal
+          isOpen={showCommissionModal}
+          onClose={() => {
+            setShowCommissionModal(false)
+            setSelectedService(null)
+          }}
+          onSave={handleCommissionSaved}
+          service={selectedService}
+          businessId={activeBusiness?.id}
+          globalConfig={commissionConfig}
+        />
+      )}
+
+      {showConsentModal && selectedService && (
+        <ConsentTemplateModal
+          isOpen={showConsentModal}
+          onClose={() => {
+            setShowConsentModal(false)
+            setSelectedService(null)
+          }}
+          onSave={handleConsentSaved}
+          service={selectedService}
+          businessId={activeBusiness?.id}
+          availableTemplates={consentTemplates}
+        />
       )}
     </div>
   )

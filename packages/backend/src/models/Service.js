@@ -47,11 +47,18 @@ const Service = sequelize.define('Service', {
   requiresConsent: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
-    defaultValue: false
+    defaultValue: false,
+    comment: 'Si este servicio requiere consentimiento firmado del cliente'
   },
-  consentTemplate: {
-    type: DataTypes.TEXT,
-    allowNull: true
+  consentTemplateId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'consent_templates',
+      key: 'id'
+    },
+    onDelete: 'SET NULL',
+    comment: 'Template de consentimiento por defecto para este servicio'
   },
   isActive: {
     type: DataTypes.BOOLEAN,
@@ -92,18 +99,8 @@ const Service = sequelize.define('Service', {
   },
   images: {
     type: DataTypes.JSONB,
-    allowNull: true,
+    allowNull: false,
     defaultValue: []
-  },
-  commission: {
-    type: DataTypes.JSONB,
-    allowNull: true,
-    defaultValue: {
-      type: 'PERCENTAGE', // PERCENTAGE, FIXED
-      value: 0,
-      specialistPercentage: 50,
-      businessPercentage: 50
-    }
   },
   bookingSettings: {
     type: DataTypes.JSONB,

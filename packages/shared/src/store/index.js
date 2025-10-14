@@ -42,6 +42,9 @@ import appointmentCalendarReducer from './slices/appointmentCalendarSlice';
 import timeSlotReducer from './slices/timeSlotSlice';
 // 🎫 VOUCHER SYSTEM REDUCERS
 import voucherReducer from './slices/voucherSlice';
+// 💰 COMMISSION & CONSENT SYSTEM REDUCERS (FM-26)
+import commissionReducer from './slices/commissionSlice';
+import consentReducer from './slices/consentSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -89,7 +92,10 @@ export const createStore = (preloadedState = {}) => {
       appointmentCalendar: appointmentCalendarReducer,
       timeSlot: timeSlotReducer,
       // 🎫 VOUCHER SYSTEM REDUCERS
-      voucher: voucherReducer
+      voucher: voucherReducer,
+      // 💰 COMMISSION & CONSENT SYSTEM REDUCERS (FM-26)
+      commission: commissionReducer,
+      consent: consentReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>

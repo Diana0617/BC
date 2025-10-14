@@ -53,7 +53,12 @@ async function startServer() {
         Receipt,
         // Modelos de gastos del negocio
         BusinessExpenseCategory,
-        BusinessExpense
+        BusinessExpense,
+        // Nuevos modelos de comisiones y consentimientos (FM-26)
+        BusinessCommissionConfig,
+        ServiceCommission,
+        ConsentTemplate,
+        ConsentSignature
       } = require('./src/models');
 
       // Configuración de sincronización
@@ -93,12 +98,25 @@ async function startServer() {
         await BusinessRule.sync(syncOptions);
         console.log('✅ Nuevos modelos de reglas sincronizados');
         
-        // 5. Tablas principales
+        // 5. Tablas principales (ANTES DE TABLAS CON FK A ESTAS)
         await Branch.sync(syncOptions);
         await Client.sync(syncOptions);
-        await Service.sync(syncOptions);
         await Product.sync(syncOptions);
-        console.log('✅ Tablas principales sincronizadas');
+        console.log('✅ Tablas principales (Branch, Client, Product) sincronizadas');
+        
+        // 5.0.1. TABLAS DE COMISIONES Y CONSENTIMIENTOS (ANTES DE SERVICE)
+        await BusinessCommissionConfig.sync(syncOptions);
+        await ConsentTemplate.sync(syncOptions);
+        console.log('✅ Tablas de comisiones y consentimientos base (FM-26) sincronizadas');
+        
+        // 5.0.2. SERVICE (AHORA QUE CONSENT_TEMPLATES YA EXISTE)
+        await Service.sync(syncOptions);
+        console.log('✅ Tabla Service sincronizada (con FK a ConsentTemplate)');
+        
+        // 5.0.3. TABLAS QUE DEPENDEN DE SERVICE
+        await ServiceCommission.sync(syncOptions);
+        await ConsentSignature.sync(syncOptions);
+        console.log('✅ Tablas que dependen de Service (ServiceCommission, ConsentSignature) sincronizadas');
         
         // 5.1. NUEVAS TABLAS MULTI-BRANCH Y PRICING PERSONALIZADO
         await UserBranch.sync(syncOptions);
