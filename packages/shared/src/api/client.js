@@ -120,7 +120,9 @@ class ApiClient {
   }
 
   // HTTP Methods
-  async get(endpoint, params = {}) {
+  async get(endpoint, options = {}) {
+    // Extract params from options if present
+    const params = options.params || options;
     const queryString = new URLSearchParams(params).toString();
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
     return this.request(url, { method: 'GET' });

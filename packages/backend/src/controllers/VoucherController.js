@@ -581,6 +581,122 @@ class VoucherController {
       });
     }
   }
+
+  /**
+   * @swagger
+   * /api/business/:businessId/clients/:clientId/vouchers:
+   *   get:
+   *     summary: Obtener vouchers de un cliente específico
+   *     tags: [Vouchers - Clientes]
+   */
+  static async getCustomerVouchers(req, res) {
+    try {
+      const { businessId, clientId } = req.params;
+      const { includeExpired = 'false' } = req.query;
+
+      const vouchers = await VoucherService.getCustomerVouchers(
+        businessId,
+        clientId,
+        includeExpired === 'true'
+      );
+
+      res.json({
+        success: true,
+        data: vouchers,
+        count: vouchers.length
+      });
+    } catch (error) {
+      console.error('Error obteniendo vouchers del cliente:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al obtener vouchers del cliente'
+      });
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/business/:businessId/clients/:clientId/block:
+   *   post:
+   *     summary: Bloquear cliente manualmente
+   *     tags: [Vouchers - Clientes]
+   */
+  static async blockCustomer(req, res) {
+    try {
+      const { businessId, clientId } = req.params;
+      const { reason = 'MANUAL', notes, durationDays = 30 } = req.body;
+      const { userId } = req.user;
+
+      const block = await VoucherService.createBlock(
+        businessId,
+        clientId,
+        {
+          reason,
+          notes,
+          durationDays,
+          blockedBy: userId
+        }
+      );
+
+      res.json({
+        success: true,
+        message: 'Cliente bloqueado exitosamente',
+        data: block
+      });
+    } catch (error) {
+      console.error('Error bloqueando cliente:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Error al bloquear cliente'
+      });
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/business/:businessId/clients/:clientId/block-status:
+   *   get:
+   *     summary: Obtener estado de bloqueo de un cliente
+   *     tags: [Vouchers - Clientes]
+   */
+  static async getCustomerBlockStatus(req, res) {
+    try {
+      const { businessId, clientId } = req.params;
+
+      const block = await CustomerBookingBlock.findOne({
+        where: {
+          businessId,
+          customerId: clientId,
+          status: 'ACTIVE',
+          expiresAt: { [Op.gt]: new Date() }
+        },
+        order: [['blockedAt', 'DESC']]
+      });
+
+      const isBlocked = !!block;
+
+      res.json({
+        success: true,
+        data: {
+          isBlocked,
+          block: isBlocked ? {
+            id: block.id,
+            reason: block.reason,
+            blockedAt: block.blockedAt,
+            expiresAt: block.expiresAt,
+            notes: block.notes,
+            cancellationCount: block.cancellationCount
+          } : null
+        }
+      });
+    } catch (error) {
+      console.error('Error obteniendo estado de bloqueo:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al obtener estado de bloqueo'
+      });
+    }
+  }
 }
 
 module.exports = VoucherController;

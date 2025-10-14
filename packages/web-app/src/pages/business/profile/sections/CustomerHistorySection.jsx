@@ -4,134 +4,83 @@ import {
   UsersIcon, 
   MagnifyingGlassIcon,
   FunnelIcon,
-  XMarkIcon
+  XMarkIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline'
+import { apiClient } from '@shared/api/client'
+import toast from 'react-hot-toast'
 
 // Importar componentes de la página de clientes
 import ClientList from '../../customers/components/ClientList'
 import ClientFilters from '../../customers/components/ClientFilters'
 import CreateManualVoucherModal from '../../customers/components/CreateManualVoucherModal'
 import ClientDetailModal from '../../customers/components/ClientDetailModal'
+import CreateClientModal from '../../customers/components/CreateClientModal'
 
 const CustomerHistorySection = () => {
   const { currentBusiness } = useSelector(state => state.business)
 
   // Estados locales
+  const [clients, setClients] = useState([])
+  const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [selectedClient, setSelectedClient] = useState(null)
   const [showVoucherModal, setShowVoucherModal] = useState(false)
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false)
   const [filters, setFilters] = useState({
     status: 'all',
     sortBy: 'recent',
     timeRange: '30'
   })
 
-  // Datos mock de clientes (TODO: Reemplazar con API real)
-  const mockClients = [
-    {
-      id: 1,
-      name: 'María García',
-      email: 'maria@example.com',
-      phone: '+57 300 123 4567',
-      appointmentsCount: 12,
-      cancellationsCount: 1,
-      vouchersCount: 2,
-      isBlocked: false,
-      lastAppointment: '2024-03-15',
-      totalSpent: 450000
-    },
-    {
-      id: 2,
-      name: 'Juan Pérez',
-      email: 'juan@example.com',
-      phone: '+57 301 234 5678',
-      appointmentsCount: 8,
-      cancellationsCount: 3,
-      vouchersCount: 0,
-      isBlocked: true,
-      lastAppointment: '2024-03-10',
-      totalSpent: 320000
-    },
-    {
-      id: 3,
-      name: 'Ana López',
-      email: 'ana@example.com',
-      phone: '+57 302 345 6789',
-      appointmentsCount: 25,
-      cancellationsCount: 0,
-      vouchersCount: 1,
-      isBlocked: false,
-      lastAppointment: '2024-03-18',
-      totalSpent: 890000
-    },
-    {
-      id: 4,
-      name: 'Carlos Rodríguez',
-      email: 'carlos@example.com',
-      phone: '+57 303 456 7890',
-      appointmentsCount: 5,
-      cancellationsCount: 2,
-      vouchersCount: 1,
-      isBlocked: false,
-      lastAppointment: '2024-03-12',
-      totalSpent: 180000
+  // Cargar clientes desde la API
+  const loadClients = async () => {
+    if (!currentBusiness?.id) return
+
+    setLoading(true)
+    try {
+      const response = await apiClient.get(
+        `/api/business/${currentBusiness.id}/clients`,
+        {
+          params: {
+            search: searchTerm,
+            status: filters.status,
+            sortBy: filters.sortBy,
+            timeRange: filters.timeRange
+          }
+        }
+      )
+
+      if (response.data.success) {
+        setClients(response.data.data)
+      }
+    } catch (error) {
+      console.error('Error loading clients:', error)
+      toast.error('Error al cargar los clientes')
+      // En caso de error, usar array vacío
+      setClients([])
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  // Cargar datos iniciales y cuando cambien los filtros
+  useEffect(() => {
+    loadClients()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentBusiness?.id, searchTerm, filters])
 
   // Calcular estadísticas
   const stats = {
-    total: mockClients.length,
-    blocked: mockClients.filter(c => c.isBlocked).length,
-    withVouchers: mockClients.filter(c => c.vouchersCount > 0).length,
-    frequentCancellers: mockClients.filter(c => c.cancellationsCount >= 3).length
+    total: clients.length,
+    blocked: clients.filter(c => c.isBlocked).length,
+    withVouchers: clients.filter(c => c.vouchersCount > 0).length,
+    frequentCancellers: clients.filter(c => c.cancellationsCount >= 3).length
   }
 
-  // Filtrar y ordenar clientes
-  const filteredClients = mockClients
-    .filter(client => {
-      // Búsqueda por texto
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase()
-        const matchesSearch = 
-          client.name.toLowerCase().includes(searchLower) ||
-          client.email.toLowerCase().includes(searchLower) ||
-          client.phone.includes(searchTerm)
-        if (!matchesSearch) return false
-      }
-
-      // Filtro por estado
-      if (filters.status === 'blocked' && !client.isBlocked) return false
-      if (filters.status === 'with_vouchers' && client.vouchersCount === 0) return false
-      if (filters.status === 'frequent_cancellers' && client.cancellationsCount < 3) return false
-
-      return true
-    })
-    .sort((a, b) => {
-      switch (filters.sortBy) {
-        case 'name_asc':
-          return a.name.localeCompare(b.name)
-        case 'name_desc':
-          return b.name.localeCompare(a.name)
-        case 'appointments_desc':
-          return b.appointmentsCount - a.appointmentsCount
-        case 'cancellations_desc':
-          return b.cancellationsCount - a.cancellationsCount
-        case 'vouchers_desc':
-          return b.vouchersCount - a.vouchersCount
-        case 'recent':
-        default:
-          return new Date(b.lastAppointment) - new Date(a.lastAppointment)
-      }
-    })
-
-  // Cargar datos iniciales
-  useEffect(() => {
-    if (currentBusiness?.id) {
-      // TODO: Cargar datos reales de la API
-      // dispatch(fetchBusinessCustomers(currentBusiness.id))
-    }
-  }, [currentBusiness])
+  // Filtrado local adicional (el backend ya hace el filtrado principal)
+  const filteredClients = clients
 
   const handleClearFilters = () => {
     setFilters({
@@ -153,21 +102,43 @@ const CustomerHistorySection = () => {
 
   const handleVoucherCreated = () => {
     setShowVoucherModal(false)
-    // Recargar lista de clientes
-    // TODO: Implementar recarga de datos
+    loadClients() // Recargar lista
+  }
+
+  const handleClientCreated = () => {
+    setShowCreateClientModal(false)
+    loadClients() // Recargar lista
+  }
+
+  const handleClientUpdated = (updatedClient) => {
+    // Actualizar el cliente en la lista local
+    setClients(prevClients => 
+      prevClients.map(c => c.id === updatedClient.id ? updatedClient : c)
+    )
+    // Actualizar el cliente seleccionado si está abierto
+    setSelectedClient(updatedClient)
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="border-b border-gray-200 pb-4">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-          <UsersIcon className="h-8 w-8 text-indigo-600 mr-3" />
-          Historial de Clientes
-        </h2>
-        <p className="mt-2 text-gray-600">
-          Gestiona tus clientes, revisa su historial de citas, cancelaciones y vouchers.
-        </p>
+      {/* Header with Create Button */}
+      <div className="border-b border-gray-200 pb-4 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+            <UsersIcon className="h-8 w-8 text-indigo-600 mr-3" />
+            Historial de Clientes
+          </h2>
+          <p className="mt-2 text-gray-600">
+            Gestiona tus clientes, revisa su historial de citas, cancelaciones y vouchers.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowCreateClientModal(true)}
+          className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+        >
+          <PlusIcon className="h-5 w-5" />
+          <span>Nuevo Cliente</span>
+        </button>
       </div>
 
       {/* Estadísticas */}
@@ -266,11 +237,18 @@ const CustomerHistorySection = () => {
 
       {/* Lista de clientes */}
       <div className="bg-white border border-gray-200 rounded-lg">
-        <ClientList
-          clients={filteredClients}
-          onViewClient={handleViewClient}
-          onCreateVoucher={handleCreateVoucher}
-        />
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mr-3"></div>
+            <span className="text-gray-600">Cargando clientes...</span>
+          </div>
+        ) : (
+          <ClientList
+            clients={filteredClients}
+            onClientClick={handleViewClient}
+            onCreateVoucher={handleCreateVoucher}
+          />
+        )}
       </div>
 
       {/* Modal de detalle de cliente */}
@@ -279,6 +257,7 @@ const CustomerHistorySection = () => {
           client={selectedClient}
           onClose={() => setSelectedClient(null)}
           onCreateVoucher={() => setShowVoucherModal(true)}
+          onClientUpdated={handleClientUpdated}
         />
       )}
 
@@ -291,6 +270,14 @@ const CustomerHistorySection = () => {
             setSelectedClient(null)
           }}
           onSuccess={handleVoucherCreated}
+        />
+      )}
+
+      {/* Modal de creación de cliente */}
+      {showCreateClientModal && (
+        <CreateClientModal
+          onClose={() => setShowCreateClientModal(false)}
+          onSuccess={handleClientCreated}
         />
       )}
     </div>

@@ -225,12 +225,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/business', businessConfigRoutes); // Rutas de configuración del negocio
 app.use('/api/business', branchRoutes); // Rutas de sucursales
+app.use('/api/business/:businessId/clients', clientRoutes); // Rutas de clientes del negocio
 app.use('/api', businessRulesRoutes); // Nuevas rutas simplificadas de reglas
 app.use('/api/rule-templates', ruleTemplateRoutes); // Rutas de plantillas de reglas (legacy)
 app.use('/api/receipts', receiptRoutes); // Rutas de recibos
 app.use('/api/plans', plansRoutes);
 app.use('/api/modules', moduleRoutes);
-app.use('/api/clients', clientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/services', serviceRoutes);
 // app.use('/api/specialists', specialistServicesRoutes); // DEPRECATED: Ahora usando /api/business/:businessId/specialists/:specialistId/services

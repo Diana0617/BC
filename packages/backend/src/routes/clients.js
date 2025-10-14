@@ -1,53 +1,113 @@
 const express = require('express');
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
+const ClientController = require('../controllers/ClientController');
+const VoucherController = require('../controllers/VoucherController');
 const { authenticateToken } = require('../middleware/auth');
-// const tenancyMiddleware = require('../middleware/tenancy');
-// const { allStaffRoles } = require('../middleware/roleCheck');
+const { businessAndOwner } = require('../middleware/roleCheck');
 
-// Todas las rutas de clientes requieren autenticación
-router.use(authenticateToken);
-// router.use(tenancyMiddleware);
-// router.use(allStaffRoles);
+/**
+ * Rutas de Clientes
+ * Requieren autenticación y rol BUSINESS o OWNER
+ * Base: /api/business/:businessId/clients
+ */
 
-// Obtener lista de clientes
-router.get('/', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de obtener clientes aún no implementada'
-  });
-});
+// Listar clientes del negocio
+router.get(
+  '/',
+  authenticateToken,
+  businessAndOwner,
+  (req, res) => ClientController.listClients(req, res)
+);
+
+// Obtener detalles de un cliente
+router.get(
+  '/:clientId',
+  authenticateToken,
+  businessAndOwner,
+  (req, res) => ClientController.getClientDetails(req, res)
+);
 
 // Crear nuevo cliente
-router.post('/', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de crear cliente aún no implementada'
-  });
-});
-
-// Obtener cliente por ID
-router.get('/:id', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de obtener cliente por ID aún no implementada'
-  });
-});
+router.post(
+  '/',
+  authenticateToken,
+  businessAndOwner,
+  (req, res) => ClientController.createClient(req, res)
+);
 
 // Actualizar cliente
-router.put('/:id', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de actualizar cliente aún no implementada'
-  });
-});
+router.put(
+  '/:clientId',
+  authenticateToken,
+  businessAndOwner,
+  (req, res) => ClientController.updateClient(req, res)
+);
 
-// Eliminar cliente
-router.delete('/:id', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de eliminar cliente aún no implementada'
-  });
-});
+// Cambiar estado del cliente (bloquear/desbloquear)
+router.patch(
+  '/:clientId/status',
+  authenticateToken,
+  businessAndOwner,
+  (req, res) => ClientController.toggleClientStatus(req, res)
+);
+
+// =====================================================
+// RUTAS DE VOUCHERS PARA CLIENTES
+// =====================================================
+
+// Listar vouchers de un cliente específico
+router.get(
+  '/:clientId/vouchers',
+  authenticateToken,
+  businessAndOwner,
+  (req, res) => VoucherController.getCustomerVouchers(req, res)
+);
+
+// Crear voucher manual para un cliente
+router.post(
+  '/:clientId/vouchers',
+  authenticateToken,
+  businessAndOwner,
+  (req, res) => VoucherController.createManualVoucher(req, res)
+);
+
+// Cancelar un voucher específico
+router.put(
+  '/:clientId/vouchers/:voucherId/cancel',
+  authenticateToken,
+  businessAndOwner,
+  (req, res) => VoucherController.cancelVoucher(req, res)
+);
+
+// =====================================================
+// RUTAS DE BLOQUEO PARA CLIENTES
+// =====================================================
+
+// Bloquear cliente manualmente
+router.post(
+  '/:clientId/block',
+  authenticateToken,
+  businessAndOwner,
+  (req, res) => VoucherController.blockCustomer(req, res)
+);
+
+// Desbloquear cliente
+router.post(
+  '/:clientId/unblock',
+  authenticateToken,
+  businessAndOwner,
+  (req, res) => VoucherController.liftBlock(req, res)
+);
+
+// Obtener estado de bloqueo del cliente
+router.get(
+  '/:clientId/block-status',
+  authenticateToken,
+  businessAndOwner,
+  (req, res) => VoucherController.getCustomerBlockStatus(req, res)
+);
+
+module.exports = router;
 
 // Obtener historial del cliente
 router.get('/:id/history', (req, res) => {

@@ -15,7 +15,8 @@ import {
   NoSymbolIcon,
   ClockIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 import {
   fetchCustomerStats,
@@ -28,10 +29,17 @@ import {
   selectOperationLoading
 } from '@shared/store/selectors/voucherSelectors';
 import toast from 'react-hot-toast';
+import EditClientModal from './EditClientModal';
+import CreateVoucherModal from './CreateVoucherModal';
+import VouchersList from './VouchersList';
+import BlockClientModal from './BlockClientModal';
 
-const ClientDetailModal = ({ client, onClose, onCreateVoucher }) => {
+const ClientDetailModal = ({ client, onClose, onCreateVoucher, onClientUpdated }) => {
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState('info');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showCreateVoucherModal, setShowCreateVoucherModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
   
   const customerStats = useSelector(selectCustomerStats);
   const cancellationHistory = useSelector(selectCancellationHistory);
@@ -44,6 +52,14 @@ const ClientDetailModal = ({ client, onClose, onCreateVoucher }) => {
       dispatch(fetchCancellationHistory(90));
     }
   }, [client, dispatch]);
+
+  const handleClientUpdated = (updatedClient) => {
+    toast.success('Cliente actualizado exitosamente');
+    setShowEditModal(false);
+    if (onClientUpdated) {
+      onClientUpdated(updatedClient);
+    }
+  };
 
   const handleLiftBlock = async () => {
     if (!window.confirm('¿Estás seguro de levantar el bloqueo de este cliente?')) {
@@ -91,12 +107,12 @@ const ClientDetailModal = ({ client, onClose, onCreateVoucher }) => {
             <div className="flex items-center">
               <div className="h-16 w-16 rounded-full bg-indigo-100 flex items-center justify-center">
                 <span className="text-2xl font-bold text-indigo-600">
-                  {client.name?.charAt(0)?.toUpperCase() || '?'}
+                  {client.firstName?.charAt(0)?.toUpperCase() || client.lastName?.charAt(0)?.toUpperCase() || '?'}
                 </span>
               </div>
               <div className="ml-4">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  {client.name || 'Sin nombre'}
+                  {`${client.firstName || ''} ${client.lastName || ''}`.trim() || 'Sin nombre'}
                 </h3>
                 <p className="text-sm text-gray-500">{client.email}</p>
                 {client.isBlocked && (
@@ -107,12 +123,21 @@ const ClientDetailModal = ({ client, onClose, onCreateVoucher }) => {
                 )}
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 transition-colors"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              >
+                <PencilIcon className="h-4 w-4 mr-2" />
+                Editar
+              </button>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-500 transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
           </div>
 
           {/* Tabs */}
@@ -148,31 +173,88 @@ const ClientDetailModal = ({ client, onClose, onCreateVoucher }) => {
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
-            {client.isBlocked && (
+          <div className="flex justify-between items-center p-6 border-t border-gray-200">
+            {/* Left side - Block/Unblock */}
+            <div>
+              {client.isBlocked ? (
+                <button
+                  onClick={handleLiftBlock}
+                  disabled={operationLoading}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center"
+                >
+                  <NoSymbolIcon className="h-4 w-4 mr-2" />
+                  Levantar Bloqueo
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowBlockModal(true)}
+                  className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors flex items-center"
+                >
+                  <NoSymbolIcon className="h-4 w-4 mr-2" />
+                  Bloquear Cliente
+                </button>
+              )}
+            </div>
+
+            {/* Right side - Actions */}
+            <div className="flex space-x-3">
               <button
-                onClick={handleLiftBlock}
-                disabled={operationLoading}
-                className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors disabled:opacity-50"
+                onClick={() => setShowCreateVoucherModal(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center"
               >
-                Levantar Bloqueo
+                <TicketIcon className="h-4 w-4 mr-2" />
+                Crear Voucher
               </button>
-            )}
-            <button
-              onClick={() => onCreateVoucher(client)}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-            >
-              Crear Voucher
-            </button>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Cerrar
-            </button>
+              <button
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Edit Client Modal */}
+      {showEditModal && (
+        <EditClientModal
+          client={client}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={handleClientUpdated}
+        />
+      )}
+
+      {/* Create Voucher Modal */}
+      {showCreateVoucherModal && (
+        <CreateVoucherModal
+          client={client}
+          onClose={() => setShowCreateVoucherModal(false)}
+          onSuccess={() => {
+            setShowCreateVoucherModal(false);
+            // Recargar la tab de vouchers si está activa
+            if (activeTab === 'vouchers') {
+              // El componente VouchersList se recargará automáticamente
+            }
+          }}
+        />
+      )}
+
+      {/* Block Client Modal */}
+      {showBlockModal && (
+        <BlockClientModal
+          client={client}
+          onClose={() => setShowBlockModal(false)}
+          onSuccess={(blockData) => {
+            setShowBlockModal(false);
+            toast.success('Cliente bloqueado exitosamente');
+            // Recargar información del cliente
+            if (onClientUpdated) {
+              onClientUpdated({ ...client, isBlocked: true, ...blockData });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -363,80 +445,7 @@ const AppointmentsTab = ({ client }) => {
  * Tab de Vouchers
  */
 const VouchersTab = ({ client, onCreateVoucher }) => {
-  const vouchers = client.vouchers || [];
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h4 className="text-sm font-medium text-gray-900">
-          Vouchers del Cliente ({vouchers.length})
-        </h4>
-        <button
-          onClick={() => onCreateVoucher(client)}
-          className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-        >
-          Crear Voucher
-        </button>
-      </div>
-
-      {vouchers.length === 0 ? (
-        <div className="text-center py-12">
-          <TicketIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-sm font-medium text-gray-900">No hay vouchers</h3>
-          <p className="mt-2 text-sm text-gray-500">
-            Este cliente no tiene vouchers activos o generados.
-          </p>
-        </div>
-      ) : (
-        vouchers.map((voucher) => (
-          <div key={voucher.id} className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center">
-                  <TicketIcon className="h-5 w-5 text-green-600 mr-2" />
-                  <code className="text-sm font-mono font-medium text-gray-900">
-                    {voucher.code}
-                  </code>
-                </div>
-                <div className="mt-2 space-y-1 text-sm text-gray-600">
-                  <p>
-                    <span className="font-medium">Valor:</span> ${voucher.amount?.toLocaleString('es-CO')}
-                  </p>
-                  <p>
-                    <span className="font-medium">Generado:</span>{' '}
-                    {new Date(voucher.issuedAt).toLocaleDateString('es-ES')}
-                  </p>
-                  <p>
-                    <span className="font-medium">Expira:</span>{' '}
-                    {new Date(voucher.expiresAt).toLocaleDateString('es-ES')}
-                  </p>
-                  {voucher.usedAt && (
-                    <p>
-                      <span className="font-medium">Usado:</span>{' '}
-                      {new Date(voucher.usedAt).toLocaleDateString('es-ES')}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                voucher.status === 'ACTIVE' 
-                  ? 'bg-green-100 text-green-800'
-                  : voucher.status === 'USED'
-                  ? 'bg-blue-100 text-blue-800'
-                  : voucher.status === 'EXPIRED'
-                  ? 'bg-gray-100 text-gray-800'
-                  : 'bg-red-100 text-red-800'
-              }`}>
-                {voucher.status === 'ACTIVE' ? 'Activo' :
-                 voucher.status === 'USED' ? 'Usado' :
-                 voucher.status === 'EXPIRED' ? 'Expirado' : 'Cancelado'}
-              </span>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  );
+  return <VouchersList client={client} onCreateVoucher={onCreateVoucher} />;
 };
 
 /**

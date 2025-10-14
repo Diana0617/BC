@@ -19,8 +19,7 @@ import {
 // Redux actions
 import {
   loadBusinessConfiguration,
-  setSetupMode,
-  setCurrentStep
+  setSetupMode
 } from '@shared/store/slices/businessConfigurationSlice'
 import { fetchCurrentBusiness } from '@shared/store/slices/businessSlice'
 import { logout } from '@shared/store/slices/authSlice'
@@ -105,8 +104,6 @@ const BusinessProfile = () => {
   }, [business?.id, dispatch])
 
   // Obtener TODOS los módulos disponibles y marcar cuáles están incluidos en el plan
-  const currentSubscription = business?.subscriptions?.find(sub => sub.status === 'ACTIVE' || sub.status === 'TRIAL') || business?.subscriptions?.[0]
-  const currentPlan = business?.currentPlan || currentSubscription?.plan
   const allModules = business?.allModules || []
   const availableModules = allModules.filter(module => module.isAvailable).map(module => module.name) || []
 
