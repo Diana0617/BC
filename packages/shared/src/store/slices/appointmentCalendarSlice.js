@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { api } from '../../api/client';
+import appointmentApi from '../../api/appointmentApi';
 
 /**
  * 📆 APPOINTMENT CALENDAR SLICE
@@ -13,8 +13,8 @@ export const getAppointments = createAsyncThunk(
   'appointmentCalendar/getAppointments',
   async (filters = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get('/appointments', { params: filters });
-      return response.data;
+      const data = await appointmentApi.getAppointments(filters);
+      return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { error: 'Error al obtener citas' });
     }
@@ -26,34 +26,34 @@ export const getAppointmentById = createAsyncThunk(
   'appointmentCalendar/getAppointmentById',
   async (appointmentId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/appointments/${appointmentId}`);
-      return response.data;
+      const data = await appointmentApi.getAppointmentById(appointmentId);
+      return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { error: 'Error al obtener cita' });
     }
   }
 );
 
-// Crear cita
+// Crear nueva cita
 export const createAppointment = createAsyncThunk(
   'appointmentCalendar/createAppointment',
   async (appointmentData, { rejectWithValue }) => {
     try {
-      const response = await api.post('/appointments', appointmentData);
-      return response.data;
+      const data = await appointmentApi.createAppointment(appointmentData);
+      return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { error: 'Error al crear cita' });
     }
   }
 );
 
-// Actualizar cita
+// Actualizar cita existente
 export const updateAppointment = createAsyncThunk(
   'appointmentCalendar/updateAppointment',
   async ({ appointmentId, updateData }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`/appointments/${appointmentId}`, updateData);
-      return response.data;
+      const data = await appointmentApi.updateAppointment(appointmentId, updateData);
+      return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { error: 'Error al actualizar cita' });
     }
@@ -65,8 +65,8 @@ export const updateAppointmentStatus = createAsyncThunk(
   'appointmentCalendar/updateAppointmentStatus',
   async ({ appointmentId, status, reason }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`/appointments/${appointmentId}/status`, { status, reason });
-      return response.data;
+      const data = await appointmentApi.updateAppointmentStatus(appointmentId, { status, reason });
+      return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { error: 'Error al cambiar estado' });
     }
@@ -78,8 +78,8 @@ export const cancelAppointment = createAsyncThunk(
   'appointmentCalendar/cancelAppointment',
   async ({ appointmentId, reason }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/appointments/${appointmentId}/cancel`, { reason });
-      return response.data;
+      const data = await appointmentApi.cancelAppointment(appointmentId, { reason });
+      return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { error: 'Error al cancelar cita' });
     }
@@ -91,14 +91,86 @@ export const getAppointmentsByDateRange = createAsyncThunk(
   'appointmentCalendar/getAppointmentsByDateRange',
   async ({ startDate, endDate, branchId, specialistId }, { rejectWithValue }) => {
     try {
-      const params = { startDate, endDate };
-      if (branchId) params.branchId = branchId;
-      if (specialistId) params.specialistId = specialistId;
+      const filters = { startDate, endDate };
+      if (branchId) filters.branchId = branchId;
+      if (specialistId) filters.specialistId = specialistId;
       
-      const response = await api.get('/appointments', { params });
-      return response.data;
+      const data = await appointmentApi.getAppointmentsByDateRange(filters);
+      return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { error: 'Error al obtener citas' });
+    }
+  }
+);
+
+// ==================== NUEVAS ACCIONES DE VALIDACIÓN ====================
+
+// Completar cita (con validaciones de reglas de negocio)
+export const completeAppointment = createAsyncThunk(
+  'appointmentCalendar/completeAppointment',
+  async ({ appointmentId, businessId, rating, feedback, finalAmount }, { rejectWithValue }) => {
+    try {
+      const data = await appointmentApi.completeAppointment(
+        appointmentId,
+        businessId,
+        { rating, feedback, finalAmount }
+      );
+      return data;
+    } catch (error) {
+      // Capturar validationErrors específicos de las reglas de negocio
+      return rejectWithValue({
+        error: error.response?.data?.error || 'Error al completar cita',
+        validationErrors: error.response?.data?.validationErrors || [],
+        warnings: error.response?.data?.warnings || []
+      });
+    }
+  }
+);
+
+// Reprogramar cita (con validaciones)
+export const rescheduleAppointment = createAsyncThunk(
+  'appointmentCalendar/rescheduleAppointment',
+  async ({ appointmentId, businessId, newStartTime, newEndTime, reason }, { rejectWithValue }) => {
+    try {
+      const data = await appointmentApi.rescheduleAppointment(
+        appointmentId,
+        businessId,
+        { newStartTime, newEndTime, reason }
+      );
+      return data;
+    } catch (error) {
+      return rejectWithValue({
+        error: error.response?.data?.error || 'Error al reprogramar cita',
+        validationErrors: error.response?.data?.validationErrors || [],
+        warnings: error.response?.data?.warnings || []
+      });
+    }
+  }
+);
+
+// Subir evidencia (fotos antes/después/documentos)
+export const uploadEvidence = createAsyncThunk(
+  'appointmentCalendar/uploadEvidence',
+  async ({ appointmentId, businessId, type, files }, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append('type', type); // 'before', 'after', 'documents'
+      
+      // Agregar archivos al FormData
+      if (Array.isArray(files)) {
+        files.forEach((file) => {
+          formData.append('files', file);
+        });
+      } else {
+        formData.append('files', files);
+      }
+
+      const data = await appointmentApi.uploadEvidence(appointmentId, businessId, formData);
+      return data;
+    } catch (error) {
+      return rejectWithValue({
+        error: error.response?.data?.error || 'Error al subir evidencia'
+      });
     }
   }
 );
@@ -124,7 +196,11 @@ const initialState = {
   loading: false,
   error: null,
   success: false,
-  message: null
+  message: null,
+  // 👇 Nuevos campos para validaciones
+  validationErrors: [],  // Errores de validación de reglas de negocio
+  warnings: [],          // Advertencias (no bloquean la acción)
+  uploadProgress: 0      // Progreso de subida de evidencia (0-100)
 };
 
 // ==================== SLICE ====================
@@ -139,6 +215,10 @@ const appointmentCalendarSlice = createSlice({
     clearAppointmentSuccess: (state) => {
       state.success = false;
       state.message = null;
+    },
+    clearValidationErrors: (state) => {
+      state.validationErrors = [];
+      state.warnings = [];
     },
     resetAppointmentState: (state) => {
       Object.assign(state, initialState);
@@ -308,6 +388,134 @@ const appointmentCalendarSlice = createSlice({
       .addCase(getAppointmentsByDateRange.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.error || 'Error al obtener citas';
+      })
+
+      // ==================== NUEVOS REDUCERS DE VALIDACIÓN ====================
+
+      // Complete Appointment
+      .addCase(completeAppointment.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.validationErrors = [];
+        state.warnings = [];
+        state.success = false;
+      })
+      .addCase(completeAppointment.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        state.message = action.payload.message || 'Cita completada exitosamente';
+        state.warnings = action.payload.warnings || []; // Guardar warnings aunque sea exitoso
+        
+        // Actualizar la cita en las listas
+        if (action.payload.data) {
+          const updatedAppointment = action.payload.data;
+          
+          // Actualizar en appointments
+          const index = state.appointments.findIndex(a => a.id === updatedAppointment.id);
+          if (index !== -1) {
+            state.appointments[index] = updatedAppointment;
+          }
+          
+          // Actualizar en calendarAppointments
+          const calIndex = state.calendarAppointments.findIndex(a => a.id === updatedAppointment.id);
+          if (calIndex !== -1) {
+            state.calendarAppointments[calIndex] = updatedAppointment;
+          }
+          
+          // Actualizar selectedAppointment si es la misma
+          if (state.selectedAppointment?.id === updatedAppointment.id) {
+            state.selectedAppointment = updatedAppointment;
+          }
+        }
+      })
+      .addCase(completeAppointment.rejected, (state, action) => {
+        state.loading = false;
+        state.success = false;
+        state.error = action.payload?.error || 'Error al completar cita';
+        // 👇 Guardar errores de validación específicos
+        state.validationErrors = action.payload?.validationErrors || [];
+        state.warnings = action.payload?.warnings || [];
+      })
+
+      // Reschedule Appointment
+      .addCase(rescheduleAppointment.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.validationErrors = [];
+        state.warnings = [];
+        state.success = false;
+      })
+      .addCase(rescheduleAppointment.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        state.message = action.payload.message || 'Cita reprogramada exitosamente';
+        state.warnings = action.payload.warnings || [];
+        
+        if (action.payload.data) {
+          const updatedAppointment = action.payload.data;
+          
+          const index = state.appointments.findIndex(a => a.id === updatedAppointment.id);
+          if (index !== -1) {
+            state.appointments[index] = updatedAppointment;
+          }
+          
+          const calIndex = state.calendarAppointments.findIndex(a => a.id === updatedAppointment.id);
+          if (calIndex !== -1) {
+            state.calendarAppointments[calIndex] = updatedAppointment;
+          }
+          
+          if (state.selectedAppointment?.id === updatedAppointment.id) {
+            state.selectedAppointment = updatedAppointment;
+          }
+        }
+      })
+      .addCase(rescheduleAppointment.rejected, (state, action) => {
+        state.loading = false;
+        state.success = false;
+        state.error = action.payload?.error || 'Error al reprogramar cita';
+        state.validationErrors = action.payload?.validationErrors || [];
+        state.warnings = action.payload?.warnings || [];
+      })
+
+      // Upload Evidence
+      .addCase(uploadEvidence.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.uploadProgress = 0;
+      })
+      .addCase(uploadEvidence.fulfilled, (state, action) => {
+        state.loading = false;
+        state.uploadProgress = 100;
+        state.success = true;
+        state.message = action.payload.message || 'Evidencia subida exitosamente';
+        
+        // Actualizar evidencia en la cita
+        if (action.payload.data) {
+          const appointmentId = action.payload.data.appointmentId;
+          const evidence = action.payload.data.evidence;
+          
+          // Actualizar en appointments
+          const index = state.appointments.findIndex(a => a.id === appointmentId);
+          if (index !== -1) {
+            state.appointments[index].evidence = evidence;
+          }
+          
+          // Actualizar en calendarAppointments
+          const calIndex = state.calendarAppointments.findIndex(a => a.id === appointmentId);
+          if (calIndex !== -1) {
+            state.calendarAppointments[calIndex].evidence = evidence;
+          }
+          
+          // Actualizar selectedAppointment
+          if (state.selectedAppointment?.id === appointmentId) {
+            state.selectedAppointment.evidence = evidence;
+          }
+        }
+      })
+      .addCase(uploadEvidence.rejected, (state, action) => {
+        state.loading = false;
+        state.uploadProgress = 0;
+        state.error = action.payload?.error || 'Error al subir evidencia';
       });
   }
 });
@@ -315,6 +523,7 @@ const appointmentCalendarSlice = createSlice({
 export const {
   clearAppointmentError,
   clearAppointmentSuccess,
+  clearValidationErrors,
   resetAppointmentState,
   setSelectedAppointment,
   setAppointmentFilters,

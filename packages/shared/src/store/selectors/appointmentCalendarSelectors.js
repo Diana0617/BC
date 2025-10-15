@@ -27,6 +27,58 @@ export const selectAppointmentSuccess = (state) => state.appointmentCalendar.suc
 
 export const selectAppointmentMessage = (state) => state.appointmentCalendar.message;
 
+// ==================== VALIDATION SELECTORS ====================
+
+/**
+ * Selectores para el sistema de validación de citas
+ * Agregados para manejar errores de reglas de negocio
+ */
+
+// Errores de validación de reglas de negocio
+export const selectValidationErrors = (state) => state.appointmentCalendar.validationErrors;
+
+// Advertencias no bloqueantes
+export const selectWarnings = (state) => state.appointmentCalendar.warnings;
+
+// Progreso de subida de evidencia (0-100)
+export const selectUploadProgress = (state) => state.appointmentCalendar.uploadProgress;
+
+// Verificar si hay errores de validación
+export const selectHasValidationErrors = createSelector(
+  [selectValidationErrors],
+  (errors) => errors && errors.length > 0
+);
+
+// Verificar si hay advertencias
+export const selectHasWarnings = createSelector(
+  [selectWarnings],
+  (warnings) => warnings && warnings.length > 0
+);
+
+// Verificar si está en proceso de subida
+export const selectIsUploading = createSelector(
+  [selectUploadProgress],
+  (progress) => progress > 0 && progress < 100
+);
+
+// Obtener el primer error de validación (para mostrar en toast)
+export const selectFirstValidationError = createSelector(
+  [selectValidationErrors],
+  (errors) => errors && errors.length > 0 ? errors[0] : null
+);
+
+// Obtener el primer warning (para mostrar en toast)
+export const selectFirstWarning = createSelector(
+  [selectWarnings],
+  (warnings) => warnings && warnings.length > 0 ? warnings[0] : null
+);
+
+// Verificar si se puede completar la cita (sin errores de validación)
+export const selectCanCompleteAppointment = createSelector(
+  [selectValidationErrors, selectAppointmentLoading],
+  (errors, loading) => !loading && (!errors || errors.length === 0)
+);
+
 // ==================== MEMOIZED SELECTORS ====================
 
 // Obtener citas por fecha específica

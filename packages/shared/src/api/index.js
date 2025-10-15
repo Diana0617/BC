@@ -90,6 +90,10 @@ import commissionApi from './commissionApi';
 export { default as consentApi } from './consentApi';
 import consentApi from './consentApi';
 
+// 📅 APPOINTMENT SYSTEM API (Calendar + Validations)
+export { default as appointmentApi } from './appointmentApi';
+import appointmentApi from './appointmentApi';
+
 // Export all OWNER APIs as a group
 export const ownerApis = {
   ownerApi,
@@ -122,6 +126,8 @@ export const businessApis = {
   businessBrandingApi,
   businessBranchesApi,
   specialistServicesApi,
+  // Appointment System API
+  appointmentApi,
   // Commission & Consent APIs (FM-26)
   commissionApi,
   consentApi

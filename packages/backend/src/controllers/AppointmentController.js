@@ -577,6 +577,709 @@ class AppointmentController {
     }
   }
 
+  /**
+   * Actualizar cita
+   * PUT /api/appointments/:id
+   * Permite modificar horario, servicio, especialista, etc.
+   * 
+   * VALIDACIONES INTEGRADAS:
+   * - Estado de la cita (no completadas ni canceladas)
+   * - Disponibilidad si cambia horario
+   * - Permisos del usuario
+   */
+  static async updateAppointment(req, res) {
+    try {
+      const { id } = req.params;
+      const { businessId } = req.query;
+      const {
+        startTime,
+        endTime,
+        serviceId,
+        specialistId,
+        notes,
+        clientNotes,
+        branchId
+      } = req.body;
+
+      const where = {
+        id,
+        businessId
+      };
+
+      // Solo recepcionistas pueden actualizar citas
+      if (!req.receptionist) {
+        return res.status(403).json({
+          success: false,
+          error: 'Solo recepcionistas pueden actualizar citas'
+        });
+      }
+
+      const appointment = await Appointment.findOne({ where });
+
+      if (!appointment) {
+        return res.status(404).json({
+          success: false,
+          error: 'Cita no encontrada'
+        });
+      }
+
+      // ✅ VALIDACIÓN INTEGRADA: Reglas de Actualización
+      const BusinessRuleService = require('../services/BusinessRuleService');
+      
+      const validation = await BusinessRuleService.validateAppointmentUpdate(
+        appointment,
+        req.body
+      );
+
+      if (!validation.canUpdate) {
+        return res.status(400).json({
+          success: false,
+          error: 'No se puede actualizar la cita',
+          validationErrors: validation.errors,
+          warnings: validation.warnings
+        });
+      }
+
+      // Preparar datos de actualización
+      const updateData = {};
+
+      // Si cambia el horario, validar disponibilidad
+      if (startTime && endTime) {
+        const targetSpecialistId = specialistId || appointment.specialistId;
+        
+        // Verificar disponibilidad del especialista en el nuevo horario
+        const conflictingAppointment = await Appointment.findOne({
+          where: {
+            id: { [Op.ne]: id }, // Excluir la cita actual
+            specialistId: targetSpecialistId,
+            businessId,
+            status: {
+              [Op.notIn]: ['CANCELED', 'NO_SHOW']
+            },
+            [Op.or]: [
+              {
+                startTime: {
+                  [Op.between]: [new Date(startTime), new Date(endTime)]
+                }
+              },
+              {
+                endTime: {
+                  [Op.between]: [new Date(startTime), new Date(endTime)]
+                }
+              },
+              {
+                [Op.and]: [
+                  { startTime: { [Op.lte]: new Date(startTime) } },
+                  { endTime: { [Op.gte]: new Date(endTime) } }
+                ]
+              }
+            ]
+          }
+        });
+
+        if (conflictingAppointment) {
+          return res.status(400).json({
+            success: false,
+            error: 'El especialista no está disponible en ese horario'
+          });
+        }
+
+        updateData.startTime = new Date(startTime);
+        updateData.endTime = new Date(endTime);
+      }
+
+      // Si cambia el servicio, actualizar precio
+      if (serviceId && serviceId !== appointment.serviceId) {
+        const service = await Service.findOne({
+          where: {
+            id: serviceId,
+            businessId,
+            isActive: true
+          }
+        });
+
+        if (!service) {
+          return res.status(400).json({
+            success: false,
+            error: 'Servicio no válido'
+          });
+        }
+
+        const targetSpecialistId = specialistId || appointment.specialistId;
+
+        // Consultar precio personalizado del especialista
+        const specialistService = await SpecialistService.findOne({
+          where: {
+            specialistId: targetSpecialistId,
+            serviceId,
+            isActive: true
+          }
+        });
+
+        const finalPrice = specialistService && specialistService.customPrice !== null
+          ? specialistService.customPrice
+          : service.price;
+
+        updateData.serviceId = serviceId;
+        updateData.totalAmount = finalPrice;
+      }
+
+      // Si cambia el especialista
+      if (specialistId && specialistId !== appointment.specialistId) {
+        const specialist = await User.findOne({
+          where: {
+            id: specialistId,
+            businessId,
+            role: { [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST'] },
+            status: 'ACTIVE'
+          }
+        });
+
+        if (!specialist) {
+          return res.status(400).json({
+            success: false,
+            error: 'Especialista no válido'
+          });
+        }
+
+        // Si hay sucursal, validar que el especialista tenga acceso
+        if (branchId || appointment.branchId) {
+          const targetBranchId = branchId || appointment.branchId;
+          const specialistBranchAccess = await UserBranch.findOne({
+            where: {
+              userId: specialistId,
+              branchId: targetBranchId
+            }
+          });
+
+          if (!specialistBranchAccess) {
+            return res.status(400).json({
+              success: false,
+              error: 'El especialista no tiene acceso a esta sucursal'
+            });
+          }
+        }
+
+        updateData.specialistId = specialistId;
+      }
+
+      // Actualizar sucursal si se proporciona
+      if (branchId !== undefined) {
+        if (branchId) {
+          const Branch = require('../models/Branch');
+          const branch = await Branch.findOne({
+            where: {
+              id: branchId,
+              businessId,
+              status: 'ACTIVE'
+            }
+          });
+
+          if (!branch) {
+            return res.status(400).json({
+              success: false,
+              error: 'Sucursal no válida'
+            });
+          }
+        }
+        updateData.branchId = branchId;
+      }
+
+      // Actualizar notas
+      if (notes !== undefined) {
+        updateData.notes = notes;
+      }
+
+      if (clientNotes !== undefined) {
+        updateData.clientNotes = clientNotes;
+      }
+
+      // Actualizar la cita
+      await appointment.update(updateData);
+
+      // Obtener la cita actualizada con relaciones
+      const updatedAppointment = await Appointment.findByPk(appointment.id, {
+        include: [
+          {
+            model: Service,
+            attributes: ['id', 'name', 'duration', 'price', 'category']
+          },
+          {
+            model: Client,
+            attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
+          },
+          {
+            model: User,
+            as: 'specialist',
+            attributes: ['id', 'firstName', 'lastName'],
+            include: [{
+              model: SpecialistProfile,
+              attributes: ['specialization']
+            }]
+          },
+          {
+            model: require('../models/Branch'),
+            as: 'branch',
+            attributes: ['id', 'name', 'code'],
+            required: false
+          }
+        ]
+      });
+
+      res.json({
+        success: true,
+        message: 'Cita actualizada exitosamente',
+        data: updatedAppointment
+      });
+
+    } catch (error) {
+      console.error('Error actualizando cita:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Completar cita
+   * PATCH /api/appointments/:id/complete
+   * Marca la cita como completada y calcula comisión si está configurada
+   * 
+   * VALIDACIONES INTEGRADAS:
+   * - Consentimiento firmado (si el servicio lo requiere)
+   * - Reglas de negocio (evidencia fotográfica, pago, etc.)
+   * - Estado de la cita
+   */
+  static async completeAppointment(req, res) {
+    try {
+      const { id } = req.params;
+      const { businessId } = req.query;
+      const { rating, feedback, finalAmount } = req.body;
+
+      const where = {
+        id,
+        businessId
+      };
+
+      // Solo especialistas pueden completar sus propias citas
+      if (req.specialist) {
+        where.specialistId = req.specialist.id;
+      }
+
+      const appointment = await Appointment.findOne({ 
+        where,
+        include: [
+          {
+            model: Service,
+            attributes: ['id', 'name', 'requiresConsent', 'consentTemplateId']
+          }
+        ]
+      });
+
+      if (!appointment) {
+        return res.status(404).json({
+          success: false,
+          error: 'Cita no encontrada'
+        });
+      }
+
+      // Validar que la cita esté en progreso o confirmada
+      if (!['CONFIRMED', 'IN_PROGRESS'].includes(appointment.status)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Solo se pueden completar citas confirmadas o en progreso'
+        });
+      }
+
+      // ✅ VALIDACIÓN INTEGRADA: Reglas de Negocio + Consentimiento
+      const BusinessRuleService = require('../services/BusinessRuleService');
+      
+      const validation = await BusinessRuleService.validateAppointmentCompletion(
+        appointment.id,
+        businessId
+      );
+
+      if (!validation.canComplete) {
+        return res.status(400).json({
+          success: false,
+          error: 'No se puede completar la cita',
+          validationErrors: validation.errors,
+          warnings: validation.warnings
+        });
+      }
+
+      // Si hay warnings, incluirlos en la respuesta pero continuar
+      const hasWarnings = validation.warnings && validation.warnings.length > 0;
+
+      // Preparar datos de actualización
+      const updateData = {
+        status: 'COMPLETED',
+        completedAt: new Date()
+      };
+
+      // Actualizar monto final si se proporciona
+      if (finalAmount !== undefined) {
+        updateData.totalAmount = finalAmount;
+      }
+
+      // Actualizar rating y feedback si se proporcionan
+      if (rating !== undefined) {
+        updateData.rating = rating;
+      }
+
+      if (feedback !== undefined) {
+        updateData.feedback = feedback;
+      }
+
+      // Calcular comisión si está configurada
+      try {
+        const ServiceCommission = require('../models/ServiceCommission');
+        const BusinessCommissionConfig = require('../models/BusinessCommissionConfig');
+
+        // Buscar comisión específica del servicio
+        const serviceCommission = await ServiceCommission.findOne({
+          where: {
+            businessId,
+            serviceId: appointment.serviceId,
+            isActive: true
+          }
+        });
+
+        let specialistPercentage = null;
+        let businessPercentage = null;
+
+        if (serviceCommission) {
+          // Usar configuración específica del servicio
+          specialistPercentage = serviceCommission.specialistPercentage;
+          businessPercentage = serviceCommission.businessPercentage;
+        } else {
+          // Usar configuración global del negocio
+          const businessConfig = await BusinessCommissionConfig.findOne({
+            where: {
+              businessId,
+              isActive: true
+            }
+          });
+
+          if (businessConfig) {
+            specialistPercentage = businessConfig.defaultSpecialistPercentage;
+            businessPercentage = businessConfig.defaultBusinessPercentage;
+          }
+        }
+
+        // Si hay configuración de comisión, calcularla
+        if (specialistPercentage !== null && businessPercentage !== null) {
+          const amount = finalAmount !== undefined ? finalAmount : appointment.totalAmount;
+          const specialistCommission = (amount * specialistPercentage) / 100;
+          const businessCommission = (amount * businessPercentage) / 100;
+
+          updateData.specialistCommission = specialistCommission;
+          updateData.businessCommission = businessCommission;
+        }
+      } catch (commissionError) {
+        console.warn('Error calculando comisión (continuando sin comisión):', commissionError);
+        // Continuar sin comisión si hay error
+      }
+
+      // Actualizar la cita
+      await appointment.update(updateData);
+
+      // Obtener la cita actualizada con relaciones
+      const completedAppointment = await Appointment.findByPk(appointment.id, {
+        include: [
+          {
+            model: Service,
+            attributes: ['id', 'name', 'duration', 'price', 'category']
+          },
+          {
+            model: Client,
+            attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
+          },
+          {
+            model: User,
+            as: 'specialist',
+            attributes: ['id', 'firstName', 'lastName'],
+            include: [{
+              model: SpecialistProfile,
+              attributes: ['specialization']
+            }]
+          },
+          {
+            model: require('../models/Branch'),
+            as: 'branch',
+            attributes: ['id', 'name', 'code'],
+            required: false
+          }
+        ]
+      });
+
+      res.json({
+        success: true,
+        message: 'Cita completada exitosamente',
+        data: completedAppointment
+      });
+
+    } catch (error) {
+      console.error('Error completando cita:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Reprogramar cita
+   * POST /api/appointments/:id/reschedule
+   * Cambia el horario de la cita y registra en historial
+   * 
+   * VALIDACIONES INTEGRADAS:
+   * - Estado de la cita (no completadas ni canceladas)
+   * - Disponibilidad del especialista
+   * - Fecha en el futuro
+   */
+  static async rescheduleAppointment(req, res) {
+    try {
+      const { id } = req.params;
+      const { businessId } = req.query;
+      const { newStartTime, newEndTime, reason } = req.body;
+
+      if (!newStartTime || !newEndTime) {
+        return res.status(400).json({
+          success: false,
+          error: 'Se requieren newStartTime y newEndTime'
+        });
+      }
+
+      const where = {
+        id,
+        businessId
+      };
+
+      const appointment = await Appointment.findOne({ where });
+
+      if (!appointment) {
+        return res.status(404).json({
+          success: false,
+          error: 'Cita no encontrada'
+        });
+      }
+
+      // ✅ VALIDACIÓN INTEGRADA: Reglas de Reprogramación
+      const BusinessRuleService = require('../services/BusinessRuleService');
+      
+      const validation = await BusinessRuleService.validateReschedule(
+        appointment,
+        newStartTime
+      );
+
+      if (!validation.canReschedule) {
+        return res.status(400).json({
+          success: false,
+          error: 'No se puede reprogramar la cita',
+          validationErrors: validation.errors,
+          warnings: validation.warnings
+        });
+      }
+
+      // Verificar disponibilidad del especialista en el nuevo horario
+      const conflictingAppointment = await Appointment.findOne({
+        where: {
+          id: { [Op.ne]: id }, // Excluir la cita actual
+          specialistId: appointment.specialistId,
+          businessId,
+          status: {
+            [Op.notIn]: ['CANCELED', 'NO_SHOW']
+          },
+          [Op.or]: [
+            {
+              startTime: {
+                [Op.between]: [new Date(newStartTime), new Date(newEndTime)]
+              }
+            },
+            {
+              endTime: {
+                [Op.between]: [new Date(newStartTime), new Date(newEndTime)]
+              }
+            },
+            {
+              [Op.and]: [
+                { startTime: { [Op.lte]: new Date(newStartTime) } },
+                { endTime: { [Op.gte]: new Date(newEndTime) } }
+              ]
+            }
+          ]
+        }
+      });
+
+      if (conflictingAppointment) {
+        return res.status(400).json({
+          success: false,
+          error: 'El especialista no está disponible en el nuevo horario',
+          conflictingAppointment: {
+            id: conflictingAppointment.id,
+            startTime: conflictingAppointment.startTime,
+            endTime: conflictingAppointment.endTime
+          }
+        });
+      }
+
+      // Guardar historial de reprogramación
+      const rescheduleHistory = appointment.rescheduleHistory || [];
+      rescheduleHistory.push({
+        oldStartTime: appointment.startTime,
+        oldEndTime: appointment.endTime,
+        newStartTime: new Date(newStartTime),
+        newEndTime: new Date(newEndTime),
+        reason: reason || 'No especificada',
+        rescheduledBy: req.user.id,
+        rescheduledAt: new Date()
+      });
+
+      // Actualizar la cita
+      await appointment.update({
+        startTime: new Date(newStartTime),
+        endTime: new Date(newEndTime),
+        rescheduleHistory,
+        status: 'RESCHEDULED' // Opcional: cambiar estado a RESCHEDULED
+      });
+
+      // Obtener la cita actualizada con relaciones
+      const updatedAppointment = await Appointment.findByPk(appointment.id, {
+        include: [
+          {
+            model: Service,
+            attributes: ['id', 'name', 'duration', 'price', 'category']
+          },
+          {
+            model: Client,
+            attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
+          },
+          {
+            model: User,
+            as: 'specialist',
+            attributes: ['id', 'firstName', 'lastName'],
+            include: [{
+              model: SpecialistProfile,
+              attributes: ['specialization']
+            }]
+          },
+          {
+            model: require('../models/Branch'),
+            as: 'branch',
+            attributes: ['id', 'name', 'code'],
+            required: false
+          }
+        ]
+      });
+
+      res.json({
+        success: true,
+        message: 'Cita reprogramada exitosamente',
+        data: updatedAppointment,
+        warnings: validation.warnings
+      });
+
+    } catch (error) {
+      console.error('Error reprogramando cita:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Subir evidencia (fotos antes/después)
+   * POST /api/appointments/:id/evidence
+   * Requiere multer para manejo de archivos
+   */
+  static async uploadEvidence(req, res) {
+    try {
+      const { id } = req.params;
+      const { businessId } = req.query;
+      const { type } = req.body; // 'before' o 'after'
+
+      if (!type || !['before', 'after', 'documents'].includes(type)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Tipo de evidencia inválido. Debe ser: before, after o documents'
+        });
+      }
+
+      const where = {
+        id,
+        businessId
+      };
+
+      // Solo el especialista asignado puede subir evidencia
+      if (req.specialist) {
+        where.specialistId = req.specialist.id;
+      }
+
+      const appointment = await Appointment.findOne({ where });
+
+      if (!appointment) {
+        return res.status(404).json({
+          success: false,
+          error: 'Cita no encontrada'
+        });
+      }
+
+      // Validar que la cita esté en progreso o completada
+      if (!['IN_PROGRESS', 'COMPLETED'].includes(appointment.status)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Solo se puede subir evidencia de citas en progreso o completadas'
+        });
+      }
+
+      // Verificar que se hayan subido archivos
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'No se han proporcionado archivos'
+        });
+      }
+
+      // Procesar archivos subidos
+      const evidence = appointment.evidence || { before: [], after: [], documents: [] };
+      
+      // Guardar rutas de archivos (asumiendo que multer guarda en uploads/)
+      const fileUrls = req.files.map(file => `/uploads/${file.filename}`);
+      
+      // Agregar URLs al array correspondiente
+      if (type === 'before') {
+        evidence.before = [...evidence.before, ...fileUrls];
+      } else if (type === 'after') {
+        evidence.after = [...evidence.after, ...fileUrls];
+      } else if (type === 'documents') {
+        evidence.documents = [...evidence.documents, ...fileUrls];
+      }
+
+      // Actualizar la cita
+      await appointment.update({ evidence });
+
+      res.json({
+        success: true,
+        message: `Evidencia ${type} subida exitosamente`,
+        data: {
+          appointmentId: appointment.id,
+          evidence,
+          uploadedFiles: fileUrls
+        }
+      });
+
+    } catch (error) {
+      console.error('Error subiendo evidencia:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+
 }
 
 module.exports = AppointmentController;

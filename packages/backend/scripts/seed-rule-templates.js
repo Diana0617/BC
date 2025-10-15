@@ -115,6 +115,165 @@ const ruleTemplates = [
   },
 
   // =====================
+  // VALIDACIONES DE COMPLETAR CITAS (BusinessRuleService)
+  // =====================
+  {
+    key: 'REQUIRE_CONSENT_FOR_COMPLETION',
+    type: 'BOOLEAN',
+    defaultValue: false,
+    description: 'Requiere consentimiento informado firmado antes de completar cualquier cita',
+    category: 'APPOINTMENT',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    examples: {
+      values: [true, false],
+      descriptions: ['Consentimiento obligatorio', 'Consentimiento opcional']
+    }
+  },
+  {
+    key: 'REQUIRE_BEFORE_PHOTO',
+    type: 'BOOLEAN',
+    defaultValue: false,
+    description: 'Requiere foto "antes" del procedimiento para completar cita',
+    category: 'APPOINTMENT',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    examples: {
+      values: [true, false],
+      descriptions: ['Foto antes obligatoria', 'Foto antes opcional']
+    }
+  },
+  {
+    key: 'REQUIRE_AFTER_PHOTO',
+    type: 'BOOLEAN',
+    defaultValue: false,
+    description: 'Requiere foto "después" del procedimiento para completar cita',
+    category: 'APPOINTMENT',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    examples: {
+      values: [true, false],
+      descriptions: ['Foto después obligatoria', 'Foto después opcional']
+    }
+  },
+  {
+    key: 'REQUIRE_BOTH_PHOTOS',
+    type: 'BOOLEAN',
+    defaultValue: false,
+    description: 'Requiere fotos antes y después del procedimiento para completar cita',
+    category: 'APPOINTMENT',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    examples: {
+      values: [true, false],
+      descriptions: ['Ambas fotos obligatorias', 'Fotos opcionales']
+    }
+  },
+  {
+    key: 'REQUIRE_FULL_PAYMENT',
+    type: 'BOOLEAN',
+    defaultValue: false,
+    description: 'Requiere pago completo antes de completar cita',
+    category: 'PAYMENT',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    examples: {
+      values: [true, false],
+      descriptions: ['Pago completo obligatorio', 'Pago completo opcional']
+    }
+  },
+  {
+    key: 'REQUIRE_MINIMUM_PAYMENT',
+    type: 'NUMBER',
+    defaultValue: 50,
+    description: 'Porcentaje mínimo de pago requerido para completar cita (0-100)',
+    category: 'PAYMENT',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    validationRules: {
+      min: 0,
+      max: 100,
+      type: 'number'
+    },
+    examples: {
+      values: [0, 30, 50, 70, 100],
+      descriptions: ['Sin mínimo', '30% mínimo', '50% mínimo', '70% mínimo', 'Pago completo']
+    }
+  },
+  {
+    key: 'MINIMUM_DURATION',
+    type: 'NUMBER',
+    defaultValue: 30,
+    description: 'Duración mínima de la cita en minutos (genera warning si es menor)',
+    category: 'TIME',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    validationRules: {
+      min: 5,
+      max: 480,
+      type: 'integer'
+    },
+    examples: {
+      values: [15, 30, 45, 60, 90],
+      descriptions: ['15 minutos', '30 minutos', '45 minutos', '1 hora', '1.5 horas']
+    }
+  },
+  {
+    key: 'MAXIMUM_DURATION',
+    type: 'NUMBER',
+    defaultValue: 240,
+    description: 'Duración máxima de la cita en minutos (genera warning si es mayor)',
+    category: 'TIME',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    validationRules: {
+      min: 30,
+      max: 960,
+      type: 'integer'
+    },
+    examples: {
+      values: [60, 120, 180, 240, 480],
+      descriptions: ['1 hora', '2 horas', '3 horas', '4 horas', '8 horas']
+    }
+  },
+  {
+    key: 'REQUIRE_CLIENT_SIGNATURE',
+    type: 'BOOLEAN',
+    defaultValue: false,
+    description: 'Requiere firma adicional del cliente al completar cita',
+    category: 'APPOINTMENT',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    examples: {
+      values: [true, false],
+      descriptions: ['Firma obligatoria', 'Sin firma requerida']
+    }
+  },
+  {
+    key: 'REQUIRE_CLIENT_FEEDBACK',
+    type: 'BOOLEAN',
+    defaultValue: false,
+    description: 'Requiere feedback del cliente antes de completar cita',
+    category: 'APPOINTMENT',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'gestion_de_turnos',
+    examples: {
+      values: [true, false],
+      descriptions: ['Feedback obligatorio', 'Feedback opcional']
+    }
+  },
+
+  // =====================
   // SISTEMA DE VOUCHERS Y PENALIZACIONES
   // =====================
   {

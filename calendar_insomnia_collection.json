@@ -1,0 +1,229 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-10-15T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_calendar",
+      "_type": "workspace",
+      "name": "Beauty Control - Calendar System",
+      "description": "Colección de endpoints para el sistema de calendario y disponibilidad",
+      "parentId": null
+    },
+    {
+      "_id": "env_calendar_base",
+      "_type": "environment",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:5000/api",
+        "auth_token": "YOUR_JWT_TOKEN_HERE",
+        "business_id": "YOUR_BUSINESS_ID_HERE",
+        "branch_id": "YOUR_BRANCH_ID_HERE",
+        "specialist_id": "YOUR_SPECIALIST_ID_HERE",
+        "service_id": "YOUR_SERVICE_ID_HERE"
+      },
+      "parentId": "wrk_calendar"
+    },
+    {
+      "_id": "fld_calendar_business",
+      "_type": "request_group",
+      "name": "📊 Calendar - Business View",
+      "description": "Vista completa del negocio (Owner/Business Admin)",
+      "parentId": "wrk_calendar"
+    },
+    {
+      "_id": "req_calendar_business_calendar",
+      "_type": "request",
+      "name": "Get Business Calendar",
+      "description": "Obtener calendario completo del negocio con todas las sucursales",
+      "method": "GET",
+      "url": "{{ base_url }}/calendar/business/{{ business_id }}?startDate=2025-01-01&endDate=2025-01-31",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "parentId": "fld_calendar_business"
+    },
+    {
+      "_id": "req_calendar_business_filtered",
+      "_type": "request",
+      "name": "Get Business Calendar - Filtered",
+      "description": "Calendario del negocio filtrado por sucursal y especialista",
+      "method": "GET",
+      "url": "{{ base_url }}/calendar/business/{{ business_id }}?startDate=2025-01-01&endDate=2025-01-31&branchId={{ branch_id }}&specialistId={{ specialist_id }}&status=CONFIRMED",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "parentId": "fld_calendar_business"
+    },
+    {
+      "_id": "fld_calendar_branch",
+      "_type": "request_group",
+      "name": "🏢 Calendar - Branch View",
+      "description": "Vista de sucursal específica (Receptionist)",
+      "parentId": "wrk_calendar"
+    },
+    {
+      "_id": "req_calendar_branch_calendar",
+      "_type": "request",
+      "name": "Get Branch Calendar",
+      "description": "Obtener calendario de una sucursal específica",
+      "method": "GET",
+      "url": "{{ base_url }}/calendar/branch/{{ branch_id }}?startDate=2025-01-01&endDate=2025-01-31",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "parentId": "fld_calendar_branch"
+    },
+    {
+      "_id": "req_calendar_branch_specialists",
+      "_type": "request",
+      "name": "Get Branch Specialists - All",
+      "description": "Obtener todos los especialistas de una sucursal",
+      "method": "GET",
+      "url": "{{ base_url }}/calendar/branch/{{ branch_id }}/specialists",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "parentId": "fld_calendar_branch"
+    },
+    {
+      "_id": "req_calendar_branch_specialists_available",
+      "_type": "request",
+      "name": "Get Branch Specialists - Available",
+      "description": "Obtener especialistas disponibles en un horario específico",
+      "method": "GET",
+      "url": "{{ base_url }}/calendar/branch/{{ branch_id }}/specialists?serviceId={{ service_id }}&date=2025-01-15&time=10:00",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "parentId": "fld_calendar_branch"
+    },
+    {
+      "_id": "fld_calendar_specialist",
+      "_type": "request_group",
+      "name": "👨‍⚕️ Calendar - Specialist View",
+      "description": "Vista de especialista (agenda combinada multi-sucursal)",
+      "parentId": "wrk_calendar"
+    },
+    {
+      "_id": "req_calendar_specialist_calendar",
+      "_type": "request",
+      "name": "Get Specialist Combined Calendar",
+      "description": "Obtener agenda del especialista en todas sus sucursales",
+      "method": "GET",
+      "url": "{{ base_url }}/calendar/specialist/{{ specialist_id }}?startDate=2025-01-01&endDate=2025-01-31",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "parentId": "fld_calendar_specialist"
+    },
+    {
+      "_id": "req_calendar_specialist_filtered",
+      "_type": "request",
+      "name": "Get Specialist Calendar - Single Branch",
+      "description": "Agenda del especialista filtrada por una sucursal específica",
+      "method": "GET",
+      "url": "{{ base_url }}/calendar/specialist/{{ specialist_id }}?startDate=2025-01-01&endDate=2025-01-31&branchId={{ branch_id }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "parentId": "fld_calendar_specialist"
+    },
+    {
+      "_id": "fld_calendar_availability",
+      "_type": "request_group",
+      "name": "📅 Availability & Slots",
+      "description": "Consulta de disponibilidad y slots (público/privado)",
+      "parentId": "wrk_calendar"
+    },
+    {
+      "_id": "req_calendar_available_slots",
+      "_type": "request",
+      "name": "Get Available Slots - Single Day",
+      "description": "Obtener slots disponibles para un día específico",
+      "method": "GET",
+      "url": "{{ base_url }}/calendar/available-slots?businessId={{ business_id }}&branchId={{ branch_id }}&specialistId={{ specialist_id }}&serviceId={{ service_id }}&date=2025-01-15",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "parentId": "fld_calendar_availability"
+    },
+    {
+      "_id": "req_calendar_availability_range",
+      "_type": "request",
+      "name": "Get Available Slots - Date Range",
+      "description": "Obtener disponibilidad de un rango de fechas",
+      "method": "GET",
+      "url": "{{ base_url }}/calendar/availability-range?businessId={{ business_id }}&branchId={{ branch_id }}&specialistId={{ specialist_id }}&serviceId={{ service_id }}&startDate=2025-01-15&endDate=2025-01-22",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "parentId": "fld_calendar_availability"
+    },
+    {
+      "_id": "fld_setup_examples",
+      "_type": "request_group",
+      "name": "🔧 Setup & Examples",
+      "description": "Ejemplos de configuración y datos de prueba",
+      "parentId": "wrk_calendar"
+    },
+    {
+      "_id": "req_setup_example_branch_hours",
+      "_type": "request",
+      "name": "Example: Branch Business Hours",
+      "description": "Ejemplo de cómo se ven los horarios de una sucursal",
+      "method": "GET",
+      "url": "{{ base_url }}/business/{{ business_id }}/branches",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "parentId": "fld_setup_examples"
+    },
+    {
+      "_id": "req_setup_example_specialist_schedule",
+      "_type": "request",
+      "name": "Example: Specialist Schedule",
+      "description": "Ver horarios de un especialista en una sucursal (requiere endpoint existente)",
+      "method": "GET",
+      "url": "{{ base_url }}/business/{{ business_id }}/specialists/{{ specialist_id }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "parentId": "fld_setup_examples"
+    }
+  ]
+}

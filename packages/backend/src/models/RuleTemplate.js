@@ -46,6 +46,9 @@ const RuleTemplate = sequelize.define('RuleTemplate', {
       'NOTIFICATION_POLICY',
       'REFUND_POLICY',
       'SERVICE_POLICY',
+      'APPOINTMENT',        // 👈 Nueva: Validaciones de completar citas
+      'PAYMENT',            // 👈 Nueva: Validaciones de pago
+      'TIME',               // 👈 Nueva: Validaciones de duración
       'GENERAL'
     ),
     allowNull: false,
