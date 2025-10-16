@@ -1097,6 +1097,49 @@ router.post('/:businessId/config/services', BusinessConfigController.createServi
 
 /**
  * @swagger
+ * /api/business/{businessId}/config/services/categories:
+ *   get:
+ *     summary: Obtener categorías de servicios del negocio
+ *     tags: [Business Config - Services]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Categorías obtenidas exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                       count:
+ *                         type: integer
+ *                       activeCount:
+ *                         type: integer
+ *                       avgPrice:
+ *                         type: number
+ *       403:
+ *         description: No tienes permisos para acceder
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/:businessId/config/services/categories', BusinessConfigController.getServiceCategories);
+
+/**
+ * @swagger
  * /api/business/{businessId}/config/services/{serviceId}:
  *   get:
  *     summary: Obtener servicio específico
@@ -1328,49 +1371,6 @@ router.patch('/:businessId/config/services/:serviceId/status', BusinessConfigCon
 
 /**
  * @swagger
- * /api/business/{businessId}/config/services/categories:
- *   get:
- *     summary: Obtener categorías de servicios del negocio
- *     tags: [Business Config - Services]
- *     parameters:
- *       - in: path
- *         name: businessId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *     responses:
- *       200:
- *         description: Categorías obtenidas exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       name:
- *                         type: string
- *                       count:
- *                         type: integer
- *                       activeCount:
- *                         type: integer
- *                       avgPrice:
- *                         type: number
- *       403:
- *         description: No tienes permisos para acceder
- *       500:
- *         description: Error interno del servidor
- */
-router.get('/:businessId/config/services/categories', BusinessConfigController.getServiceCategories);
-
-/**
- * @swagger
  * /api/business/{businessId}/config/services/{serviceId}/images:
  *   post:
  *     summary: Actualizar imágenes del servicio
@@ -1430,7 +1430,10 @@ router.get('/:businessId/config/services/categories', BusinessConfigController.g
  *       500:
  *         description: Error interno del servidor
  */
-router.post('/:businessId/config/services/:serviceId/images', BusinessConfigController.updateServiceImages);
+router.post('/:businessId/config/services/:serviceId/images', 
+  uploadImageMiddleware.single('image'),
+  BusinessConfigController.updateServiceImages
+);
 
 /**
  * @swagger

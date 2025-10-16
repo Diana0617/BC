@@ -731,6 +731,7 @@ class BusinessConfigController {
         message: 'Servicio actualizado exitosamente'
       });
     } catch (error) {
+      console.error('Error updating service:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -813,13 +814,35 @@ class BusinessConfigController {
         });
       }
 
-      const categories = await BusinessConfigService.getServiceCategories(businessId);
+      const { Service, sequelize } = require('../models');
+      const { Op } = require('sequelize');
+
+      // Obtener categorías únicas de los servicios activos
+      const categories = await Service.findAll({
+        where: {
+          businessId,
+          category: { [Op.ne]: null },
+          isActive: true
+        },
+        attributes: [
+          'category',
+          [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+        ],
+        group: ['category'],
+        raw: true
+      });
+
+      const categoryList = categories.map(c => ({
+        name: c.category,
+        count: parseInt(c.count) || 0
+      }));
 
       res.json({
         success: true,
-        data: categories
+        data: categoryList
       });
     } catch (error) {
+      console.error('Error fetching service categories:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -834,7 +857,6 @@ class BusinessConfigController {
   async updateServiceImages(req, res) {
     try {
       const { businessId, serviceId } = req.params;
-      const { images } = req.body;
       
       if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
@@ -843,6 +865,52 @@ class BusinessConfigController {
         });
       }
 
+      // Si viene un archivo (nuevo flujo con Cloudinary)
+      if (req.file) {
+        const { Service } = require('../models');
+        const { uploadServiceImage } = require('../config/cloudinary');
+        const fs = require('fs').promises;
+        
+        const service = await Service.findOne({
+          where: { id: serviceId, businessId }
+        });
+
+        if (!service) {
+          return res.status(404).json({
+            success: false,
+            message: 'Servicio no encontrado'
+          });
+        }
+
+        // Subir la imagen a Cloudinary
+        const uploadResult = await uploadServiceImage(req.file.path, businessId, serviceId);
+
+        // Eliminar archivo temporal (ya procesado por Cloudinary)
+        try {
+          await fs.unlink(req.file.path);
+        } catch (unlinkError) {
+          // Ignorar error si el archivo ya fue eliminado por Cloudinary
+        }
+
+        // Agregar la nueva imagen al array de imágenes
+        const currentImages = service.images || [];
+        const newImageUrl = uploadResult.main.url; // URL de Cloudinary
+        const updatedImages = [...currentImages, newImageUrl];
+
+        await service.update({ images: updatedImages });
+
+        return res.json({
+          success: true,
+          data: {
+            ...service.toJSON(),
+            images: updatedImages
+          },
+          message: 'Imagen subida exitosamente'
+        });
+      }
+
+      // Si viene un array de imágenes en el body (flujo antiguo)
+      const { images } = req.body;
       const service = await BusinessConfigService.updateServiceImages(serviceId, images, businessId);
 
       res.json({
@@ -851,6 +919,7 @@ class BusinessConfigController {
         message: 'Imágenes del servicio actualizadas exitosamente'
       });
     } catch (error) {
+      console.error('Error updating service images:', error);
       res.status(500).json({
         success: false,
         message: error.message

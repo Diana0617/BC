@@ -192,20 +192,17 @@ export const toggleServiceStatus = async (businessId, serviceId, isActive) => {
  * @param {string} [description] - Descripción de la imagen
  * @returns {Promise<Object>} URL de la imagen subida
  */
-export const uploadServiceImage = async (serviceId, imageFile, description = '') => {
+export const uploadServiceImage = async (businessId, serviceId, imageFile, description = '') => {
   try {
     const formData = new FormData();
     formData.append('image', imageFile);
     if (description) formData.append('description', description);
 
+    // No especificamos Content-Type manualmente, el navegador lo configura automáticamente
+    // con el boundary correcto para multipart/form-data
     const response = await apiClient.post(
-      `/api/business/config/services/${serviceId}/images`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
+      `/api/business/${businessId}/config/services/${serviceId}/images`,
+      formData
     );
     return response.data;
   } catch (error) {
@@ -251,12 +248,13 @@ export const reorderServiceImages = async (serviceId, imageIds) => {
 // ================================
 
 /**
- * Obtener categorías de servicios del negocio
+ * Obtener categorías de servicios
+ * @param {number} businessId - ID del negocio
  * @returns {Promise<Array>} Lista de categorías con conteos
  */
-export const getServiceCategories = async () => {
+export const getServiceCategories = async (businessId) => {
   try {
-    const response = await apiClient.get('/api/business/config/services/categories');
+    const response = await apiClient.get(`/api/business/${businessId}/config/services/categories`);
     return response.data;
   } catch (error) {
     console.error('Error fetching service categories:', error);

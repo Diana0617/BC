@@ -30,7 +30,7 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const response = await businessServicesApi.getServiceCategories()
+        const response = await businessServicesApi.getServiceCategories(businessId)
         setExistingCategories(response.data || response || [])
       } catch (err) {
         console.error('Error loading categories:', err)
@@ -58,9 +58,12 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
         consentTemplateId: service.consentTemplateId || null
       })
       // Cargar imágenes existentes
+      console.log('🖼️ Service images from DB:', service.images)
       if (service.images && service.images.length > 0) {
+        console.log('✅ Loading existing images:', service.images)
         setExistingImages(service.images)
       } else {
+        console.log('⚠️ No images found in service')
         setExistingImages([])
       }
       setImagePreview(null)
@@ -153,6 +156,10 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
       }
       
       console.log('📤 Sending service data:', serviceData)
+      console.log('📤 TYPE CHECK:')
+      Object.keys(serviceData).forEach(key => {
+        console.log(`  ${key}:`, typeof serviceData[key], serviceData[key])
+      })
       
       let savedService
       if (service?.id) {
@@ -165,7 +172,7 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
       if (imageFile && savedService?.data?.id) {
         setIsUploadingImage(true)
         try {
-          await businessServicesApi.uploadServiceImage(savedService.data.id, imageFile)
+          await businessServicesApi.uploadServiceImage(businessId, savedService.data.id, imageFile)
         } catch (imgError) {
           console.error('Error uploading service image:', imgError)
           // No fallar el save completo si falla la imagen

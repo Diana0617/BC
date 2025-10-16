@@ -257,7 +257,7 @@ class BusinessConfigService {
     }
   }
 
-  async updateService(serviceId, businessId, serviceData) {
+  async updateService(serviceId, serviceData, businessId) {
     try {
       const service = await Service.findOne({
         where: { id: serviceId, businessId }
