@@ -16,7 +16,12 @@ class ServiceController {
         description, 
         category, 
         duration, 
-        price, 
+        price,
+        color,
+        preparationTime,
+        cleanupTime,
+        requiresConsent,
+        consentTemplateId,
         isActive = true 
       } = req.body;
 
@@ -55,6 +60,11 @@ class ServiceController {
         category: category?.trim(),
         duration,
         price,
+        color: color || '#3B82F6',
+        preparationTime: preparationTime || 0,
+        cleanupTime: cleanupTime || 0,
+        requiresConsent: requiresConsent || false,
+        consentTemplateId: requiresConsent ? consentTemplateId : null,
         isActive
       });
 
@@ -162,7 +172,28 @@ class ServiceController {
     try {
       const businessId = req.user.businessId;
       const { id } = req.params;
-      const { name, description, category, duration, price, isActive } = req.body;
+      const { 
+        name, 
+        description, 
+        category, 
+        duration, 
+        price, 
+        color,
+        preparationTime,
+        cleanupTime,
+        requiresConsent,
+        consentTemplateId,
+        images,
+        isActive 
+      } = req.body;
+
+      console.log('📥 updateService received:', { 
+        id, 
+        businessId,
+        name,
+        images: images?.length ? `Array[${images.length}]` : images,
+        body: req.body 
+      });
 
       const service = await Service.findOne({
         where: { id, businessId }
@@ -175,14 +206,24 @@ class ServiceController {
         });
       }
 
-      await service.update({
+      const updateData = {
         name: name?.trim(),
         description: description?.trim(),
         category: category?.trim(),
         duration,
         price,
+        color,
+        preparationTime,
+        cleanupTime,
+        requiresConsent,
+        consentTemplateId: requiresConsent ? consentTemplateId : null,
+        images: images !== undefined ? images : service.images, // Actualizar imágenes si se envían
         isActive
-      });
+      };
+
+      console.log('🔄 Updating service with:', updateData);
+
+      await service.update(updateData);
 
       res.json({
         success: true,
@@ -190,7 +231,24 @@ class ServiceController {
         data: service
       });
     } catch (error) {
-      console.error('Error updating service:', error);
+      console.error('❌ Error updating service:', error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      
+      // Si es un error de validación de Sequelize
+      if (error.name === 'SequelizeValidationError') {
+        console.error('Validation errors:', error.errors);
+        return res.status(400).json({
+          success: false,
+          message: 'Error de validación',
+          errors: error.errors.map(e => ({
+            field: e.path,
+            message: e.message,
+            value: e.value
+          }))
+        });
+      }
+      
       res.status(500).json({
         success: false,
         message: 'Error al actualizar servicio',
@@ -259,6 +317,69 @@ class ServiceController {
       res.status(500).json({
         success: false,
         message: 'Error al obtener categorías',
+        error: error.message
+      });
+    }
+  }
+
+  // POST /api/services/:id/upload-image - Subir imagen del servicio
+  static async uploadServiceImage(req, res) {
+    try {
+      const businessId = req.user.businessId;
+      const { id } = req.params;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No se proporcionó ningún archivo'
+        });
+      }
+
+      const service = await Service.findOne({
+        where: { id, businessId }
+      });
+
+      if (!service) {
+        return res.status(404).json({
+          success: false,
+          message: 'Servicio no encontrado'
+        });
+      }
+
+      // Subir a Cloudinary
+      const cloudinary = require('../config/cloudinary');
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder: `beauty-control/services/${businessId}/${id}`,
+        transformation: [
+          { width: 800, height: 800, crop: 'limit' },
+          { quality: 'auto' },
+          { fetch_format: 'auto' }
+        ]
+      });
+
+      // Actualizar array de imágenes del servicio
+      const currentImages = service.images || [];
+      const newImages = [...currentImages, result.secure_url];
+
+      await service.update({
+        images: newImages
+      });
+
+      res.json({
+        success: true,
+        data: {
+          imageUrl: result.secure_url,
+          images: newImages
+        },
+        message: 'Imagen subida exitosamente'
+      });
+
+    } catch (error) {
+      console.error('Error uploading service image:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al subir imagen',
         error: error.message
       });
     }

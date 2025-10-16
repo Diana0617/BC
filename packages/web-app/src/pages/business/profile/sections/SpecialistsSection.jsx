@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { 
   UsersIcon,
   PlusIcon,
@@ -12,12 +12,12 @@ import {
   AcademicCapIcon,
   CurrencyDollarIcon,
   EnvelopeIcon,
-  PhoneIcon
+  PhoneIcon,
+  UserIcon
 } from '@heroicons/react/24/outline';
 import { businessSpecialistsApi, businessBranchesApi, specialistServicesApi, businessServicesApi } from '@shared/api';
 
 const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
-  const dispatch = useDispatch();
   // Corrección: el estado en businessSlice se llama currentBusiness, not activeBusiness
   const activeBusiness = useSelector(state => state.business.currentBusiness);
   const isLoadingBusiness = useSelector(state => state.business.isLoading);
@@ -87,6 +87,12 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
       label: 'Recepcionista-Especialista', 
       description: 'Puede gestionar citas y realizar servicios',
       icon: UsersIcon
+    },
+    { 
+      value: 'RECEPTIONIST', 
+      label: 'Recepcionista', 
+      description: 'Solo gestiona citas y clientes, no realiza servicios',
+      icon: UserIcon
     }
   ];
 
@@ -97,6 +103,7 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
       loadBranches();
       loadAvailableServices();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeBusiness?.id]);
 
   const loadSpecialists = async () => {
@@ -222,32 +229,11 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
         userData.password = formData.password;
       }
 
-      // Convertir certificaciones de string a array si es necesario
-      let certifications = [];
-      if (formData.certifications) {
-        if (typeof formData.certifications === 'string') {
-          // Dividir por comas y limpiar espacios
-          certifications = formData.certifications
-            .split(',')
-            .map(cert => cert.trim())
-            .filter(cert => cert.length > 0);
-        } else if (Array.isArray(formData.certifications)) {
-          certifications = formData.certifications;
-        }
-      }
-
-      const profileData = {
-        specialization: formData.specialization,
-        experience: formData.experience ? parseInt(formData.experience) : null,
-        certifications: certifications,
-        biography: formData.biography,
+      // Si es RECEPTIONIST, crear con profileData mínimo (solo isActive y branchId)
+      // Si es SPECIALIST o RECEPTIONIST_SPECIALIST, crear con profileData completo
+      let profileData = {
         isActive: formData.isActive
       };
-
-      // Solo incluir commissionRate si el negocio usa sistema de comisiones
-      if (useCommissionSystem) {
-        profileData.commissionRate = formData.commissionRate ? parseFloat(formData.commissionRate) : defaultCommissionRate;
-      }
 
       // Solo incluir branchId si hay uno seleccionado
       if (formData.branchId) {
@@ -257,6 +243,36 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
       // Solo incluir additionalBranches si hay seleccionadas
       if (formData.additionalBranches && formData.additionalBranches.length > 0) {
         profileData.additionalBranches = formData.additionalBranches;
+      }
+
+      // Si NO es RECEPTIONIST puro, incluir datos profesionales
+      if (formData.role !== 'RECEPTIONIST') {
+        // Convertir certificaciones de string a array si es necesario
+        let certifications = [];
+        if (formData.certifications) {
+          if (typeof formData.certifications === 'string') {
+            // Dividir por comas y limpiar espacios
+            certifications = formData.certifications
+              .split(',')
+              .map(cert => cert.trim())
+              .filter(cert => cert.length > 0);
+          } else if (Array.isArray(formData.certifications)) {
+            certifications = formData.certifications;
+          }
+        }
+
+        profileData = {
+          ...profileData,
+          specialization: formData.specialization,
+          experience: formData.experience ? parseInt(formData.experience) : null,
+          certifications: certifications,
+          biography: formData.biography
+        };
+
+        // Solo incluir commissionRate si el negocio usa sistema de comisiones
+        if (useCommissionSystem) {
+          profileData.commissionRate = formData.commissionRate ? parseFloat(formData.commissionRate) : defaultCommissionRate;
+        }
       }
 
       if (editingSpecialist) {
@@ -450,7 +466,14 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
-      const newStep = currentStep + 1;
+      let newStep = currentStep + 1;
+      
+      // Si es RECEPTIONIST y estamos en paso 2, saltar directo a paso 3 (confirmación)
+      // ya que no necesita configurar servicios ni calendario
+      if (formData.role === 'RECEPTIONIST' && currentStep === 2) {
+        newStep = 3;
+      }
+      
       setCurrentStep(newStep);
       
       // Marcar que hemos visitado el paso 3, pero con un pequeño delay
@@ -464,7 +487,14 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
   };
 
   const prevStep = () => {
-    setCurrentStep(prev => prev - 1);
+    let newStep = currentStep - 1;
+    
+    // Si es RECEPTIONIST y estamos en paso 3, volver a paso 2
+    if (formData.role === 'RECEPTIONIST' && currentStep === 3) {
+      newStep = 2;
+    }
+    
+    setCurrentStep(newStep);
   };
 
   const renderStep1 = () => (
@@ -668,7 +698,63 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
     </div>
   );
 
-  const renderStep3 = () => (
+  const renderReceptionistConfirmation = () => (
+    <div className="space-y-4">
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+        <div className="flex items-start gap-4">
+          <UserIcon className="h-12 w-12 text-blue-600 flex-shrink-0" />
+          <div>
+            <h4 className="font-semibold text-blue-900 text-lg mb-2">
+              Recepcionista - Datos Completos
+            </h4>
+            <p className="text-sm text-blue-800 mb-4">
+              Los recepcionistas solo gestionan citas y clientes. No necesitan configuración de servicios ni calendario.
+            </p>
+            
+            <div className="space-y-2 bg-white rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="font-medium text-gray-700">Nombre:</span>
+                  <p className="text-gray-900">{formData.firstName} {formData.lastName}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Email:</span>
+                  <p className="text-gray-900">{formData.email}</p>
+                </div>
+                {formData.phone && (
+                  <div>
+                    <span className="font-medium text-gray-700">Teléfono:</span>
+                    <p className="text-gray-900">{formData.phone}</p>
+                  </div>
+                )}
+                <div>
+                  <span className="font-medium text-gray-700">Rol:</span>
+                  <p className="text-gray-900">Recepcionista</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-blue-200">
+              <p className="text-sm text-blue-700">
+                ✓ Podrá acceder al sistema para gestionar citas<br />
+                ✓ Podrá registrar clientes y consultar historial<br />
+                ✓ No aparecerá en la lista de especialistas para servicios
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderStep3 = () => {
+    // Si es RECEPTIONIST, mostrar confirmación en lugar de datos profesionales
+    if (formData.role === 'RECEPTIONIST') {
+      return renderReceptionistConfirmation();
+    }
+
+    // Para SPECIALIST y RECEPTIONIST_SPECIALIST, mostrar formulario completo
+    return (
     <div className="space-y-4">
       <h4 className="font-medium text-gray-900">Datos Profesionales (Opcional)</h4>
       
@@ -766,7 +852,8 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   // Renderizar sección de Servicios
   const renderServicesTab = () => {

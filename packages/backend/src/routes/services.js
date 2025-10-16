@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const { requireBasicAccess, requireFullAccess } = require('../middleware/subscription');
 const ServiceController = require('../controllers/ServiceController');
+const { uploadImage } = require('../middleware/uploadMiddleware');
 // const tenancyMiddleware = require('../middleware/tenancy');
 // const { allStaffRoles, businessAndOwner } = require('../middleware/roleCheck');
 
@@ -24,7 +25,20 @@ router.post('/', requireFullAccess, /* businessAndOwner, */ ServiceController.cr
 router.get('/:id', requireBasicAccess, ServiceController.getServiceById);
 
 // Actualizar servicio
-router.put('/:id', requireFullAccess, /* businessAndOwner, */ ServiceController.updateService);
+router.put('/:id', requireFullAccess, /* businessAndOwner, */ (req, res, next) => {
+  console.log('🔵 ROUTE: PUT /:id middleware');
+  console.log('🔵 req.params:', req.params);
+  console.log('🔵 req.body:', req.body);
+  console.log('🔵 req.user:', req.user);
+  next();
+}, ServiceController.updateService);
+
+// Subir imagen del servicio
+router.post('/:id/upload-image', 
+  requireFullAccess,
+  uploadImage.single('image'),
+  ServiceController.uploadServiceImage
+);
 
 // Eliminar servicio
 router.delete('/:id', requireFullAccess, /* businessAndOwner, */ ServiceController.deleteService);

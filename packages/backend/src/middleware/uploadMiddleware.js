@@ -44,6 +44,32 @@ const expenseReceiptFilter = (req, file, cb) => {
   }
 };
 
+// Filtro para imágenes generales
+const imageFilter = (req, file, cb) => {
+  const allowedTypes = [
+    'image/jpeg', 
+    'image/jpg', 
+    'image/png', 
+    'image/webp'
+  ];
+  
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Tipo de archivo no permitido. Solo se permiten imágenes (JPEG, PNG, WebP)'), false);
+  }
+};
+
+// Middleware específico para imágenes generales (logos, servicios, etc.)
+const uploadImage = multer({ 
+  storage: storage,
+  fileFilter: imageFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB máximo para imágenes
+    files: 1
+  }
+});
+
 // Middleware específico para comprobantes de gastos
 const uploadExpenseReceipt = multer({ 
   storage: storage,
@@ -120,6 +146,7 @@ const validateOptionalReceipt = (req, res, next) => {
 };
 
 module.exports = {
+  uploadImage, // Middleware genérico para imágenes (sin .single())
   uploadExpenseReceipt: uploadExpenseReceiptWithErrorHandling,
   validateOptionalReceipt
 };
