@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { XMarkIcon, PhotoIcon, XCircleIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon, PhotoIcon, XCircleIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
 import { businessServicesApi } from '@shared/api'
 import ConsentTemplateModal from '../consent/ConsentTemplateModal'
 
@@ -463,7 +463,7 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
               </div>
 
               {formData.requiresConsent && (
-                <div className="ml-6 mt-2">
+                <div className="ml-6 mt-2 space-y-2">
                   <button
                     type="button"
                     onClick={() => setShowConsentModal(true)}
@@ -473,11 +473,21 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
                       ? '✓ Plantilla asignada - Cambiar plantilla' 
                       : '+ Asignar plantilla de consentimiento'}
                   </button>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500">
                     {formData.consentTemplateId 
                       ? 'Se usará la plantilla seleccionada para este procedimiento' 
                       : 'Sin plantilla, se usará la plantilla general del negocio'}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.open('/business/consent-templates', '_blank');
+                    }}
+                    className="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-gray-800 underline"
+                  >
+                    <DocumentTextIcon className="h-3 w-3" />
+                    Gestionar plantillas de consentimiento
+                  </button>
                 </div>
               )}
             </div>

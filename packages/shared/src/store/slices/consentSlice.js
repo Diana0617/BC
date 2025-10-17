@@ -20,7 +20,7 @@ export const fetchConsentTemplates = createAsyncThunk(
   async ({ businessId, params = {} }, { rejectWithValue }) => {
     try {
       const response = await apiClient.get(
-        `/business/${businessId}/consent-templates`,
+        `/api/business/${businessId}/consent-templates`,
         { params }
       );
       return response.data.data;
@@ -41,7 +41,7 @@ export const fetchConsentTemplate = createAsyncThunk(
   async ({ businessId, templateId }, { rejectWithValue }) => {
     try {
       const response = await apiClient.get(
-        `/business/${businessId}/consent-templates/${templateId}`
+        `/api/business/${businessId}/consent-templates/${templateId}`
       );
       return response.data.data;
     } catch (error) {
@@ -61,7 +61,7 @@ export const createConsentTemplate = createAsyncThunk(
   async ({ businessId, data }, { rejectWithValue }) => {
     try {
       const response = await apiClient.post(
-        `/business/${businessId}/consent-templates`,
+        `/api/business/${businessId}/consent-templates`,
         data
       );
       return response.data.data;
@@ -82,7 +82,7 @@ export const updateConsentTemplate = createAsyncThunk(
   async ({ businessId, templateId, data }, { rejectWithValue }) => {
     try {
       const response = await apiClient.put(
-        `/business/${businessId}/consent-templates/${templateId}`,
+        `/api/business/${businessId}/consent-templates/${templateId}`,
         data
       );
       return response.data.data;
@@ -103,7 +103,7 @@ export const deleteConsentTemplate = createAsyncThunk(
   async ({ businessId, templateId, hardDelete = false }, { rejectWithValue }) => {
     try {
       await apiClient.delete(
-        `/business/${businessId}/consent-templates/${templateId}`,
+        `/api/business/${businessId}/consent-templates/${templateId}`,
         { params: { hardDelete } }
       );
       return templateId;
@@ -124,7 +124,7 @@ export const signConsent = createAsyncThunk(
   async ({ businessId, data }, { rejectWithValue }) => {
     try {
       const response = await apiClient.post(
-        `/business/${businessId}/consent-signatures`,
+        `/api/business/${businessId}/consent-signatures`,
         data
       );
       return response.data.data;
@@ -146,7 +146,7 @@ export const fetchCustomerSignatures = createAsyncThunk(
     try {
       const params = status ? { status } : {};
       const response = await apiClient.get(
-        `/business/${businessId}/consent-signatures/customer/${customerId}`,
+        `/api/business/${businessId}/consent-signatures/customer/${customerId}`,
         { params }
       );
       return { customerId, signatures: response.data.data };
@@ -167,7 +167,7 @@ export const fetchSignature = createAsyncThunk(
   async ({ businessId, signatureId }, { rejectWithValue }) => {
     try {
       const response = await apiClient.get(
-        `/business/${businessId}/consent-signatures/${signatureId}`
+        `/api/business/${businessId}/consent-signatures/${signatureId}`
       );
       return response.data.data;
     } catch (error) {
@@ -187,7 +187,7 @@ export const revokeSignature = createAsyncThunk(
   async ({ businessId, signatureId, reason, revokedBy }, { rejectWithValue }) => {
     try {
       const response = await apiClient.post(
-        `/business/${businessId}/consent-signatures/${signatureId}/revoke`,
+        `/api/business/${businessId}/consent-signatures/${signatureId}/revoke`,
         { reason, revokedBy }
       );
       return response.data.data;
@@ -208,7 +208,7 @@ export const getSignaturePDF = createAsyncThunk(
   async ({ businessId, signatureId }, { rejectWithValue }) => {
     try {
       const response = await apiClient.get(
-        `/business/${businessId}/consent-signatures/${signatureId}/pdf`,
+        `/api/business/${businessId}/consent-signatures/${signatureId}/pdf`,
         { responseType: 'blob' } // Para descargar archivos
       );
       return response.data;

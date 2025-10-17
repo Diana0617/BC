@@ -12,11 +12,13 @@ import { apiClient } from './client.js';
  */
 export const getBranding = async (businessId = 'current') => {
   try {
-    const response = await apiClient.get(`/api/business/${businessId}/branding`);
+    // Agregar timestamp para evitar caché 304
+    const cacheBuster = `?_t=${Date.now()}`;
+    const url = `/api/business/${businessId}/branding${cacheBuster}`;
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
-    console.error('Error obteniendo branding:', error);
-    throw new Error(error.response?.data?.message || 'Error al obtener configuración de branding');
+    throw new Error(error.response?.data?.message || error.message || 'Error al obtener configuración de branding');
   }
 };
 
@@ -50,10 +52,8 @@ export const uploadBusinessLogo = async (businessId, logoFile) => {
   try {
     const formData = new FormData();
     formData.append('logo', logoFile);
-
-    // No especificar Content-Type - el navegador lo establecerá automáticamente con el boundary correcto
-    const response = await apiClient.post(`/api/business/${businessId}/upload-logo`, formData);
     
+    const response = await apiClient.post(`/api/business/${businessId}/upload-logo`, formData);
     return response.data;
   } catch (error) {
     console.error('Error subiendo logo:', error);

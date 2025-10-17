@@ -8,7 +8,6 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline'
 import { 
-  loadBranding,
   uploadLogo,
   saveBranding,
   completeStep,
@@ -32,40 +31,29 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const [logoPreview, setLogoPreview] = useState(null)
   const [isEditing, setIsEditing] = useState(isSetupMode)
   const fileInputRef = useRef(null)
-  const loadAttemptedRef = useRef(false)
+  const initializedRef = useRef(false)
 
-  // Cargar branding SOLO UNA VEZ cuando el componente se monta
-  useEffect(() => {
-    console.log('🔵 BrandingSection mounted or activeBusiness changed:', activeBusiness?.id);
-    console.log('🔵 loadAttemptedRef.current:', loadAttemptedRef.current);
-    console.log('🔵 branding:', branding);
-    
-    // Solo cargar si:
-    // 1. Tenemos activeBusiness.id
-    // 2. NO hemos intentado cargar antes
-    // 3. NO tenemos branding ya
-    if (activeBusiness?.id && !loadAttemptedRef.current && !branding) {
-      console.log('✅ Attempting to load branding...');
-      loadAttemptedRef.current = true
-      dispatch(loadBranding(activeBusiness.id))
-    }
-  }, [activeBusiness?.id]) // Solo depende del ID, NO de dispatch ni branding
+  // NOTE: El branding se carga en el componente padre (BusinessProfile)
+  // Este componente solo consume el branding de Redux
 
-  // Actualizar formData cuando se carga el branding POR PRIMERA VEZ
+  // Inicializar formData cuando se carga el branding por primera vez
   useEffect(() => {
-    if (branding && !logoPreview) {
-      console.log('🎨 Initializing form data from branding:', branding);
+    if (branding && !initializedRef.current) {
+      initializedRef.current = true
+      
       setFormData({
         primaryColor: branding.primaryColor || '#FF6B9D',
         secondaryColor: branding.secondaryColor || '#4ECDC4',
         accentColor: branding.accentColor || '#FFE66D',
         fontFamily: branding.fontFamily || 'Poppins'
       })
+      
       if (branding.logo) {
         setLogoPreview(branding.logo)
       }
     }
-  }, [branding]) // Solo cuando branding cambia por primera vez
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branding?.logo])
 
   // Manejar selección de archivo de logo
   const handleLogoChange = (e) => {

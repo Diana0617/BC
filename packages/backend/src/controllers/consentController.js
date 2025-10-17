@@ -45,7 +45,7 @@ exports.getTemplates = async (req, res) => {
       include: [{
         model: Business,
         as: 'business',
-        attributes: ['id', 'name', 'slug']
+        attributes: ['id', 'name']
       }],
       order: [['createdAt', 'DESC']]
     });
@@ -79,7 +79,7 @@ exports.getTemplate = async (req, res) => {
       include: [{
         model: Business,
         as: 'business',
-        attributes: ['id', 'name', 'slug', 'address', 'phone', 'email']
+        attributes: ['id', 'name', 'address', 'phone', 'email']
       }]
     });
 

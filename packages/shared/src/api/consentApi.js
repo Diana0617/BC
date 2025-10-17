@@ -15,7 +15,7 @@ const consentApi = {
   getTemplates: async (businessId, params = {}) => {
     try {
       const queryString = new URLSearchParams(params).toString();
-      const url = `/business/${businessId}/consent-templates${queryString ? `?${queryString}` : ''}`;
+      const url = `/api/business/${businessId}/consent-templates${queryString ? `?${queryString}` : ''}`;
       const response = await apiClient.get(url);
       return response.data;
     } catch (error) {
@@ -30,7 +30,7 @@ const consentApi = {
    */
   getTemplate: async (businessId, templateId) => {
     try {
-      const response = await apiClient.get(`/business/${businessId}/consent-templates/${templateId}`);
+      const response = await apiClient.get(`/api/business/${businessId}/consent-templates/${templateId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching consent template:', error);
@@ -44,7 +44,7 @@ const consentApi = {
    */
   createTemplate: async (businessId, data) => {
     try {
-      const response = await apiClient.post(`/business/${businessId}/consent-templates`, data);
+      const response = await apiClient.post(`/api/business/${businessId}/consent-templates`, data);
       return response.data;
     } catch (error) {
       console.error('Error creating consent template:', error);
@@ -58,7 +58,7 @@ const consentApi = {
    */
   updateTemplate: async (businessId, templateId, data) => {
     try {
-      const response = await apiClient.put(`/business/${businessId}/consent-templates/${templateId}`, data);
+      const response = await apiClient.put(`/api/business/${businessId}/consent-templates/${templateId}`, data);
       return response.data;
     } catch (error) {
       console.error('Error updating consent template:', error);
@@ -72,7 +72,7 @@ const consentApi = {
    */
   deleteTemplate: async (businessId, templateId, hardDelete = false) => {
     try {
-      const url = `/business/${businessId}/consent-templates/${templateId}${hardDelete ? '?hardDelete=true' : ''}`;
+      const url = `/api/business/${businessId}/consent-templates/${templateId}${hardDelete ? '?hardDelete=true' : ''}`;
       const response = await apiClient.delete(url);
       return response.data;
     } catch (error) {
@@ -89,7 +89,7 @@ const consentApi = {
    */
   signConsent: async (businessId, data) => {
     try {
-      const response = await apiClient.post(`/business/${businessId}/consent-signatures`, data);
+      const response = await apiClient.post(`/api/business/${businessId}/consent-signatures`, data);
       return response.data;
     } catch (error) {
       console.error('Error signing consent:', error);
@@ -103,7 +103,7 @@ const consentApi = {
    */
   getCustomerSignatures: async (businessId, customerId, status = null) => {
     try {
-      const url = `/business/${businessId}/consent-signatures/customer/${customerId}${status ? `?status=${status}` : ''}`;
+      const url = `/api/business/${businessId}/consent-signatures/customer/${customerId}${status ? `?status=${status}` : ''}`;
       const response = await apiClient.get(url);
       return response.data;
     } catch (error) {
@@ -118,7 +118,7 @@ const consentApi = {
    */
   getSignature: async (businessId, signatureId) => {
     try {
-      const response = await apiClient.get(`/business/${businessId}/consent-signatures/${signatureId}`);
+      const response = await apiClient.get(`/api/business/${businessId}/consent-signatures/${signatureId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching consent signature:', error);
@@ -133,7 +133,7 @@ const consentApi = {
   revokeSignature: async (businessId, signatureId, reason, revokedBy) => {
     try {
       const response = await apiClient.post(
-        `/business/${businessId}/consent-signatures/${signatureId}/revoke`,
+        `/api/business/${businessId}/consent-signatures/${signatureId}/revoke`,
         { reason, revokedBy }
       );
       return response.data;
@@ -150,7 +150,7 @@ const consentApi = {
   downloadSignaturePDF: async (businessId, signatureId) => {
     try {
       const response = await apiClient.get(
-        `/business/${businessId}/consent-signatures/${signatureId}/pdf`,
+        `/api/business/${businessId}/consent-signatures/${signatureId}/pdf`,
         { responseType: 'blob' }
       );
       

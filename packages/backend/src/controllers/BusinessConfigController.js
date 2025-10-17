@@ -1226,7 +1226,9 @@ class BusinessConfigController {
       
       await BusinessConfigService.updateBusinessSettings(businessId, updatedSettings);
       
-      res.json({
+      console.log('✅ Settings updated successfully, sending response...');
+      
+      const responseData = {
         success: true,
         data: {
           logoUrl: logoUrl,
@@ -1237,11 +1239,35 @@ class BusinessConfigController {
           }
         },
         message: 'Logo subido exitosamente'
-      });
+      };
+      
+      console.log('📤 Response data:', JSON.stringify(responseData, null, 2));
+      
+      // Limpiar archivo temporal
+      const fs = require('fs');
+      if (file.path && fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+        console.log('🗑️  Temporary file cleaned:', file.path);
+      }
+      
+      console.log('📨 About to send JSON response...');
+      
+      // Asegurar headers correctos
+      res.setHeader('Content-Type', 'application/json');
+      res.status(200).json(responseData);
+      
+      console.log('✅ JSON response sent successfully with status 200');
       
     } catch (error) {
       console.error('Error uploading logo:', error);
-      res.status(500).json({
+      
+      // Limpiar archivo temporal en caso de error
+      const fs = require('fs');
+      if (req.file?.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
+      return res.status(500).json({
         success: false,
         message: error.message || 'Error interno del servidor'
       });

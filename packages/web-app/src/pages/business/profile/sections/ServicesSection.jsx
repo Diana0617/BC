@@ -13,7 +13,7 @@ import {
 import { businessServicesApi, commissionApi, consentApi } from '@shared/api'
 import ServiceFormModal from '../../../../components/services/ServiceFormModal'
 import CommissionConfigModal from '../../../../components/services/CommissionConfigModal'
-import ConsentTemplateModal from '../../../../components/services/ConsentTemplateModal'
+import ConsentTemplateModal from '../../../../components/consent/ConsentTemplateModal'
 
 const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const activeBusiness = useSelector(state => state.business.currentBusiness)

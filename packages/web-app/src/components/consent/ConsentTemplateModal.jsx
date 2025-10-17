@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { XMarkIcon, DocumentTextIcon, EyeIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon, DocumentTextIcon, EyeIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 import { consentApi } from '@shared/api'
 
 const ConsentTemplateModal = ({ 
@@ -66,7 +66,7 @@ const ConsentTemplateModal = ({
         <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <div>
+            <div className="flex-1">
               <h2 className="text-2xl font-bold text-gray-900">
                 Asignar Plantilla de Consentimiento
               </h2>
@@ -74,12 +74,22 @@ const ConsentTemplateModal = ({
                 Selecciona la plantilla que el cliente deberá firmar para este procedimiento
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={loadTemplates}
+                disabled={isLoading}
+                className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                title="Recargar plantillas"
+              >
+                <ArrowPathIcon className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
           </div>
 
           {/* Error */}
@@ -105,8 +115,21 @@ const ConsentTemplateModal = ({
                       <h3 className="mt-2 text-sm font-medium text-gray-900">
                         No hay plantillas disponibles
                       </h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Crea plantillas de consentimiento en la sección de Configuración
+                      <p className="mt-1 text-sm text-gray-500 mb-4">
+                        Necesitas crear al menos una plantilla de consentimiento
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.open('/business/consent-templates', '_blank');
+                        }}
+                        className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <DocumentTextIcon className="h-5 w-5" />
+                        Crear Primera Plantilla
+                      </button>
+                      <p className="mt-3 text-xs text-gray-500">
+                        Se abrirá en una nueva pestaña
                       </p>
                     </div>
                   ) : (

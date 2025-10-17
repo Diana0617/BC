@@ -19,7 +19,8 @@ import {
 // Redux actions
 import {
   loadBusinessConfiguration,
-  setSetupMode
+  setSetupMode,
+  loadBranding
 } from '@shared/store/slices/businessConfigurationSlice'
 import { fetchCurrentBusiness } from '@shared/store/slices/businessSlice'
 import { logout } from '@shared/store/slices/authSlice'
@@ -102,6 +103,14 @@ const BusinessProfile = () => {
       dispatch(loadBusinessConfiguration(business.id))
     }
   }, [business?.id, dispatch])
+
+  // Cargar branding del negocio (una sola vez cuando se carga el business)
+  useEffect(() => {
+    if (business?.id && !branding) {
+      dispatch(loadBranding(business.id))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [business?.id])
 
   // Obtener TODOS los módulos disponibles y marcar cuáles están incluidos en el plan
   const allModules = business?.allModules || []

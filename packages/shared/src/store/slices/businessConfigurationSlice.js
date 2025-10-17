@@ -172,9 +172,25 @@ export const loadBranding = createAsyncThunk(
   'businessConfiguration/loadBranding',
   async (businessId, { rejectWithValue }) => {
     try {
+      const timestamp = new Date().toISOString().slice(11, 23);
+      console.log(`\n🔄 [${timestamp}] ═══ REDUX THUNK: loadBranding START ═══`);
+      console.log(`   📍 Business ID: ${businessId}`);
+      
       const response = await businessBrandingApi.getBranding(businessId)
-      return response.data
+      
+      console.log(`   📥 [${timestamp}] Response received:`, response);
+      console.log(`   📦 response.data:`, response.data);
+      console.log(`   📦 response.data type:`, typeof response.data);
+      
+      // businessBrandingApi.getBranding ya devuelve response.data que es { success, data }
+      // Así que necesitamos extraer response.data (no response.data.data)
+      const result = response.data;
+      console.log(`   ✅ [${timestamp}] Returning branding data:`, result);
+      console.log(`🔄 [${timestamp}] ═══ REDUX THUNK: loadBranding END ═══\n`);
+      
+      return result // Extraer el objeto branding de la respuesta
     } catch (error) {
+      console.error(`   ❌ [${timestamp}] Error loading branding:`, error);
       return rejectWithValue(error.message || 'Error al cargar branding')
     }
   }
@@ -185,9 +201,26 @@ export const uploadLogo = createAsyncThunk(
   'businessConfiguration/uploadLogo',
   async ({ businessId, logoFile }, { rejectWithValue }) => {
     try {
-      const response = await businessBrandingApi.uploadBusinessLogo(businessId, logoFile)
-      return response.data
+      const timestamp = new Date().toISOString().slice(11, 23);
+      console.log(`\n� [${timestamp}] ═══ REDUX THUNK: uploadLogo START ═══`);
+      console.log(`   📍 Business ID: ${businessId}`);
+      console.log(`   📍 Logo file:`, logoFile);
+      
+      const response = await businessBrandingApi.uploadBusinessLogo(businessId, logoFile);
+      
+      console.log(`   📥 [${timestamp}] Response received:`, response);
+      console.log(`   📦 response.data:`, response.data);
+      console.log(`   📦 response.data type:`, typeof response.data);
+      
+      // businessBrandingApi.uploadBusinessLogo ya devuelve response.data
+      const result = response.data;
+      console.log(`   ✅ [${timestamp}] Returning upload result:`, result);
+      console.log(`🔄 [${timestamp}] ═══ REDUX THUNK: uploadLogo END ═══\n`);
+      
+      return result;
     } catch (error) {
+      const timestamp = new Date().toISOString().slice(11, 23);
+      console.error(`   ❌ [${timestamp}] Error uploading logo:`, error);
       return rejectWithValue(error.message || 'Error al subir logo')
     }
   }
@@ -199,7 +232,7 @@ export const saveBranding = createAsyncThunk(
   async ({ businessId, brandingData }, { rejectWithValue }) => {
     try {
       const response = await businessBrandingApi.updateBranding(businessId, brandingData)
-      return response.data
+      return response.data.data // Extraer el objeto branding actualizado de la respuesta
     } catch (error) {
       return rejectWithValue(error.message || 'Error al guardar branding')
     }
@@ -553,30 +586,60 @@ export const businessConfigurationSlice = createSlice({
       
       // loadBranding
       .addCase(loadBranding.pending, (state) => {
+        const timestamp = new Date().toISOString().slice(11, 23);
+        console.log(`\n📦 [${timestamp}] ═══ REDUCER: loadBranding.pending ═══`);
         state.loading = true
         state.error = null
       })
       .addCase(loadBranding.fulfilled, (state, action) => {
+        const timestamp = new Date().toISOString().slice(11, 23);
+        console.log(`\n📦 [${timestamp}] ═══ REDUCER: loadBranding.fulfilled ═══`);
+        console.log(`   📍 Previous branding:`, state.branding);
+        console.log(`   📍 New branding payload:`, action.payload);
+        console.log(`   📍 Are they the same object? ${state.branding === action.payload}`);
+        console.log(`   📍 JSON.stringify equal? ${JSON.stringify(state.branding) === JSON.stringify(action.payload)}`);
+        
         state.loading = false
         state.branding = action.payload
+        
+        console.log(`   ✅ State updated. New state.branding:`, state.branding);
+        console.log(`📦 [${timestamp}] ═══════════════════════════════════\n`);
       })
       .addCase(loadBranding.rejected, (state, action) => {
+        const timestamp = new Date().toISOString().slice(11, 23);
+        console.log(`\n📦 [${timestamp}] ═══ REDUCER: loadBranding.rejected ═══`);
+        console.log(`   ❌ Error:`, action.payload);
         state.loading = false
         state.error = action.payload || 'Error al cargar branding'
       })
       
       // uploadLogo
       .addCase(uploadLogo.pending, (state) => {
+        const timestamp = new Date().toISOString().slice(11, 23);
+        console.log(`\n📦 [${timestamp}] ═══ REDUCER: uploadLogo.pending ═══`);
         state.uploadingLogo = true
         state.saveError = null
       })
       .addCase(uploadLogo.fulfilled, (state, action) => {
+        const timestamp = new Date().toISOString().slice(11, 23);
+        console.log(`\n📦 [${timestamp}] ═══ REDUCER: uploadLogo.fulfilled ═══`);
+        console.log(`   📍 Previous branding:`, state.branding);
+        console.log(`   📍 Upload payload:`, action.payload);
+        console.log(`   📍 logoUrl in payload:`, action.payload?.logoUrl);
+        
         state.uploadingLogo = false
+        
         // Actualizar el logo en el branding
         if (!state.branding) {
           state.branding = {}
         }
-        state.branding.logo = action.payload.logoUrl
+        
+        if (action.payload?.logoUrl) {
+          state.branding.logo = action.payload.logoUrl
+          console.log(`   ✅ Logo updated in state:`, state.branding.logo);
+        } else {
+          console.log(`   ⚠️  No logoUrl in payload, branding not updated`);
+        }
         
         // Marcar branding como completado si tiene datos
         if (state.branding && Object.keys(state.branding).length > 0) {
@@ -587,8 +650,14 @@ export const businessConfigurationSlice = createSlice({
         
         const totalSteps = 8
         state.setupProgress = Math.round((state.completedSteps.length / totalSteps) * 100)
+        
+        console.log(`   📍 New state.branding:`, state.branding);
+        console.log(`📦 [${timestamp}] ═══════════════════════════════════\n`);
       })
       .addCase(uploadLogo.rejected, (state, action) => {
+        const timestamp = new Date().toISOString().slice(11, 23);
+        console.log(`\n📦 [${timestamp}] ═══ REDUCER: uploadLogo.rejected ═══`);
+        console.log(`   ❌ Error:`, action.payload);
         state.uploadingLogo = false
         state.saveError = action.payload || 'Error al subir logo'
       })

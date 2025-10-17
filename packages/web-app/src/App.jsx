@@ -27,6 +27,7 @@ import OwnerReports from './pages/owner/reports/OwnerReports'
 
 // Business Pages
 import BusinessProfile from './pages/business/profile/BusinessProfile.jsx'
+import ConsentTemplatesPage from './pages/ConsentTemplatesPage.jsx'
 
 // Public Pages
 import LandingPage from './pages/public/LandingPage'
@@ -98,7 +99,10 @@ function AppLayout() {
           
           {/* Business routes - Protected */}
           {isAuthenticated && user?.role === 'BUSINESS' && (
-            <Route path="/business/profile" element={<BusinessProfile />} />
+            <>
+              <Route path="/business/profile" element={<BusinessProfile />} />
+              <Route path="/business/consent-templates" element={<ConsentTemplatesPage />} />
+            </>
           )}
           
           {/* Redirect non-business users trying to access business routes */}
