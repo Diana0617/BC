@@ -6,7 +6,8 @@ const {
   User,
   Business,
   SpecialistService,
-  UserBranch
+  UserBranch,
+  BusinessClient
 } = require('../models');
 const { Op } = require('sequelize');
 const multer = require('multer');
@@ -92,6 +93,10 @@ class AppointmentController {
           [Op.gte]: new Date(startDate),
           [Op.lte]: new Date(endDate)
         };
+        console.log('📅 Buscando citas entre:', {
+          startDate: new Date(startDate),
+          endDate: new Date(endDate)
+        });
       }
 
       const { count, rows: appointments } = await Appointment.findAndCountAll({
@@ -128,6 +133,15 @@ class AppointmentController {
         limit: parseInt(limit),
         offset
       });
+
+      console.log(`✅ Encontradas ${count} citas`);
+      if (appointments.length > 0) {
+        console.log('Primera cita:', {
+          id: appointments[0].id,
+          startTime: appointments[0].startTime,
+          client: appointments[0].client?.firstName
+        });
+      }
 
       res.json({
         success: true,
@@ -253,6 +267,13 @@ class AppointmentController {
         }
       };
 
+      console.log('📅 Buscando citas por rango:', {
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        branchId,
+        businessId
+      });
+
       // Filtros opcionales
       if (branchId) {
         where.branchId = branchId;
@@ -287,11 +308,11 @@ class AppointmentController {
           {
             model: User,
             as: 'specialist',
-            attributes: ['id', 'firstName', 'lastName'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
             include: [{
               model: SpecialistProfile,
               as: 'specialistProfile',
-              attributes: ['specialization']
+              attributes: ['specialization', 'profileColor', 'profileImage']
             }]
           },
           {
@@ -303,6 +324,16 @@ class AppointmentController {
         ],
         order: [['startTime', 'ASC']]
       });
+
+      console.log(`✅ Encontradas ${appointments.length} citas en el rango`);
+      if (appointments.length > 0) {
+        console.log('Primera cita:', {
+          id: appointments[0].id,
+          startTime: appointments[0].startTime,
+          clientName: `${appointments[0].client?.firstName} ${appointments[0].client?.lastName}`,
+          serviceName: appointments[0].service?.name
+        });
+      }
 
       res.json({
         success: true,
@@ -321,21 +352,26 @@ class AppointmentController {
   /**
    * Crear nueva cita
    * POST /api/appointments
-   * Solo para RECEPTIONIST (los especialistas no crean citas)
+   * Permitido para: BUSINESS, RECEPTIONIST, RECEPTIONIST_SPECIALIST, SPECIALIST
+   * NO permitido para: OWNER (dueño de la plataforma)
    */
   static async createAppointment(req, res) {
     try {
-      // Solo recepcionistas pueden crear citas
-      if (!req.receptionist) {
+      // Verificar que el usuario NO sea OWNER de la plataforma
+      if (req.user?.role === 'OWNER') {
         return res.status(403).json({
           success: false,
-          error: 'Solo recepcionistas pueden crear citas'
+          error: 'Los propietarios de la plataforma no pueden crear citas de negocios'
         });
       }
 
+      // Todos los demás roles (BUSINESS, RECEPTIONIST, SPECIALIST, etc.) pueden crear citas
       const { businessId } = req.body;
       const {
         clientId,
+        clientName,
+        clientPhone,
+        clientEmail,
         specialistId,
         serviceId,
         startTime,
@@ -345,24 +381,109 @@ class AppointmentController {
         branchId
       } = req.body;
 
+      // Buscar o crear cliente
+      let client;
+      if (clientId) {
+        // Si viene clientId, validar que exista
+        client = await Client.findOne({
+          where: { id: clientId }
+        });
+
+        if (!client) {
+          return res.status(400).json({
+            success: false,
+            error: 'Cliente no encontrado'
+          });
+        }
+      } else if (clientEmail) {
+        // Si viene email, buscar cliente por email (los clientes son compartidos entre negocios)
+        client = await Client.findOne({
+          where: { 
+            email: clientEmail
+          }
+        });
+
+        if (!client) {
+          // Crear nuevo cliente
+          console.log('📝 Creando nuevo cliente:', clientName, clientEmail);
+          
+          // Parsear nombre y apellido
+          const nameParts = (clientName || '').trim().split(' ');
+          const firstName = nameParts[0] || 'Cliente';
+          const lastName = nameParts.slice(1).join(' ') || 'Nuevo';
+
+          client = await Client.create({
+            firstName,
+            lastName,
+            email: clientEmail,
+            phone: clientPhone || null,
+            status: 'ACTIVE'
+          });
+
+          console.log('✅ Cliente creado con ID:', client.id);
+        } else {
+          console.log('✅ Cliente existente encontrado:', client.id);
+        }
+
+        // Verificar si existe la relación BusinessClient, si no, crearla
+        const businessClientRelation = await BusinessClient.findOne({
+          where: {
+            businessId,
+            clientId: client.id
+          }
+        });
+
+        if (!businessClientRelation) {
+          console.log('📝 Creando relación Business-Client');
+          await BusinessClient.create({
+            businessId,
+            clientId: client.id,
+            status: 'ACTIVE',
+            firstVisit: new Date()
+          });
+          console.log('✅ Relación Business-Client creada');
+        }
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: 'Debe proporcionar clientId o clientEmail'
+        });
+      }
+
       // Validar que el especialista pertenezca al negocio
-      const specialist = await User.findOne({
+      console.log('🔍 Buscando especialista:', { specialistId, businessId });
+      
+      // Primero buscar el SpecialistProfile para obtener el userId
+      const SpecialistProfile = require('../models/SpecialistProfile');
+      const specialistProfile = await SpecialistProfile.findOne({
         where: {
           id: specialistId,
           businessId,
-          role: { [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST'] },
-          status: 'ACTIVE'
-        }
+          isActive: true
+        },
+        include: [{
+          model: User,
+          as: 'user',
+          where: {
+            status: 'ACTIVE',
+            role: { [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST'] }
+          }
+        }]
       });
 
-      if (!specialist) {
+      if (!specialistProfile || !specialistProfile.user) {
+        console.log('❌ Especialista no encontrado o no válido');
         return res.status(400).json({
           success: false,
           error: 'Especialista no válido para este negocio'
         });
       }
+      
+      const specialist = specialistProfile.user;
+      console.log('✅ Especialista válido:', specialist.id);
 
       // Validar que el servicio pertenezca al negocio
+      console.log('🔍 Buscando servicio:', { serviceId, businessId });
       const service = await Service.findOne({
         where: {
           id: serviceId,
@@ -372,62 +493,57 @@ class AppointmentController {
       });
 
       if (!service) {
+        console.log('❌ Servicio no encontrado o no activo');
         return res.status(400).json({
           success: false,
           error: 'Servicio no válido para este negocio'
         });
       }
-
-      // Validar que el cliente exista
-      const client = await Client.findOne({
-        where: { id: clientId }
-      });
-
-      if (!client) {
-        return res.status(400).json({
-          success: false,
-          error: 'Cliente no encontrado'
-        });
-      }
+      console.log('✅ Servicio válido:', service.id);
 
       // Validar sucursal si se proporciona
       if (branchId) {
+        console.log('🔍 Validando sucursal:', { branchId, businessId });
         const Branch = require('../models/Branch');
         const branch = await Branch.findOne({
           where: {
             id: branchId,
             businessId,
-            isActive: true
+            status: 'ACTIVE' // Usar status en lugar de isActive
           }
         });
 
         if (!branch) {
+          console.log('❌ Sucursal no encontrada o no activa');
           return res.status(400).json({
             success: false,
             error: 'Sucursal no válida para este negocio'
           });
         }
 
+        console.log('🔍 Verificando acceso del especialista a la sucursal');
         // Verificar que el especialista tenga acceso a esa sucursal
         const specialistBranchAccess = await UserBranch.findOne({
           where: {
-            userId: specialistId,
+            userId: specialist.id, // Usar el User.id del especialista
             branchId: branchId
           }
         });
 
         if (!specialistBranchAccess) {
+          console.log('❌ Especialista sin acceso a la sucursal');
           return res.status(400).json({
             success: false,
             error: 'El especialista no tiene acceso a la sucursal seleccionada'
           });
         }
+        console.log('✅ Especialista tiene acceso a la sucursal');
       }
 
       // Verificar disponibilidad del especialista
       const conflictingAppointment = await Appointment.findOne({
         where: {
-          specialistId,
+          specialistId: specialist.id, // Usar el userId del especialista
           businessId,
           status: {
             [Op.notIn]: ['CANCELED', 'COMPLETED']
@@ -463,7 +579,7 @@ class AppointmentController {
       // Consultar precio personalizado del especialista para este servicio
       const specialistService = await SpecialistService.findOne({
         where: {
-          specialistId,
+          specialistId: specialistProfile.id, // Usar el SpecialistProfile.id para buscar precios
           serviceId,
           isActive: true
         }
@@ -480,8 +596,8 @@ class AppointmentController {
       // Crear la cita
       const appointment = await Appointment.create({
         businessId,
-        clientId,
-        specialistId,
+        clientId: client.id,
+        specialistId: specialist.id, // Usar el User.id del especialista
         serviceId,
         branchId: branchId || null, // Campo opcional
         appointmentNumber,
@@ -498,10 +614,12 @@ class AppointmentController {
         include: [
           {
             model: Service,
+            as: 'service', // Agregar el alias
             attributes: ['id', 'name', 'duration', 'price']
           },
           {
             model: Client,
+            as: 'client', // Agregar el alias
             attributes: ['id', 'firstName', 'lastName', 'phone']
           },
           {

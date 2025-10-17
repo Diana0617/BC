@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSelector } from 'react-redux'
+import toast from 'react-hot-toast'
 import {
   CalendarDaysIcon,
   ClockIcon,
@@ -17,7 +18,13 @@ import {
   UserIcon
 } from '@heroicons/react/24/outline'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid'
-import { useSchedule, useAppointmentCalendar, businessBranchesApi } from '@shared'
+import { 
+  useSchedule, 
+  useAppointmentCalendar, 
+  businessBranchesApi,
+  getServices
+} from '@shared'
+import businessSpecialistsApi from '@shared/api/businessSpecialistsApi'
 import appointmentApi from '@shared/api/appointmentApi'
 import FullCalendarView from '../../../../components/calendar/FullCalendarView'
 import AppointmentDetailModal from '../../../../components/calendar/AppointmentDetailModal'
@@ -55,6 +62,10 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [createModalData, setCreateModalData] = useState({})
+  
+  // Estados para datos del modal
+  const [specialists, setSpecialists] = useState([])
+  const [services, setServices] = useState([])
 
   // Estado para edición de horarios
   const [editingSchedule, setEditingSchedule] = useState(null)
@@ -215,6 +226,56 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
       console.error('Error cargando citas:', error)
     }
   }, [currentBusiness, currentMonth, selectedBranch, activeTab, getByDateRange])
+  
+  // Log separado para ver las citas cuando cambien (sin crear loop)
+  useEffect(() => {
+    if (calendarAppointments) {
+      console.log('✅ Citas en Redux actualizadas:', {
+        totalCitas: calendarAppointments?.length || 0,
+        primeras3: calendarAppointments?.slice(0, 3)
+      })
+    }
+  }, [calendarAppointments])
+
+  // Cargar especialistas de la sucursal seleccionada
+  const loadSpecialists = useCallback(async () => {
+    if (!currentBusiness?.id || !selectedBranch?.id) return
+
+    try {
+      console.log('👨‍⚕️ Cargando especialistas de la sucursal:', selectedBranch.name)
+      const response = await businessSpecialistsApi.getSpecialists(currentBusiness.id, {
+        branchId: selectedBranch.id,
+        isActive: true
+      })
+      
+      const specialistsList = response.data?.specialists || response.data || []
+      console.log('✅ Especialistas cargados:', specialistsList.length)
+      setSpecialists(specialistsList)
+    } catch (error) {
+      console.error('❌ Error cargando especialistas:', error)
+      setSpecialists([])
+    }
+  }, [currentBusiness, selectedBranch])
+
+  // Cargar servicios activos del negocio
+  const loadServices = useCallback(async () => {
+    if (!currentBusiness?.id) return
+
+    try {
+      console.log('💼 Cargando servicios del negocio...')
+      const response = await getServices(currentBusiness.id, {
+        isActive: true,
+        limit: 100
+      })
+      
+      const servicesList = response.data?.services || response.data || []
+      console.log('✅ Servicios cargados:', servicesList.length)
+      setServices(servicesList)
+    } catch (error) {
+      console.error('❌ Error cargando servicios:', error)
+      setServices([])
+    }
+  }, [currentBusiness])
 
   // Efectos
   useEffect(() => {
@@ -230,6 +291,18 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   useEffect(() => {
     loadAppointments()
   }, [loadAppointments])
+
+  useEffect(() => {
+    if (selectedBranch?.id) {
+      loadSpecialists()
+    }
+  }, [selectedBranch, loadSpecialists])
+
+  useEffect(() => {
+    if (currentBusiness?.id) {
+      loadServices()
+    }
+  }, [currentBusiness, loadServices])
 
   // Navegación del mes
   const navigateMonth = (direction) => {
@@ -305,12 +378,10 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
       
       setEditingSchedule(null)
       
-      // TODO: Mostrar notificación de éxito con toast/snackbar
-      alert('✅ Horarios guardados exitosamente')
+      toast.success('✅ Horarios guardados exitosamente')
     } catch (error) {
       console.error('❌ Error guardando horarios:', error)
-      // TODO: Mostrar notificación de error con toast/snackbar
-      alert(`❌ Error al guardar los horarios: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error al guardar los horarios: ${error.message || 'Error desconocido'}`)
     } finally {
       setIsLoading(false)
     }
@@ -574,8 +645,24 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
             Vista del Calendario
           </h3>
 
-          {/* Navegación del mes */}
+          {/* Navegación del mes y botón crear */}
           <div className="flex items-center justify-between sm:justify-start space-x-4">
+            {/* Botón Crear Turno */}
+            <button
+              onClick={() => {
+                setCreateModalData({ 
+                  date: new Date().toISOString().split('T')[0],
+                  branchId: selectedBranch?.id 
+                })
+                setShowCreateModal(true)
+              }}
+              disabled={!selectedBranch}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              <PlusIcon className="h-5 w-5" />
+              <span className="hidden sm:inline">Crear Turno</span>
+            </button>
+
             <button
               onClick={() => navigateMonth(-1)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -793,31 +880,34 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
         onUpdate={async (data) => {
           try {
             await appointmentApi.updateAppointment(selectedAppointment.id, data)
+            toast.success('Cita actualizada exitosamente')
             loadAppointments() // Recargar calendario
             setShowDetailModal(false)
           } catch (error) {
             console.error('Error actualizando cita:', error)
-            alert('Error al actualizar la cita')
+            toast.error('Error al actualizar la cita')
           }
         }}
         onCancel={async (reason) => {
           try {
             await appointmentApi.cancelAppointment(selectedAppointment.id, reason)
+            toast.success('Cita cancelada exitosamente')
             loadAppointments()
             setShowDetailModal(false)
           } catch (error) {
             console.error('Error cancelando cita:', error)
-            alert('Error al cancelar la cita')
+            toast.error('Error al cancelar la cita')
           }
         }}
         onComplete={async () => {
           try {
             await appointmentApi.completeAppointment(selectedAppointment.id)
+            toast.success('Cita completada exitosamente')
             loadAppointments()
             setShowDetailModal(false)
           } catch (error) {
             console.error('Error completando cita:', error)
-            alert('Error al completar la cita')
+            toast.error('Error al completar la cita')
           }
         }}
       />
@@ -827,16 +917,32 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
         onClose={() => setShowCreateModal(false)}
         initialData={createModalData}
         branches={branches}
-        specialists={[]} // TODO: Cargar especialistas según sucursal
-        services={[]} // TODO: Cargar servicios del negocio
+        specialists={specialists}
+        services={services}
         onCreate={async (data) => {
           try {
-            await appointmentApi.createAppointment(data)
+            // Transformar datos del formulario al formato de la API
+            const appointmentData = {
+              businessId: currentBusiness.id,
+              clientName: data.clientName,
+              clientPhone: data.clientPhone,
+              clientEmail: data.clientEmail,
+              specialistId: data.specialistId,
+              serviceId: data.serviceId,
+              branchId: data.branchId,
+              startTime: `${data.date}T${data.startTime}:00`,
+              endTime: `${data.date}T${data.endTime}:00`,
+              notes: data.notes || ''
+            }
+
+            console.log('📝 Creando cita con datos:', appointmentData)
+            await appointmentApi.createAppointment(appointmentData)
+            toast.success('Cita creada exitosamente')
             loadAppointments()
             setShowCreateModal(false)
           } catch (error) {
             console.error('Error creando cita:', error)
-            alert('Error al crear la cita')
+            toast.error(error.response?.data?.error || 'Error al crear la cita')
           }
         }}
       />

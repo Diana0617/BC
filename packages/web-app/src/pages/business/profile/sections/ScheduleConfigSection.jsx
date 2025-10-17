@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useSelector } from 'react-redux'
+import toast from 'react-hot-toast'
 import { 
   CalendarDaysIcon,
   ClockIcon,
@@ -156,7 +157,7 @@ const ScheduleConfigSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
   const handleSave = async () => {
     if (!selectedBranch || !currentBusiness?.id) {
-      alert('Por favor selecciona una sucursal')
+      toast.error('Por favor selecciona una sucursal')
       return
     }
 
@@ -201,7 +202,7 @@ const ScheduleConfigSection = ({ isSetupMode, onComplete, isCompleted }) => {
         )
       )
       
-      alert('✅ Horarios guardados correctamente')
+      toast.success('Horarios guardados correctamente')
       
       if (isSetupMode && onComplete) {
         onComplete()
@@ -209,7 +210,7 @@ const ScheduleConfigSection = ({ isSetupMode, onComplete, isCompleted }) => {
       
     } catch (error) {
       console.error('❌ Error guardando horarios:', error)
-      alert('Error al guardar los horarios. Por favor intenta nuevamente.')
+      toast.error('Error al guardar los horarios. Por favor intenta nuevamente.')
     } finally {
       setIsSaving(false)
     }

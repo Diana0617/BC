@@ -4,15 +4,25 @@ const getApiUrl = () => {
   const isReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
   
   if (isReactNative) {
-    // React Native environment - use environment variable or fallback to localhost
-    const localIP = process.env.EXPO_PUBLIC_LOCAL_IP || 'localhost';
+    // React Native environment - prioritize EXPO_PUBLIC_API_URL
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+    if (apiUrl) {
+      return apiUrl;
+    }
+    
+    // Fallback to local IP for development
+    const localIP = process.env.EXPO_PUBLIC_LOCAL_IP || '192.168.0.213';
     return `http://${localIP}:3001`;
   } else if (typeof window !== 'undefined') {
     // Web browser environment
+    // Prioritize Vite env var, then window global, then localhost
+    if (import.meta?.env?.VITE_API_URL) {
+      return import.meta.env.VITE_API_URL;
+    }
     return window.__BC_API_URL__ || 'http://localhost:3001';
   } else {
     // Node.js environment
-    return 'http://localhost:3001';
+    return process.env.API_BASE_URL || 'http://localhost:3001';
   }
 };
 

@@ -24,30 +24,6 @@ const FullCalendarView = ({
   height = 'auto'
 }) => {
   
-  // Transformar appointments al formato de FullCalendar
-  const events = useMemo(() => {
-    return appointments.map(appointment => ({
-      id: appointment.id,
-      title: `${appointment.clientName || 'Cliente'} - ${appointment.serviceName || 'Servicio'}`,
-      start: appointment.startTime,
-      end: appointment.endTime,
-      backgroundColor: getStatusColor(appointment.status),
-      borderColor: getStatusColor(appointment.status),
-      extendedProps: {
-        appointmentId: appointment.id,
-        clientName: appointment.clientName,
-        clientPhone: appointment.clientPhone,
-        specialistName: appointment.specialistName,
-        serviceName: appointment.serviceName,
-        servicePrice: appointment.servicePrice,
-        totalAmount: appointment.totalAmount,
-        status: appointment.status,
-        branchName: appointment.branchName,
-        notes: appointment.notes
-      }
-    }))
-  }, [appointments])
-
   // Colores por estado de cita
   const getStatusColor = (status) => {
     const colors = {
@@ -61,6 +37,49 @@ const FullCalendarView = ({
     }
     return colors[status] || '#9E9E9E'
   }
+  
+  // Transformar appointments al formato de FullCalendar
+  const events = useMemo(() => {
+    return appointments.map(appointment => {
+      const specialistName = appointment.specialist 
+        ? `${appointment.specialist.firstName} ${appointment.specialist.lastName}`
+        : appointment.specialistName || 'Sin asignar';
+      
+      const clientName = appointment.client 
+        ? `${appointment.client.firstName} ${appointment.client.lastName}`
+        : appointment.clientName || 'Cliente';
+      
+      const serviceName = appointment.service?.name || appointment.serviceName || 'Servicio';
+      
+      // Usar el color del perfil del especialista, o color por defecto según estado
+      const eventColor = appointment.specialist?.specialistProfile?.profileColor || getStatusColor(appointment.status);
+      
+      return {
+        id: appointment.id,
+        title: `${clientName} - ${serviceName}`,
+        start: appointment.startTime,
+        end: appointment.endTime,
+        backgroundColor: eventColor,
+        borderColor: eventColor,
+        extendedProps: {
+          appointmentId: appointment.id,
+          clientName: clientName,
+          clientPhone: appointment.client?.phone || appointment.clientPhone,
+          specialistName: specialistName,
+          specialistId: appointment.specialist?.id,
+          serviceName: serviceName,
+          servicePrice: appointment.service?.price || appointment.servicePrice,
+          serviceDuration: appointment.service?.duration,
+          totalAmount: appointment.totalAmount,
+          status: appointment.status,
+          branchName: appointment.branch?.name || appointment.branchName,
+          notes: appointment.notes,
+          // Datos adicionales para el detalle
+          appointment: appointment
+        }
+      };
+    })
+  }, [appointments])
 
   // Handler para click en evento
   const handleEventClick = (info) => {
@@ -148,16 +167,41 @@ const FullCalendarView = ({
           startTime: '09:00',
           endTime: '18:00'
         }}
-        eventContent={(eventInfo) => (
-          <div className="fc-event-custom px-1 py-0.5">
-            <div className="text-xs font-medium truncate">
-              {eventInfo.timeText && (
-                <span className="mr-1">{eventInfo.timeText}</span>
-              )}
-              <span>{eventInfo.event.title}</span>
+        eventContent={(eventInfo) => {
+          const props = eventInfo.event.extendedProps;
+          return (
+            <div className="fc-event-custom px-2 py-1 cursor-pointer hover:opacity-90 transition-opacity">
+              <div className="text-xs font-semibold truncate">
+                {eventInfo.timeText && (
+                  <span className="mr-1">{eventInfo.timeText}</span>
+                )}
+              </div>
+              <div className="text-xs font-medium truncate">
+                {props.clientName}
+              </div>
+              <div className="text-xs truncate opacity-90">
+                👤 {props.specialistName}
+              </div>
+              <div className="text-xs truncate opacity-80">
+                {props.serviceName}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        }}
+        eventDidMount={(info) => {
+          // Agregar tooltip con más información
+          const props = info.event.extendedProps;
+          info.el.title = `
+Cliente: ${props.clientName}
+Teléfono: ${props.clientPhone || 'N/A'}
+Especialista: ${props.specialistName}
+Servicio: ${props.serviceName}
+Duración: ${props.serviceDuration || 'N/A'} min
+Precio: $${props.totalAmount || props.servicePrice || 'N/A'}
+Estado: ${props.status}
+${props.notes ? '\nNotas: ' + props.notes : ''}
+          `.trim();
+        }}
       />
 
       {/* Estilos personalizados */}

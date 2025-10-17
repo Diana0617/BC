@@ -383,7 +383,8 @@ const appointmentCalendarSlice = createSlice({
       })
       .addCase(getAppointmentsByDateRange.fulfilled, (state, action) => {
         state.loading = false;
-        state.calendarAppointments = action.payload.data?.appointments || [];
+        // El backend devuelve { success: true, data: [...appointments] }
+        state.calendarAppointments = action.payload.data || action.payload.data?.appointments || [];
       })
       .addCase(getAppointmentsByDateRange.rejected, (state, action) => {
         state.loading = false;
