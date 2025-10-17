@@ -89,9 +89,9 @@ export const cancelAppointment = createAsyncThunk(
 // Obtener citas por rango de fechas (para vista calendario)
 export const getAppointmentsByDateRange = createAsyncThunk(
   'appointmentCalendar/getAppointmentsByDateRange',
-  async ({ startDate, endDate, branchId, specialistId }, { rejectWithValue }) => {
+  async ({ businessId, startDate, endDate, branchId, specialistId }, { rejectWithValue }) => {
     try {
-      const filters = { startDate, endDate };
+      const filters = { businessId, startDate, endDate };
       if (branchId) filters.branchId = branchId;
       if (specialistId) filters.specialistId = specialistId;
       

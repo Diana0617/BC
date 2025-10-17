@@ -13,6 +13,9 @@ router.use(authenticateToken);
 // Obtener lista de citas
 router.get('/', AppointmentController.getAppointments);
 
+// Obtener citas por rango de fechas (debe ir ANTES de '/:id' para evitar conflictos)
+router.get('/date-range', AppointmentController.getAppointmentsByDateRange);
+
 // Crear nueva cita
 router.post('/', AppointmentController.createAppointment);
 

@@ -341,9 +341,18 @@ class BusinessConfigService {
         
         // Si no existe, crear la sucursal principal con los datos del negocio
         if (!mainBranch) {
+          // Generar un código único para la sucursal basado en el nombre del negocio
+          const branchCode = business.name
+            .substring(0, 10) // Tomar primeros 10 caracteres
+            .toUpperCase()
+            .replace(/[^A-Z0-9]/g, '') // Eliminar caracteres especiales
+            .padEnd(3, '0') // Asegurar mínimo 3 caracteres
+            + '-MAIN';
+          
           mainBranch = await Branch.create({
             businessId: businessId,
             name: `${business.name} - Principal`,
+            code: branchCode, // ✅ Agregar código obligatorio
             address: business.address || 'Dirección no especificada',
             city: business.city || 'Ciudad no especificada',
             country: business.country || 'Colombia',
@@ -353,7 +362,7 @@ class BusinessConfigService {
             isActive: true
           }, { transaction });
           
-          console.log(`✅ Sucursal principal creada automáticamente: ${mainBranch.id}`);
+          console.log(`✅ Sucursal principal creada automáticamente: ${mainBranch.id} (código: ${branchCode})`);
         }
         
         mainBranchId = mainBranch.id;

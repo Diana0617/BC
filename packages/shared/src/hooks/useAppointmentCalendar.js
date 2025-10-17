@@ -111,8 +111,9 @@ export const useAppointmentCalendar = () => {
   );
 
   const handleGetByDateRange = useCallback(
-    ({ startDate, endDate, specialistId, branchId, status }) => {
+    ({ businessId, startDate, endDate, specialistId, branchId, status }) => {
       return dispatch(getAppointmentsByDateRange({ 
+        businessId,
         startDate, 
         endDate, 
         specialistId, 

@@ -1,11 +1,25 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useSelector } from 'react-redux'
 import { 
   CalendarDaysIcon,
   ClockIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline'
+import { businessBranchesApi } from '@shared'
 
 const ScheduleConfigSection = ({ isSetupMode, onComplete, isCompleted }) => {
+  const { currentBusiness } = useSelector(state => state.business)
+  
+  // Leer reglas de negocio para verificar si tiene multisucursal
+  const businessRules = useSelector(state => state.businessRule?.assignedRules || [])
+  const multiBranchRule = businessRules.find(r => r.key === 'MULTISUCURSAL')
+  const hasMultiBranch = multiBranchRule?.customValue ?? multiBranchRule?.effective_value ?? multiBranchRule?.defaultValue ?? multiBranchRule?.template?.defaultValue ?? false
+  
+  const [branches, setBranches] = useState([])
+  const [selectedBranch, setSelectedBranch] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  
   const [schedule, setSchedule] = useState({
     monday: { enabled: true, start: '08:00', end: '18:00' },
     tuesday: { enabled: true, start: '08:00', end: '18:00' },
@@ -29,6 +43,106 @@ const ScheduleConfigSection = ({ isSetupMode, onComplete, isCompleted }) => {
     saturday: 'Sábado',
     sunday: 'Domingo'
   }
+  
+  const branchColors = [
+    { bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-700' },
+    { bg: 'bg-green-50', border: 'border-green-500', text: 'text-green-700' },
+    { bg: 'bg-purple-50', border: 'border-purple-500', text: 'text-purple-700' },
+    { bg: 'bg-orange-50', border: 'border-orange-500', text: 'text-orange-700' },
+    { bg: 'bg-pink-50', border: 'border-pink-500', text: 'text-pink-700' },
+    { bg: 'bg-indigo-50', border: 'border-indigo-500', text: 'text-indigo-700' }
+  ]
+
+  // Cargar sucursales cuando se monta el componente
+  useEffect(() => {
+    if (currentBusiness?.id) {
+      loadBranches()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentBusiness?.id])
+
+  // Cargar horarios cuando se selecciona una sucursal
+  useEffect(() => {
+    if (selectedBranch) {
+      loadBranchSchedule()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBranch])
+
+  const loadBranches = useCallback(async () => {
+    if (!currentBusiness?.id) return
+    
+    try {
+      setIsLoading(true)
+      console.log('🏢 Cargando sucursales para configurar horarios...')
+      console.log('📋 currentBusiness:', currentBusiness)
+      console.log('🔐 hasMultiBranch:', hasMultiBranch)
+      
+      const response = await businessBranchesApi.getBranches(currentBusiness.id, {
+        isActive: true,
+        limit: 50
+      })
+      
+      console.log('📦 Respuesta completa de la API:', response)
+      
+      // La API devuelve { success: true, data: [...] } donde data es directamente el array
+      const branchesData = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data?.branches || response.branches || [])
+      console.log('🏪 Sucursales parseadas:', branchesData)
+      console.log('📊 Cantidad de sucursales:', branchesData.length)
+      
+      setBranches(branchesData)
+      
+      // Si no hay módulo multisucursal o solo hay una sucursal, seleccionarla automáticamente
+      if ((!hasMultiBranch || branchesData.length === 1) && branchesData.length > 0) {
+        console.log('🔒 Seleccionando sucursal automáticamente:', branchesData[0])
+        setSelectedBranch(branchesData[0])
+      } else if (branchesData.length === 0) {
+        console.log('⚠️ No se encontraron sucursales')
+      } else {
+        console.log('🔓 Modo multisucursal - esperando selección manual')
+      }
+    } catch (error) {
+      console.error('❌ Error cargando sucursales:', error)
+    } finally {
+      setIsLoading(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentBusiness?.id, hasMultiBranch])
+
+  const loadBranchSchedule = useCallback(() => {
+    if (!selectedBranch) return
+
+    console.log('📅 Cargando horarios de sucursal:', selectedBranch)
+
+    // Si la sucursal tiene businessHours, cargarlos
+    if (selectedBranch.businessHours) {
+      const hours = selectedBranch.businessHours
+      console.log('✅ businessHours encontrados:', hours)
+      
+      const newSchedule = {}
+      Object.keys(schedule).forEach(day => {
+        const dayData = hours[day]
+        if (dayData) {
+          newSchedule[day] = {
+            enabled: !dayData.closed && dayData.open && dayData.close,
+            start: dayData.open || '08:00',
+            end: dayData.close || '18:00'
+          }
+        } else {
+          // Mantener valores por defecto
+          newSchedule[day] = schedule[day]
+        }
+      })
+      
+      console.log('📋 Horarios cargados:', newSchedule)
+      setSchedule(newSchedule)
+    } else {
+      console.log('⚠️ No hay businessHours guardados, usando valores por defecto')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBranch])
 
   const handleDayChange = (day, field, value) => {
     setSchedule(prev => ({
@@ -41,23 +155,132 @@ const ScheduleConfigSection = ({ isSetupMode, onComplete, isCompleted }) => {
   }
 
   const handleSave = async () => {
+    if (!selectedBranch || !currentBusiness?.id) {
+      alert('Por favor selecciona una sucursal')
+      return
+    }
+
     setIsSaving(true)
     
     try {
-      // TODO: Implementar guardado en API
-      console.log('Guardando horarios:', { schedule, appointmentDuration, bufferTime })
+      console.log('💾 Guardando horarios de sucursal:', selectedBranch.name)
       
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Convertir schedule al formato businessHours
+      const businessHours = {}
+      Object.entries(schedule).forEach(([day, data]) => {
+        businessHours[day] = {
+          open: data.start,
+          close: data.end,
+          closed: !data.enabled
+        }
+      })
+      
+      console.log('📋 businessHours a guardar:', businessHours)
+      
+      // Guardar en la API
+      await businessBranchesApi.updateBranch(
+        currentBusiness.id,
+        selectedBranch.id,
+        { businessHours }
+      )
+      
+      console.log('✅ Horarios guardados exitosamente')
+      
+      // Actualizar la sucursal seleccionada con los nuevos datos
+      setSelectedBranch(prev => ({
+        ...prev,
+        businessHours
+      }))
+      
+      // Actualizar en la lista de sucursales
+      setBranches(prev => 
+        prev.map(branch => 
+          branch.id === selectedBranch.id 
+            ? { ...branch, businessHours }
+            : branch
+        )
+      )
+      
+      alert('✅ Horarios guardados correctamente')
       
       if (isSetupMode && onComplete) {
         onComplete()
       }
       
     } catch (error) {
-      console.error('Error guardando horarios:', error)
+      console.error('❌ Error guardando horarios:', error)
+      alert('Error al guardar los horarios. Por favor intenta nuevamente.')
     } finally {
       setIsSaving(false)
     }
+  }
+
+  // Renderizar selector de sucursales
+  const renderBranchSelector = () => {
+    // No mostrar si solo hay una sucursal y no tiene multisucursal
+    if (!hasMultiBranch && branches.length <= 1) {
+      return null
+    }
+
+    if (isLoading) {
+      return (
+        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
+            <span className="text-gray-600">Cargando sucursales...</span>
+          </div>
+        </div>
+      )
+    }
+
+    if (branches.length === 0) {
+      return (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-yellow-800">
+            ⚠️ No hay sucursales disponibles. Por favor crea una sucursal primero.
+          </p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Sucursal a configurar:
+        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {branches.map((branch, index) => (
+            <button
+              key={branch.id}
+              onClick={() => setSelectedBranch(branch)}
+              className={`${
+                selectedBranch?.id === branch.id
+                  ? `${branchColors[index % branchColors.length].bg} ${branchColors[index % branchColors.length].border} border-2`
+                  : 'bg-white border-2 border-gray-200 hover:border-gray-300'
+              } p-4 rounded-lg transition-all duration-200 text-left`}
+            >
+              <div className="flex items-center">
+                <BuildingOfficeIcon className={`h-5 w-5 mr-2 ${
+                  selectedBranch?.id === branch.id
+                    ? branchColors[index % branchColors.length].text
+                    : 'text-gray-500'
+                }`} />
+                <div>
+                  <div className={`font-medium ${
+                    selectedBranch?.id === branch.id
+                      ? branchColors[index % branchColors.length].text
+                      : 'text-gray-900'
+                  }`}>
+                    {branch.name}
+                  </div>
+                  <div className="text-xs text-gray-500">{branch.code}</div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -75,7 +298,19 @@ const ScheduleConfigSection = ({ isSetupMode, onComplete, isCompleted }) => {
         </div>
       </div>
 
-      {/* Configuración por día */}
+      {/* Selector de Sucursales */}
+      {renderBranchSelector()}
+
+      {/* Mostrar contenido solo si hay sucursal seleccionada */}
+      {!selectedBranch ? (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
+            👆 Selecciona una sucursal para configurar sus horarios
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Configuración por día */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">Horarios por Día</h3>
@@ -208,6 +443,8 @@ const ScheduleConfigSection = ({ isSetupMode, onComplete, isCompleted }) => {
             Puedes configurar horarios diferentes para cada especialista después.
           </p>
         </div>
+      )}
+        </>
       )}
     </div>
   )

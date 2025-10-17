@@ -21,7 +21,7 @@ const appointmentApi = {
    * @returns {Promise} { success, data: { appointments, pagination } }
    */
   getAppointments: async (filters = {}) => {
-    const response = await api.get('/appointments', { params: filters });
+    const response = await api.get('/api/appointments', { params: filters });
     return response.data;
   },
 
@@ -31,7 +31,7 @@ const appointmentApi = {
    * @returns {Promise} { success, data: appointment }
    */
   getAppointmentById: async (appointmentId) => {
-    const response = await api.get(`/appointments/${appointmentId}`);
+    const response = await api.get(`/api/appointments/${appointmentId}`);
     return response.data;
   },
 
@@ -41,7 +41,7 @@ const appointmentApi = {
    * @returns {Promise} { success, data: appointment, message }
    */
   createAppointment: async (appointmentData) => {
-    const response = await api.post('/appointments', appointmentData);
+    const response = await api.post('/api/appointments', appointmentData);
     return response.data;
   },
 
@@ -52,7 +52,7 @@ const appointmentApi = {
    * @returns {Promise} { success, data: appointment, message }
    */
   updateAppointment: async (appointmentId, updateData) => {
-    const response = await api.put(`/appointments/${appointmentId}`, updateData);
+    const response = await api.put(`/api/appointments/${appointmentId}`, updateData);
     return response.data;
   },
 
@@ -63,7 +63,7 @@ const appointmentApi = {
    * @returns {Promise} { success, data: appointment, message }
    */
   updateAppointmentStatus: async (appointmentId, statusData) => {
-    const response = await api.patch(`/appointments/${appointmentId}/status`, statusData);
+    const response = await api.patch(`/api/appointments/${appointmentId}/status`, statusData);
     return response.data;
   },
 
@@ -74,7 +74,7 @@ const appointmentApi = {
    * @returns {Promise} { success, data: appointment, message }
    */
   cancelAppointment: async (appointmentId, cancelData) => {
-    const response = await api.patch(`/appointments/${appointmentId}/cancel`, cancelData);
+    const response = await api.patch(`/api/appointments/${appointmentId}/cancel`, cancelData);
     return response.data;
   },
 
@@ -84,7 +84,7 @@ const appointmentApi = {
    * @returns {Promise} { success, data: { appointments } }
    */
   getAppointmentsByDateRange: async (filters) => {
-    const response = await api.get('/appointments/date-range', { params: filters });
+    const response = await api.get('/api/appointments/date-range', { params: filters });
     return response.data;
   },
 
@@ -120,7 +120,7 @@ const appointmentApi = {
    */
   completeAppointment: async (appointmentId, businessId, completionData) => {
     const response = await api.patch(
-      `/appointments/${appointmentId}/complete?businessId=${businessId}`,
+      `/api/appointments/${appointmentId}/complete?businessId=${businessId}`,
       completionData
     );
     return response.data;
@@ -148,7 +148,7 @@ const appointmentApi = {
    */
   rescheduleAppointment: async (appointmentId, businessId, rescheduleData) => {
     const response = await api.post(
-      `/appointments/${appointmentId}/reschedule?businessId=${businessId}`,
+      `/api/appointments/${appointmentId}/reschedule?businessId=${businessId}`,
       rescheduleData
     );
     return response.data;
@@ -176,7 +176,7 @@ const appointmentApi = {
    */
   uploadEvidence: async (appointmentId, businessId, formData) => {
     const response = await api.post(
-      `/appointments/${appointmentId}/evidence?businessId=${businessId}`,
+      `/api/appointments/${appointmentId}/evidence?businessId=${businessId}`,
       formData,
       {
         headers: {
@@ -203,7 +203,7 @@ const appointmentApi = {
    */
   validateCompletion: async (appointmentId, businessId) => {
     const response = await api.get(
-      `/appointments/${appointmentId}/validate-completion?businessId=${businessId}`
+      `/api/appointments/${appointmentId}/validate-completion?businessId=${businessId}`
     );
     return response.data;
   },
@@ -217,7 +217,7 @@ const appointmentApi = {
    */
   getAppointmentHistory: async (appointmentId, businessId) => {
     const response = await api.get(
-      `/appointments/${appointmentId}/history?businessId=${businessId}`
+      `/api/appointments/${appointmentId}/history?businessId=${businessId}`
     );
     return response.data;
   }

@@ -23,13 +23,15 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const isLoadingBusiness = useSelector(state => state.business.isLoading);
   
   // Leer reglas de negocio para sistema de comisiones
-  const businessRules = useSelector(state => state.businessRules?.rules || []);
-  const commissionRule = businessRules.find(r => r.key === 'ESPECIALISTA_USAR_COMISIONES');
-  const defaultCommissionRule = businessRules.find(r => r.key === 'ESPECIALISTA_PORCENTAJE_COMISION');
+  const businessRules = useSelector(state => state.businessRule?.assignedRules || []);
+  const commissionRule = businessRules.find(r => r.key === 'COMISIONES_HABILITADAS');
+  const commissionTypeRule = businessRules.find(r => r.key === 'COMISIONES_TIPO_CALCULO');
+  const defaultCommissionRule = businessRules.find(r => r.key === 'COMISIONES_PORCENTAJE_GENERAL');
   
   // Determinar si el negocio usa comisiones (por defecto true si no hay regla)
-  const useCommissionSystem = commissionRule?.effectiveValue ?? commissionRule?.defaultValue ?? true;
-  const defaultCommissionRate = defaultCommissionRule?.effectiveValue ?? defaultCommissionRule?.defaultValue ?? 50;
+  const useCommissionSystem = commissionRule?.customValue ?? commissionRule?.effective_value ?? commissionRule?.defaultValue ?? commissionRule?.template?.defaultValue ?? true;
+  const commissionCalculationType = commissionTypeRule?.customValue ?? commissionTypeRule?.effective_value ?? commissionTypeRule?.defaultValue ?? commissionTypeRule?.template?.defaultValue ?? 'POR_SERVICIO';
+  const defaultCommissionRate = defaultCommissionRule?.customValue ?? defaultCommissionRule?.effective_value ?? defaultCommissionRule?.defaultValue ?? defaultCommissionRule?.template?.defaultValue ?? 50;
   
   const [specialists, setSpecialists] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -821,24 +823,66 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
         
         {/* Campo de Comisión - Solo si el negocio usa sistema de comisiones */}
         {useCommissionSystem && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Comisión (%)
-            </label>
-            <input
-              type="number"
-              name="commissionRate"
-              value={formData.commissionRate}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder={defaultCommissionRate.toString()}
-              min="0"
-              max="100"
-              step="5"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Porcentaje de comisión por servicio (0-100%). Dejar en blanco para usar {defaultCommissionRate}% por defecto.
-            </p>
+          <div className="md:col-span-2 space-y-3">
+            {/* Información sobre el tipo de cálculo */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800 flex items-start">
+                <span className="mr-2">💡</span>
+                <span>
+                  {commissionCalculationType === 'GENERAL' && (
+                    <>
+                      <strong>Comisión general:</strong> Tu negocio aplica el mismo porcentaje de comisión ({defaultCommissionRate}%) a todos los servicios. 
+                      Puedes personalizar la comisión para este especialista aquí abajo.
+                    </>
+                  )}
+                  {commissionCalculationType === 'POR_SERVICIO' && (
+                    <>
+                      <strong>Comisión por servicio:</strong> Cada servicio tiene su propio porcentaje de comisión configurado. 
+                      Asigna los servicios a este especialista en la pestaña "Servicios" para definir sus comisiones.
+                    </>
+                  )}
+                  {commissionCalculationType === 'MIXTO' && (
+                    <>
+                      <strong>Comisión mixta:</strong> Algunos servicios usan la comisión general ({defaultCommissionRate}%) y otros tienen comisión personalizada. 
+                      Configura las comisiones específicas en la pestaña "Servicios".
+                    </>
+                  )}
+                </span>
+              </p>
+            </div>
+            
+            {/* Campo para comisión general del especialista */}
+            {(commissionCalculationType === 'GENERAL' || commissionCalculationType === 'MIXTO') && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Comisión General del Especialista (%)
+                </label>
+                <input
+                  type="number"
+                  name="commissionRate"
+                  value={formData.commissionRate}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={defaultCommissionRate.toString()}
+                  min="0"
+                  max="100"
+                  step="5"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Porcentaje de comisión por servicio (0-100%). Dejar en blanco para usar {defaultCommissionRate}% por defecto.
+                </p>
+              </div>
+            )}
+            
+            {/* Mensaje para comisión por servicio */}
+            {commissionCalculationType === 'POR_SERVICIO' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ Las comisiones se configuran individualmente por cada servicio asignado al especialista. 
+                  Una vez guardes este especialista, ve a la pestaña "Servicios" para asignar servicios y definir sus comisiones.
+                </p>
+              </div>
+            )}
           </div>
         )}
         

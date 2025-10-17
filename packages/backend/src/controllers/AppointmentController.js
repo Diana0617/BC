@@ -99,10 +99,12 @@ class AppointmentController {
         include: [
           {
             model: Service,
+            as: 'service',
             attributes: ['id', 'name', 'duration', 'price', 'category']
           },
           {
             model: Client,
+            as: 'client',
             attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
           },
           {
@@ -111,6 +113,7 @@ class AppointmentController {
             attributes: ['id', 'firstName', 'lastName'],
             include: [{
               model: SpecialistProfile,
+              as: 'specialistProfile',
               attributes: ['specialization']
             }]
           },
@@ -172,10 +175,12 @@ class AppointmentController {
         include: [
           {
             model: Service,
+            as: 'service',
             attributes: ['id', 'name', 'description', 'duration', 'price', 'category']
           },
           {
             model: Client,
+            as: 'client',
             attributes: ['id', 'firstName', 'lastName', 'phone', 'email', 'dateOfBirth']
           },
           {
@@ -184,6 +189,7 @@ class AppointmentController {
             attributes: ['id', 'firstName', 'lastName', 'phone'],
             include: [{
               model: SpecialistProfile,
+              as: 'specialistProfile',
               attributes: ['specialization', 'experience']
             }]
           },
@@ -210,6 +216,101 @@ class AppointmentController {
 
     } catch (error) {
       console.error('Error obteniendo detalle de cita:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Obtener citas por rango de fechas
+   * GET /api/appointments/date-range?startDate={start}&endDate={end}&branchId={id}
+   */
+  static async getAppointmentsByDateRange(req, res) {
+    try {
+      const { businessId, startDate, endDate, branchId, specialistId } = req.query;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: 'businessId es requerido'
+        });
+      }
+
+      if (!startDate || !endDate) {
+        return res.status(400).json({
+          success: false,
+          error: 'startDate y endDate son requeridos'
+        });
+      }
+
+      const where = {
+        businessId,
+        startTime: {
+          [Op.gte]: new Date(startDate),
+          [Op.lte]: new Date(endDate)
+        }
+      };
+
+      // Filtros opcionales
+      if (branchId) {
+        where.branchId = branchId;
+      }
+
+      if (specialistId) {
+        where.specialistId = specialistId;
+      }
+
+      // Aplicar filtros de acceso según el rol
+      if (req.specialist) {
+        where.specialistId = req.specialist.id;
+      } else if (req.receptionist && req.user.branchIds && req.user.branchIds.length > 0) {
+        where.branchId = {
+          [Op.in]: req.user.branchIds
+        };
+      }
+
+      const appointments = await Appointment.findAll({
+        where,
+        include: [
+          {
+            model: Service,
+            as: 'service',
+            attributes: ['id', 'name', 'duration', 'price', 'category']
+          },
+          {
+            model: Client,
+            as: 'client',
+            attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
+          },
+          {
+            model: User,
+            as: 'specialist',
+            attributes: ['id', 'firstName', 'lastName'],
+            include: [{
+              model: SpecialistProfile,
+              as: 'specialistProfile',
+              attributes: ['specialization']
+            }]
+          },
+          {
+            model: require('../models/Branch'),
+            as: 'branch',
+            attributes: ['id', 'name', 'code'],
+            required: false
+          }
+        ],
+        order: [['startTime', 'ASC']]
+      });
+
+      res.json({
+        success: true,
+        data: appointments
+      });
+
+    } catch (error) {
+      console.error('Error obteniendo citas por rango de fechas:', error);
       res.status(500).json({
         success: false,
         error: 'Error interno del servidor'
@@ -802,10 +903,12 @@ class AppointmentController {
         include: [
           {
             model: Service,
+            as: 'service',
             attributes: ['id', 'name', 'duration', 'price', 'category']
           },
           {
             model: Client,
+            as: 'client',
             attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
           },
           {
@@ -814,6 +917,7 @@ class AppointmentController {
             attributes: ['id', 'firstName', 'lastName'],
             include: [{
               model: SpecialistProfile,
+              as: 'specialistProfile',
               attributes: ['specialization']
             }]
           },
@@ -990,10 +1094,12 @@ class AppointmentController {
         include: [
           {
             model: Service,
+            as: 'service',
             attributes: ['id', 'name', 'duration', 'price', 'category']
           },
           {
             model: Client,
+            as: 'client',
             attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
           },
           {
@@ -1002,6 +1108,7 @@ class AppointmentController {
             attributes: ['id', 'firstName', 'lastName'],
             include: [{
               model: SpecialistProfile,
+              as: 'specialistProfile',
               attributes: ['specialization']
             }]
           },
@@ -1150,10 +1257,12 @@ class AppointmentController {
         include: [
           {
             model: Service,
+            as: 'service',
             attributes: ['id', 'name', 'duration', 'price', 'category']
           },
           {
             model: Client,
+            as: 'client',
             attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
           },
           {
@@ -1162,6 +1271,7 @@ class AppointmentController {
             attributes: ['id', 'firstName', 'lastName'],
             include: [{
               model: SpecialistProfile,
+              as: 'specialistProfile',
               attributes: ['specialization']
             }]
           },
