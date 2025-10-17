@@ -2,9 +2,10 @@ const {
   BusinessCommissionConfig, 
   ServiceCommission, 
   Service, 
-  Business 
+  Business,
+  BusinessRule,
+  RuleTemplate
 } = require('../models');
-const { BusinessRule } = require('../models');
 
 /**
  * @controller CommissionController
@@ -24,29 +25,17 @@ exports.getBusinessCommissionConfig = async (req, res) => {
       include: [{
         model: Business,
         as: 'business',
-        attributes: ['id', 'name', 'slug']
+        attributes: ['id', 'name']
       }]
     });
 
-    // Si no existe, crear configuración por defecto basada en reglas
+    // Si no existe, crear configuración por defecto
     if (!config) {
-      const rules = await BusinessRule.findAll({
-        where: { 
-          businessId,
-          ruleKey: ['COMISIONES_HABILITADAS', 'COMISIONES_TIPO_CALCULO', 'COMISIONES_PORCENTAJE_GENERAL']
-        }
-      });
-
-      const rulesMap = rules.reduce((acc, rule) => {
-        acc[rule.ruleKey] = rule.value;
-        return acc;
-      }, {});
-
       config = await BusinessCommissionConfig.create({
         businessId,
-        commissionsEnabled: rulesMap.COMISIONES_HABILITADAS ?? true,
-        calculationType: rulesMap.COMISIONES_TIPO_CALCULO ?? 'GENERAL',
-        generalPercentage: rulesMap.COMISIONES_PORCENTAJE_GENERAL ?? 50
+        commissionsEnabled: true,
+        calculationType: 'GENERAL',
+        generalPercentage: 50
       });
     }
 
@@ -117,19 +106,47 @@ exports.updateBusinessCommissionConfig = async (req, res) => {
       });
     }
 
-    // Sincronizar con BusinessRules
-    await BusinessRule.update(
-      { value: commissionsEnabled },
-      { where: { businessId, ruleKey: 'COMISIONES_HABILITADAS' } }
-    );
-    await BusinessRule.update(
-      { value: calculationType },
-      { where: { businessId, ruleKey: 'COMISIONES_TIPO_CALCULO' } }
-    );
-    await BusinessRule.update(
-      { value: generalPercentage },
-      { where: { businessId, ruleKey: 'COMISIONES_PORCENTAJE_GENERAL' } }
-    );
+    // Sincronizar con BusinessRules usando RuleTemplate
+    // Buscar los templates de reglas por su key
+    const ruleTemplates = await RuleTemplate.findAll({
+      where: {
+        key: ['COMISIONES_HABILITADAS', 'COMISIONES_TIPO_CALCULO', 'COMISIONES_PORCENTAJE_GENERAL']
+      }
+    });
+
+    // Crear un mapa de key -> templateId
+    const templateMap = {};
+    ruleTemplates.forEach(template => {
+      templateMap[template.key] = template.id;
+    });
+
+    // Actualizar o crear BusinessRules
+    if (templateMap.COMISIONES_HABILITADAS) {
+      await BusinessRule.upsert({
+        businessId,
+        ruleTemplateId: templateMap.COMISIONES_HABILITADAS,
+        customValue: commissionsEnabled,
+        isActive: true
+      });
+    }
+
+    if (templateMap.COMISIONES_TIPO_CALCULO) {
+      await BusinessRule.upsert({
+        businessId,
+        ruleTemplateId: templateMap.COMISIONES_TIPO_CALCULO,
+        customValue: calculationType,
+        isActive: true
+      });
+    }
+
+    if (templateMap.COMISIONES_PORCENTAJE_GENERAL) {
+      await BusinessRule.upsert({
+        businessId,
+        ruleTemplateId: templateMap.COMISIONES_PORCENTAJE_GENERAL,
+        customValue: generalPercentage,
+        isActive: true
+      });
+    }
 
     return res.json({
       success: true,

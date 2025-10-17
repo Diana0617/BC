@@ -236,6 +236,17 @@ class AuthController {
       // Actualizar último login
       await user.update({ lastLogin: new Date() });
 
+      // Cargar sucursales si el usuario es OWNER o ADMIN
+      let branches = [];
+      if (['OWNER', 'ADMIN'].includes(user.role) && user.businessId) {
+        const Branch = require('../models/Branch');
+        branches = await Branch.findAll({
+          where: { businessId: user.businessId },
+          attributes: ['id', 'name', 'code', 'address', 'city', 'state', 'country', 'phone', 'email'],
+          order: [['name', 'ASC']]
+        });
+      }
+
       // Preparar respuesta (sin contraseña)
       const userResponse = {
         id: user.id,
@@ -253,8 +264,15 @@ class AuthController {
           name: user.business.name,
           businessType: user.business.businessType,
           status: user.business.status,
+          phone: user.business.phone,
+          email: user.business.email,
+          address: user.business.address,
+          city: user.business.city,
+          state: user.business.state,
+          country: user.business.country,
           currentPlan: user.business.currentPlan
-        } : null
+        } : null,
+        branches: branches.map(b => b.toJSON ? b.toJSON() : b)
       };
 
       res.status(200).json({
@@ -402,8 +420,15 @@ class AuthController {
           name: user.business.name,
           businessType: user.business.businessType,
           status: user.business.status,
+          phone: user.business.phone,
+          email: user.business.email,
+          address: user.business.address,
+          city: user.business.city,
+          state: user.business.state,
+          country: user.business.country,
           currentPlan: user.business.currentPlan
-        } : null
+        } : null,
+        branches: req.user?.branches || []
       };
 
       res.status(200).json({

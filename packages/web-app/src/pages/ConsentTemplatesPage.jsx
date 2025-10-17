@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   DocumentTextIcon,
@@ -17,11 +17,18 @@ import {
   updateConsentTemplate,
   deleteConsentTemplate
 } from '@shared/store/slices/consentSlice';
+import { loadBranding } from '@shared/store/slices/businessConfigurationSlice';
 
 const ConsentTemplatesPage = () => {
   const dispatch = useDispatch();
   const businessId = useSelector(state => state.auth.user?.businessId);
+  const business = useSelector(state => state.auth.user?.business);
+  const branches = useSelector(state => state.auth.user?.branches || []);
   const { templates, loading, error } = useSelector(state => state.consent);
+  const { branding, loading: brandingLoading } = useSelector(state => state.businessConfiguration);
+
+  // Ref para rastrear si ya se intentó cargar el branding
+  const brandingLoadedRef = useRef(false);
 
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -35,6 +42,15 @@ const ConsentTemplatesPage = () => {
       loadTemplates();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessId]);
+
+  // Cargar branding del negocio (para logo y colores) - solo una vez
+  useEffect(() => {
+    if (businessId && !branding && !brandingLoading && !brandingLoadedRef.current) {
+      brandingLoadedRef.current = true;
+      dispatch(loadBranding(businessId));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId]);
 
   const loadTemplates = () => {
@@ -371,6 +387,12 @@ const ConsentTemplatesPage = () => {
         onSave={handleSave}
         template={selectedTemplate}
         businessId={businessId}
+        businessName={business?.name}
+        businessPhone={business?.phone}
+        businessAddress={business?.address}
+        businessEmail={business?.email}
+        branches={branches}
+        branding={branding}
       />
 
       {/* Preview Modal */}

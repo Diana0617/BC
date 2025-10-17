@@ -59,7 +59,7 @@ const authenticateToken = async (req, res, next) => {
       include: [{
         model: Business,
         as: 'business',
-        attributes: ['id', 'name', 'status', 'trialEndDate']
+        attributes: ['id', 'name', 'status', 'trialEndDate', 'phone', 'email', 'address', 'city', 'state', 'country']
       }]
     });
 
@@ -110,6 +110,21 @@ const authenticateToken = async (req, res, next) => {
       }
     }
 
+    // Cargar todas las sucursales del negocio para OWNER y ADMIN
+    let branches = [];
+    if (['OWNER', 'ADMIN'].includes(user.role) && user.businessId) {
+      branches = await Branch.findAll({
+        where: { businessId: user.businessId },
+        attributes: ['id', 'name', 'code', 'address', 'city', 'state', 'country', 'phone', 'email'],
+        order: [['name', 'ASC']]
+      });
+      console.log('🏢 Auth Middleware - Branches cargadas:', branches.length);
+    }
+
+    console.log('🔐 Auth Middleware - Datos del usuario:');
+    console.log('  business:', user.business?.toJSON());
+    console.log('  branches:', branches.length > 0 ? branches.map(b => b.toJSON()) : 'Sin sucursales');
+
     req.user = {
       id: user.id,
       email: user.email,
@@ -117,7 +132,8 @@ const authenticateToken = async (req, res, next) => {
       status: user.status,
       businessId: user.businessId,
       business: user.business,
-      branchIds: branchIds // Array de IDs de branches asignados (vacío para otros roles)
+      branchIds: branchIds, // Array de IDs de branches asignados (vacío para otros roles)
+      branches: branches.map(b => b.toJSON()) // Todas las sucursales del negocio (solo para OWNER/ADMIN)
     };
 
     next();
