@@ -69,8 +69,7 @@ const SpecialistProfile = sequelize.define('SpecialistProfile', {
   commissionType: {
     type: DataTypes.ENUM('PERCENTAGE', 'FIXED_AMOUNT'),
     allowNull: false,
-    defaultValue: 'PERCENTAGE',
-    
+    defaultValue: 'PERCENTAGE'
   },
   fixedCommissionAmount: {
     type: DataTypes.DECIMAL(10, 2),

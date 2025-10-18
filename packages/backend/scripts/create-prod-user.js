@@ -2,7 +2,7 @@ const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 
-const DATABASE_URL = 'postgresql://neondb_owner:npg_7ugmKHXAIJ4h@ep-wandering-dream-adoipu8b-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
+const DATABASE_URL = 'postgresql://neondb_owner:npg_sVkni1pYdKP4@ep-divine-bread-adt4an18-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
@@ -22,9 +22,9 @@ async function createTestUser() {
     
     const testUser = {
       id: uuidv4(),
-      email: 'admin@beautycontrol.com',
+      email: 'Owner@bc.com',
       password: hashedPassword,
-      firstName: 'Admin',
+      firstName: 'Owner',
       lastName: 'Usuario',
       role: 'OWNER'
     };

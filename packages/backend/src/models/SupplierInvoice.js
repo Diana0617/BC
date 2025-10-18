@@ -11,7 +11,7 @@ const SupplierInvoice = sequelize.define('SupplierInvoice', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Businesses',
+      model: 'businesses',
       key: 'id'
     }
   },

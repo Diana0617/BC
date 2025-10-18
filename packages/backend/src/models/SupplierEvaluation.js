@@ -19,7 +19,7 @@ const SupplierEvaluation = sequelize.define('SupplierEvaluation', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     }
   },

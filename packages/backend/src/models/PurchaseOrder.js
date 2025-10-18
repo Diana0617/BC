@@ -11,7 +11,7 @@ const PurchaseOrder = sequelize.define('PurchaseOrder', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Businesses',
+      model: 'businesses',
       key: 'id'
     }
   },
@@ -82,7 +82,7 @@ const PurchaseOrder = sequelize.define('PurchaseOrder', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     }
   },
@@ -90,7 +90,7 @@ const PurchaseOrder = sequelize.define('PurchaseOrder', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     }
   },

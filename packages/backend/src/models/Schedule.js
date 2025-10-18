@@ -26,8 +26,7 @@ const Schedule = sequelize.define('Schedule', {
   type: {
     type: DataTypes.ENUM('BUSINESS_DEFAULT', 'SPECIALIST_CUSTOM', 'TEMPORARY_OVERRIDE'),
     allowNull: false,
-    defaultValue: 'BUSINESS_DEFAULT',
-    comment: 'Tipo de horario: general del negocio, personalizado del especialista, o temporal'
+    defaultValue: 'BUSINESS_DEFAULT'
   },
   name: {
     type: DataTypes.STRING,
@@ -136,7 +135,7 @@ const Schedule = sequelize.define('Schedule', {
         shifts: []
       }
     },
-    comment: 'Horarios semanales con soporte para múltiples turnos por día'
+   
   },
   slotDuration: {
     type: DataTypes.INTEGER,

@@ -12,9 +12,9 @@ const { sequelize } = require('../config/database');
  */
 const Receipt = sequelize.define('Receipt', {
   id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
   
   // Numeración secuencial por negocio
@@ -32,7 +32,7 @@ const Receipt = sequelize.define('Receipt', {
   
   // Relaciones principales
   businessId: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     allowNull: false,
     references: {
       model: 'businesses',
@@ -42,7 +42,7 @@ const Receipt = sequelize.define('Receipt', {
   },
   
   appointmentId: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     allowNull: false,
     references: {
       model: 'appointments',
@@ -52,7 +52,7 @@ const Receipt = sequelize.define('Receipt', {
   },
   
   specialistId: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     allowNull: false,
     references: {
       model: 'users',
@@ -62,7 +62,7 @@ const Receipt = sequelize.define('Receipt', {
   },
   
   userId: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     allowNull: false,
     references: {
       model: 'users',
@@ -174,7 +174,7 @@ const Receipt = sequelize.define('Receipt', {
   paymentMethod: {
     type: DataTypes.ENUM('CASH', 'CARD', 'TRANSFER', 'WOMPI', 'OTHER'),
     allowNull: false,
-    comment: 'Método de pago utilizado'
+    
   },
   
   paymentReference: {
@@ -187,7 +187,7 @@ const Receipt = sequelize.define('Receipt', {
     type: DataTypes.ENUM('PENDING', 'PAID', 'CANCELLED', 'REFUNDED'),
     allowNull: false,
     defaultValue: 'PAID',
-    comment: 'Estado del pago'
+   
   },
   
   // Estado del recibo
@@ -234,10 +234,10 @@ const Receipt = sequelize.define('Receipt', {
   
   // Campos de auditoría
   createdBy: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     },
     comment: 'Usuario que creó el recibo'

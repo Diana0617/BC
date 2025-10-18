@@ -85,7 +85,7 @@ const BusinessInvitation = sequelize.define('BusinessInvitation', {
   underscored: true,
   indexes: [
     {
-      fields: ['invitationToken'],
+      fields: ['invitation_token'],  // underscored convierte invitationToken a invitation_token
       unique: true
     },
     {
@@ -95,7 +95,7 @@ const BusinessInvitation = sequelize.define('BusinessInvitation', {
       fields: ['status']
     },
     {
-      fields: ['expiresAt']
+      fields: ['expires_at']  // underscored convierte expiresAt a expires_at
     }
   ]
 });
