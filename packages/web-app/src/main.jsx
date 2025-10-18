@@ -7,6 +7,8 @@ import StoreProvider from './store/StoreProvider.jsx'
 import './index.css'
 import App from './App.jsx'
 
+// BrowserRouter MUST be at root level to provide context for all components
+// including OwnerOnlyRoute/RoleBasedRoute that use useLocation()
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
