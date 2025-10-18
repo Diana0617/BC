@@ -9,6 +9,7 @@ import App from './App.jsx'
 
 // BrowserRouter MUST be at root level to provide context for all components
 // including OwnerOnlyRoute/RoleBasedRoute that use useLocation()
+// Force rebuild: 2025-10-18-14:00
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
