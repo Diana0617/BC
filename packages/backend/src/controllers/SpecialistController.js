@@ -535,6 +535,300 @@ class SpecialistController {
     }
   }
 
+  // ==================== GESTIÓN DE HORARIOS Y DISPONIBILIDAD ====================
+
+  /**
+   * Obtener horarios del especialista en todas sus sucursales
+   * GET /api/specialists/me/schedules
+   */
+  static async getMySchedules(req, res) {
+    try {
+      const { businessId } = req.query;
+      const userId = req.user.id;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: 'businessId es requerido'
+        });
+      }
+
+      // Obtener perfil del especialista
+      const specialistProfile = await SpecialistProfile.findOne({
+        where: { userId, businessId }
+      });
+
+      if (!specialistProfile) {
+        return res.status(404).json({
+          success: false,
+          error: 'Perfil de especialista no encontrado'
+        });
+      }
+
+      // Importar modelos necesarios
+      const { SpecialistBranchSchedule, Branch } = require('../models');
+
+      // Obtener horarios por sucursal
+      const schedules = await SpecialistBranchSchedule.findAll({
+        where: { 
+          specialistId: specialistProfile.id,
+          isActive: true
+        },
+        include: [
+          {
+            model: Branch,
+            as: 'branch',
+            attributes: ['id', 'name', 'address']
+          }
+        ],
+        order: [['branchId', 'ASC'], ['dayOfWeek', 'ASC']]
+      });
+
+      // Agrupar por sucursal
+      const schedulesByBranch = {};
+      
+      schedules.forEach(schedule => {
+        const branchId = schedule.branchId;
+        
+        if (!schedulesByBranch[branchId]) {
+          schedulesByBranch[branchId] = {
+            branchId: schedule.branch.id,
+            branchName: schedule.branch.name,
+            branchAddress: schedule.branch.address,
+            weekSchedule: {
+              monday: { enabled: false, startTime: null, endTime: null },
+              tuesday: { enabled: false, startTime: null, endTime: null },
+              wednesday: { enabled: false, startTime: null, endTime: null },
+              thursday: { enabled: false, startTime: null, endTime: null },
+              friday: { enabled: false, startTime: null, endTime: null },
+              saturday: { enabled: false, startTime: null, endTime: null },
+              sunday: { enabled: false, startTime: null, endTime: null }
+            }
+          };
+        }
+
+        // Agregar horario del día
+        schedulesByBranch[branchId].weekSchedule[schedule.dayOfWeek] = {
+          enabled: schedule.isActive,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          scheduleId: schedule.id
+        };
+      });
+
+      res.json({
+        success: true,
+        data: Object.values(schedulesByBranch)
+      });
+
+    } catch (error) {
+      console.error('Error obteniendo horarios del especialista:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+        details: error.message
+      });
+    }
+  }
+
+  /**
+   * Obtener restricciones del horario del negocio
+   * GET /api/specialists/me/business-constraints
+   */
+  static async getBusinessConstraints(req, res) {
+    try {
+      const { businessId, branchId } = req.query;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: 'businessId es requerido'
+        });
+      }
+
+      const { Schedule, Branch, Business } = require('../models');
+
+      // Obtener horario del negocio
+      const businessSchedule = await Schedule.findOne({
+        where: {
+          businessId,
+          specialistId: null, // Horario general del negocio
+          isActive: true,
+          isDefault: true
+        }
+      });
+
+      // Obtener información del business
+      const business = await Business.findByPk(businessId, {
+        attributes: ['id', 'name', 'slotDuration', 'bufferTime', 'maxAdvanceBooking']
+      });
+
+      // Si se especifica sucursal, obtener horario de esa sucursal
+      let branchInfo = null;
+      if (branchId) {
+        branchInfo = await Branch.findByPk(branchId, {
+          attributes: ['id', 'name', 'address']
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          businessSchedule: businessSchedule?.weeklySchedule || null,
+          slotDuration: business?.slotDuration || 30,
+          bufferTime: business?.bufferTime || 5,
+          maxAdvanceBooking: business?.maxAdvanceBooking || 30,
+          branch: branchInfo
+        }
+      });
+
+    } catch (error) {
+      console.error('Error obteniendo restricciones del negocio:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+        details: error.message
+      });
+    }
+  }
+
+  /**
+   * Actualizar horario del especialista para una sucursal
+   * PUT /api/specialists/me/schedules/:branchId
+   */
+  static async updateBranchSchedule(req, res) {
+    try {
+      const { branchId } = req.params;
+      const { businessId, weekSchedule } = req.body;
+      const userId = req.user.id;
+
+      if (!businessId || !weekSchedule) {
+        return res.status(400).json({
+          success: false,
+          error: 'businessId y weekSchedule son requeridos'
+        });
+      }
+
+      // Obtener perfil del especialista
+      const specialistProfile = await SpecialistProfile.findOne({
+        where: { userId, businessId }
+      });
+
+      if (!specialistProfile) {
+        return res.status(404).json({
+          success: false,
+          error: 'Perfil de especialista no encontrado'
+        });
+      }
+
+      const { SpecialistBranchSchedule, Schedule } = require('../models');
+
+      // Obtener horario del negocio para validación
+      const businessSchedule = await Schedule.findOne({
+        where: {
+          businessId,
+          specialistId: null,
+          isActive: true,
+          isDefault: true
+        }
+      });
+
+      // Validar que el horario del especialista esté dentro del horario del negocio
+      const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      
+      for (const day of daysOfWeek) {
+        const specialistDay = weekSchedule[day];
+        
+        if (specialistDay?.enabled) {
+          const businessDay = businessSchedule?.weeklySchedule?.[day];
+          
+          if (!businessDay?.enabled) {
+            return res.status(400).json({
+              success: false,
+              error: `El negocio no trabaja los ${day}. No puedes habilitar este día.`
+            });
+          }
+
+          // Validar que las horas estén dentro del rango del negocio
+          const businessShifts = businessDay.shifts || [];
+          const businessStart = businessShifts[0]?.start;
+          const businessEnd = businessShifts[businessShifts.length - 1]?.end;
+
+          if (businessStart && businessEnd) {
+            if (specialistDay.startTime < businessStart || specialistDay.endTime > businessEnd) {
+              return res.status(400).json({
+                success: false,
+                error: `Horario de ${day} debe estar entre ${businessStart} y ${businessEnd}`
+              });
+            }
+          }
+        }
+      }
+
+      // Usar transacción para actualizar todos los horarios
+      const transaction = await sequelize.transaction();
+
+      try {
+        // Eliminar horarios existentes de esta sucursal
+        await SpecialistBranchSchedule.destroy({
+          where: {
+            specialistId: specialistProfile.id,
+            branchId
+          },
+          transaction
+        });
+
+        // Crear nuevos horarios
+        const schedulesToCreate = [];
+        
+        for (const day of daysOfWeek) {
+          const daySchedule = weekSchedule[day];
+          
+          if (daySchedule?.enabled && daySchedule.startTime && daySchedule.endTime) {
+            schedulesToCreate.push({
+              specialistId: specialistProfile.id,
+              branchId,
+              dayOfWeek: day,
+              startTime: daySchedule.startTime,
+              endTime: daySchedule.endTime,
+              isActive: true
+            });
+          }
+        }
+
+        if (schedulesToCreate.length > 0) {
+          await SpecialistBranchSchedule.bulkCreate(schedulesToCreate, { transaction });
+        }
+
+        await transaction.commit();
+
+        // TODO: Generar TimeSlots para los próximos 30 días
+        // Esto se implementará en el siguiente paso
+
+        res.json({
+          success: true,
+          message: 'Horario actualizado exitosamente',
+          data: {
+            branchId,
+            updatedDays: schedulesToCreate.length
+          }
+        });
+
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
+
+    } catch (error) {
+      console.error('Error actualizando horario del especialista:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+        details: error.message
+      });
+    }
+  }
+
 }
 
 module.exports = SpecialistController;

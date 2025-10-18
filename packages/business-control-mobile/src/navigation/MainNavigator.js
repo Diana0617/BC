@@ -7,12 +7,11 @@ import { selectIsAuthenticated } from '@shared/store/reactNativeStore';
 
 // Importar screens
 import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
-import RoleSelectionScreen from '../screens/auth/RoleSelectionScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import BusinessDashboard from '../screens/dashboards/BusinessDashboard';
-import SpecialistDashboard from '../screens/dashboards/SpecialistDashboard';
+import SpecialistDashboard from '../screens/dashboards/SpecialistDashboardNew';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 
@@ -32,7 +31,6 @@ function AuthStack() {
       }}
     >
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
-      <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>

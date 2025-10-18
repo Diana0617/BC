@@ -18,7 +18,7 @@ const { width, height } = Dimensions.get('window');
 
 function WelcomeScreen({ navigation }) {
   const handleHaveApp = () => {
-    navigation.navigate('RoleSelection');
+    navigation.navigate('Login');
   };
 
   const handleDontHaveApp = async () => {

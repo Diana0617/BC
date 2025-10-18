@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Business = require('../models/Business');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 const PasswordResetToken = require('../models/PasswordResetToken');
+const SpecialistProfile = require('../models/SpecialistProfile');
 const emailService = require('../services/EmailService');
 
 /**
@@ -160,6 +161,8 @@ class AuthController {
     try {
       const { email, password } = req.body;
 
+      console.log('🔐 Login attempt:', { email, hasPassword: !!password });
+
       // Validaciones básicas
       if (!email || !password) {
         return res.status(400).json({
@@ -184,32 +187,73 @@ class AuthController {
                 as: 'currentPlan'
               }
             ]
+          },
+          {
+            model: SpecialistProfile,
+            as: 'specialistProfile',
+            include: [
+              {
+                model: Business,
+                as: 'business',
+                include: [
+                  {
+                    model: SubscriptionPlan,
+                    as: 'currentPlan'
+                  }
+                ]
+              }
+            ]
           }
         ]
       });
 
       if (!user) {
+        console.log('❌ Usuario no encontrado:', email);
         return res.status(401).json({
           success: false,
           error: 'Credenciales inválidas'
         });
       }
+
+      console.log('✅ Usuario encontrado:', { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role,
+        hasSpecialistProfile: !!user.specialistProfile,
+        businessId: user.businessId
+      });
 
       // Verificar contraseña
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
+        console.log('❌ Contraseña inválida para:', email);
         return res.status(401).json({
           success: false,
           error: 'Credenciales inválidas'
         });
       }
 
-      // Verificar si el negocio está activo o en período de prueba válido (para usuarios de negocio)
+      console.log('✅ Contraseña válida');
+
+      // Determinar el negocio asociado al usuario
+      let associatedBusiness = null;
+      let effectiveBusinessId = null;
+
+      // Para usuarios con businessId directo (BUSINESS, RECEPTIONIST, etc.)
       if (user.businessId && user.business) {
-        const business = user.business;
-        
+        associatedBusiness = user.business;
+        effectiveBusinessId = user.businessId;
+      }
+      // Para especialistas, obtener el negocio desde specialistProfile
+      else if (user.role === 'SPECIALIST' && user.specialistProfile) {
+        associatedBusiness = user.specialistProfile.business;
+        effectiveBusinessId = user.specialistProfile.businessId;
+      }
+
+      // Verificar si el negocio está activo o en período de prueba válido
+      if (associatedBusiness) {
         // Si el negocio no está en estado activo o trial, denegar acceso
-        if (!['ACTIVE', 'TRIAL'].includes(business.status)) {
+        if (!['ACTIVE', 'TRIAL'].includes(associatedBusiness.status)) {
           return res.status(403).json({
             success: false,
             error: 'El negocio asociado está inactivo'
@@ -217,9 +261,9 @@ class AuthController {
         }
         
         // Si está en TRIAL, verificar que no haya expirado
-        if (business.status === 'TRIAL' && business.trialEndDate) {
+        if (associatedBusiness.status === 'TRIAL' && associatedBusiness.trialEndDate) {
           const now = new Date();
-          const trialEnd = new Date(business.trialEndDate);
+          const trialEnd = new Date(associatedBusiness.trialEndDate);
           
           if (now > trialEnd) {
             return res.status(403).json({
@@ -236,12 +280,12 @@ class AuthController {
       // Actualizar último login
       await user.update({ lastLogin: new Date() });
 
-      // Cargar sucursales si el usuario es OWNER o ADMIN
+      // Cargar sucursales si el usuario es OWNER, ADMIN o tiene businessId efectivo
       let branches = [];
-      if (['OWNER', 'ADMIN'].includes(user.role) && user.businessId) {
+      if (['OWNER', 'ADMIN'].includes(user.role) && effectiveBusinessId) {
         const Branch = require('../models/Branch');
         branches = await Branch.findAll({
-          where: { businessId: user.businessId },
+          where: { businessId: effectiveBusinessId },
           attributes: ['id', 'name', 'code', 'address', 'city', 'state', 'country', 'phone', 'email'],
           order: [['name', 'ASC']]
         });
@@ -255,22 +299,30 @@ class AuthController {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        businessId: user.businessId,
+        businessId: effectiveBusinessId || user.businessId, // Usar effectiveBusinessId primero
         status: user.status,
         emailVerified: user.emailVerified,
         lastLogin: user.lastLogin,
-        business: user.business ? {
-          id: user.business.id,
-          name: user.business.name,
-          businessType: user.business.businessType,
-          status: user.business.status,
-          phone: user.business.phone,
-          email: user.business.email,
-          address: user.business.address,
-          city: user.business.city,
-          state: user.business.state,
-          country: user.business.country,
-          currentPlan: user.business.currentPlan
+        business: associatedBusiness ? {
+          id: associatedBusiness.id,
+          name: associatedBusiness.name,
+          businessType: associatedBusiness.businessType,
+          status: associatedBusiness.status,
+          phone: associatedBusiness.phone,
+          email: associatedBusiness.email,
+          address: associatedBusiness.address,
+          city: associatedBusiness.city,
+          state: associatedBusiness.state,
+          country: associatedBusiness.country,
+          currentPlan: associatedBusiness.currentPlan
+        } : null,
+        specialistProfile: user.specialistProfile ? {
+          id: user.specialistProfile.id,
+          businessId: user.specialistProfile.businessId,
+          displayName: user.specialistProfile.displayName,
+          bio: user.specialistProfile.bio,
+          color: user.specialistProfile.color,
+          isActive: user.specialistProfile.isActive
         } : null,
         branches: branches.map(b => b.toJSON ? b.toJSON() : b)
       };

@@ -111,6 +111,41 @@ router.get('/specialists/me/appointments', authenticateToken, validateBusinessId
 
 /**
  * @swagger
+ * /api/specialists/me/dashboard/appointments:
+ *   get:
+ *     tags: [Specialists]
+ *     summary: Obtener agenda del especialista para dashboard móvil
+ *     description: Endpoint optimizado para la app móvil con toda la información necesaria
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha específica (default: hoy)
+ *       - in: query
+ *         name: branchId
+ *         schema:
+ *           type: string
+ *         description: Filtrar por sucursal
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED]
+ *         description: Filtrar por estado
+ *     responses:
+ *       200:
+ *         description: Agenda del especialista con estadísticas
+ *       401:
+ *         description: No autorizado
+ */
+router.get('/me/dashboard/appointments', authenticateToken, requireSpecialist, AppointmentController.getSpecialistDashboardAppointments);
+
+/**
+ * @swagger
  * /api/specialists/me/appointments/{appointmentId}/status:
  *   patch:
  *     tags: [Specialists]
@@ -1310,5 +1345,131 @@ router.get('/appointments/:appointmentId/advance-payment/status', authenticateTo
  *         description: Webhook procesado exitosamente
  */
 router.post('/appointments/advance-payment/wompi-webhook', AppointmentAdvancePaymentController.handleWompiWebhook);
+
+// ==================== GESTIÓN DE HORARIOS Y DISPONIBILIDAD ====================
+
+/**
+ * @swagger
+ * /api/specialists/me/schedules:
+ *   get:
+ *     tags: [Specialists]
+ *     summary: Obtener horarios del especialista en todas sus sucursales
+ *     description: Retorna los horarios semanales configurados por sucursal
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del negocio
+ *     responses:
+ *       200:
+ *         description: Horarios obtenidos exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       branchId:
+ *                         type: string
+ *                       branchName:
+ *                         type: string
+ *                       branchAddress:
+ *                         type: string
+ *                       weekSchedule:
+ *                         type: object
+ *                         properties:
+ *                           monday:
+ *                             type: object
+ *                             properties:
+ *                               enabled:
+ *                                 type: boolean
+ *                               startTime:
+ *                                 type: string
+ *                               endTime:
+ *                                 type: string
+ */
+router.get('/specialists/me/schedules', authenticateToken, requireSpecialist, SpecialistController.getMySchedules);
+
+/**
+ * @swagger
+ * /api/specialists/me/business-constraints:
+ *   get:
+ *     tags: [Specialists]
+ *     summary: Obtener restricciones del horario del negocio
+ *     description: Retorna el horario general del negocio para validación
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: branchId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Restricciones obtenidas exitosamente
+ */
+router.get('/specialists/me/business-constraints', authenticateToken, requireSpecialist, SpecialistController.getBusinessConstraints);
+
+/**
+ * @swagger
+ * /api/specialists/me/schedules/{branchId}:
+ *   put:
+ *     tags: [Specialists]
+ *     summary: Actualizar horario del especialista para una sucursal
+ *     description: Define o actualiza el horario semanal del especialista en una sucursal específica
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: branchId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - businessId
+ *               - weekSchedule
+ *             properties:
+ *               businessId:
+ *                 type: string
+ *               weekSchedule:
+ *                 type: object
+ *                 properties:
+ *                   monday:
+ *                     type: object
+ *                     properties:
+ *                       enabled:
+ *                         type: boolean
+ *                       startTime:
+ *                         type: string
+ *                         example: "09:00"
+ *                       endTime:
+ *                         type: string
+ *                         example: "18:00"
+ *     responses:
+ *       200:
+ *         description: Horario actualizado exitosamente
+ */
+router.put('/specialists/me/schedules/:branchId', authenticateToken, requireSpecialist, SpecialistController.updateBranchSchedule);
 
 module.exports = router;

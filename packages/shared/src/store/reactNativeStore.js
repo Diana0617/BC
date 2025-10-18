@@ -9,6 +9,8 @@ import businessReducer from './slices/businessSlice.js';
 import scheduleReducer from './slices/scheduleSlice.js';
 import appointmentCalendarReducer from './slices/appointmentCalendarSlice.js';
 import timeSlotReducer from './slices/timeSlotSlice.js';
+// Import specialist dashboard slice
+import specialistDashboardReducer from './slices/specialistDashboardSlice.js';
 
 // Temporal async thunk for login (React Native specific)
 export const loginUserRN = createAsyncThunk(
@@ -253,7 +255,9 @@ export const createReactNativeStore = () => {
       // Calendar system reducers
       schedule: scheduleReducer,
       appointmentCalendar: appointmentCalendarReducer,
-      timeSlot: timeSlotReducer
+      timeSlot: timeSlotReducer,
+      // Specialist dashboard reducer
+      specialistDashboard: specialistDashboardReducer
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
@@ -281,3 +285,13 @@ export const selectPublicPlans = (state) => state.publicPlans.plans;
 export const selectCurrentPublicPlan = (state) => state.publicPlans.currentPlan;
 export const selectPublicPlansLoading = (state) => state.publicPlans.isLoading;
 export const selectPublicPlansError = (state) => state.publicPlans.error;
+
+// Specialist Dashboard selectors
+export const selectSpecialistAppointments = (state) => state.specialistDashboard.appointments;
+export const selectSpecialistStats = (state) => state.specialistDashboard.stats;
+export const selectSpecialistFilters = (state) => state.specialistDashboard.filters;
+export const selectSpecialistSelectedAppointment = (state) => state.specialistDashboard.selectedAppointment;
+export const selectSpecialistDashboardLoading = (state) => state.specialistDashboard.loading;
+export const selectSpecialistDashboardError = (state) => state.specialistDashboard.error;
+export const selectSpecialistActionLoading = (state) => state.specialistDashboard.actionLoading;
+export const selectSpecialistActionError = (state) => state.specialistDashboard.actionError;

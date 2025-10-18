@@ -5,6 +5,7 @@ const {
   SpecialistProfile, 
   User,
   Business,
+  Branch,
   SpecialistService,
   UserBranch,
   BusinessClient
@@ -312,7 +313,7 @@ class AppointmentController {
             include: [{
               model: SpecialistProfile,
               as: 'specialistProfile',
-              attributes: ['specialization', 'profileColor', 'profileImage']
+              attributes: ['id', 'specialization', 'profileImage']
             }]
           },
           {
@@ -1504,6 +1505,242 @@ class AppointmentController {
       res.status(500).json({
         success: false,
         error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Obtener agenda del especialista para su dashboard móvil
+   * GET /api/specialists/me/appointments
+   * Incluye toda la información necesaria para la app móvil
+   */
+  static async getSpecialistDashboardAppointments(req, res) {
+    console.log('🎯 getSpecialistDashboardAppointments CALLED');
+    console.log('🎯 req.user:', req.user);
+    console.log('🎯 req.query:', req.query);
+    
+    try {
+      const userId = req.user.id;
+      const {
+        date,          // Para compatibilidad con código antiguo
+        startDate,     // Nueva opción: rango de fechas
+        endDate,       // Nueva opción: rango de fechas
+        branchId,
+        status,
+        page = 1,
+        limit = 50
+      } = req.query;
+
+      console.log('📱 Cargando agenda del especialista:', { userId, date, startDate, endDate, branchId, status });
+
+      // Buscar el perfil del especialista
+      const specialistProfile = await SpecialistProfile.findOne({
+        where: { userId }
+      });
+
+      if (!specialistProfile) {
+        return res.status(404).json({
+          success: false,
+          error: 'Perfil de especialista no encontrado'
+        });
+      }
+
+      console.log('✅ SpecialistProfile encontrado:', specialistProfile.id);
+
+      const businessId = specialistProfile.businessId;
+
+      // Construir filtros
+      // IMPORTANTE: specialistId en appointments es userId, no specialistProfile.id
+      const where = {
+        businessId,
+        specialistId: specialistProfile.userId  // Usar userId, no profile.id
+      };
+
+      console.log('🔍 Filtrando citas con:', where);
+
+      // Filtro por rango de fechas (prioridad: startDate/endDate > date > hoy)
+      if (startDate && endDate) {
+        // Rango personalizado
+        where.startTime = {
+          [Op.gte]: new Date(startDate),
+          [Op.lte]: new Date(endDate)
+        };
+        console.log('📅 Usando rango:', { startDate, endDate });
+      } else if (date) {
+        // Un solo día específico (compatibilidad con código antiguo)
+        const targetDate = new Date(date);
+        const nextDay = new Date(targetDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        where.startTime = {
+          [Op.gte]: targetDate,
+          [Op.lt]: nextDay
+        };
+        console.log('📅 Usando día único:', date);
+      } else {
+        // Por defecto, mostrar turnos de hoy
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        where.startTime = {
+          [Op.gte]: today,
+          [Op.lt]: tomorrow
+        };
+        console.log('📅 Usando hoy por defecto');
+      }
+
+      // Filtro por sucursal
+      if (branchId) {
+        where.branchId = branchId;
+      }
+
+      // Filtro por estado
+      if (status) {
+        where.status = status;
+      }
+
+      const offset = (page - 1) * limit;
+
+      // Obtener citas con toda la información
+      const { count, rows: appointments } = await Appointment.findAndCountAll({
+        where,
+        include: [
+          {
+            model: Client,
+            as: 'client',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+          },
+          {
+            model: Service,
+            as: 'service',
+            attributes: ['id', 'name', 'description', 'duration', 'price']
+          },
+          {
+            model: Branch,
+            as: 'branch',
+            attributes: ['id', 'name', 'address', 'city']
+          }
+        ],
+        order: [['startTime', 'ASC']],
+        limit: parseInt(limit),
+        offset
+      });
+
+      // Calcular comisiones para cada cita
+      const appointmentsWithCommission = await Promise.all(
+        appointments.map(async (appointment) => {
+          const appointmentData = appointment.toJSON();
+          
+          // Obtener configuración de comisión del servicio para este especialista
+          const specialistService = await SpecialistService.findOne({
+            where: {
+              specialistId: specialistProfile.id,
+              serviceId: appointment.serviceId
+            }
+          });
+
+          const commissionPercentage = specialistService?.commissionPercentage || 50;
+          // Usar totalAmount de la cita, o el precio del servicio si no hay totalAmount
+          const price = appointment.totalAmount || appointmentData.service?.price || 0;
+          const commissionAmount = (price * commissionPercentage) / 100;
+
+          // Determinar origen de la cita
+          const origin = appointment.createdBy ? 
+            (appointment.createdBy === userId ? 'specialist' : 'business') : 
+            'online';
+
+          return {
+            id: appointmentData.id,
+            date: appointmentData.startTime,
+            startTime: new Date(appointmentData.startTime).toLocaleTimeString('es-ES', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: false 
+            }),
+            endTime: new Date(appointmentData.endTime).toLocaleTimeString('es-ES', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: false 
+            }),
+            duration: appointmentData.service?.duration || 60,
+            status: appointmentData.status,
+            
+            // Cliente
+            clientId: appointmentData.client?.id,
+            clientName: `${appointmentData.client?.firstName || ''} ${appointmentData.client?.lastName || ''}`.trim(),
+            clientPhone: appointmentData.client?.phone,
+            clientEmail: appointmentData.client?.email,
+            
+            // Servicio
+            serviceId: appointmentData.service?.id,
+            serviceName: appointmentData.service?.name,
+            serviceDescription: appointmentData.service?.description,
+            
+            // Sucursal
+            branchId: appointmentData.branch?.id,
+            branchName: appointmentData.branch?.name || 'Principal',
+            branchAddress: appointmentData.branch?.address,
+            branchColor: '#3b82f6', // TODO: Agregar color a Branch model
+            
+            // Precios y comisión
+            price,
+            commissionPercentage,
+            commissionAmount,
+            
+            // Estados
+            paymentStatus: appointmentData.paymentStatus || 'pending',
+            consentStatus: appointmentData.consentStatus || 'not_required',
+            evidenceStatus: appointmentData.evidencePhotos ? 'completed' : 'pending',
+            
+            // Metadata
+            origin,
+            notes: appointmentData.notes,
+            createdAt: appointmentData.createdAt,
+            updatedAt: appointmentData.updatedAt
+          };
+        })
+      );
+
+      // Calcular estadísticas del día
+      const stats = {
+        total: count,
+        completed: appointmentsWithCommission.filter(a => a.status === 'COMPLETED').length,
+        confirmed: appointmentsWithCommission.filter(a => a.status === 'CONFIRMED').length,
+        inProgress: appointmentsWithCommission.filter(a => a.status === 'IN_PROGRESS').length,
+        cancelled: appointmentsWithCommission.filter(a => a.status === 'CANCELLED').length,
+        totalEarnings: appointmentsWithCommission
+          .filter(a => a.status === 'COMPLETED')
+          .reduce((sum, a) => sum + a.price, 0),
+        totalCommissions: appointmentsWithCommission
+          .filter(a => a.status === 'COMPLETED')
+          .reduce((sum, a) => sum + a.commissionAmount, 0),
+        pendingCommissions: appointmentsWithCommission
+          .filter(a => a.status !== 'CANCELLED')
+          .reduce((sum, a) => sum + a.commissionAmount, 0)
+      };
+
+      res.json({
+        success: true,
+        data: {
+          appointments: appointmentsWithCommission,
+          stats,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: count,
+            totalPages: Math.ceil(count / limit)
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Error obteniendo agenda del especialista:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+        details: error.message
       });
     }
   }

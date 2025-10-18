@@ -53,7 +53,10 @@ export { default as userBranchSlice } from './userBranchSlice';
 // 💰 SPECIALIST SERVICE PRICING SLICES
 export { default as specialistServiceSlice } from './specialistServiceSlice';
 
-// 📅 CALENDAR SYSTEM SLICES
+// �‍⚕️ SPECIALIST DASHBOARD SLICES
+export { default as specialistDashboardSlice } from './specialistDashboardSlice';
+
+// �📅 CALENDAR SYSTEM SLICES
 export { default as scheduleSlice } from './scheduleSlice';
 export { default as appointmentCalendarSlice } from './appointmentCalendarSlice';
 export { default as timeSlotSlice } from './timeSlotSlice';

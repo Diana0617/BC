@@ -1,5 +1,5 @@
 // API Configuration
-const getApiUrl = () => {
+export const getApiUrl = () => {
   // Check if we're in React Native environment
   const isReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
   
@@ -7,18 +7,26 @@ const getApiUrl = () => {
     // React Native environment - prioritize EXPO_PUBLIC_API_URL
     const apiUrl = process.env.EXPO_PUBLIC_API_URL;
     if (apiUrl) {
+      console.log('📡 Using EXPO_PUBLIC_API_URL:', apiUrl);
       return apiUrl;
     }
     
     // Fallback to local IP for development
     const localIP = process.env.EXPO_PUBLIC_LOCAL_IP || '192.168.0.213';
-    return `http://${localIP}:3001`;
+    const url = `http://${localIP}:3001`;
+    console.log('📡 Using fallback API URL:', url);
+    return url;
   } else if (typeof window !== 'undefined') {
     // Web browser environment
-    // Prioritize Vite env var, then window global, then localhost
-    if (import.meta?.env?.VITE_API_URL) {
-      return import.meta.env.VITE_API_URL;
+    // Check for Vite env vars (injected at build time)
+    // Note: Using globalThis to avoid import.meta which breaks in React Native
+    const viteApiUrl = typeof globalThis !== 'undefined' && 
+                       globalThis.__VITE_API_URL__;
+    
+    if (viteApiUrl) {
+      return viteApiUrl;
     }
+    
     return window.__BC_API_URL__ || 'http://localhost:3001';
   } else {
     // Node.js environment
@@ -48,6 +56,19 @@ export const API_CONFIG = {
     }
   }
 };
+
+// Log de debug - solo en desarrollo
+// __DEV__ solo existe en React Native, usamos typeof para evitar errores en web
+const isDev = (typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV === 'development';
+if (isDev) {
+  console.log('🔧 API Configuration:', {
+    BASE_URL: API_CONFIG.BASE_URL,
+    isReactNative: typeof navigator !== 'undefined' && navigator.product === 'ReactNative',
+    EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
+    EXPO_PUBLIC_LOCAL_IP: process.env.EXPO_PUBLIC_LOCAL_IP,
+    VITE_API_URL: typeof globalThis !== 'undefined' ? globalThis.__VITE_API_URL__ : 'N/A'
+  });
+}
 
 // Request configuration
 export const REQUEST_CONFIG = {

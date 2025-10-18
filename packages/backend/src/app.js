@@ -221,6 +221,7 @@ const timeSlotRoutes = require('./routes/time-slots');
 const calendarRoutes = require('./routes/calendar');
 const commissionRoutes = require('./routes/commissionRoutes');
 const consentRoutes = require('./routes/consentRoutes');
+const specialistRoutes = require('./routes/specialistRoutes');
 // const specialistServicesRoutes = require('./routes/specialistServices'); // DEPRECATED: Ahora usando rutas RESTful en businessConfig.js
 
 
@@ -239,6 +240,7 @@ app.use('/api/modules', moduleRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/calendar', calendarRoutes); // Rutas de calendario y disponibilidad
 app.use('/api/services', serviceRoutes);
+app.use('/api/specialists', specialistRoutes); // Rutas de especialistas
 // app.use('/api/specialists', specialistServicesRoutes); // DEPRECATED: Ahora usando /api/business/:businessId/specialists/:specialistId/services
 app.use('/api/products', productRoutes);
 app.use('/api/financial', financialRoutes);

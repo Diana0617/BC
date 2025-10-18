@@ -16,35 +16,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUserRN } from '@shared/store/reactNativeStore';
 
-const ROLE_CONFIG = {
-  business: {
-    title: 'Business / Propietario',
-    icon: 'business',
-    gradient: ['#8b5cf6', '#7c3aed'],
-  },
-  specialist: {
-    title: 'Especialista',
-    icon: 'cut',
-    gradient: ['#ec4899', '#db2777'],
-  },
-  receptionist_specialist: {
-    title: 'Recepcionista-Especialista',
-    icon: 'people-circle',
-    gradient: ['#10b981', '#059669'],
-  },
-  receptionist: {
-    title: 'Recepcionista',
-    icon: 'desktop',
-    gradient: ['#06b6d4', '#0891b2'],
-  },
-};
-
-export default function LoginScreen({ navigation, route }) {
+export default function LoginScreen({ navigation }) {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
-  
-  const selectedRole = route?.params?.role;
-  const roleConfig = selectedRole ? ROLE_CONFIG[selectedRole.id] : ROLE_CONFIG.business;
 
   const [formData, setFormData] = useState({
     email: '',
@@ -63,31 +37,17 @@ export default function LoginScreen({ navigation, route }) {
       const credentials = {
         email: formData.email,
         password: formData.password,
-        subdomain: formData.subdomain,
-        role: selectedRole?.id || 'business'
+        subdomain: formData.subdomain
       };
 
-      const result = await dispatch(loginUserRN({ 
+      await dispatch(loginUserRN({ 
         credentials, 
         rememberMe: false 
       })).unwrap();
 
-      if (result && result.user) {
-        // 🔐 VALIDACIÓN DE ROLES: Usar el rol REAL del usuario autenticado
-        const userRole = result.user.role?.toLowerCase();
-        
-        // 🛡️ VALIDACIÓN ADICIONAL: Verificar que el rol seleccionado coincida con el real
-        const selectedRoleId = selectedRole?.id?.toLowerCase();
-        if (selectedRoleId !== userRole) {
-          Alert.alert(
-            'Acceso Denegado', 
-            `No puedes acceder como ${selectedRole?.title} con credenciales de ${userRole}. Serás redirigido a tu dashboard correspondiente.`
-          );
-        }
-
-        // ✅ El AuthenticatedStack se encargará de mostrar el dashboard correcto
-        // No navegamos manualmente - el cambio de isAuthenticated lo maneja automáticamente
-      }
+      // ✅ El sistema detecta automáticamente el rol del usuario
+      // ✅ El AuthenticatedStack muestra el dashboard correcto según el rol
+      // No se requiere navegación manual - Redux maneja el estado de autenticación
     } catch (error) {
       Alert.alert('Error de Login', error || 'Ha ocurrido un error al iniciar sesión');
     }
@@ -182,56 +142,6 @@ export default function LoginScreen({ navigation, route }) {
                 </Text>
               </View>
 
-              {/* Role Header */}
-              {selectedRole && (
-                <View style={{ marginBottom: 32 }}>
-                  <LinearGradient
-                    colors={roleConfig.gradient}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      padding: 20,
-                      borderRadius: 16,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 8 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 16,
-                      elevation: 16,
-                      borderWidth: 1,
-                      borderColor: 'rgba(255, 255, 255, 0.1)'
-                    }}
-                  >
-                    <View style={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: 12,
-                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 16
-                    }}>
-                      <Ionicons name={roleConfig.icon} size={32} color="#ffffff" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ 
-                        fontSize: 20, 
-                        fontWeight: 'bold', 
-                        color: '#ffffff', 
-                        marginBottom: 4 
-                      }}>
-                        {roleConfig.title}
-                      </Text>
-                      <Text style={{ 
-                        fontSize: 16, 
-                        color: 'rgba(255, 255, 255, 0.8)' 
-                      }}>
-                        Acceso especializado para tu rol
-                      </Text>
-                    </View>
-                  </LinearGradient>
-                </View>
-              )}
-
               {/* Login Form Card */}
               <View style={{
                 backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -253,6 +163,14 @@ export default function LoginScreen({ navigation, route }) {
                   marginBottom: 8 
                 }}>
                   ¡Bienvenido de nuevo!
+                </Text>
+                <Text style={{ 
+                  fontSize: 14, 
+                  color: '#64748b', 
+                  textAlign: 'center', 
+                  marginBottom: 24 
+                }}>
+                  Accede a tu cuenta de Business Control
                 </Text>
 
                 {/* Subdomain Input - Movido arriba */}
@@ -483,7 +401,7 @@ export default function LoginScreen({ navigation, route }) {
                   }}
                 >
                   <LinearGradient
-                    colors={loading ? ['#94a3b8', '#64748b'] : roleConfig.gradient}
+                    colors={loading ? ['#94a3b8', '#64748b'] : ['#ec4899', '#8b5cf6']}
                     style={{ 
                       flexDirection: 'row', 
                       alignItems: 'center', 
