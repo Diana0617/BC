@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Toaster } from 'react-hot-toast'
 import { checkExistingSession, OwnerOnlyRoute, AdminRoute } from '../../shared/src/index.js'
@@ -60,10 +60,9 @@ function AppLayout() {
   }
 
   return (
-    <Router>
-      <BrandingProvider>
-        <div className="min-h-screen bg-gray-50">
-          <Routes>
+    <BrandingProvider>
+      <div className="min-h-screen bg-gray-50">
+        <Routes>
           {/* Public routes - No authentication required */}
           {!isAuthenticated && <Route path="/" element={<LandingPage />} />}
           <Route path="/book/:businessCode" element={<OnlineBookingPage />} />
@@ -177,8 +176,7 @@ function AppLayout() {
           }}
         />
       </div>
-      </BrandingProvider>
-    </Router>
+    </BrandingProvider>
   )
 }
 
