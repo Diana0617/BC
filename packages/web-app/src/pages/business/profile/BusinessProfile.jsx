@@ -30,7 +30,7 @@ import SubscriptionSection from './sections/SubscriptionSection'
 import BasicInfoSection from './sections/BasicInfoSection'
 import BrandingSection from './sections/BrandingSection'
 import BranchesSection from './sections/BranchesSection'
-import SpecialistsSection from './sections/SpecialistsSection'
+import StaffManagementSection from './sections/StaffManagementSection'
 import ServicesSection from './sections/ServicesSection'
 import TaxxaConfigSection from './sections/TaxxaConfigSection'
 import InventoryConfigSection from './sections/InventoryConfigSection'
@@ -179,10 +179,10 @@ const BusinessProfile = () => {
       alwaysVisible: true
     },
      {
-      id: 'specialists',
-      name: 'Especialistas',
+      id: 'staff',
+      name: 'Equipo de Trabajo',
       icon: UsersIcon,
-      component: SpecialistsSection,
+      component: StaffManagementSection,
       setupStep: 'specialists',
       alwaysVisible: true
     },

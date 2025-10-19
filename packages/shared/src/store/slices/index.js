@@ -36,13 +36,8 @@ export { default as advancePaymentSlice } from './advancePaymentSlice';
 // 🔐 BUSINESS VALIDATION SYSTEM SLICES
 export { default as businessValidationSlice } from './businessValidationSlice';
 
-// � SUBSCRIPTION SYSTEM SLICES
+// 🎟️ SUBSCRIPTION SYSTEM SLICES
 export { default as subscriptionSlice } from './subscriptionSlice';
-
-// �💳 ADVANCE PAYMENTS & BUSINESS VALIDATION SLICES
-export { default as advancePaymentSlice } from './advancePaymentSlice';
-export { default as businessValidationSlice } from './businessValidationSlice';
-export { default as businessRuleSlice } from './businessRuleSlice';
 
 // 🏨 PUBLIC BOOKING SYSTEM SLICES
 export { default as publicBookingSlice } from './publicBookingSlice';
@@ -68,82 +63,124 @@ export { default as voucherSlice } from './voucherSlice';
 export { default as commissionSlice } from './commissionSlice';
 export { default as consentSlice } from './consentSlice';
 
-// Export all OWNER slices as a group
-export const ownerSlices = {
-  ownerStatsSlice,
-  ownerBusinessesSlice,
-  ownerSubscriptionsSlice,
-  ownerPlansSlice,
-  ownerModulesSlice,
-  ownerDashboardSlice,
-  ownerBusinessSlice,
-  ownerSubscriptionSlice,
-  ownerPaymentsSlice,
-  ownerFinancialReportsSlice
-};
+// 🔐 PERMISSIONS SYSTEM SLICES (FM-28)
+export { default as permissionsSlice } from './permissionsSlice';
 
 // 💳 ADVANCE PAYMENT EXPORTS
 export {
-  // Actions
+  // Thunks
   checkAdvancePaymentRequired,
   initiateAdvancePayment,
+  confirmAdvancePayment,
   checkAdvancePaymentStatus,
-  getBusinessAdvancePaymentConfig,
-  clearErrors as clearAdvancePaymentErrors,
-  clearCurrentPayment,
-  showPaymentModal,
-  hidePaymentModal,
-  setPaymentInProgress,
-  updatePaymentFromWebhook,
-  cachePaymentInfo,
-  // Selectors
-  selectAdvancePaymentState,
-  selectAdvancePaymentLoading,
-  selectAdvancePaymentErrors,
+  // Selectors - Basic
+  selectPaymentRequired,
+  selectPaymentRequiredLoaded,
+  selectRequirementDetails,
   selectCurrentPayment,
-  selectBusinessConfig as selectAdvancePaymentBusinessConfig,
-  selectPaymentsHistory,
-  selectAdvancePaymentUI,
-  selectPaymentForAppointment,
-  selectIsPaymentRequired,
-  selectIsPaymentPaid,
-  selectCanProceedWithAppointment
+  selectPaymentUrl,
+  selectTransactionId,
+  selectPaymentStatus,
+  selectPaymentConfirmed,
+  selectWompiData,
+  selectPublicKey,
+  selectCanProceedWithAppointment,
+  selectPaymentStep,
+  selectPaymentDetails,
+  // Selectors - Loading
+  selectCheckRequiredLoading,
+  selectInitiateLoading,
+  selectConfirmLoading,
+  selectStatusLoading,
+  // Selectors - Error
+  selectCheckRequiredError,
+  selectInitiateError,
+  selectConfirmError,
+  selectStatusError,
+  // Selectors - Success
+  selectInitiateSuccess,
+  selectConfirmSuccess,
+  // Selectors - Modal
+  selectModals,
+  selectPaymentRequiredModalOpen,
+  selectPaymentProcessModalOpen,
+  selectPaymentConfirmationModalOpen,
+  // Selectors - Computed
+  selectIsPaymentInProgress,
+  selectIsPaymentComplete,
+  selectHasPaymentError,
+  selectPaymentSummary
 } from './advancePaymentSlice';
 
 // 🔐 BUSINESS VALIDATION EXPORTS
 export {
-  // Actions
+  // Thunks
   validateBusinessAccess,
-  getAccessibleBusinesses,
+  getAvailableBusinesses,
   switchActiveBusiness,
-  checkBusinessPermission,
-  clearErrors as clearBusinessValidationErrors,
-  clearValidationCache,
-  clearActiveBusiness,
-  showBusinessSelector,
-  hideBusinessSelector,
-  selectBusinessForSwitch,
-  updateMultitenancyConfig,
-  cacheValidationResult,
-  getCachedValidation,
-  invalidateBusinessCache,
-  // Selectors
-  selectBusinessValidationState,
-  selectBusinessValidationLoading,
-  selectBusinessValidationErrors,
+  checkModulePermissions,
+  // Selectors - Basic
   selectActiveBusiness,
-  selectAccessibleBusinesses,
-  selectValidationCache,
-  selectMultitenancyConfig,
-  selectBusinessValidationUI,
-  selectHasBusinessAccess,
-  selectIsBusinessOwner,
   selectActiveBusinessId,
+  selectAvailableBusinesses,
+  selectAvailableBusinessesLoaded,
+  selectHasBusinessAccess,
+  selectAccessValidated,
+  selectAccessDetails,
+  selectModulePermissions,
+  selectPermissionsLoaded,
+  selectSwitchingBusiness,
+  selectUserRole,
+  selectUserBusinessId,
+  selectUserPermissions,
+  // Selectors - Loading
+  selectValidateAccessLoading,
+  selectAvailableBusinessesLoading,
+  selectSwitchBusinessLoading,
+  selectModulePermissionsLoading,
+  // Selectors - Error
+  selectValidateAccessError,
+  selectAvailableBusinessesError,
+  selectSwitchBusinessError,
+  selectModulePermissionsError,
+  // Selectors - Success
+  selectValidateAccessSuccess,
+  selectSwitchBusinessSuccess,
+  // Selectors - Modal
+  selectModals as selectBusinessValidationModals,
+  selectBusinessSelectorModalOpen,
+  selectAccessDeniedModalOpen,
+  selectPermissionsRequiredModalOpen,
+  // Selectors - Computed
   selectHasBusinessPermission,
-  selectCanAccessMultipleBusinesses,
-  selectCachedValidation,
-  selectNeedsBusinessSwitch
+  selectCanAccessModule,
+  selectBusinessOptions,
+  selectValidationCacheStatus
 } from './businessValidationSlice';
+
+// 🔐 PERMISSIONS SYSTEM EXPORTS (FM-28)
+export {
+  // Thunks
+  fetchAllPermissions,
+  fetchRoleDefaults,
+  fetchUserPermissions,
+  fetchTeamMembersWithPermissions,
+  grantUserPermission,
+  revokeUserPermission,
+  grantUserPermissionsBulk,
+  revokeUserPermissionsBulk,
+  resetToDefaults,
+  // Actions
+  clearErrors as clearPermissionsErrors,
+  clearSuccess as clearPermissionsSuccess,
+  setCurrentEditingUser,
+  clearCurrentEditingUser,
+  openModal as openPermissionsModal,
+  closeModal as closePermissionsModal,
+  updateFilters as updatePermissionsFilters,
+  resetFilters as resetPermissionsFilters,
+  updatePermissionLocally
+} from './permissionsSlice';
 
 // 🎫 VOUCHER SYSTEM EXPORTS
 export {
