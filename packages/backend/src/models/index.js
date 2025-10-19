@@ -75,6 +75,15 @@ const ServiceCommission = require('./ServiceCommission');
 const ConsentTemplate = require('./ConsentTemplate');
 const ConsentSignature = require('./ConsentSignature');
 
+// Modelos de permisos
+const Permission = require('./Permission');
+const RoleDefaultPermission = require('./RoleDefaultPermission');
+const UserBusinessPermission = require('./UserBusinessPermission');
+
+// Modelos de tratamientos multi-sesión
+const TreatmentPlan = require('./TreatmentPlan');
+const TreatmentSession = require('./TreatmentSession');
+
 // Definir asociaciones
 // User - Business
 User.belongsTo(Business, { 
@@ -458,6 +467,78 @@ Service.hasMany(ConsentSignature, {
 ConsentSignature.belongsTo(Service, {
   foreignKey: 'serviceId',
   as: 'service'
+});
+
+// ==================== ASOCIACIONES DE TRATAMIENTOS MULTI-SESIÓN ====================
+
+// Service - TreatmentPlan (uno a muchos)
+Service.hasMany(TreatmentPlan, {
+  foreignKey: 'serviceId',
+  as: 'treatmentPlans'
+});
+TreatmentPlan.belongsTo(Service, {
+  foreignKey: 'serviceId',
+  as: 'service'
+});
+
+// Client - TreatmentPlan (uno a muchos)
+Client.hasMany(TreatmentPlan, {
+  foreignKey: 'clientId',
+  as: 'treatmentPlans'
+});
+TreatmentPlan.belongsTo(Client, {
+  foreignKey: 'clientId',
+  as: 'client'
+});
+
+// Business - TreatmentPlan (uno a muchos)
+Business.hasMany(TreatmentPlan, {
+  foreignKey: 'businessId',
+  as: 'treatmentPlans'
+});
+TreatmentPlan.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+
+// User (Specialist) - TreatmentPlan (uno a muchos)
+User.hasMany(TreatmentPlan, {
+  foreignKey: 'specialistId',
+  as: 'treatmentPlansAsSpecialist'
+});
+TreatmentPlan.belongsTo(User, {
+  foreignKey: 'specialistId',
+  as: 'specialist'
+});
+
+// TreatmentPlan - TreatmentSession (uno a muchos)
+TreatmentPlan.hasMany(TreatmentSession, {
+  foreignKey: 'treatmentPlanId',
+  as: 'sessions'
+});
+TreatmentSession.belongsTo(TreatmentPlan, {
+  foreignKey: 'treatmentPlanId',
+  as: 'treatmentPlan'
+});
+
+// Appointment - TreatmentSession (uno a uno opcional)
+Appointment.hasOne(TreatmentSession, {
+  foreignKey: 'appointmentId',
+  as: 'treatmentSession'
+});
+TreatmentSession.belongsTo(Appointment, {
+  foreignKey: 'appointmentId',
+  as: 'appointment'
+});
+
+// User (Specialist) - TreatmentSession (uno a muchos)
+User.hasMany(TreatmentSession, {
+  foreignKey: 'specialistId',
+  as: 'treatmentSessionsAsSpecialist'
+});
+TreatmentSession.belongsTo(User, {
+  foreignKey: 'specialistId',
+  as: 'specialist'
 });
 
 // Appointment - ConsentSignature (uno a muchos - opcional)
@@ -1300,6 +1381,58 @@ User.hasMany(BusinessRule, {
   as: 'updatedBusinessRules'
 });
 
+// ==================== ASOCIACIONES DE PERMISOS ====================
+
+// Permission - RoleDefaultPermission
+Permission.hasMany(RoleDefaultPermission, {
+  foreignKey: 'permissionId',
+  as: 'roleDefaults'
+});
+RoleDefaultPermission.belongsTo(Permission, {
+  foreignKey: 'permissionId',
+  as: 'permission'
+});
+
+// Permission - UserBusinessPermission
+Permission.hasMany(UserBusinessPermission, {
+  foreignKey: 'permissionId',
+  as: 'userPermissions'
+});
+UserBusinessPermission.belongsTo(Permission, {
+  foreignKey: 'permissionId',
+  as: 'permission'
+});
+
+// User - UserBusinessPermission
+User.hasMany(UserBusinessPermission, {
+  foreignKey: 'userId',
+  as: 'permissions'
+});
+UserBusinessPermission.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+
+// Business - UserBusinessPermission
+Business.hasMany(UserBusinessPermission, {
+  foreignKey: 'businessId',
+  as: 'userPermissions'
+});
+UserBusinessPermission.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+
+// User - UserBusinessPermission (grantedBy)
+User.hasMany(UserBusinessPermission, {
+  foreignKey: 'grantedBy',
+  as: 'grantedPermissions'
+});
+UserBusinessPermission.belongsTo(User, {
+  foreignKey: 'grantedBy',
+  as: 'grantor'
+});
+
 // Exportar modelos y sequelize
 module.exports = {
   sequelize,
@@ -1363,5 +1496,12 @@ module.exports = {
   BusinessCommissionConfig,
   ServiceCommission,
   ConsentTemplate,
-  ConsentSignature
+  ConsentSignature,
+  // Modelos de permisos
+  Permission,
+  RoleDefaultPermission,
+  UserBusinessPermission,
+  // Modelos de tratamientos multi-sesión
+  TreatmentPlan,
+  TreatmentSession
 };
