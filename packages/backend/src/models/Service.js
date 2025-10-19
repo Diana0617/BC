@@ -128,7 +128,7 @@ const Service = sequelize.define('Service', {
     type: DataTypes.ENUM('SINGLE', 'MULTI_SESSION', 'WITH_MAINTENANCE'),
     allowNull: false,
     defaultValue: 'SINGLE',
-    comment: 'Tipo de paquete: SINGLE (sesión única), MULTI_SESSION (múltiples sesiones), WITH_MAINTENANCE (con mantenimientos)'
+   
   },
   packageConfig: {
     type: DataTypes.JSONB,
@@ -138,7 +138,7 @@ const Service = sequelize.define('Service', {
   totalPrice: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
-    comment: 'Precio total del paquete completo'
+   
   },
   allowPartialPayment: {
     type: DataTypes.BOOLEAN,
