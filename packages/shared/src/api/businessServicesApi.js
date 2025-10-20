@@ -44,6 +44,12 @@ export const SERVICE_CONSTANTS = {
     ADVANCE_DAYS: 'advanceBookingDays',
     REQUIRES_APPROVAL: 'requiresApproval',
     ALLOW_WAITLIST: 'allowWaitlist'
+  },
+  // 💉 PACKAGE TYPES (FM-28)
+  PACKAGE_TYPES: {
+    SINGLE: 'SINGLE',
+    MULTI_SESSION: 'MULTI_SESSION',
+    WITH_MAINTENANCE: 'WITH_MAINTENANCE'
   }
 };
 
@@ -661,6 +667,199 @@ export const getTotalServiceTime = (service) => {
 };
 
 // ================================
+// PACKAGE SERVICES UTILITIES (FM-28)
+// ================================
+
+/**
+ * Verificar si un servicio es un paquete
+ * @param {Object} service - Datos del servicio
+ * @returns {boolean} true si es paquete
+ */
+export const isPackageService = (service) => {
+  return service?.isPackage === true;
+};
+
+/**
+ * Verificar si un servicio es multi-sesión
+ * @param {Object} service - Datos del servicio
+ * @returns {boolean} true si es multi-sesión
+ */
+export const isMultiSessionService = (service) => {
+  return service?.isPackage === true && 
+         service?.packageType === SERVICE_CONSTANTS.PACKAGE_TYPES.MULTI_SESSION;
+};
+
+/**
+ * Verificar si un servicio tiene mantenimientos
+ * @param {Object} service - Datos del servicio
+ * @returns {boolean} true si tiene mantenimientos
+ */
+export const hasMaintenanceService = (service) => {
+  return service?.isPackage === true && 
+         service?.packageType === SERVICE_CONSTANTS.PACKAGE_TYPES.WITH_MAINTENANCE;
+};
+
+/**
+ * Obtener total de sesiones de un paquete
+ * @param {Object} service - Datos del servicio
+ * @returns {number} Número total de sesiones
+ */
+export const getPackageTotalSessions = (service) => {
+  if (!isPackageService(service)) return 1;
+  
+  const config = service.packageConfig || {};
+  
+  if (isMultiSessionService(service)) {
+    return config.sessions || 0;
+  }
+  
+  if (hasMaintenanceService(service)) {
+    return 1 + (config.maintenanceSessions || 0);
+  }
+  
+  return 1;
+};
+
+/**
+ * Calcular precio total de paquete
+ * @param {Object} service - Datos del servicio
+ * @returns {number} Precio total calculado
+ */
+export const calculatePackageTotalPrice = (service) => {
+  if (!isPackageService(service)) {
+    return service?.price || 0;
+  }
+  
+  // Si ya tiene totalPrice definido, usarlo
+  if (service.totalPrice) {
+    return service.totalPrice;
+  }
+  
+  const config = service.packageConfig || {};
+  
+  if (isMultiSessionService(service)) {
+    const sessions = config.sessions || 0;
+    const pricePerSession = service.pricePerSession || service.price || 0;
+    const discount = config.pricing?.discount || 0;
+    
+    const subtotal = sessions * pricePerSession;
+    const discountAmount = (subtotal * discount) / 100;
+    
+    return subtotal - discountAmount;
+  }
+  
+  if (hasMaintenanceService(service)) {
+    const mainPrice = config.pricing?.mainSession || service.price || 0;
+    const maintenancePrice = config.pricing?.maintenancePrice || 0;
+    const maintenanceSessions = config.maintenanceSessions || 0;
+    
+    return mainPrice + (maintenancePrice * maintenanceSessions);
+  }
+  
+  return service?.price || 0;
+};
+
+/**
+ * Formatear información de paquete para UI
+ * @param {Object} service - Datos del servicio
+ * @returns {Object} Información formateada del paquete
+ */
+export const formatPackageInfo = (service) => {
+  if (!isPackageService(service)) {
+    return {
+      isPackage: false,
+      type: 'SINGLE',
+      sessions: 1,
+      description: 'Servicio individual'
+    };
+  }
+  
+  const totalSessions = getPackageTotalSessions(service);
+  const totalPrice = calculatePackageTotalPrice(service);
+  const config = service.packageConfig || {};
+  
+  let description = '';
+  
+  if (isMultiSessionService(service)) {
+    description = `${totalSessions} sesiones`;
+    if (config.sessionInterval) {
+      description += ` (cada ${config.sessionInterval} días)`;
+    }
+  } else if (hasMaintenanceService(service)) {
+    description = `1 sesión principal + ${config.maintenanceSessions || 0} mantenimientos`;
+    if (config.maintenanceInterval) {
+      description += ` (cada ${config.maintenanceInterval} días)`;
+    }
+  }
+  
+  return {
+    isPackage: true,
+    type: service.packageType,
+    sessions: totalSessions,
+    description,
+    totalPrice,
+    formattedTotalPrice: new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP'
+    }).format(totalPrice),
+    pricePerSession: service.pricePerSession,
+    formattedPricePerSession: service.pricePerSession ? new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP'
+    }).format(service.pricePerSession) : null,
+    allowPartialPayment: service.allowPartialPayment || false,
+    config: config
+  };
+};
+
+/**
+ * Validar datos de paquete
+ * @param {Object} packageData - Datos del paquete
+ * @returns {Object} Resultado de validación
+ */
+export const validatePackageData = (packageData) => {
+  const errors = {};
+  
+  if (!packageData.packageType) {
+    errors.packageType = 'El tipo de paquete es obligatorio';
+  }
+  
+  if (!packageData.packageConfig) {
+    errors.packageConfig = 'La configuración del paquete es obligatoria';
+    return { isValid: false, errors };
+  }
+  
+  const config = packageData.packageConfig;
+  
+  if (packageData.packageType === SERVICE_CONSTANTS.PACKAGE_TYPES.MULTI_SESSION) {
+    if (!config.sessions || config.sessions < 2) {
+      errors.sessions = 'Debe tener al menos 2 sesiones';
+    }
+    if (config.sessionInterval && config.sessionInterval < 1) {
+      errors.sessionInterval = 'El intervalo debe ser al menos 1 día';
+    }
+  }
+  
+  if (packageData.packageType === SERVICE_CONSTANTS.PACKAGE_TYPES.WITH_MAINTENANCE) {
+    if (!config.maintenanceSessions || config.maintenanceSessions < 1) {
+      errors.maintenanceSessions = 'Debe tener al menos 1 sesión de mantenimiento';
+    }
+    if (config.maintenanceInterval && config.maintenanceInterval < 1) {
+      errors.maintenanceInterval = 'El intervalo debe ser al menos 1 día';
+    }
+  }
+  
+  if (!packageData.totalPrice || packageData.totalPrice <= 0) {
+    errors.totalPrice = 'El precio total debe ser mayor a 0';
+  }
+  
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  };
+};
+
+// ================================
 // EXPORTACIONES AGRUPADAS
 // ================================
 
@@ -722,7 +921,15 @@ export const servicesUtils = {
   validateServiceData,
   formatServiceData,
   calculateServicePricing,
-  getTotalServiceTime
+  getTotalServiceTime,
+  // Package utilities (FM-28)
+  isPackageService,
+  isMultiSessionService,
+  hasMaintenanceService,
+  getPackageTotalSessions,
+  calculatePackageTotalPrice,
+  formatPackageInfo,
+  validatePackageData
 };
 
 // Exportación por defecto con todas las funciones agrupadas

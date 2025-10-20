@@ -3,7 +3,6 @@ import { useSelector } from 'react-redux'
 import toast from 'react-hot-toast'
 import { 
   CalendarDaysIcon,
-  ClockIcon,
   CheckCircleIcon,
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline'
@@ -31,8 +30,6 @@ const ScheduleConfigSection = ({ isSetupMode, onComplete, isCompleted }) => {
     sunday: { enabled: false, start: '08:00', end: '17:00' }
   })
   
-  const [appointmentDuration, setAppointmentDuration] = useState(30)
-  const [bufferTime, setBufferTime] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
 
   const dayNames = {
@@ -366,58 +363,6 @@ const ScheduleConfigSection = ({ isSetupMode, onComplete, isCompleted }) => {
         </div>
       </div>
 
-      {/* Configuraciones adicionales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="flex items-center mb-3">
-            <ClockIcon className="h-5 w-5 text-blue-600 mr-2" />
-            <h3 className="text-lg font-medium text-gray-900">Duración de Citas</h3>
-          </div>
-          
-          <div>
-            <label className="block text-sm text-gray-700 mb-2">
-              Duración por defecto (minutos)
-            </label>
-            <select
-              value={appointmentDuration}
-              onChange={(e) => setAppointmentDuration(parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value={15}>15 minutos</option>
-              <option value={30}>30 minutos</option>
-              <option value={45}>45 minutos</option>
-              <option value={60}>60 minutos</option>
-              <option value={90}>90 minutos</option>
-              <option value={120}>120 minutos</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="flex items-center mb-3">
-            <ClockIcon className="h-5 w-5 text-blue-600 mr-2" />
-            <h3 className="text-lg font-medium text-gray-900">Tiempo de Limpieza</h3>
-          </div>
-          
-          <div>
-            <label className="block text-sm text-gray-700 mb-2">
-              Tiempo entre citas (minutos)
-            </label>
-            <select
-              value={bufferTime}
-              onChange={(e) => setBufferTime(parseInt(e.target.value))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value={0}>Sin tiempo adicional</option>
-              <option value={5}>5 minutos</option>
-              <option value={10}>10 minutos</option>
-              <option value={15}>15 minutos</option>
-              <option value={30}>30 minutos</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
       {/* Botón guardar */}
       <div className="flex justify-end pt-4 border-t border-gray-200">
         <button
@@ -441,7 +386,7 @@ const ScheduleConfigSection = ({ isSetupMode, onComplete, isCompleted }) => {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">
             <strong>Paso 4 de la configuración:</strong> Define los horarios de atención de tu negocio. 
-            Puedes configurar horarios diferentes para cada especialista después.
+            La duración de cada procedimiento se configura al crear el servicio.
           </p>
         </div>
       )}

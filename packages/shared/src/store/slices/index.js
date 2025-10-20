@@ -66,7 +66,10 @@ export { default as consentSlice } from './consentSlice';
 // 🔐 PERMISSIONS SYSTEM SLICES (FM-28)
 export { default as permissionsSlice } from './permissionsSlice';
 
-// 💳 ADVANCE PAYMENT EXPORTS
+// � TREATMENT PLANS SYSTEM SLICES (FM-28)
+export { default as treatmentPlansSlice } from './treatmentPlansSlice';
+
+// �💳 ADVANCE PAYMENT EXPORTS
 export {
   // Thunks
   checkAdvancePaymentRequired,
@@ -203,3 +206,59 @@ export {
   clearOperationMessages,
   resetVoucherState
 } from './voucherSlice';
+
+// 💉 TREATMENT PLANS SYSTEM EXPORTS (FM-28)
+export {
+  // Thunks - Plans
+  createTreatmentPlan,
+  fetchTreatmentPlan,
+  fetchTreatmentPlans,
+  fetchClientTreatmentPlans,
+  updateTreatmentPlan,
+  cancelTreatmentPlan,
+  addPlanPayment,
+  // Thunks - Sessions
+  fetchSession,
+  scheduleSession,
+  completeSession,
+  cancelSession,
+  rescheduleSession,
+  markSessionNoShow,
+  addSessionPhoto,
+  deleteSessionPhoto,
+  registerSessionPayment,
+  // Actions
+  clearErrors as clearTreatmentPlansErrors,
+  clearSuccess as clearTreatmentPlansSuccess,
+  clearError as clearTreatmentPlanError,
+  clearSuccessFlag as clearTreatmentPlanSuccessFlag,
+  clearCurrentPlan,
+  clearCurrentSession,
+  clearAllTreatmentPlans,
+  updateSessionInCache,
+  // Selectors - Basic
+  selectAllPlans,
+  selectCurrentPlan,
+  selectClientPlans,
+  selectCurrentSession,
+  selectSessions,
+  selectPagination,
+  // Selectors - Loading
+  selectLoading as selectTreatmentPlansLoading,
+  selectIsLoading as selectIsTreatmentPlanLoading,
+  // Selectors - Error
+  selectErrors as selectTreatmentPlansErrors,
+  selectError as selectTreatmentPlanError,
+  // Selectors - Success
+  selectSuccess as selectTreatmentPlansSuccess,
+  selectSuccessFlag as selectTreatmentPlanSuccessFlag,
+  // Selectors - By ID
+  selectPlanById,
+  selectSessionById,
+  // Selectors - Filtered
+  selectActivePlans,
+  selectCompletedPlans,
+  selectCurrentPlanSessions,
+  selectCurrentPlanPendingSessions,
+  selectCurrentPlanCompletedSessions
+} from './treatmentPlansSlice';

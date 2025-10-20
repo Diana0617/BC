@@ -15,7 +15,15 @@ import {
   Plus,
   Check,
   Loader2,
-  Search
+  Search,
+  Edit2,
+  Save,
+  Info,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import {
   getAvailableTemplates,
@@ -31,6 +39,12 @@ const BusinessRuleModal = ({ isOpen, onClose, business }) => {
   const [activeTab, setActiveTab] = useState('available');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [editingRule, setEditingRule] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [expandedRules, setExpandedRules] = useState({});
+  const [selectedTemplateCard, setSelectedTemplateCard] = useState(null);
+  const [toast, setToast] = useState({ show: false, type: '', message: '' });
 
   const {
     availableTemplates,
@@ -41,6 +55,14 @@ const BusinessRuleModal = ({ isOpen, onClose, business }) => {
 
   // Get auth state
   const { user, token, isAuthenticated } = useSelector(state => state.auth);
+
+  // Función para mostrar Toast
+  const showToast = (type, message) => {
+    setToast({ show: true, type, message });
+    setTimeout(() => {
+      setToast({ show: false, type: '', message: '' });
+    }, 4000);
+  };
 
   useEffect(() => {
     if (isOpen && business?.id) {
@@ -200,7 +222,7 @@ const BusinessRuleModal = ({ isOpen, onClose, business }) => {
       
       // Verificar si ya está asignada antes de intentar asignar
       if (isTemplateAssigned(template.template_id)) {
-        alert(`⚠️ La plantilla "${template.key}" ya está asignada a tu negocio. Usa el botón "Editar" para modificar su valor.`);
+        showToast('warning', `⚠️ La plantilla "${template.key}" ya está asignada a tu negocio`);
         return;
       }
       
@@ -211,8 +233,11 @@ const BusinessRuleModal = ({ isOpen, onClose, business }) => {
       // Recargar reglas asignadas
       dispatch(getBusinessAssignedRules());
       
-      // Mostrar feedback al usuario
-      alert(`✅ Plantilla "${template.key || templateId}" asignada correctamente`);
+      // Limpiar selección de tarjeta
+      setSelectedTemplateCard(null);
+      
+      // Mostrar feedback al usuario con toast
+      showToast('success', `✅ Regla "${template.key}" asignada correctamente. Ve a "Reglas Asignadas" para configurarla.`);
       
     } catch (error) {
       
@@ -224,126 +249,219 @@ const BusinessRuleModal = ({ isOpen, onClose, business }) => {
         errorMessage = error;
       }
       
-      // Mensajes de error más específicos
+      // Mensajes de error más específicos con toast
       if (errorMessage.includes('already assigned') || errorMessage.includes('duplicate') || errorMessage.includes('conflict')) {
-        alert(`⚠️ La plantilla "${template.key}" ya está asignada a tu negocio.`);
+        showToast('warning', `⚠️ La plantilla "${template.key}" ya está asignada`);
       } else if (errorMessage.includes('not found') || errorMessage.includes('404')) {
-        alert(`❌ No se encontró la plantilla "${template.key}". Por favor, recarga la página.`);
+        showToast('error', `❌ No se encontró la plantilla "${template.key}"`);
       } else {
-        alert(`❌ Error al asignar la plantilla "${template.key}": ${errorMessage}`);
+        showToast('error', `❌ Error al asignar: ${errorMessage}`);
       }
     }
   };
 
   // Función para editar reglas asignadas
-  const handleEditTemplate = async (rule) => {
+  const handleEditTemplate = (rule) => {
+    // Obtener el valor actual (personalizado o por defecto)
+    let currentValue = rule.customValue !== undefined ? rule.customValue : rule.defaultValue;
+    
+    // Si es BOOLEAN y no tiene valor, usar false por defecto
+    if (rule.type === 'BOOLEAN' && currentValue === undefined) {
+      currentValue = false;
+    }
+    
+    setEditingRule(rule);
+    setEditValue(currentValue);
+    setShowEditModal(true);
+  };
+
+  // Guardar edición de regla
+  const handleSaveEdit = async () => {
+    if (!editingRule) return;
+
     try {
-      // Obtener el valor actual (personalizado o por defecto)
-      const currentValue = rule.customValue !== undefined ? rule.customValue : rule.defaultValue;
+      let finalValue = editValue;
 
-      // Mostrar un prompt para editar el valor
-      let newValueInput;
+      // Validar según el tipo
+      const ruleType = editingRule.type || 'STRING';
 
-      // Determinar el tipo basado en el valor actual o la regla
-      const ruleType = rule.type || (typeof currentValue === 'boolean' ? 'BOOLEAN' :
-                                    typeof currentValue === 'number' ? 'NUMBER' : 'STRING');
-
-      if (ruleType === 'BOOLEAN') {
-        const currentBool = currentValue === true || currentValue === 'true';
-        newValueInput = window.confirm(
-          `Regla: "${rule.key}"\nValor actual: ${currentBool ? 'Activado' : 'Desactivado'}\n\n¿Deseas activar esta regla?`
-        );
-      } else if (ruleType === 'NUMBER') {
-        // Construir mensaje con información de validación si existe
-        let promptMessage = `Editar regla: "${rule.key}"\nDescripción: ${rule.description}\n`;
-        
-        // Agregar información de validación si existe
-        if (rule.validationRules) {
-          try {
-            const validation = typeof rule.validationRules === 'string' 
-              ? JSON.parse(rule.validationRules) 
-              : rule.validationRules;
-            
-            if (validation.min !== undefined || validation.max !== undefined) {
-              promptMessage += `\nRango permitido: ${validation.min ?? '-∞'} - ${validation.max ?? '∞'}`;
-            }
-          } catch {
-            // Si falla el parsing, continuar sin validación
-          }
+      if (ruleType === 'NUMBER') {
+        const numValue = parseFloat(editValue);
+        if (isNaN(numValue)) {
+          alert('❌ Por favor ingresa un número válido.');
+          return;
         }
-        
-        promptMessage += '\n\nIngresa el nuevo valor numérico:';
-        
-        newValueInput = window.prompt(promptMessage, String(currentValue));
-        
-        if (newValueInput !== null) {
-          const numValue = parseFloat(newValueInput);
-          if (isNaN(numValue)) {
-            alert('❌ Por favor ingresa un número válido.');
+
+        // Validar contra las reglas si existen
+        if (editingRule.validationRules) {
+          const validation = typeof editingRule.validationRules === 'string' 
+            ? JSON.parse(editingRule.validationRules) 
+            : editingRule.validationRules;
+          
+          if (validation.min !== undefined && numValue < validation.min) {
+            alert(`❌ El valor debe ser mayor o igual a ${validation.min}`);
             return;
           }
-          
-          // Validar contra las reglas si existen
-          if (rule.validationRules) {
-            try {
-              const validation = typeof rule.validationRules === 'string' 
-                ? JSON.parse(rule.validationRules) 
-                : rule.validationRules;
-              
-              if (validation.min !== undefined && numValue < validation.min) {
-                alert(`❌ El valor debe ser mayor o igual a ${validation.min}`);
-                return;
-              }
-              if (validation.max !== undefined && numValue > validation.max) {
-                alert(`❌ El valor debe ser menor o igual a ${validation.max}`);
-                return;
-              }
-            } catch {
-              // Si falla el parsing de validación, continuar
-              console.warn('Error al validar regla');
-            }
-          }
-          
-          newValueInput = numValue;
-        }
-      } else {
-        // STRING, JSON u otros tipos
-        newValueInput = window.prompt(
-          `Editar regla: "${rule.key}"\nDescripción: ${rule.description}\n\nIngresa el nuevo valor:`,
-          typeof currentValue === 'object' ? JSON.stringify(currentValue) : String(currentValue)
-        );
-
-        // Si es tipo JSON, intentar parsear
-        if (newValueInput !== null && ruleType === 'JSON') {
-          try {
-            newValueInput = JSON.parse(newValueInput);
-          } catch {
-            alert('❌ El valor ingresado no es un JSON válido.');
+          if (validation.max !== undefined && numValue > validation.max) {
+            alert(`❌ El valor debe ser menor o igual a ${validation.max}`);
             return;
           }
         }
-      }
 
-      // Si el usuario canceló
-      if (newValueInput === null) {
-        return;
+        finalValue = numValue;
+      } else if (ruleType === 'JSON') {
+        try {
+          finalValue = JSON.parse(editValue);
+        } catch {
+          alert('❌ El valor ingresado no es un JSON válido.');
+          return;
+        }
+      } else if (ruleType === 'BOOLEAN') {
+        finalValue = editValue === true || editValue === 'true';
       }
 
       // Usar la función de personalización existente
       await dispatch(customizeAssignedRule({
-        ruleKey: rule.key,
-        customValue: newValueInput,
-        notes: `Editado manualmente el ${new Date().toLocaleDateString()}`
+        ruleKey: editingRule.key,
+        customValue: finalValue,
+        notes: `Editado el ${new Date().toLocaleDateString('es-ES', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })}`
       })).unwrap();
 
       // Recargar reglas asignadas
       dispatch(getBusinessAssignedRules());
 
-      alert(`✅ Regla "${rule.key}" actualizada correctamente con el nuevo valor.`);
+      // Cerrar modal
+      setShowEditModal(false);
+      setEditingRule(null);
+      setEditValue('');
+
+      showToast('success', `✅ Regla "${editingRule.key}" actualizada correctamente`);
 
     } catch (error) {
-      alert(`❌ Error al editar la regla: ${error.message || 'Error desconocido'}`);
+      showToast('error', `❌ Error al editar la regla: ${error.message || 'Error desconocido'}`);
     }
+  };
+
+  // Función para expandir/colapsar detalles de una regla
+  const toggleRuleExpansion = (ruleId) => {
+    setExpandedRules(prev => ({
+      ...prev,
+      [ruleId]: !prev[ruleId]
+    }));
+  };
+
+  // Función para obtener explicación contextual de la regla
+  const getRuleExplanation = (rule) => {
+    const explanations = {
+      'CANCELLATION_POLICY': {
+        title: 'Política de Cancelación',
+        description: 'Define las condiciones bajo las cuales los clientes pueden cancelar sus citas.',
+        examples: [
+          'Permitir cancelación hasta 24 horas antes',
+          'Cancelación gratuita hasta 48 horas antes',
+          'Sin cancelación permitida'
+        ],
+        impact: 'Afecta la gestión de citas y la satisfacción del cliente'
+      },
+      'BOOKING_POLICY': {
+        title: 'Política de Reserva',
+        description: 'Establece las reglas para reservar citas y servicios.',
+        examples: [
+          'Reserva con anticipación mínima de 2 horas',
+          'Máximo 3 citas por cliente al mes',
+          'Requiere confirmación previa'
+        ],
+        impact: 'Controla el flujo de reservas y disponibilidad'
+      },
+      'WORKING_HOURS': {
+        title: 'Horarios de Trabajo',
+        description: 'Define los horarios en los que tu negocio opera.',
+        examples: [
+          'Lunes a Viernes: 9:00 - 18:00',
+          'Sábados: 10:00 - 14:00',
+          'Domingos: Cerrado'
+        ],
+        impact: 'Determina cuándo los clientes pueden agendar citas'
+      },
+      'PAYMENT_POLICY': {
+        title: 'Política de Pago',
+        description: 'Regula cómo y cuándo los clientes deben realizar pagos.',
+        examples: [
+          'Pago al finalizar el servicio',
+          'Anticipo del 50% al reservar',
+          'Acepta tarjetas y efectivo'
+        ],
+        impact: 'Afecta el flujo de caja y confianza del cliente'
+      },
+      'NOTIFICATION_POLICY': {
+        title: 'Política de Notificaciones',
+        description: 'Controla cómo y cuándo se envían notificaciones a clientes.',
+        examples: [
+          'Recordatorio 24 horas antes de la cita',
+          'Confirmación inmediata al reservar',
+          'Notificación de cambios'
+        ],
+        impact: 'Mejora la comunicación y reduce ausencias'
+      }
+    };
+
+    const category = rule.category || 'GENERAL';
+    return explanations[category] || {
+      title: 'Regla de Negocio',
+      description: rule.description || 'Esta regla personaliza el comportamiento de tu negocio.',
+      examples: ['Configura según tus necesidades'],
+      impact: 'Puede afectar la experiencia del cliente y operaciones'
+    };
+  };
+
+  // Función para formatear el tipo de dato esperado
+  const getInputType = (type) => {
+    switch (type) {
+      case 'NUMBER':
+        return 'number';
+      case 'BOOLEAN':
+        return 'checkbox';
+      case 'JSON':
+        return 'textarea';
+      default:
+        return 'text';
+    }
+  };
+
+  // Función para obtener placeholder apropiado
+  const getPlaceholder = (rule) => {
+    const type = rule.type || 'STRING';
+    
+    switch (type) {
+      case 'NUMBER':
+        return 'Ej: 24, 48, 72';
+      case 'BOOLEAN':
+        return '';
+      case 'JSON':
+        return '{"key": "value"}';
+      default:
+        return 'Ingresa el valor de la regla';
+    }
+  };
+
+  // Función para obtener nombre amigable del tipo de dato
+  const getFriendlyTypeName = (type) => {
+    const typeNames = {
+      'BOOLEAN': 'Sí / No',
+      'NUMBER': 'Número',
+      'STRING': 'Texto',
+      'JSON': 'Configuración',
+      'DATE': 'Fecha',
+      'TIME': 'Hora',
+      'DURATION': 'Duración'
+    };
+    return typeNames[type] || type;
   };
 
   // Manejar eliminación de regla
@@ -358,16 +476,31 @@ const BusinessRuleModal = ({ isOpen, onClose, business }) => {
     }
   };
 
-  // Manejar activar/desactivar regla
-  const handleToggleRule = async (assignmentId, currentStatus) => {
+  // Manejar activar/desactivar regla con confirmación
+  const handleToggleRule = async (assignmentId, currentStatus, ruleKey) => {
+    const action = currentStatus ? 'desactivar' : 'activar';
+    const confirmed = window.confirm(
+      `¿Estás seguro de que deseas ${action} la regla "${ruleKey}"?\n\n` +
+      `${currentStatus ? '⚠️ Al desactivarla, dejará de aplicarse en tu negocio.' : '✅ Al activarla, comenzará a aplicarse inmediatamente.'}`
+    );
+
+    if (!confirmed) return;
+
     try {
       await dispatch(toggleRuleAssignment({ 
         assignmentId, 
         isActive: !currentStatus 
       })).unwrap();
       dispatch(getBusinessAssignedRules());
+      
+      showToast(
+        'success', 
+        currentStatus 
+          ? `⚠️ Regla "${ruleKey}" desactivada` 
+          : `✅ Regla "${ruleKey}" activada`
+      );
     } catch {
-      // Error handled silently
+      showToast('error', `❌ Error al cambiar el estado de la regla`);
     }
   };
 
@@ -548,49 +681,120 @@ const BusinessRuleModal = ({ isOpen, onClose, business }) => {
                             </span>
                           </h3>
 
-                          <div className="space-y-3">
-                            {templates.map((template, index) => (
-                              <div
-                                key={template.template_id || index}
-                                className="border-l-4 border-blue-500 bg-white p-4 rounded-r shadow hover:shadow-md transition-shadow"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1">
-                                    <h4 className="text-md font-semibold text-blue-700 mb-1">
-                                      {template.key || 'Plantilla sin nombre'}
-                                    </h4>
-                                    <p className="text-sm text-gray-600 mb-2">
-                                      {template.description || 'Sin descripción'}
-                                    </p>
-                                    <div className="flex items-center space-x-3 text-xs text-gray-500">
-                                      <span className="bg-gray-100 px-2 py-1 rounded">
-                                        🆔 {template.template_id?.substring(0, 8)}...
-                                      </span>
-                                      <span className="bg-gray-100 px-2 py-1 rounded">
-                                        🔧 {template.type || 'STRING'}
-                                      </span>
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {templates.map((template) => {
+                              const isSelected = selectedTemplateCard === template.template_id;
+                              const explanation = getRuleExplanation({ ...template, category });
+                              
+                              return (
+                                <div
+                                  key={template.template_id}
+                                  onClick={() => setSelectedTemplateCard(isSelected ? null : template.template_id)}
+                                  className={`cursor-pointer rounded-xl overflow-hidden transition-all duration-300 ${
+                                    isSelected 
+                                      ? 'ring-4 ring-pink-500 shadow-2xl scale-105 bg-gradient-to-br from-pink-50 to-purple-50' 
+                                      : 'border-2 border-gray-200 hover:border-pink-300 hover:shadow-lg bg-white'
+                                  }`}
+                                >
+                                  {/* Header de la tarjeta */}
+                                  <div className={`p-4 ${isSelected ? 'bg-gradient-to-r from-pink-500 to-purple-600' : 'bg-gray-50'}`}>
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <h4 className={`text-lg font-bold mb-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                                          {explanation.title}
+                                        </h4>
+                                        <p className={`text-sm ${isSelected ? 'text-pink-100' : 'text-gray-600'}`}>
+                                          {template.key}
+                                        </p>
+                                      </div>
+                                      {isSelected && (
+                                        <div className="bg-white rounded-full p-2">
+                                          <CheckCircle2 className="h-6 w-6 text-pink-600" />
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
-                                  <div className="ml-4">
-                                    <button
-                                      className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105"
-                                      onClick={() => handleAssignTemplate(template)}
-                                    >
-                                      ✅ Asignar
-                                    </button>
-                                  </div>
-                                </div>
 
-                                <div className="mt-3 bg-gray-50 rounded p-3">
-                                  <div className="text-xs font-medium text-gray-700 mb-1">
-                                    Valor por defecto:
-                                  </div>
-                                  <div className="text-sm text-gray-600 font-mono bg-white p-2 rounded border">
-                                    {JSON.stringify(template.defaultValue, null, 2)}
+                                  {/* Contenido de la tarjeta */}
+                                  <div className="p-4 space-y-3">
+                                    {/* Descripción */}
+                                    <div>
+                                      <p className="text-sm text-gray-700 leading-relaxed">
+                                        {explanation.description}
+                                      </p>
+                                    </div>
+
+                                    {/* Tipo de dato */}
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-xs font-medium text-gray-600">Tipo:</span>
+                                      <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold">
+                                        {getFriendlyTypeName(template.type)}
+                                      </span>
+                                    </div>
+
+                                    {/* Impacto */}
+                                    {isSelected && (
+                                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                        <div className="flex items-start space-x-2">
+                                          <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                                          <div>
+                                            <div className="text-xs font-semibold text-orange-900 mb-1">
+                                              Impacto en tu negocio:
+                                            </div>
+                                            <p className="text-xs text-orange-700">
+                                              {explanation.impact}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Ejemplos */}
+                                    {isSelected && explanation.examples && (
+                                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                        <div className="text-xs font-semibold text-green-900 mb-2">
+                                          💡 Ejemplos de uso:
+                                        </div>
+                                        <ul className="space-y-1">
+                                          {explanation.examples.slice(0, 2).map((example, idx) => (
+                                            <li key={idx} className="text-xs text-green-700 flex items-start">
+                                              <span className="mr-2">•</span>
+                                              <span>{example}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+
+                                    {/* Valor por defecto */}
+                                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                      <div className="text-xs font-semibold text-gray-700 mb-1">
+                                        📌 Valor inicial:
+                                      </div>
+                                      <div className="text-sm text-gray-900 font-mono">
+                                        {template.type === 'BOOLEAN' 
+                                          ? (template.defaultValue ? '✅ Activado' : '❌ Desactivado')
+                                          : JSON.stringify(template.defaultValue)}
+                                      </div>
+                                    </div>
+
+                                    {/* Botón de asignar */}
+                                    {isSelected && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleAssignTemplate(template);
+                                        }}
+                                        className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-4 py-3 rounded-lg font-bold transition-all duration-200 hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
+                                      >
+                                        <Plus className="h-5 w-5" />
+                                        <span>Asignar a mi negocio</span>
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       ))}
@@ -599,7 +803,7 @@ const BusinessRuleModal = ({ isOpen, onClose, business }) => {
                 })()}
               </div>
             ) : (
-              /* Reglas Asignadas */
+              /* Reglas Asignadas - Vista Mejorada */
               <div className="space-y-4">
                 {(() => {
                   const assignedRulesFiltered = getAssignedRules();
@@ -607,7 +811,7 @@ const BusinessRuleModal = ({ isOpen, onClose, business }) => {
                   return assignedRulesFiltered.length === 0 ? (
                     <div className="text-center py-8">
                       <div className="text-gray-400 mb-4">
-                        <Check className="h-12 w-12 mx-auto" />
+                        <AlertTriangle className="h-12 w-12 mx-auto" />
                       </div>
                       <h4 className="text-lg font-medium text-gray-900 mb-2">
                         No tienes reglas asignadas
@@ -623,81 +827,219 @@ const BusinessRuleModal = ({ isOpen, onClose, business }) => {
                       </button>
                     </div>
                   ) : (
-                    assignedRulesFiltered.map(rule => {
-                      const Icon = getRuleIcon(rule.category);
-                      const ruleId = rule.business_rule_id || rule.id || rule.template_id;
-
-                      return (
-                        <div key={ruleId} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center space-x-3 flex-1">
-                              <div className="p-2 bg-pink-100 rounded-lg">
-                                <Icon className="h-5 w-5 text-pink-600" />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-medium text-gray-900">
-                                  {rule.key || 'Regla sin nombre'}
-                                </h4>
-                                <p className="text-sm text-gray-500">
-                                  {rule.description || 'Sin descripción'}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                (rule.rule_is_active ?? rule.isActive) !== false
-                                  ? 'text-green-700 bg-green-100'
-                                  : 'text-gray-500 bg-gray-100'
-                              }`}>
-                                {(rule.rule_is_active ?? rule.isActive) !== false ? 'Activa' : 'Inactiva'}
-                              </span>
-                              <button
-                                onClick={() => handleToggleRule(ruleId, rule.rule_is_active ?? rule.isActive)}
-                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                                  (rule.rule_is_active ?? rule.isActive) !== false
-                                    ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                }`}
-                              >
-                                {(rule.rule_is_active ?? rule.isActive) !== false ? 'Desactivar' : 'Activar'}
-                              </button>
-                              <button
-                                onClick={() => handleEditTemplate(rule)}
-                                className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-                              >
-                                Editar
-                              </button>
-                              <button
-                                onClick={() => handleRemoveRule(ruleId)}
-                                className="px-3 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
-                              >
-                                Eliminar
-                              </button>
-                            </div>
+                    <>
+                      {/* Información general */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-start space-x-3">
+                          <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <h4 className="font-medium text-blue-900 mb-1">
+                              💡 Cómo gestionar tus reglas
+                            </h4>
+                            <ul className="text-sm text-blue-700 space-y-1">
+                              <li>• <strong>Editar:</strong> Haz clic en "Editar" para cambiar el valor de la regla</li>
+                              <li>• <strong>Activar/Desactivar:</strong> Controla si la regla está activa sin eliminarla</li>
+                              <li>• <strong>Eliminar:</strong> Quita la regla completamente de tu negocio</li>
+                              <li>• <strong>Ver detalles:</strong> Expande cada regla para ver información completa</li>
+                            </ul>
                           </div>
-
-                          <div className="bg-gray-50 rounded-md p-3">
-                            <div className="text-sm font-medium text-gray-700 mb-1">
-                              Valor configurado:
-                            </div>
-                            <pre className="text-sm text-gray-600 whitespace-pre-wrap">
-                              {formatRuleValue(rule.customValue || rule.effective_value || rule.defaultValue || rule.template?.defaultValue)}
-                            </pre>
-                          </div>
-
-                          {rule.notes && (
-                            <div className="mt-3 bg-blue-50 rounded-md p-3">
-                              <div className="text-sm font-medium text-blue-900 mb-1">
-                                Notas:
-                              </div>
-                              <p className="text-sm text-blue-700">
-                                {rule.notes}
-                              </p>
-                            </div>
-                          )}
                         </div>
-                      );
-                    })
+                      </div>
+
+                      {/* Lista de reglas asignadas */}
+                      <div className="space-y-3">
+                        {assignedRulesFiltered.map(rule => {
+                          const Icon = getRuleIcon(rule.category);
+                          const ruleId = rule.business_rule_id || rule.id || rule.template_id;
+                          const isExpanded = expandedRules[ruleId];
+                          const explanation = getRuleExplanation(rule);
+                          const currentValue = rule.customValue !== undefined ? rule.customValue : 
+                                             (rule.effective_value !== undefined ? rule.effective_value : 
+                                             (rule.defaultValue !== undefined ? rule.defaultValue : rule.template?.defaultValue));
+
+                          return (
+                            <div 
+                              key={ruleId} 
+                              className="border-2 border-gray-200 rounded-lg overflow-hidden hover:border-pink-300 transition-all"
+                            >
+                              {/* Header de la regla */}
+                              <div className="bg-gradient-to-r from-gray-50 to-white p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-start space-x-3 flex-1">
+                                    <div className="p-3 bg-pink-100 rounded-lg">
+                                      <Icon className="h-6 w-6 text-pink-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="flex items-center space-x-2 mb-1">
+                                        <h4 className="font-bold text-gray-900 text-lg">
+                                          {explanation.title}
+                                        </h4>
+                                        <span className={`px-3 py-1 text-xs font-bold rounded-full ${
+                                          (rule.rule_is_active ?? rule.isActive) !== false
+                                            ? 'text-green-700 bg-green-100 border border-green-300'
+                                            : 'text-gray-500 bg-gray-100 border border-gray-300'
+                                        }`}>
+                                          {(rule.rule_is_active ?? rule.isActive) !== false ? '✓ ACTIVA' : '○ INACTIVA'}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-gray-600 mb-2">
+                                        {rule.description || explanation.description}
+                                      </p>
+                                      <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                        <span className="bg-gray-100 px-2 py-1 rounded font-mono">
+                                          {rule.key}
+                                        </span>
+                                        <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded font-medium">
+                                          {getFriendlyTypeName(rule.type || 'STRING')}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Botones de acción */}
+                                  <div className="flex items-center space-x-2 ml-4">
+                                    <button
+                                      onClick={() => handleEditTemplate(rule)}
+                                      className="flex items-center space-x-1 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all hover:scale-105 shadow-sm"
+                                      title="Editar valor de la regla"
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                      <span>Editar</span>
+                                    </button>
+                                    <button
+                                      onClick={() => handleToggleRule(ruleId, rule.rule_is_active ?? rule.isActive, rule.key)}
+                                      className={`px-3 py-2 text-sm font-medium rounded-md transition-all hover:scale-105 shadow-sm ${
+                                        (rule.rule_is_active ?? rule.isActive) !== false
+                                          ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-300'
+                                          : 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300'
+                                      }`}
+                                      title={(rule.rule_is_active ?? rule.isActive) !== false ? 'Desactivar regla' : 'Activar regla'}
+                                    >
+                                      {(rule.rule_is_active ?? rule.isActive) !== false ? 'Desactivar' : 'Activar'}
+                                    </button>
+                                    <button
+                                      onClick={() => handleRemoveRule(ruleId)}
+                                      className="px-3 py-2 text-sm font-medium bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-all hover:scale-105 border border-red-300 shadow-sm"
+                                      title="Eliminar regla"
+                                    >
+                                      Eliminar
+                                    </button>
+                                    <button
+                                      onClick={() => toggleRuleExpansion(ruleId)}
+                                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                                      title={isExpanded ? 'Ocultar detalles' : 'Ver detalles'}
+                                    >
+                                      {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Valor actual */}
+                              <div className="px-4 py-3 bg-white border-t border-gray-200">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="text-sm font-semibold text-gray-700 mb-2 flex items-center space-x-2">
+                                      <span>📊 Valor Configurado:</span>
+                                      {rule.customValue !== undefined && (
+                                        <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">
+                                          Personalizado
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-200">
+                                      {rule.type === 'BOOLEAN' ? (
+                                        <div className="flex items-center space-x-2">
+                                          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                            currentValue ? 'bg-green-500' : 'bg-gray-400'
+                                          }`}>
+                                            {currentValue ? (
+                                              <Check className="h-6 w-6 text-white" />
+                                            ) : (
+                                              <X className="h-6 w-6 text-white" />
+                                            )}
+                                          </div>
+                                          <span className="text-lg font-bold text-gray-900">
+                                            {currentValue ? 'Activado' : 'Desactivado'}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <pre className="text-sm text-gray-900 font-mono whitespace-pre-wrap break-words">
+                                          {formatRuleValue(currentValue)}
+                                        </pre>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Detalles expandibles */}
+                              {isExpanded && (
+                                <div className="px-4 py-4 bg-gray-50 border-t border-gray-200 space-y-3">
+                                  {/* Impacto */}
+                                  <div>
+                                    <div className="text-sm font-semibold text-gray-700 mb-1 flex items-center space-x-1">
+                                      <AlertTriangle className="h-4 w-4 text-orange-500" />
+                                      <span>Impacto:</span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 bg-white rounded p-2 border border-orange-200">
+                                      {explanation.impact}
+                                    </p>
+                                  </div>
+
+                                  {/* Ejemplos */}
+                                  {explanation.examples && (
+                                    <div>
+                                      <div className="text-sm font-semibold text-gray-700 mb-2">
+                                        💡 Ejemplos de uso:
+                                      </div>
+                                      <ul className="space-y-1">
+                                        {explanation.examples.map((example, idx) => (
+                                          <li key={idx} className="text-sm text-gray-600 bg-white rounded p-2 border border-blue-100">
+                                            {example}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+
+                                  {/* Validación */}
+                                  {rule.validationRules && (
+                                    <div>
+                                      <div className="text-sm font-semibold text-gray-700 mb-1">
+                                        ✓ Reglas de validación:
+                                      </div>
+                                      <pre className="text-xs text-gray-600 bg-white rounded p-2 border border-gray-200 font-mono">
+                                        {JSON.stringify(
+                                          typeof rule.validationRules === 'string' 
+                                            ? JSON.parse(rule.validationRules) 
+                                            : rule.validationRules, 
+                                          null, 
+                                          2
+                                        )}
+                                      </pre>
+                                    </div>
+                                  )}
+
+                                  {/* Notas */}
+                                  {rule.notes && (
+                                    <div>
+                                      <div className="text-sm font-semibold text-gray-700 mb-1 flex items-center space-x-1">
+                                        <Info className="h-4 w-4 text-blue-500" />
+                                        <span>Notas:</span>
+                                      </div>
+                                      <p className="text-sm text-blue-700 bg-blue-50 rounded p-2 border border-blue-200">
+                                        {rule.notes}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
                   );
                 })()}
               </div>
@@ -721,6 +1063,229 @@ const BusinessRuleModal = ({ isOpen, onClose, business }) => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Edición */}
+      {showEditModal && editingRule && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Overlay */}
+            <div 
+              className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" 
+              onClick={() => setShowEditModal(false)}
+            />
+
+            {/* Modal de edición */}
+            <div className="inline-block w-full max-w-2xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-xl border-2 border-pink-200">
+              {/* Header del modal de edición */}
+              <div className="px-6 py-4 bg-gradient-to-r from-pink-500 to-purple-600">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-white rounded-lg">
+                      <Edit2 className="h-6 w-6 text-pink-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">
+                        Editar Regla
+                      </h3>
+                      <p className="text-pink-100 text-sm">
+                        {editingRule.key}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowEditModal(false)}
+                    className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Contenido del modal */}
+              <div className="px-6 py-4 space-y-4">
+                {/* Descripción */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-2">
+                    <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-900 mb-1">
+                        {getRuleExplanation(editingRule).title}
+                      </p>
+                      <p className="text-sm text-blue-700">
+                        {editingRule.description || getRuleExplanation(editingRule).description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Información del tipo */}
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className="font-medium text-gray-700">Tipo de dato:</span>
+                  <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-bold">
+                    {getFriendlyTypeName(editingRule.type || 'STRING')}
+                  </span>
+                </div>
+
+                {/* Validación si existe */}
+                {editingRule.validationRules && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <div className="text-sm font-medium text-yellow-900 mb-1">
+                      ⚠️ Restricciones:
+                    </div>
+                    <div className="text-sm text-yellow-700">
+                      {(() => {
+                        try {
+                          const validation = typeof editingRule.validationRules === 'string' 
+                            ? JSON.parse(editingRule.validationRules) 
+                            : editingRule.validationRules;
+                          
+                          const restrictions = [];
+                          if (validation.min !== undefined) restrictions.push(`Mínimo: ${validation.min}`);
+                          if (validation.max !== undefined) restrictions.push(`Máximo: ${validation.max}`);
+                          if (validation.pattern) restrictions.push(`Patrón: ${validation.pattern}`);
+                          
+                          return restrictions.length > 0 
+                            ? restrictions.join(' | ') 
+                            : 'Sin restricciones específicas';
+                        } catch {
+                          return 'Validación configurada';
+                        }
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* Campo de edición */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Nuevo Valor:
+                  </label>
+                  
+                  {editingRule.type === 'BOOLEAN' ? (
+                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+                      <button
+                        onClick={() => setEditValue(true)}
+                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                          editValue === true || editValue === 'true'
+                            ? 'bg-green-500 text-white shadow-lg scale-105'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:border-green-500'
+                        }`}
+                      >
+                        <Check className="h-5 w-5 mx-auto mb-1" />
+                        Activado
+                      </button>
+                      <button
+                        onClick={() => setEditValue(false)}
+                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                          editValue === false || editValue === 'false'
+                            ? 'bg-red-500 text-white shadow-lg scale-105'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:border-red-500'
+                        }`}
+                      >
+                        <X className="h-5 w-5 mx-auto mb-1" />
+                        Desactivado
+                      </button>
+                    </div>
+                  ) : editingRule.type === 'JSON' ? (
+                    <textarea
+                      value={typeof editValue === 'object' ? JSON.stringify(editValue, null, 2) : editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      placeholder={getPlaceholder(editingRule)}
+                      rows={6}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-mono text-sm"
+                    />
+                  ) : (
+                    <input
+                      type={getInputType(editingRule.type)}
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      placeholder={getPlaceholder(editingRule)}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-lg"
+                    />
+                  )}
+                  
+                  {/* Ayuda según el tipo */}
+                  <p className="mt-2 text-sm text-gray-500">
+                    {editingRule.type === 'NUMBER' && '💡 Ingresa solo números (puede incluir decimales)'}
+                    {editingRule.type === 'JSON' && '💡 Ingresa un objeto JSON válido'}
+                    {editingRule.type === 'STRING' && '💡 Ingresa texto libre'}
+                    {editingRule.type === 'BOOLEAN' && '💡 Selecciona activado o desactivado'}
+                  </p>
+                </div>
+
+                {/* Preview del valor actual */}
+                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  <div className="text-sm font-medium text-gray-700 mb-1">
+                    📌 Valor Actual:
+                  </div>
+                  <div className="text-sm text-gray-600 font-mono bg-white rounded p-2">
+                    {formatRuleValue(editingRule.customValue !== undefined ? editingRule.customValue : editingRule.defaultValue)}
+                  </div>
+                </div>
+
+                {/* Ejemplos */}
+                {getRuleExplanation(editingRule).examples && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="text-sm font-medium text-green-900 mb-2">
+                      💡 Ejemplos de valores válidos:
+                    </div>
+                    <ul className="text-sm text-green-700 space-y-1">
+                      {getRuleExplanation(editingRule).examples.slice(0, 3).map((example, idx) => (
+                        <li key={idx}>• {example}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer del modal */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all hover:scale-105 shadow-lg flex items-center space-x-2"
+                >
+                  <Save className="h-4 w-4" />
+                  <span>Guardar Cambios</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className="fixed top-4 right-4 z-[70] animate-slideInRight">
+          <div className={`rounded-lg shadow-2xl p-4 flex items-start space-x-3 max-w-md border-2 ${
+            toast.type === 'success' ? 'bg-green-50 border-green-500 text-green-900' :
+            toast.type === 'error' ? 'bg-red-50 border-red-500 text-red-900' :
+            toast.type === 'warning' ? 'bg-yellow-50 border-yellow-500 text-yellow-900' :
+            'bg-blue-50 border-blue-500 text-blue-900'
+          }`}>
+            {toast.type === 'success' && <CheckCircle2 className="h-6 w-6 text-green-600 flex-shrink-0" />}
+            {toast.type === 'error' && <XCircle className="h-6 w-6 text-red-600 flex-shrink-0" />}
+            {toast.type === 'warning' && <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0" />}
+            {toast.type === 'info' && <Info className="h-6 w-6 text-blue-600 flex-shrink-0" />}
+            
+            <div className="flex-1">
+              <p className="text-sm font-medium">{toast.message}</p>
+            </div>
+            
+            <button
+              onClick={() => setToast({ show: false, type: '', message: '' })}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
