@@ -32,7 +32,9 @@ export default defineConfig({
     'window.__ENV__': JSON.stringify({
       VITE_API_URL: process.env.VITE_API_URL,
       NODE_ENV: process.env.NODE_ENV || 'development'
-    })
+    }),
+    // Force rebuild timestamp to invalidate Vercel cache
+    '__BUILD_TIMESTAMP__': JSON.stringify(new Date().toISOString())
   },
   optimizeDeps: {
     include: ['@reduxjs/toolkit', 'react-redux'],
@@ -42,8 +44,13 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     minify: 'terser',
+    // Force new hash on every build to invalidate cache
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
+        entryFileNames: `assets/[name]-[hash].js`,
+        chunkFileNames: `assets/[name]-[hash].js`,
+        assetFileNames: `assets/[name]-[hash].[ext]`,
         manualChunks: {
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
