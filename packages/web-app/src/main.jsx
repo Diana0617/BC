@@ -10,12 +10,16 @@ import { BUILD_ID } from './buildConfig.js'
 
 console.log('Build ID:', BUILD_ID);
 
-// Router is now inside App.jsx to prevent useLocation() errors
-// during module import phase
+// CRITICAL: BrowserRouter MUST wrap StoreProvider
+// If Redux components use useLocation(), Router context must exist first
+import { BrowserRouter } from 'react-router-dom'
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <StoreProvider>
-      <App />
-    </StoreProvider>
+    <BrowserRouter>
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    </BrowserRouter>
   </StrictMode>,
 )

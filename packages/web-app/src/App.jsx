@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Toaster } from 'react-hot-toast'
 import { checkExistingSession, OwnerOnlyRoute, AdminRoute } from '../../shared/src/index.js'
@@ -180,12 +180,10 @@ function AppLayout() {
   )
 }
 
+// Router is now in main.jsx wrapping StoreProvider
+// This ensures Router context is available for Redux and all components
 function App() {
-  return (
-    <BrowserRouter>
-      <AppLayout />
-    </BrowserRouter>
-  )
+  return <AppLayout />
 }
 
 export default App
