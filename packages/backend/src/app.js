@@ -68,9 +68,11 @@ app.use(cors({
         process.env.WEB_URL, 
         process.env.APP_URL,
         process.env.FRONTEND_URL,
-        'https://bc-webapp-ky7aqhc88-diana0617s-projects.vercel.app',
-        'https://bc-webapp.vercel.app', // Por si cambias el nombre del proyecto
-        /^https:\/\/.*\.vercel\.app$/, // Permitir cualquier subdominio de Vercel
+        'https://bc-webapp-henna.vercel.app', // URL principal
+        'https://bc-webapp.vercel.app', // Alternativa
+        // Permitir TODAS las preview deployments de Vercel
+        /^https:\/\/bc-webapp-[a-z0-9]+-diana0617s-projects\.vercel\.app$/,
+        /^https:\/\/.*\.vercel\.app$/, // Fallback general
         // URLs de desarrollo (para testing local contra backend de producción)
         'http://localhost:3000',
         'http://localhost:3001',
