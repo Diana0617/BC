@@ -47,7 +47,7 @@ async function startServer() {
         OwnerFinancialReport,
         OwnerExpense,
         // Nuevos modelos simplificados de reglas
-        // RuleTemplate, // Temporalmente comentado
+        RuleTemplate,
         BusinessRule,
         // Nuevo modelo de recibos
         Receipt,
@@ -93,8 +93,8 @@ async function startServer() {
         await User.sync(syncOptions);
         // console.log('✅ Tabla User sincronizada');
         
-        // 4. Nuevos modelos simplificados de reglas (temporalmente comentado)
-        // await RuleTemplate.sync(syncOptions);
+        // 4. Nuevos modelos simplificados de reglas
+        await RuleTemplate.sync(syncOptions);
         await BusinessRule.sync(syncOptions);
         // console.log('✅ Nuevos modelos de reglas sincronizados');
         
@@ -115,8 +115,8 @@ async function startServer() {
         
         // 5.0.3. TABLAS QUE DEPENDEN DE SERVICE
         await ServiceCommission.sync(syncOptions);
-        await ConsentSignature.sync(syncOptions);
-        // console.log('✅ Tablas que dependen de Service (ServiceCommission, ConsentSignature) sincronizadas');
+        // ConsentSignature movido a después de Appointment (tiene FK a appointments)
+        // console.log('✅ Tablas que dependen de Service (ServiceCommission) sincronizadas');
         
         // 5.1. NUEVAS TABLAS MULTI-BRANCH Y PRICING PERSONALIZADO
         await UserBranch.sync(syncOptions);
@@ -147,6 +147,8 @@ async function startServer() {
         
         // 8. Tablas que dependen de múltiples entidades
         await Appointment.sync(syncOptions);
+        // ConsentSignature movido aquí (necesita appointments + services + clients)
+        await ConsentSignature.sync(syncOptions);
         await PlanModule.sync(syncOptions);
         await BusinessSubscription.sync(syncOptions);
         await BusinessClient.sync(syncOptions);

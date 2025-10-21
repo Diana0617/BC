@@ -40,6 +40,12 @@ require('dotenv').config();
 
 const app = express();
 
+// Trust proxy - IMPORTANTE para Render/Vercel
+// Esto permite que Express confíe en los headers X-Forwarded-* 
+// establecidos por proxies inversos (Render, Vercel, etc.)
+// Necesario para rate limiting y obtención correcta de IPs de clientes
+app.set('trust proxy', true);
+
 // Middleware de seguridad
 app.use(helmet({
   contentSecurityPolicy: {
