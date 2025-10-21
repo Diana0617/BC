@@ -1,5 +1,5 @@
-// Build timestamp: 2025-10-21 14:35
+// Build timestamp: 2025-10-21 14:45
 // This file forces Vercel to create a completely new build
-// by changing the dependency tree
-// CRITICAL FIX: Lazy load OwnerOnlyRoute to prevent useLocation() during module evaluation
-export const BUILD_ID = '2025-10-21-14-35-FORCE-LAZY-LOAD';
+// CRITICAL FIX: Use local route protection without useLocation()
+// Instead of shared components that use useLocation(), we use Redux state directly
+export const BUILD_ID = '2025-10-21-14-45-LOCAL-ROUTE-PROTECTION';

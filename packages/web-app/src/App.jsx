@@ -1,13 +1,12 @@
-import React, { useEffect, lazy, Suspense } from 'react'
+import React, { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Toaster } from 'react-hot-toast'
 import { checkExistingSession } from '../../shared/src/index.js'
 
-// Lazy load route protection components to avoid useLocation() error during module load
-// These components use useLocation() which requires Router context
-const OwnerOnlyRoute = lazy(() => import('../../shared/src/components/RouteProtection.jsx').then(m => ({ default: m.OwnerOnlyRoute })))
-const AdminRoute = lazy(() => import('../../shared/src/components/RouteProtection.jsx').then(m => ({ default: m.AdminRoute })))
+// Use local route protection components that don't rely on useLocation()
+// This avoids the "useLocation() outside Router" error
+import { OwnerOnlyRoute, AdminRoute } from './components/LocalRouteProtection.jsx'
 
 // Branding Context
 import { BrandingProvider } from './contexts/BrandingContext'
@@ -84,11 +83,9 @@ function AppLayout() {
           
           {/* Owner routes - Protected */}
           <Route path="/owner" element={
-            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div></div>}>
-              <OwnerOnlyRoute>
-                <OwnerLayout />
-              </OwnerOnlyRoute>
-            </Suspense>
+            <OwnerOnlyRoute>
+              <OwnerLayout />
+            </OwnerOnlyRoute>
           }>
             <Route path="dashboard" element={<OwnerDashboardPage />} />
             <Route path="plans" element={<OwnerPlansPage />} />
