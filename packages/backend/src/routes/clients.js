@@ -107,8 +107,6 @@ router.get(
   (req, res) => VoucherController.getCustomerBlockStatus(req, res)
 );
 
-module.exports = router;
-
 // Obtener historial del cliente
 router.get('/:id/history', (req, res) => {
   res.status(501).json({
@@ -116,5 +114,9 @@ router.get('/:id/history', (req, res) => {
     error: 'Ruta de historial del cliente aún no implementada'
   });
 });
+
+// Obtener planes de tratamiento del cliente
+const TreatmentPlanController = require('../controllers/TreatmentPlanController');
+router.get('/:clientId/treatment-plans', TreatmentPlanController.getByClient);
 
 module.exports = router;

@@ -45,6 +45,10 @@ import voucherReducer from './slices/voucherSlice';
 // 💰 COMMISSION & CONSENT SYSTEM REDUCERS (FM-26)
 import commissionReducer from './slices/commissionSlice';
 import consentReducer from './slices/consentSlice';
+// 🔐 PERMISSIONS SYSTEM REDUCERS (FM-28)
+import permissionsReducer from './slices/permissionsSlice';
+// 💉 TREATMENT PLANS SYSTEM REDUCERS (FM-28)
+import treatmentPlansReducer from './slices/treatmentPlansSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -95,7 +99,11 @@ export const createStore = (preloadedState = {}) => {
       voucher: voucherReducer,
       // 💰 COMMISSION & CONSENT SYSTEM REDUCERS (FM-26)
       commission: commissionReducer,
-      consent: consentReducer
+      consent: consentReducer,
+      // 🔐 PERMISSIONS SYSTEM REDUCERS (FM-28)
+      permissions: permissionsReducer,
+      // 💉 TREATMENT PLANS SYSTEM REDUCERS (FM-28)
+      treatmentPlans: treatmentPlansReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>

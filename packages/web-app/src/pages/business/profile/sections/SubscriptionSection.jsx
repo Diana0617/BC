@@ -43,6 +43,15 @@ const SubscriptionSection = ({ isSetupMode }) => {
   const currentSubscription = business?.subscriptions?.find(sub => 
     sub.status === 'ACTIVE' || sub.status === 'TRIAL'
   ) || business?.subscriptions?.[0]
+  
+  // 🔧 FIX: Priorizar el estado del negocio si está en TRIAL
+  // A veces la suscripción puede estar SUSPENDED pero el negocio sigue en TRIAL
+  const effectiveSubscription = currentSubscription ? {
+    ...currentSubscription,
+    status: business?.status === 'TRIAL' ? 'TRIAL' : currentSubscription.status,
+    trialEndDate: business?.trialEndDate || currentSubscription.trialEndDate
+  } : null
+  
   // Preferir el currentPlan expuesto por el backend; si no, usar el plan de la suscripción
   const currentPlan = business?.currentPlan || currentSubscription?.plan
   
@@ -88,11 +97,11 @@ const SubscriptionSection = ({ isSetupMode }) => {
   }
 
   const getNextPaymentInfo = () => {
-    if (currentSubscription?.status === 'TRIAL') {
-      const trialEndDate = currentSubscription.trialEndDate;
+    if (effectiveSubscription?.status === 'TRIAL') {
+      const trialEndDate = effectiveSubscription.trialEndDate;
       // Usar el precio y moneda de la suscripción actual
-      const price = currentSubscription?.amount || currentPlan?.price || '0';
-      const currency = currentSubscription?.currency || currentPlan?.currency || 'COP';
+      const price = effectiveSubscription?.amount || currentPlan?.price || '0';
+      const currency = effectiveSubscription?.currency || currentPlan?.currency || 'COP';
       return {
         isTrialMode: true,
         daysRemaining: calculateDaysRemaining(trialEndDate),
@@ -105,10 +114,10 @@ const SubscriptionSection = ({ isSetupMode }) => {
     
     return {
       isTrialMode: false,
-      daysRemaining: calculateDaysRemaining(currentSubscription?.endDate),
-      expirationDate: currentSubscription?.endDate,
-      nextPaymentDate: currentSubscription?.nextPaymentDate || currentSubscription?.endDate,
-      amount: currentSubscription?.amount || currentPlan?.price || 0
+      daysRemaining: calculateDaysRemaining(effectiveSubscription?.endDate),
+      expirationDate: effectiveSubscription?.endDate,
+      nextPaymentDate: effectiveSubscription?.nextPaymentDate || effectiveSubscription?.endDate,
+      amount: effectiveSubscription?.amount || currentPlan?.price || 0
     }
   }
 
@@ -145,7 +154,7 @@ const SubscriptionSection = ({ isSetupMode }) => {
     )
   }
 
-  if (!business || !currentSubscription) {
+  if (!business || !effectiveSubscription) {
     return (
       <div className="text-center py-8">
         <ExclamationTriangleIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -167,7 +176,7 @@ const SubscriptionSection = ({ isSetupMode }) => {
           Estado de Suscripción
         </h2>
         <SubscriptionStatusBadge 
-          subscription={currentSubscription}
+          subscription={effectiveSubscription}
           compact={false}
           showDetails={true}
         />
@@ -190,12 +199,12 @@ const SubscriptionSection = ({ isSetupMode }) => {
             <CalendarDaysIcon className="h-5 w-5 text-gray-400 mr-2" />
             <div>
               <p className="text-sm text-gray-600">
-                {currentSubscription?.status === 'TRIAL' ? 'Trial finaliza' : 'Fecha de vencimiento'}
+                {effectiveSubscription?.status === 'TRIAL' ? 'Trial finaliza' : 'Fecha de vencimiento'}
               </p>
               <p className="font-medium text-gray-900">
-                {currentSubscription?.status === 'TRIAL' 
-                  ? formatDate(currentSubscription.trialEndDate) 
-                  : formatDate(currentSubscription?.endDate)
+                {effectiveSubscription?.status === 'TRIAL' 
+                  ? formatDate(effectiveSubscription.trialEndDate) 
+                  : formatDate(effectiveSubscription?.endDate)
                 }
               </p>
             </div>
@@ -207,11 +216,11 @@ const SubscriptionSection = ({ isSetupMode }) => {
               <p className="text-sm text-gray-600">Ciclo de facturación</p>
               <p className="font-medium text-gray-900">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                  currentSubscription?.billingCycle === 'ANNUAL' 
+                  effectiveSubscription?.billingCycle === 'ANNUAL' 
                     ? 'bg-purple-100 text-purple-800' 
                     : 'bg-blue-100 text-blue-800'
                 }`}>
-                  {currentSubscription?.billingCycle === 'ANNUAL' ? '📅 Anual' : '📆 Mensual'}
+                  {effectiveSubscription?.billingCycle === 'ANNUAL' ? '📅 Anual' : '📆 Mensual'}
                 </span>
               </p>
             </div>
@@ -222,10 +231,10 @@ const SubscriptionSection = ({ isSetupMode }) => {
             <div>
               <p className="text-sm text-gray-600">Estado del pago</p>
               <p className="font-medium text-gray-900">
-                {currentSubscription?.status === 'TRIAL' && 'Período de prueba - Sin cargo'}
-                {currentSubscription?.status === 'ACTIVE' && 'Al día'}
-                {currentSubscription?.status === 'PENDING' && 'Procesando pago'}
-                {(currentSubscription?.status === 'OVERDUE' || currentSubscription?.status === 'SUSPENDED') && 'Requiere atención'}
+                {effectiveSubscription?.status === 'TRIAL' && 'Período de prueba - Sin cargo'}
+                {effectiveSubscription?.status === 'ACTIVE' && 'Al día'}
+                {effectiveSubscription?.status === 'PENDING' && 'Procesando pago'}
+                {(effectiveSubscription?.status === 'OVERDUE' || effectiveSubscription?.status === 'SUSPENDED') && 'Requiere atención'}
               </p>
             </div>
           </div>
@@ -235,7 +244,7 @@ const SubscriptionSection = ({ isSetupMode }) => {
       {/* Información de próximo pago / Trial */}
       {(() => {
         const paymentInfo = getNextPaymentInfo()
-        const isTrial = currentSubscription?.status === 'TRIAL'
+        const isTrial = effectiveSubscription?.status === 'TRIAL'
         
         return (
           <div className={`rounded-lg p-6 ${
@@ -260,7 +269,7 @@ const SubscriptionSection = ({ isSetupMode }) => {
                         Precio después del trial: <span className="font-semibold">{formatPrice(paymentInfo.amount, paymentInfo.currency)}</span>
                       </p>
                       <p className="text-xs text-amber-600 mt-2">
-                        Se cobrará automáticamente el {formatDate(currentSubscription.trialEndDate)}
+                        Se cobrará automáticamente el {formatDate(effectiveSubscription.trialEndDate)}
                       </p>
                     </div>
                   </div>
@@ -349,10 +358,10 @@ const SubscriptionSection = ({ isSetupMode }) => {
           <h3 className="text-lg font-semibold text-gray-900">
             Módulos Incluidos
           </h3>
-          {currentSubscription?.status === 'TRIAL' && (
+          {effectiveSubscription?.status === 'TRIAL' && (
             <div className="flex items-center text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
               <ClockIcon className="h-4 w-4 mr-1" />
-              Trial: {calculateDaysRemaining(currentSubscription.trialEndDate)} días restantes
+              Trial: {calculateDaysRemaining(effectiveSubscription.trialEndDate)} días restantes
             </div>
           )}
         </div>
@@ -410,7 +419,7 @@ const SubscriptionSection = ({ isSetupMode }) => {
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-500">Precio adicional:</span>
                         <span className="text-sm font-medium text-blue-600">
-                          ${parseFloat(module.PlanModule.additionalPrice).toLocaleString()} {currentSubscription.currency || 'COP'}
+                          ${parseFloat(module.PlanModule.additionalPrice).toLocaleString()} {effectiveSubscription.currency || 'COP'}
                         </span>
                       </div>
                     )}
@@ -426,12 +435,12 @@ const SubscriptionSection = ({ isSetupMode }) => {
                     )}
 
                     {/* Estado del trial para este módulo */}
-                    {currentSubscription?.status === 'TRIAL' && (
+                    {effectiveSubscription?.status === 'TRIAL' && (
                       <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <div className="flex items-center text-sm">
                           <ClockIcon className="h-4 w-4 text-amber-600 mr-2" />
                           <span className="text-amber-800">
-                            <strong>Acceso de prueba:</strong> Disponible hasta el {formatDate(currentSubscription.trialEndDate)}
+                            <strong>Acceso de prueba:</strong> Disponible hasta el {formatDate(effectiveSubscription.trialEndDate)}
                           </span>
                         </div>
                       </div>

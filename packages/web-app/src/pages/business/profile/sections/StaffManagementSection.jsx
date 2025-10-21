@@ -16,9 +16,9 @@ import {
   UserIcon
 } from '@heroicons/react/24/outline';
 import { businessSpecialistsApi, businessBranchesApi, specialistServicesApi, businessServicesApi } from '@shared/api';
-import StaffKanbanBoard from '../../../components/staff/StaffKanbanBoard';
+import StaffKanbanBoard from '../../../../components/staff/StaffKanbanBoard.jsx';
 
-const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
+const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
   // Corrección: el estado en businessSlice se llama currentBusiness, not activeBusiness
   const activeBusiness = useSelector(state => state.business.currentBusiness);
   const isLoadingBusiness = useSelector(state => state.business.isLoading);
@@ -1422,6 +1422,7 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
         <div className="mt-8">
           <StaffKanbanBoard
             specialists={specialists}
+            businessId={activeBusiness?.id}
             onEdit={(staff) => {
               setEditingSpecialist(staff);
               setIsAddingSpecialist(true);
@@ -1509,4 +1510,4 @@ const SpecialistsSection = ({ isSetupMode, onComplete, isCompleted }) => {
   );
 };
 
-export default SpecialistsSection;
+export default StaffManagementSection;

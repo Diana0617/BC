@@ -116,6 +116,40 @@ const Service = sequelize.define('Service', {
     type: DataTypes.JSONB,
     allowNull: true,
     defaultValue: []
+  },
+  // Campos para servicios multi-sesión / paquetes
+  isPackage: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Indica si este servicio es un paquete multi-sesión'
+  },
+  packageType: {
+    type: DataTypes.ENUM('SINGLE', 'MULTI_SESSION', 'WITH_MAINTENANCE'),
+    allowNull: false,
+    defaultValue: 'SINGLE',
+   
+  },
+  packageConfig: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    comment: 'Configuración del paquete: { sessions: number, sessionInterval: number, maintenanceInterval: number, maintenanceSessions: number, pricing: { perSession: number, discount: number } }'
+  },
+  totalPrice: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+   
+  },
+  allowPartialPayment: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Permite pago por sesión o solo pago completo upfront'
+  },
+  pricePerSession: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    comment: 'Precio por sesión individual si se permite pago parcial'
   }
 }, {
   tableName: 'services',
@@ -126,8 +160,49 @@ const Service = sequelize.define('Service', {
     },
     {
       fields: ['businessId', 'category']
+    },
+    {
+      fields: ['isPackage']
     }
   ]
 });
+
+// Métodos de instancia para paquetes
+Service.prototype.isMultiSession = function() {
+  return this.isPackage && this.packageType === 'MULTI_SESSION';
+};
+
+Service.prototype.hasMaintenanceSessions = function() {
+  return this.isPackage && this.packageType === 'WITH_MAINTENANCE';
+};
+
+Service.prototype.getTotalSessions = function() {
+  if (!this.isPackage || !this.packageConfig) return 1;
+  
+  if (this.packageType === 'MULTI_SESSION') {
+    return this.packageConfig.sessions || 1;
+  }
+  
+  if (this.packageType === 'WITH_MAINTENANCE') {
+    return 1 + (this.packageConfig.maintenanceSessions || 0);
+  }
+  
+  return 1;
+};
+
+Service.prototype.calculatePackagePrice = function() {
+  if (!this.isPackage) return parseFloat(this.price);
+  
+  if (this.totalPrice) {
+    return parseFloat(this.totalPrice);
+  }
+  
+  // Calcular basado en precio por sesión si está disponible
+  if (this.pricePerSession) {
+    return parseFloat(this.pricePerSession) * this.getTotalSessions();
+  }
+  
+  return parseFloat(this.price);
+};
 
 module.exports = Service;

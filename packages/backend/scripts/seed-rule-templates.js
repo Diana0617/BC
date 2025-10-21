@@ -98,25 +98,12 @@ const ruleTemplates = [
       descriptions: ['Permitir citas simultáneas', 'Solo una cita a la vez']
     }
   },
-  
-  {
-    key: 'CITAS_REQUIERE_COMPROBANTE_PAGO',
-    type: 'BOOLEAN',
-    defaultValue: false,
-    description: 'Requiere que el especialista suba comprobante de pago antes de cerrar la cita',
-    category: 'PAYMENT_POLICY',
-    allowCustomization: true,
-    version: '1.0.0',
-    requiredModule: 'gestion_de_turnos',
-    examples: {
-      values: [true, false],
-      descriptions: ['Comprobante obligatorio', 'Comprobante opcional']
-    }
-  },
 
   // =====================
   // VALIDACIONES DE COMPLETAR CITAS (BusinessRuleService)
   // =====================
+  // NOTA: Los permisos de "quién puede cerrar citas cobrando" ahora se manejan
+  // en el sistema de permisos (appointments.close_with_payment, payments.create)
   {
     key: 'REQUIRE_CONSENT_FOR_COMPLETION',
     type: 'BOOLEAN',

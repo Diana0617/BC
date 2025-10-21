@@ -30,7 +30,7 @@ import SubscriptionSection from './sections/SubscriptionSection'
 import BasicInfoSection from './sections/BasicInfoSection'
 import BrandingSection from './sections/BrandingSection'
 import BranchesSection from './sections/BranchesSection'
-import SpecialistsSection from './sections/SpecialistsSection'
+import StaffManagementSection from './sections/StaffManagementSection'
 import ServicesSection from './sections/ServicesSection'
 import TaxxaConfigSection from './sections/TaxxaConfigSection'
 import InventoryConfigSection from './sections/InventoryConfigSection'
@@ -179,10 +179,10 @@ const BusinessProfile = () => {
       alwaysVisible: true
     },
      {
-      id: 'specialists',
-      name: 'Especialistas',
+      id: 'staff',
+      name: 'Equipo de Trabajo',
       icon: UsersIcon,
-      component: SpecialistsSection,
+      component: StaffManagementSection,
       setupStep: 'specialists',
       alwaysVisible: true
     },
@@ -236,26 +236,7 @@ const BusinessProfile = () => {
       moduleRequired: 'wompi_appointment_payments',
       setupStep: 'appointment-payments-config'
     }
-    // Nota: Los módulos 'basic-inventory' y 'basic-payments' no existen en la BD
-    // Se pueden agregar cuando se creen estos módulos en el seed
-    /*
-    {
-      id: 'inventory',
-      name: 'Inventario',
-      icon: WrenchScrewdriverIcon,
-      component: InventoryConfigSection,
-      moduleRequired: 'basic-inventory',
-      setupStep: 'inventory-config'
-    },
-    {
-      id: 'suppliers',
-      name: 'Proveedores',
-      icon: UserCircleIcon,
-      component: SuppliersConfigSection,
-      moduleRequired: 'basic-payments', // Los proveedores requieren pagos
-      setupStep: 'suppliers-config'
-    }
-    */
+   
   ]
 
   // Generar secciones dinámicas para TODOS los módulos disponibles

@@ -1,0 +1,622 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-10-19T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_treatment_plans",
+      "_type": "workspace",
+      "name": "Beauty Control - Treatment Plans",
+      "description": "API para gestión de tratamientos multi-sesión",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3001",
+        "token": "YOUR_AUTH_TOKEN_HERE",
+        "businessId": "YOUR_BUSINESS_ID",
+        "clientId": "YOUR_CLIENT_ID",
+        "serviceId": "YOUR_SERVICE_ID",
+        "treatmentPlanId": "",
+        "sessionId": "",
+        "appointmentId": ""
+      },
+      "parentId": "wrk_treatment_plans"
+    },
+    {
+      "_id": "req_001",
+      "_type": "request",
+      "name": "1. Auth - Login",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"your_password\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parentId": "fld_auth"
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "name": "0️⃣ Authentication",
+      "parentId": "wrk_treatment_plans"
+    },
+    {
+      "_id": "fld_services",
+      "_type": "request_group",
+      "name": "1️⃣ Services (Package Setup)",
+      "parentId": "wrk_treatment_plans"
+    },
+    {
+      "_id": "req_create_package_service",
+      "_type": "request",
+      "name": "1.1 Crear Servicio Paquete - Keratina 3 Sesiones",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/services",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": \"{{ _.businessId }}\",\n  \"name\": \"Keratina Brasileña - Paquete 3 Sesiones\",\n  \"description\": \"Tratamiento completo de keratina con 3 sesiones espaciadas cada 30 días\",\n  \"category\": \"Tratamientos Capilares\",\n  \"duration\": 120,\n  \"price\": 13500,\n  \"isPackage\": true,\n  \"packageType\": \"MULTI_SESSION\",\n  \"packageConfig\": {\n    \"sessions\": 3,\n    \"sessionInterval\": 30,\n    \"description\": \"3 sesiones de keratina con 30 días entre cada una\",\n    \"pricing\": {\n      \"perSession\": 13500,\n      \"discount\": 10\n    }\n  },\n  \"totalPrice\": 40500,\n  \"allowPartialPayment\": true,\n  \"pricePerSession\": 13500,\n  \"isActive\": true\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_services"
+    },
+    {
+      "_id": "req_create_maintenance_service",
+      "_type": "request",
+      "name": "1.2 Crear Servicio con Mantenimiento - Láser",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/services",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": \"{{ _.businessId }}\",\n  \"name\": \"Depilación Láser + 6 Mantenimientos\",\n  \"description\": \"Sesión principal de depilación láser con 6 mantenimientos mensuales incluidos\",\n  \"category\": \"Depilación\",\n  \"duration\": 60,\n  \"price\": 50000,\n  \"isPackage\": true,\n  \"packageType\": \"WITH_MAINTENANCE\",\n  \"packageConfig\": {\n    \"maintenanceSessions\": 6,\n    \"maintenanceInterval\": 30,\n    \"description\": \"1 sesión principal + 6 mantenimientos mensuales\",\n    \"pricing\": {\n      \"mainSession\": 50000,\n      \"maintenancePrice\": 10000\n    }\n  },\n  \"totalPrice\": 110000,\n  \"allowPartialPayment\": true,\n  \"pricePerSession\": 10000,\n  \"isActive\": true\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_services"
+    },
+    {
+      "_id": "fld_treatment_plans",
+      "_type": "request_group",
+      "name": "2️⃣ Treatment Plans",
+      "parentId": "wrk_treatment_plans"
+    },
+    {
+      "_id": "req_create_treatment_plan",
+      "_type": "request",
+      "name": "2.1 Crear Plan de Tratamiento",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/treatment-plans",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"clientId\": \"{{ _.clientId }}\",\n  \"serviceId\": \"{{ _.serviceId }}\",\n  \"specialistId\": null,\n  \"startDate\": \"2025-10-19\",\n  \"expectedEndDate\": \"2025-12-19\",\n  \"paymentPlan\": \"PER_SESSION\",\n  \"notes\": \"Cliente solicitó pago por sesión. Muy entusiasmada con el tratamiento.\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_treatment_plans"
+    },
+    {
+      "_id": "req_get_treatment_plan",
+      "_type": "request",
+      "name": "2.2 Obtener Plan por ID",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/treatment-plans/{{ _.treatmentPlanId }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_treatment_plans"
+    },
+    {
+      "_id": "req_get_all_plans",
+      "_type": "request",
+      "name": "2.3 Listar Todos los Planes",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/treatment-plans?status=ACTIVE&page=1&limit=20",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_treatment_plans"
+    },
+    {
+      "_id": "req_get_client_plans",
+      "_type": "request",
+      "name": "2.4 Obtener Planes de un Cliente",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/clients/{{ _.clientId }}/treatment-plans?includeCompleted=false",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_treatment_plans"
+    },
+    {
+      "_id": "req_update_plan",
+      "_type": "request",
+      "name": "2.5 Actualizar Plan",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/treatment-plans/{{ _.treatmentPlanId }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"PAUSED\",\n  \"notes\": \"Cliente solicitó pausar el tratamiento por viaje\",\n  \"expectedEndDate\": \"2026-01-15\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_treatment_plans"
+    },
+    {
+      "_id": "req_add_plan_payment",
+      "_type": "request",
+      "name": "2.6 Registrar Pago en Plan",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/treatment-plans/{{ _.treatmentPlanId }}/payment",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": 13500,\n  \"sessionId\": \"{{ _.sessionId }}\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_treatment_plans"
+    },
+    {
+      "_id": "req_cancel_plan",
+      "_type": "request",
+      "name": "2.7 Cancelar Plan",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/treatment-plans/{{ _.treatmentPlanId }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"reason\": \"Cliente solicitó cancelación por motivos personales\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_treatment_plans"
+    },
+    {
+      "_id": "fld_sessions",
+      "_type": "request_group",
+      "name": "3️⃣ Treatment Sessions",
+      "parentId": "wrk_treatment_plans"
+    },
+    {
+      "_id": "req_get_session",
+      "_type": "request",
+      "name": "3.1 Obtener Sesión por ID",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/treatment-plans/sessions/{{ _.sessionId }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_sessions"
+    },
+    {
+      "_id": "req_schedule_session",
+      "_type": "request",
+      "name": "3.2 Agendar Sesión (Vincular Turno)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/treatment-plans/sessions/{{ _.sessionId }}/schedule",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"appointmentId\": \"{{ _.appointmentId }}\",\n  \"specialistId\": null\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_sessions"
+    },
+    {
+      "_id": "req_complete_session",
+      "_type": "request",
+      "name": "3.3 Completar Sesión",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/treatment-plans/sessions/{{ _.sessionId }}/complete",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"notes\": \"Sesión completada exitosamente. Cliente muy conforme con los resultados.\",\n  \"photosUrls\": [\n    {\n      \"url\": \"https://cloudinary.com/photo-before.jpg\",\n      \"type\": \"before\",\n      \"description\": \"Antes del tratamiento\"\n    },\n    {\n      \"url\": \"https://cloudinary.com/photo-after.jpg\",\n      \"type\": \"after\",\n      \"description\": \"Después del tratamiento\"\n    }\n  ],\n  \"metadata\": {\n    \"productsUsed\": [\"Keratina Premium\", \"Shampoo Post-tratamiento\"],\n    \"temperature\": \"180°C\",\n    \"observations\": \"Cabello muy receptivo al tratamiento\"\n  }\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_sessions"
+    },
+    {
+      "_id": "req_add_session_photo",
+      "_type": "request",
+      "name": "3.4 Agregar Foto de Progreso",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/treatment-plans/sessions/{{ _.sessionId }}/photos",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"photoUrl\": \"https://cloudinary.com/progress-photo.jpg\",\n  \"type\": \"progress\",\n  \"description\": \"Foto de progreso después de 2 semanas\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_sessions"
+    },
+    {
+      "_id": "req_delete_session_photo",
+      "_type": "request",
+      "name": "3.5 Eliminar Foto",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/treatment-plans/sessions/{{ _.sessionId }}/photos/0",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_sessions"
+    },
+    {
+      "_id": "req_pay_session",
+      "_type": "request",
+      "name": "3.6 Registrar Pago de Sesión",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/treatment-plans/sessions/{{ _.sessionId }}/payment",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_sessions"
+    },
+    {
+      "_id": "req_mark_no_show",
+      "_type": "request",
+      "name": "3.7 Marcar No Show",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/treatment-plans/sessions/{{ _.sessionId }}/no-show",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"notes\": \"Cliente no asistió sin previo aviso\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_sessions"
+    },
+    {
+      "_id": "req_reschedule_session",
+      "_type": "request",
+      "name": "3.8 Reagendar Sesión",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/treatment-plans/sessions/{{ _.sessionId }}/reschedule",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"newAppointmentId\": \"NEW_APPOINTMENT_ID_HERE\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_sessions"
+    },
+    {
+      "_id": "req_cancel_session",
+      "_type": "request",
+      "name": "3.9 Cancelar Sesión",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/treatment-plans/sessions/{{ _.sessionId }}/cancel",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"reason\": \"Cliente canceló con 24hs de anticipación\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_sessions"
+    },
+    {
+      "_id": "fld_complete_flow",
+      "_type": "request_group",
+      "name": "🎯 Flujo Completo - Ejecutar en Orden",
+      "parentId": "wrk_treatment_plans"
+    },
+    {
+      "_id": "req_flow_01",
+      "_type": "request",
+      "name": "PASO 1: Login",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"your_password\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parentId": "fld_complete_flow",
+      "description": "Copiar el token de la respuesta y actualizarlo en el Environment"
+    },
+    {
+      "_id": "req_flow_02",
+      "_type": "request",
+      "name": "PASO 2: Crear Servicio Paquete",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/services",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": \"{{ _.businessId }}\",\n  \"name\": \"Keratina Brasileña - 3 Sesiones\",\n  \"description\": \"Tratamiento completo de keratina\",\n  \"category\": \"Tratamientos Capilares\",\n  \"duration\": 120,\n  \"price\": 13500,\n  \"isPackage\": true,\n  \"packageType\": \"MULTI_SESSION\",\n  \"packageConfig\": {\n    \"sessions\": 3,\n    \"sessionInterval\": 30\n  },\n  \"totalPrice\": 40500,\n  \"allowPartialPayment\": true,\n  \"pricePerSession\": 13500,\n  \"isActive\": true\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_complete_flow",
+      "description": "Copiar el serviceId de la respuesta y actualizarlo en el Environment"
+    },
+    {
+      "_id": "req_flow_03",
+      "_type": "request",
+      "name": "PASO 3: Crear Plan de Tratamiento",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/treatment-plans",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"clientId\": \"{{ _.clientId }}\",\n  \"serviceId\": \"{{ _.serviceId }}\",\n  \"startDate\": \"2025-10-19\",\n  \"paymentPlan\": \"PER_SESSION\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_complete_flow",
+      "description": "Copiar treatmentPlanId y sessionId (de la primera sesión) al Environment"
+    },
+    {
+      "_id": "req_flow_04",
+      "_type": "request",
+      "name": "PASO 4: Ver Plan Creado",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/treatment-plans/{{ _.treatmentPlanId }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_complete_flow",
+      "description": "Verificar que el plan se creó correctamente con 3 sesiones PENDING"
+    },
+    {
+      "_id": "req_flow_05",
+      "_type": "request",
+      "name": "PASO 5: Crear Turno para Primera Sesión",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/appointments",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"businessId\": \"{{ _.businessId }}\",\n  \"clientId\": \"{{ _.clientId }}\",\n  \"serviceId\": \"{{ _.serviceId }}\",\n  \"startTime\": \"2025-10-20T10:00:00Z\",\n  \"endTime\": \"2025-10-20T12:00:00Z\",\n  \"notes\": \"Primera sesión de keratina\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_complete_flow",
+      "description": "Copiar appointmentId de la respuesta al Environment"
+    },
+    {
+      "_id": "req_flow_06",
+      "_type": "request",
+      "name": "PASO 6: Agendar Primera Sesión",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/treatment-plans/sessions/{{ _.sessionId }}/schedule",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"appointmentId\": \"{{ _.appointmentId }}\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_complete_flow",
+      "description": "La sesión cambia de PENDING a SCHEDULED"
+    },
+    {
+      "_id": "req_flow_07",
+      "_type": "request",
+      "name": "PASO 7: Completar Primera Sesión",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/treatment-plans/sessions/{{ _.sessionId }}/complete",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"notes\": \"Primera sesión completada exitosamente\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_complete_flow",
+      "description": "La sesión cambia a COMPLETED y el contador del plan se actualiza"
+    },
+    {
+      "_id": "req_flow_08",
+      "_type": "request",
+      "name": "PASO 8: Registrar Pago de Sesión",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/treatment-plans/sessions/{{ _.sessionId }}/payment",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_complete_flow",
+      "description": "Marca la sesión como pagada y actualiza el monto del plan"
+    },
+    {
+      "_id": "req_flow_09",
+      "_type": "request",
+      "name": "PASO 9: Ver Progreso del Plan",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/treatment-plans/{{ _.treatmentPlanId }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "parentId": "fld_complete_flow",
+      "description": "Verificar: completedSessions: 1, paidAmount: 13500, progress: 33%"
+    }
+  ]
+}

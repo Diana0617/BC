@@ -14,8 +14,29 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
     preparationTime: 0,
     cleanupTime: 0,
     requiresConsent: false,
-    consentTemplateId: null
+    consentTemplateId: null,
+    // 💉 Campos de paquete
+    isPackage: false,
+    packageType: 'SINGLE',
+    totalPrice: '',
+    allowPartialPayment: false,
+    pricePerSession: ''
   })
+  
+  const [packageConfig, setPackageConfig] = useState({
+    sessions: 3,
+    sessionInterval: 30,
+    maintenanceSessions: 6,
+    maintenanceInterval: 30,
+    description: '',
+    pricing: {
+      perSession: '',
+      discount: 0,
+      mainSession: '',
+      maintenancePrice: ''
+    }
+  })
+  
   const [existingCategories, setExistingCategories] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -55,8 +76,32 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
         preparationTime: service.preparationTime || 0,
         cleanupTime: service.cleanupTime || 0,
         requiresConsent: service.requiresConsent || false,
-        consentTemplateId: service.consentTemplateId || null
+        consentTemplateId: service.consentTemplateId || null,
+        // 💉 Datos de paquete
+        isPackage: service.isPackage || false,
+        packageType: service.packageType || 'SINGLE',
+        totalPrice: service.totalPrice || '',
+        allowPartialPayment: service.allowPartialPayment || false,
+        pricePerSession: service.pricePerSession || ''
       })
+      
+      // 💉 Configuración de paquete
+      if (service.isPackage && service.packageConfig) {
+        setPackageConfig({
+          sessions: service.packageConfig.sessions || 3,
+          sessionInterval: service.packageConfig.sessionInterval || 30,
+          maintenanceSessions: service.packageConfig.maintenanceSessions || 6,
+          maintenanceInterval: service.packageConfig.maintenanceInterval || 30,
+          description: service.packageConfig.description || '',
+          pricing: {
+            perSession: service.packageConfig.pricing?.perSession || '',
+            discount: service.packageConfig.pricing?.discount || 0,
+            mainSession: service.packageConfig.pricing?.mainSession || '',
+            maintenancePrice: service.packageConfig.pricing?.maintenancePrice || ''
+          }
+        })
+      }
+      
       // Cargar imágenes existentes
       console.log('🖼️ Service images from DB:', service.images)
       if (service.images && service.images.length > 0) {
@@ -70,6 +115,19 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
       setImageFile(null)
     } else {
       // Limpiar al crear nuevo servicio
+      setPackageConfig({
+        sessions: 3,
+        sessionInterval: 30,
+        maintenanceSessions: 6,
+        maintenanceInterval: 30,
+        description: '',
+        pricing: {
+          perSession: '',
+          discount: 0,
+          mainSession: '',
+          maintenancePrice: ''
+        }
+      })
       setExistingImages([])
       setImagePreview(null)
       setImageFile(null)
@@ -83,6 +141,59 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
       [name]: type === 'checkbox' ? checked : value
     }))
   }
+
+  // 💉 Manejar cambios en configuración de paquete
+  const handlePackageConfigChange = (field, value) => {
+    setPackageConfig(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const handlePackagePricingChange = (field, value) => {
+    setPackageConfig(prev => ({
+      ...prev,
+      pricing: {
+        ...prev.pricing,
+        [field]: value
+      }
+    }))
+  }
+
+  // 💉 Calcular precio total automáticamente
+  useEffect(() => {
+    if (!formData.isPackage) return
+
+    let total = 0
+
+    if (formData.packageType === 'MULTI_SESSION') {
+      const pricePerSession = parseFloat(packageConfig.pricing.perSession) || 0
+      const discount = parseFloat(packageConfig.pricing.discount) || 0
+      const sessions = parseInt(packageConfig.sessions) || 0
+      
+      const subtotal = pricePerSession * sessions
+      const discountAmount = subtotal * (discount / 100)
+      total = subtotal - discountAmount
+    } else if (formData.packageType === 'WITH_MAINTENANCE') {
+      const mainPrice = parseFloat(packageConfig.pricing.mainSession) || 0
+      const maintenancePrice = parseFloat(packageConfig.pricing.maintenancePrice) || 0
+      const maintenanceCount = parseInt(packageConfig.maintenanceSessions) || 0
+      
+      total = mainPrice + (maintenancePrice * maintenanceCount)
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      totalPrice: total.toFixed(2),
+      pricePerSession: packageConfig.pricing.perSession
+    }))
+  }, [
+    formData.isPackage,
+    formData.packageType,
+    packageConfig.sessions,
+    packageConfig.maintenanceSessions,
+    packageConfig.pricing
+  ])
 
   const handleImageChange = (e) => {
     const file = e.target.files[0]
@@ -127,9 +238,30 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (!formData.name || !formData.price) {
-      setError('Nombre y precio son requeridos')
+    // 💉 Validación mejorada
+    if (!formData.name) {
+      setError('El nombre es requerido')
       return
+    }
+
+    // Validar según tipo de servicio
+    if (!formData.isPackage && !formData.price) {
+      setError('El precio es requerido para servicios individuales')
+      return
+    }
+
+    if (formData.isPackage) {
+      if (formData.packageType === 'MULTI_SESSION') {
+        if (!packageConfig.pricing.perSession || packageConfig.sessions < 2) {
+          setError('Para paquetes multi-sesión debes especificar precio por sesión y al menos 2 sesiones')
+          return
+        }
+      } else if (formData.packageType === 'WITH_MAINTENANCE') {
+        if (!packageConfig.pricing.mainSession || !packageConfig.pricing.maintenancePrice) {
+          setError('Debes especificar el precio de la sesión principal y las sesiones de mantenimiento')
+          return
+        }
+      }
     }
 
     try {
@@ -141,13 +273,33 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
         description: formData.description,
         category: formData.category?.trim() || null,
         duration: parseInt(formData.duration),
-        price: parseFloat(formData.price),
+        price: formData.isPackage ? parseFloat(formData.totalPrice) : parseFloat(formData.price),
         color: formData.color || '#3B82F6',
         preparationTime: parseInt(formData.preparationTime) || 0,
         cleanupTime: parseInt(formData.cleanupTime) || 0,
         requiresConsent: formData.requiresConsent,
         consentTemplateId: formData.requiresConsent ? formData.consentTemplateId : null,
-        isActive: true
+        isActive: true,
+        // 💉 Datos de paquete
+        isPackage: formData.isPackage,
+        packageType: formData.isPackage ? formData.packageType : 'SINGLE',
+        totalPrice: formData.isPackage ? parseFloat(formData.totalPrice) : null,
+        allowPartialPayment: formData.isPackage ? formData.allowPartialPayment : false,
+        pricePerSession: formData.isPackage && formData.packageType === 'MULTI_SESSION' 
+          ? parseFloat(packageConfig.pricing.perSession) 
+          : null
+      }
+
+      // 💉 Agregar packageConfig si es paquete
+      if (formData.isPackage) {
+        serviceData.packageConfig = {
+          sessions: formData.packageType === 'MULTI_SESSION' ? parseInt(packageConfig.sessions) : null,
+          sessionInterval: formData.packageType === 'MULTI_SESSION' ? parseInt(packageConfig.sessionInterval) : null,
+          maintenanceSessions: formData.packageType === 'WITH_MAINTENANCE' ? parseInt(packageConfig.maintenanceSessions) : null,
+          maintenanceInterval: formData.packageType === 'WITH_MAINTENANCE' ? parseInt(packageConfig.maintenanceInterval) : null,
+          description: packageConfig.description || null,
+          pricing: packageConfig.pricing
+        }
       }
       
       // Solo enviar images si hay cambios
@@ -195,31 +347,34 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4">
+      <div className="flex items-center justify-center min-h-screen px-4 py-8">
         {/* Backdrop */}
         <div className="fixed inset-0 bg-black opacity-30" onClick={onClose}></div>
         
-        {/* Modal */}
-        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
+        {/* Modal - Más ancho para paquetes, scroll interno */}
+        <div className="relative bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+          {/* Header - Fixed */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
               {service ? 'Editar Procedimiento' : 'Nuevo Procedimiento'}
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 p-2 -mr-2"
+              type="button"
             >
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
 
-          {/* Error */}
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
+          {/* Content - Scrollable */}
+          <div className="overflow-y-auto p-6 flex-1">
+            {/* Error */}
+            {error && (
+              <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -238,7 +393,233 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* 💉 SELECTOR DE TIPO DE SERVICIO */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="isPackage"
+                  name="isPackage"
+                  checked={formData.isPackage}
+                  onChange={handleChange}
+                  className="mt-1 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <div className="flex-1">
+                  <label htmlFor="isPackage" className="text-sm font-medium text-gray-900 cursor-pointer">
+                    ¿Es un paquete de múltiples sesiones?
+                  </label>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Marca esta opción si este procedimiento requiere varias citas (ej: tratamientos faciales con mantenimiento)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 💉 CONFIGURACIÓN DE PAQUETE */}
+            {formData.isPackage && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-semibold text-purple-900 mb-3">Configuración del Paquete</h3>
+                
+                {/* Tipo de paquete */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tipo de Paquete *
+                  </label>
+                  <select
+                    name="packageType"
+                    value={formData.packageType}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <option value="SINGLE">Servicio Individual</option>
+                    <option value="MULTI_SESSION">Múltiples Sesiones Iguales</option>
+                    <option value="WITH_MAINTENANCE">Sesión Principal + Mantenimiento</option>
+                  </select>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {formData.packageType === 'MULTI_SESSION' && 'Varias sesiones del mismo procedimiento (ej: 5 sesiones de láser)'}
+                    {formData.packageType === 'WITH_MAINTENANCE' && 'Una sesión principal seguida de sesiones de mantenimiento (ej: Hydrafacial + 6 mantenimientos)'}
+                    {formData.packageType === 'SINGLE' && 'Servicio de una sola sesión'}
+                  </p>
+                </div>
+
+                {/* MULTI_SESSION */}
+                {formData.packageType === 'MULTI_SESSION' && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Número de Sesiones *
+                        </label>
+                        <input
+                          type="number"
+                          value={packageConfig.sessions}
+                          onChange={(e) => handlePackageConfigChange('sessions', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          min="2"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Intervalo entre Sesiones (días)
+                        </label>
+                        <input
+                          type="number"
+                          value={packageConfig.sessionInterval}
+                          onChange={(e) => handlePackageConfigChange('sessionInterval', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          min="1"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Precio por Sesión (COP) *
+                        </label>
+                        <input
+                          type="number"
+                          value={packageConfig.pricing.perSession}
+                          onChange={(e) => handlePackagePricingChange('perSession', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          placeholder="50000"
+                          min="0"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Descuento por Paquete (%)
+                        </label>
+                        <input
+                          type="number"
+                          value={packageConfig.pricing.discount}
+                          onChange={(e) => handlePackagePricingChange('discount', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          min="0"
+                          max="100"
+                          placeholder="10"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* WITH_MAINTENANCE */}
+                {formData.packageType === 'WITH_MAINTENANCE' && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Precio Sesión Principal (COP) *
+                        </label>
+                        <input
+                          type="number"
+                          value={packageConfig.pricing.mainSession}
+                          onChange={(e) => handlePackagePricingChange('mainSession', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          placeholder="200000"
+                          min="0"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Precio Mantenimiento (COP) *
+                        </label>
+                        <input
+                          type="number"
+                          value={packageConfig.pricing.maintenancePrice}
+                          onChange={(e) => handlePackagePricingChange('maintenancePrice', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          placeholder="80000"
+                          min="0"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Número de Mantenimientos *
+                        </label>
+                        <input
+                          type="number"
+                          value={packageConfig.maintenanceSessions}
+                          onChange={(e) => handlePackageConfigChange('maintenanceSessions', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          min="1"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Intervalo entre Sesiones (días)
+                        </label>
+                        <input
+                          type="number"
+                          value={packageConfig.maintenanceInterval}
+                          onChange={(e) => handlePackageConfigChange('maintenanceInterval', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          min="1"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Descripción del paquete */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descripción del Paquete
+                  </label>
+                  <textarea
+                    value={packageConfig.description}
+                    onChange={(e) => handlePackageConfigChange('description', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    rows="2"
+                    placeholder="Describe brevemente en qué consiste este paquete..."
+                  />
+                </div>
+
+                {/* Precio Total Calculado */}
+                {formData.totalPrice && parseFloat(formData.totalPrice) > 0 && (
+                  <div className="bg-white border-2 border-purple-300 rounded-lg p-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">Precio Total del Paquete:</span>
+                      <span className="text-2xl font-bold text-purple-600">
+                        ${parseFloat(formData.totalPrice).toLocaleString('es-CO')} COP
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Pago Parcial */}
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="allowPartialPayment"
+                    name="allowPartialPayment"
+                    checked={formData.allowPartialPayment}
+                    onChange={handleChange}
+                    className="mt-1 h-5 w-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <div>
+                    <label htmlFor="allowPartialPayment" className="text-sm font-medium text-gray-900 cursor-pointer">
+                      Permitir Pago Parcial
+                    </label>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Permite que el cliente pague el paquete en cuotas
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Duración y Precio (solo para servicios NO paquete) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Duración (minutos) *
@@ -253,23 +634,28 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
                   step="15"
                   required
                 />
+                <p className="text-xs text-gray-600 mt-1">
+                  {formData.isPackage ? 'Duración de cada sesión individual' : 'Duración del procedimiento'}
+                </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Precio (COP) *
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="50000"
-                  min="0"
-                  required
-                />
-              </div>
+              {!formData.isPackage && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Precio (COP) *
+                  </label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="50000"
+                    min="0"
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             {/* Categoría con autocompletado */}
@@ -493,11 +879,11 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <button
                 type="submit"
                 disabled={isLoading || isUploadingImage}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-blue-600 text-white px-4 py-3 sm:py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-base sm:text-sm min-h-[44px] sm:min-h-0"
               >
                 {isLoading 
                   ? 'Guardando...' 
@@ -512,12 +898,13 @@ const ServiceFormModal = ({ isOpen, onClose, onSave, service, businessId }) => {
                 type="button"
                 onClick={onClose}
                 disabled={isLoading || isUploadingImage}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-3 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 font-medium text-base sm:text-sm min-h-[44px] sm:min-h-0"
               >
                 Cancelar
               </button>
             </div>
           </form>
+          </div>
         </div>
       </div>
 

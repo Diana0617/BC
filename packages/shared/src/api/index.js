@@ -94,6 +94,10 @@ import consentApi from './consentApi';
 export { default as appointmentApi } from './appointmentApi';
 import appointmentApi from './appointmentApi';
 
+// 💉 TREATMENT PLANS SYSTEM API (FM-28)
+export { default as treatmentPlansApi } from './treatmentPlansApi';
+import treatmentPlansApi from './treatmentPlansApi';
+
 // Export all OWNER APIs as a group
 export const ownerApis = {
   ownerApi,
@@ -130,5 +134,7 @@ export const businessApis = {
   appointmentApi,
   // Commission & Consent APIs (FM-26)
   commissionApi,
-  consentApi
+  consentApi,
+  // Treatment Plans System API (FM-28)
+  treatmentPlansApi
 };
