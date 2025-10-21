@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Toaster } from 'react-hot-toast'
 import { checkExistingSession, OwnerOnlyRoute, AdminRoute } from '../../shared/src/index.js'
@@ -181,7 +181,11 @@ function AppLayout() {
 }
 
 function App() {
-  return <AppLayout />
+  return (
+    <BrowserRouter>
+      <AppLayout />
+    </BrowserRouter>
+  )
 }
 
 export default App
