@@ -60,35 +60,50 @@ app.use(helmet({
   }
 }));
 
-// CORS configurado
+// CORS configurado - Always allow production URLs
+const allowedOrigins = [
+  // Production URLs
+  'https://bc-nine-alpha.vercel.app',
+  'https://bc-webapp-henna.vercel.app',
+  process.env.WEB_URL,
+  process.env.APP_URL,
+  process.env.FRONTEND_URL,
+  // Development URLs
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:19006',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://192.168.0.213:3000',
+  'http://192.168.0.213:3001',
+  'http://192.168.0.213:19006'
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [
-        // URLs de producción
-        process.env.WEB_URL, 
-        process.env.APP_URL,
-        process.env.FRONTEND_URL,
-        'https://bc-nine-alpha.vercel.app',
-        'https://bc-webapp-henna.vercel.app',
-        // Permitir TODAS las preview deployments de Vercel
-        /^https:\/\/bc-[a-z0-9]+-[a-z0-9]+-diana0617s-projects\.vercel\.app$/,
-        /^https:\/\/bc-nine-alpha\.vercel\.app$/,
-        /^https:\/\/.*\.vercel\.app$/, // Fallback general
-        // URLs de desarrollo (para testing local contra backend de producción)
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:19006',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:3001'
-      ]
-    : [
-        'http://localhost:3000', 
-        'http://localhost:3001', 
-        'http://localhost:19006',
-        'http://192.168.0.213:3000',
-        'http://192.168.0.213:3001',
-        'http://192.168.0.213:19006'
-      ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check exact match
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Check regex patterns for Vercel preview deployments
+    const vercelPatterns = [
+      /^https:\/\/bc-[a-z0-9]+-[a-z0-9]+-diana0617s-projects\.vercel\.app$/,
+      /^https:\/\/bc-nine-alpha-[a-z0-9]+\.vercel\.app$/,
+      /^https:\/\/.*-diana0617s-projects\.vercel\.app$/
+    ];
+    
+    const isAllowed = vercelPatterns.some(pattern => pattern.test(origin));
+    if (isAllowed) {
+      return callback(null, true);
+    }
+    
+    // Reject
+    callback(new Error(`Origin ${origin} not allowed by CORS`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
