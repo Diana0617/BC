@@ -1,7 +1,7 @@
 {
-  "buildCommand": "cd ../shared && npm install && cd ../web-app && npm install && npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install --prefix ../shared && npm install",
+  "buildCommand": "cd packages/web-app && npm run build",
+  "outputDirectory": "packages/web-app/dist",
+  "installCommand": "cd packages/shared && npm install && cd ../web-app && npm install",
   "framework": "vite",
   "rewrites": [
     {
