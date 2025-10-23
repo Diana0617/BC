@@ -71,8 +71,9 @@ if (isDev) {
 }
 
 // Request configuration
+// TIMEOUT increased to 60s to allow Render free tier cold starts (~30-50s)
 export const REQUEST_CONFIG = {
-  TIMEOUT: 10000,
+  TIMEOUT: 60000,
   HEADERS: {
     'Content-Type': 'application/json'
   }
