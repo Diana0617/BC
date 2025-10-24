@@ -107,7 +107,7 @@ const paymentProofUpload = AppointmentPaymentController.getPaymentProofMulter();
  *       403:
  *         description: Acceso denegado
  */
-router.get('/specialists/me/appointments', authenticateToken, validateBusinessId, requireSpecialist, SpecialistController.getMyAppointments);
+router.get('/me/appointments', authenticateToken, validateBusinessId, requireSpecialist, SpecialistController.getMyAppointments);
 
 /**
  * @swagger
@@ -181,7 +181,7 @@ router.get('/me/dashboard/appointments', authenticateToken, requireSpecialist, A
  *       200:
  *         description: Estado actualizado exitosamente
  */
-router.patch('/specialists/me/appointments/:appointmentId/status', authenticateToken, requireSpecialist, SpecialistController.updateAppointmentStatus);
+router.patch('/me/appointments/:appointmentId/status', authenticateToken, requireSpecialist, SpecialistController.updateAppointmentStatus);
 
 /**
  * @swagger
@@ -225,7 +225,7 @@ router.patch('/specialists/me/appointments/:appointmentId/status', authenticateT
  *       200:
  *         description: Historial de procedimientos completados
  */
-router.get('/specialists/me/history', authenticateToken, requireSpecialist, SpecialistController.getMyHistory);
+router.get('/me/history', authenticateToken, requireSpecialist, SpecialistController.getMyHistory);
 
 /**
  * @swagger
@@ -265,7 +265,7 @@ router.get('/specialists/me/history', authenticateToken, requireSpecialist, Spec
  *       200:
  *         description: Reporte de comisiones del especialista
  */
-router.get('/specialists/me/commissions', authenticateToken, requireSpecialist, SpecialistController.getMyCommissions);
+router.get('/me/commissions', authenticateToken, requireSpecialist, SpecialistController.getMyCommissions);
 
 /**
  * @swagger
@@ -320,8 +320,8 @@ router.get('/specialists/me/commissions', authenticateToken, requireSpecialist, 
  *       200:
  *         description: Perfil actualizado exitosamente
  */
-router.get('/specialists/me/profile', authenticateToken, requireSpecialist, SpecialistController.getMyProfile);
-router.put('/specialists/me/profile', authenticateToken, requireSpecialist, SpecialistController.updateMyProfile);
+router.get('/me/profile', authenticateToken, requireSpecialist, SpecialistController.getMyProfile);
+router.put('/me/profile', authenticateToken, requireSpecialist, SpecialistController.updateMyProfile);
 
 // ==================== RUTAS DE CITAS ====================
 
@@ -836,7 +836,7 @@ router.delete('/appointments/:appointmentId/payments/:paymentIndex', authenticat
  *       200:
  *         description: Reporte de pagos del especialista
  */
-router.get('/specialists/me/payments', authenticateToken, requireSpecialist, AppointmentPaymentController.getMyPaymentReport);
+router.get('/me/payments', authenticateToken, requireSpecialist, AppointmentPaymentController.getMyPaymentReport);
 
 // ==================== RUTAS DE PRODUCTOS UTILIZADOS ====================
 
@@ -1109,7 +1109,7 @@ router.post('/sales', authenticateToken, requireSpecialist, SpecialistSalesContr
  *       200:
  *         description: Lista de ventas del especialista
  */
-router.get('/specialists/me/sales', authenticateToken, requireSpecialist, SpecialistSalesController.getMySales);
+router.get('/me/sales', authenticateToken, requireSpecialist, SpecialistSalesController.getMySales);
 
 /**
  * @swagger
@@ -1142,7 +1142,7 @@ router.get('/specialists/me/sales', authenticateToken, requireSpecialist, Specia
  *       200:
  *         description: Lista de productos disponibles para venta
  */
-router.get('/specialists/me/products', authenticateToken, requireSpecialist, SpecialistSalesController.getAvailableProducts);
+router.get('/me/products', authenticateToken, requireSpecialist, SpecialistSalesController.getAvailableProducts);
 
 /**
  * @swagger
@@ -1178,7 +1178,7 @@ router.get('/specialists/me/products', authenticateToken, requireSpecialist, Spe
  *       200:
  *         description: Reporte detallado de ventas
  */
-router.get('/specialists/me/sales/report', authenticateToken, validateBusinessId, requireSpecialist, SpecialistSalesController.getSalesReport);
+router.get('/me/sales/report', authenticateToken, validateBusinessId, requireSpecialist, SpecialistSalesController.getSalesReport);
 
 // ==================== RUTAS DE PAGOS ADELANTADOS/DEPÓSITOS ====================
 
@@ -1398,7 +1398,7 @@ router.post('/appointments/advance-payment/wompi-webhook', AppointmentAdvancePay
  *                               endTime:
  *                                 type: string
  */
-router.get('/specialists/me/schedules', authenticateToken, requireSpecialist, SpecialistController.getMySchedules);
+router.get('/me/schedules', authenticateToken, requireSpecialist, SpecialistController.getMySchedules);
 
 /**
  * @swagger
@@ -1423,7 +1423,7 @@ router.get('/specialists/me/schedules', authenticateToken, requireSpecialist, Sp
  *       200:
  *         description: Restricciones obtenidas exitosamente
  */
-router.get('/specialists/me/business-constraints', authenticateToken, requireSpecialist, SpecialistController.getBusinessConstraints);
+router.get('/me/business-constraints', authenticateToken, requireSpecialist, SpecialistController.getBusinessConstraints);
 
 /**
  * @swagger
@@ -1470,6 +1470,6 @@ router.get('/specialists/me/business-constraints', authenticateToken, requireSpe
  *       200:
  *         description: Horario actualizado exitosamente
  */
-router.put('/specialists/me/schedules/:branchId', authenticateToken, requireSpecialist, SpecialistController.updateBranchSchedule);
+router.put('/me/schedules/:branchId', authenticateToken, requireSpecialist, SpecialistController.updateBranchSchedule);
 
 module.exports = router;

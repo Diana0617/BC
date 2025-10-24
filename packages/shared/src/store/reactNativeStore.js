@@ -1,4 +1,4 @@
-import { configureStore, createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { configureStore, createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { StorageHelper } from '../utils/storage.js';
 import { STORAGE_KEYS, API_CONFIG } from '../constants/api.js';
 // Import shared slices needed for React Native
@@ -11,6 +11,17 @@ import appointmentCalendarReducer from './slices/appointmentCalendarSlice.js';
 import timeSlotReducer from './slices/timeSlotSlice.js';
 // Import specialist dashboard slice
 import specialistDashboardReducer from './slices/specialistDashboardSlice.js';
+// Import permissions system slice (FM-28)
+import permissionsReducer from './slices/permissionsSlice.js';
+
+// Re-export permissions thunks for React Native
+export { 
+  fetchAllPermissions,
+  fetchUserPermissions,
+  grantUserPermission,
+  revokeUserPermission,
+  resetToDefaults
+} from './slices/permissionsSlice.js';
 
 // Temporal async thunk for login (React Native specific)
 export const loginUserRN = createAsyncThunk(
@@ -257,7 +268,9 @@ export const createReactNativeStore = () => {
       appointmentCalendar: appointmentCalendarReducer,
       timeSlot: timeSlotReducer,
       // Specialist dashboard reducer
-      specialistDashboard: specialistDashboardReducer
+      specialistDashboard: specialistDashboardReducer,
+      // Permissions system reducer (FM-28)
+      permissions: permissionsReducer
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
@@ -292,6 +305,35 @@ export const selectSpecialistStats = (state) => state.specialistDashboard.stats;
 export const selectSpecialistFilters = (state) => state.specialistDashboard.filters;
 export const selectSpecialistSelectedAppointment = (state) => state.specialistDashboard.selectedAppointment;
 export const selectSpecialistDashboardLoading = (state) => state.specialistDashboard.loading;
+
+// Permissions selectors (FM-28) - Memoizados para evitar re-renders innecesarios
+const selectPermissionsState = (state) => state.permissions;
+
+export const selectUserPermissions = createSelector(
+  [selectPermissionsState],
+  (permissions) => permissions.currentUserPermissions
+);
+
+export const selectUserPermissionsArray = createSelector(
+  [selectUserPermissions],
+  (userPermissions) => userPermissions?.permissions || []
+);
+
+export const selectAllPermissions = createSelector(
+  [selectPermissionsState],
+  (permissions) => permissions.allPermissions
+);
+
+export const selectPermissionsLoading = createSelector(
+  [selectPermissionsState],
+  (permissions) => permissions.loadingUserPermissions
+);
+
+export const selectPermissionsError = createSelector(
+  [selectPermissionsState],
+  (permissions) => permissions.error
+);
+
 export const selectSpecialistDashboardError = (state) => state.specialistDashboard.error;
 export const selectSpecialistActionLoading = (state) => state.specialistDashboard.actionLoading;
 export const selectSpecialistActionError = (state) => state.specialistDashboard.actionError;

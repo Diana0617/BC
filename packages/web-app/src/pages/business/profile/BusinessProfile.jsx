@@ -34,7 +34,6 @@ import StaffManagementSection from './sections/StaffManagementSection'
 import ServicesSection from './sections/ServicesSection'
 import TaxxaConfigSection from './sections/TaxxaConfigSection'
 import InventoryConfigSection from './sections/InventoryConfigSection'
-import ScheduleConfigSection from './sections/ScheduleConfigSection'
 import SuppliersConfigSection from './sections/SuppliersConfigSection'
 import AppointmentsConfigSection from './sections/AppointmentsConfigSection'
 import AppointmentPaymentsConfigSection from './sections/AppointmentPaymentsConfigSection'
@@ -199,14 +198,6 @@ const BusinessProfile = () => {
       icon: UsersIcon,
       component: CustomerHistorySection,
       alwaysVisible: true
-    },
-    {
-      id: 'schedule',
-      name: 'Horarios',
-      icon: CalendarDaysIcon,
-      component: ScheduleConfigSection,
-      setupStep: 'schedule',
-      alwaysVisible: true
     }
   ]
 
@@ -239,34 +230,68 @@ const BusinessProfile = () => {
    
   ]
 
-  // Generar secciones dinámicas para TODOS los módulos disponibles
-  const dynamicModulesSections = allModules.map(module => {
-    // Buscar si ya existe una sección específica para este módulo
-    const existingSection = modulesSections.find(section => section.moduleRequired === module.name)
+  // Módulos que NO deben mostrarse en el sidebar (no tienen configuración UI o son redundantes)
+  const excludedModules = [
+    // Autenticación y seguridad (se usan pero no tienen UI de configuración)
+    'autenticacion',
+    'authentication',
+    'auth',
+    'seguridad',
+    'security',
+    // Panel de control (toda esta vista ES el panel de control)
+    'panel_de_control',
+    'dashboard',
+    'panel',
+    // Gestión de usuarios (se maneja desde "Equipo de Trabajo" y "Historial de Clientes")
+    'gestion_de_usuarios',
+    'user_management',
+    'usuarios',
+    'users',
+    'clientes',
+    'clients',
+    'client_management',
+    // Control de Stock (ya está incluido en "Inventario" con InventoryConfigSection)
+    'stock-control',
+    'stock_control',
+    'control_de_stock',
+    'control_stock',
+    // Historial de Clientes (ya está en secciones base como alwaysVisible)
+    'customer_history',
+    'historial_clientes',
+    'client_history',
+    'historial_de_clientes'
+  ]
 
-    if (existingSection) {
-      // Usar la sección existente si ya está definida
-      return {
-        ...existingSection,
-        isAvailable: module.isAvailable,
-        requiredModule: module.name,
-        moduleInfo: module
+  // Generar secciones dinámicas solo para módulos que necesitan configuración
+  const dynamicModulesSections = allModules
+    .filter(module => !excludedModules.includes(module.name.toLowerCase()))
+    .map(module => {
+      // Buscar si ya existe una sección específica para este módulo
+      const existingSection = modulesSections.find(section => section.moduleRequired === module.name)
+
+      if (existingSection) {
+        // Usar la sección existente si ya está definida
+        return {
+          ...existingSection,
+          isAvailable: module.isAvailable,
+          requiredModule: module.name,
+          moduleInfo: module
+        }
+      } else {
+        // Crear una sección genérica para módulos sin implementación específica
+        return {
+          id: `module-${module.name}`,
+          name: module.displayName || module.name,
+          icon: CogIcon, // Icono por defecto
+          component: null, // Sin componente específico por ahora
+          moduleRequired: module.name,
+          isAvailable: module.isAvailable,
+          requiredModule: module.name,
+          moduleInfo: module,
+          isGeneric: true // Marcar como sección genérica
+        }
       }
-    } else {
-      // Crear una sección genérica para módulos sin implementación específica
-      return {
-        id: `module-${module.name}`,
-        name: module.displayName || module.name,
-        icon: CogIcon, // Icono por defecto
-        component: null, // Sin componente específico por ahora
-        moduleRequired: module.name,
-        isAvailable: module.isAvailable,
-        requiredModule: module.name,
-        moduleInfo: module,
-        isGeneric: true // Marcar como sección genérica
-      }
-    }
-  })
+    })
 
   // Filtrar secciones disponibles basadas en los módulos del plan
   const allSections = [

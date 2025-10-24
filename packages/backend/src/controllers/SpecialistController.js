@@ -42,7 +42,7 @@ class SpecialistController {
       };
 
       // Filtros opcionales
-      if (status) {
+      if (status && status !== 'null' && status !== null) {
         where.status = status;
       }
 
@@ -77,10 +77,12 @@ class SpecialistController {
         include: [
           {
             model: Service,
+            as: 'service',
             attributes: ['id', 'name', 'duration', 'price', 'category']
           },
           {
             model: Client,
+            as: 'client',
             attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
           }
         ],

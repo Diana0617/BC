@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,22 +17,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   logout,
-  selectSpecialistAppointments,
-  selectSpecialistStats,
   selectSpecialistFilters,
-  selectSpecialistDashboardLoading,
-  selectSpecialistDashboardError,
-  selectSpecialistActionLoading
+  fetchUserPermissions
 } from '@shared/store/reactNativeStore';
-import {
-  fetchSpecialistAppointments,
-  confirmAppointment,
-  startAppointment,
-  completeAppointment,
-  cancelAppointment,
-  setFilters,
-  clearError
-} from '@shared/store/slices/specialistDashboardSlice';
+import { setFilters } from '@shared/store/slices/specialistDashboardSlice';
+
+// Permisos
+import { usePermissions } from '../../hooks/usePermissions';
+import { PermissionButton, PermissionGuard } from '../../components/permissions';
+
+// Hook de turnos
+import { useAppointments } from '../../hooks/useAppointments';
+
+// Componentes
+import { AppointmentCreateModal, AppointmentDetailsModal } from '../../components/appointments';
 
 // =====================================================
 // COMPONENTES AUXILIARES
@@ -168,25 +166,95 @@ export default function SpecialistDashboard({ navigation }) {
   const { user } = useSelector((state) => state.auth);
   const businessId = useSelector((state) => state.auth.businessId);
   
-  // Redux state
-  const appointments = useSelector(selectSpecialistAppointments);
-  const stats = useSelector(selectSpecialistStats);
+  // Redux state (solo filtros)
   const filters = useSelector(selectSpecialistFilters);
-  const loading = useSelector(selectSpecialistDashboardLoading);
-  const error = useSelector(selectSpecialistDashboardError);
-  const actionLoading = useSelector(selectSpecialistActionLoading);
+
+  // Hook de permisos
+  const { 
+    hasPermission, 
+    hasAnyPermission,
+    permissionsCount 
+  } = usePermissions();
+
+  // Hook de turnos (Fase 2)
+  const {
+    appointments: appointmentsFromHook,
+    loading: appointmentsLoading,
+    refreshing: appointmentsRefreshing,
+    error: appointmentsError,
+    fetchAppointments,
+    refresh: refreshAppointments,
+    createAppointment,
+    confirmAppointment: confirmAppointmentHook,
+    startAppointment: startAppointmentHook,
+    completeAppointment: completeAppointmentHook,
+    cancelAppointment: cancelAppointmentHook,
+    canCreate,
+    canEdit,
+    canCancel,
+    canComplete
+  } = useAppointments();
 
   console.log('📱 Specialist Dashboard - User:', user);
   console.log('📱 Specialist Dashboard - BusinessId:', businessId);
-  console.log('📱 Specialist Dashboard - Appointments:', appointments.length);
-  console.log('📱 Specialist Dashboard - Stats:', stats);
+  console.log('📱 Specialist Dashboard - appointmentsFromHook type:', typeof appointmentsFromHook, 'isArray:', Array.isArray(appointmentsFromHook), 'value:', appointmentsFromHook);
+  console.log('📱 Specialist Dashboard - Appointments:', appointmentsFromHook?.length || 0);
 
   // Estados locales
-  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('agenda'); // agenda | commissions
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  // 📊 Calcular estadísticas a partir de los turnos
+  const stats = useMemo(() => {
+    // Validación defensiva: asegurar que appointments es un array
+    if (!appointmentsFromHook || !Array.isArray(appointmentsFromHook)) {
+      return {
+        total: 0,
+        completed: 0,
+        inProgress: 0,
+        confirmed: 0,
+        pending: 0,
+        canceled: 0,
+        totalEarnings: 0,
+        totalCommissions: 0,
+        pendingCommissions: 0
+      };
+    }
+    
+    const appointments = appointmentsFromHook;
+    const total = appointments.length;
+    const completed = appointments.filter(a => a.status === 'COMPLETED').length;
+    const inProgress = appointments.filter(a => a.status === 'IN_PROGRESS').length;
+    const confirmed = appointments.filter(a => a.status === 'CONFIRMED').length;
+    const pending = appointments.filter(a => a.status === 'PENDING').length;
+    const canceled = appointments.filter(a => a.status === 'CANCELED').length;
+    
+    const totalEarnings = appointments
+      .filter(a => a.status === 'COMPLETED')
+      .reduce((sum, a) => sum + (a.totalAmount || 0), 0);
+    
+    const totalCommissions = appointments
+      .filter(a => a.status === 'COMPLETED')
+      .reduce((sum, a) => sum + (a.specialistCommission || 0), 0);
+    
+    const pendingCommissions = appointments
+      .filter(a => a.status === 'COMPLETED' && !a.commissionPaid)
+      .reduce((sum, a) => sum + (a.specialistCommission || 0), 0);
+    
+    return {
+      total,
+      completed,
+      inProgress,
+      confirmed,
+      pending,
+      canceled,
+      totalEarnings,
+      totalCommissions,
+      pendingCommissions
+    };
+  }, [appointmentsFromHook]);
 
   // 🛡️ VALIDACIÓN DE ACCESO POR ROL
   useEffect(() => {
@@ -219,6 +287,17 @@ export default function SpecialistDashboard({ navigation }) {
     }
   }, [user, navigation]);
 
+  // 🔐 CARGAR PERMISOS AL MONTAR
+  useEffect(() => {
+    if (user?.id && businessId) {
+      console.log('🔐 Cargando permisos del usuario:', user.id);
+      dispatch(fetchUserPermissions({
+        userId: user.id,
+        businessId: businessId
+      }));
+    }
+  }, [user?.id, businessId, dispatch]);
+
   // Cargar datos iniciales
   useEffect(() => {
     if (user && businessId) {
@@ -228,7 +307,7 @@ export default function SpecialistDashboard({ navigation }) {
 
   const loadDashboardData = async () => {
     try {
-      console.log('📱 loadDashboardData - Parámetros:', {
+      console.log('📱 loadDashboardData - Usando useAppointments hook:', {
         date: filters.date,
         period: filters.period,
         branchId: filters.branchId,
@@ -238,15 +317,15 @@ export default function SpecialistDashboard({ navigation }) {
         userRole: user?.role
       });
       
-      await dispatch(fetchSpecialistAppointments({
+      // Usar el hook en lugar del Redux slice
+      await fetchAppointments({
         date: filters.date,
         period: filters.period,
         branchId: filters.branchId,
-        status: filters.status,
-        businessId: businessId
-      })).unwrap();
+        status: filters.status
+      });
       
-      console.log('✅ loadDashboardData - Datos cargados exitosamente');
+      console.log('✅ loadDashboardData - Datos cargados con useAppointments hook');
     } catch (error) {
       console.error('❌ Error loading dashboard data:', error);
       Alert.alert('Error', 'No se pudieron cargar los datos');
@@ -254,9 +333,16 @@ export default function SpecialistDashboard({ navigation }) {
   };
 
   const onRefresh = async () => {
-    setRefreshing(true);
-    await loadDashboardData();
-    setRefreshing(false);
+    try {
+      await refreshAppointments({
+        date: filters.date,
+        period: filters.period,
+        branchId: filters.branchId,
+        status: filters.status
+      });
+    } catch (error) {
+      console.error('❌ Error refrescando:', error);
+    }
   };
 
   const handleLogout = () => {
@@ -294,10 +380,10 @@ export default function SpecialistDashboard({ navigation }) {
               text: 'Confirmar', 
               onPress: async () => {
                 try {
-                  await dispatch(confirmAppointment(appointment.id)).unwrap();
+                  await confirmAppointmentHook(appointment.id);
                   Alert.alert('Éxito', 'Turno confirmado correctamente');
                 } catch (error) {
-                  Alert.alert('Error', error || 'No se pudo confirmar el turno');
+                  Alert.alert('Error', error.message || 'No se pudo confirmar el turno');
                 }
               }
             },
@@ -313,16 +399,23 @@ export default function SpecialistDashboard({ navigation }) {
               text: 'Iniciar', 
               onPress: async () => {
                 try {
-                  await dispatch(startAppointment(appointment.id)).unwrap();
+                  await startAppointmentHook(appointment.id);
                   Alert.alert('Éxito', 'Procedimiento iniciado');
                 } catch (error) {
-                  Alert.alert('Error', error || 'No se pudo iniciar el procedimiento');
+                  Alert.alert('Error', error.message || 'No se pudo iniciar el procedimiento');
                 }
               }
             },
           ]
         );
       } else if (action === 'complete') {
+        // Validar antes de mostrar el diálogo
+        const validation = canComplete(appointment);
+        if (!validation.allowed) {
+          Alert.alert('No se puede completar', validation.reason);
+          return;
+        }
+        
         Alert.alert(
           'Completar Turno',
           `¿Deseas completar el turno de ${appointment.clientName}?`,
@@ -332,17 +425,24 @@ export default function SpecialistDashboard({ navigation }) {
               text: 'Completar', 
               onPress: async () => {
                 try {
-                  await dispatch(completeAppointment(appointment.id)).unwrap();
+                  await completeAppointmentHook(appointment.id);
                   Alert.alert('Éxito', 'Turno completado correctamente');
                   await loadDashboardData(); // Refrescar stats
                 } catch (error) {
-                  Alert.alert('Error', error || 'No se pudo completar el turno');
+                  Alert.alert('Error', error.message || 'No se pudo completar el turno');
                 }
               }
             },
           ]
         );
       } else if (action === 'cancel') {
+        // Validar antes de mostrar el diálogo
+        const validation = canCancel(appointment);
+        if (!validation.allowed) {
+          Alert.alert('No se puede cancelar', validation.reason);
+          return;
+        }
+        
         Alert.prompt(
           'Cancelar Turno',
           `Indica el motivo de cancelación para ${appointment.clientName}:`,
@@ -353,14 +453,14 @@ export default function SpecialistDashboard({ navigation }) {
               style: 'destructive',
               onPress: async (reason) => {
                 try {
-                  await dispatch(cancelAppointment({ 
-                    appointmentId: appointment.id, 
-                    reason: reason || 'Sin motivo especificado' 
-                  })).unwrap();
+                  await cancelAppointmentHook(
+                    appointment.id, 
+                    reason || 'Sin motivo especificado'
+                  );
                   Alert.alert('Éxito', 'Turno cancelado correctamente');
                   await loadDashboardData(); // Refrescar stats
                 } catch (error) {
-                  Alert.alert('Error', error || 'No se pudo cancelar el turno');
+                  Alert.alert('Error', error.message || 'No se pudo cancelar el turno');
                 }
               }
             },
@@ -374,7 +474,17 @@ export default function SpecialistDashboard({ navigation }) {
   };
 
   const handleCreateAppointment = () => {
-    // TODO: Verificar permisos desde business rules
+    // Verificar permisos con validación completa
+    const validation = canCreate();
+    if (!validation.allowed) {
+      Alert.alert(
+        'Sin Permisos',
+        validation.reason,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
     setShowCreateModal(true);
   };
 
@@ -497,7 +607,10 @@ export default function SpecialistDashboard({ navigation }) {
             <ScrollView
               style={styles.scrollView}
               refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                <RefreshControl 
+                  refreshing={appointmentsRefreshing} 
+                  onRefresh={onRefresh} 
+                />
               }
               showsVerticalScrollIndicator={false}
             >
@@ -558,18 +671,24 @@ export default function SpecialistDashboard({ navigation }) {
                   {filters.period === 'week' && 'Turnos de esta Semana'}
                   {filters.period === 'month' && 'Turnos de este Mes'}
                 </Text>
-                <TouchableOpacity
+                
+                {/* Botón Agendar con validación de permisos */}
+                <PermissionButton
+                  permission="appointments.create"
                   style={styles.createButton}
+                  textStyle={styles.createButtonText}
                   onPress={handleCreateAppointment}
+                  icon="add"
+                  iconSize={20}
+                  showDisabled={true}
                 >
-                  <Ionicons name="add" size={20} color="#ffffff" />
-                  <Text style={styles.createButtonText}>Agendar</Text>
-                </TouchableOpacity>
+                  Agendar
+                </PermissionButton>
               </View>
 
-              {loading ? (
+              {appointmentsLoading ? (
                 <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 20 }} />
-              ) : appointments.length === 0 ? (
+              ) : (!appointmentsFromHook || appointmentsFromHook.length === 0) ? (
                 <View style={styles.emptyState}>
                   <Ionicons name="calendar-outline" size={64} color="#cbd5e1" />
                   <Text style={styles.emptyStateText}>No hay turnos para hoy</Text>
@@ -579,7 +698,7 @@ export default function SpecialistDashboard({ navigation }) {
                 </View>
               ) : (
                 <View style={styles.appointmentsList}>
-                  {appointments.map((appointment) => (
+                  {(appointmentsFromHook || []).map((appointment) => (
                     <AppointmentCard
                       key={appointment.id}
                       appointment={appointment}
@@ -594,7 +713,10 @@ export default function SpecialistDashboard({ navigation }) {
             <ScrollView
               style={styles.scrollView}
               refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                <RefreshControl 
+                  refreshing={appointmentsRefreshing} 
+                  onRefresh={onRefresh} 
+                />
               }
               showsVerticalScrollIndicator={false}
             >
@@ -610,124 +732,31 @@ export default function SpecialistDashboard({ navigation }) {
         </View>
 
         {/* Modal de Detalles */}
-        <Modal
+        <AppointmentDetailsModal
           visible={showDetailsModal}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowDetailsModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Detalles del Turno</Text>
-                <TouchableOpacity onPress={() => setShowDetailsModal(false)}>
-                  <Ionicons name="close" size={24} color="#6b7280" />
-                </TouchableOpacity>
-              </View>
-
-              {selectedAppointment && (
-                <ScrollView style={styles.modalBody}>
-                  <View style={styles.detailRow}>
-                    <Ionicons name="person" size={20} color="#3b82f6" />
-                    <View style={styles.detailContent}>
-                      <Text style={styles.detailLabel}>Cliente</Text>
-                      <Text style={styles.detailValue}>{selectedAppointment.clientName}</Text>
-                      <Text style={styles.detailSubvalue}>{selectedAppointment.clientPhone}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailRow}>
-                    <Ionicons name="cut" size={20} color="#3b82f6" />
-                    <View style={styles.detailContent}>
-                      <Text style={styles.detailLabel}>Servicio</Text>
-                      <Text style={styles.detailValue}>{selectedAppointment.serviceName}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailRow}>
-                    <Ionicons name="time" size={20} color="#3b82f6" />
-                    <View style={styles.detailContent}>
-                      <Text style={styles.detailLabel}>Horario</Text>
-                      <Text style={styles.detailValue}>
-                        {selectedAppointment.startTime} - {selectedAppointment.endTime}
-                      </Text>
-                      <Text style={styles.detailSubvalue}>
-                        {selectedAppointment.duration} minutos
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailRow}>
-                    <Ionicons name="business" size={20} color="#3b82f6" />
-                    <View style={styles.detailContent}>
-                      <Text style={styles.detailLabel}>Sucursal</Text>
-                      <Text style={styles.detailValue}>{selectedAppointment.branchName}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailRow}>
-                    <Ionicons name="cash" size={20} color="#3b82f6" />
-                    <View style={styles.detailContent}>
-                      <Text style={styles.detailLabel}>Precio</Text>
-                      <Text style={styles.detailValue}>
-                        ${selectedAppointment.price.toLocaleString()}
-                      </Text>
-                      <Text style={styles.detailSubvalue}>
-                        Tu comisión: ${(selectedAppointment.price * selectedAppointment.commissionPercentage / 100).toLocaleString()} ({selectedAppointment.commissionPercentage}%)
-                      </Text>
-                    </View>
-                  </View>
-                </ScrollView>
-              )}
-
-              <View style={styles.modalFooter}>
-                <TouchableOpacity
-                  style={styles.modalButtonSecondary}
-                  onPress={() => setShowDetailsModal(false)}
-                >
-                  <Text style={styles.modalButtonSecondaryText}>Cerrar</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+          appointment={selectedAppointment}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setSelectedAppointment(null);
+          }}
+          onAppointmentUpdated={async (updatedAppointment) => {
+            console.log('✅ Turno actualizado:', updatedAppointment);
+            // Recargar la lista de turnos
+            await loadDashboardData();
+          }}
+        />
 
         {/* Modal de Crear Turno */}
-        <Modal
+        <AppointmentCreateModal
           visible={showCreateModal}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowCreateModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Agendar Nuevo Turno</Text>
-                <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                  <Ionicons name="close" size={24} color="#6b7280" />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.modalBody}>
-                <Text style={styles.comingSoonText}>
-                  🚧 Funcionalidad en desarrollo
-                </Text>
-                <Text style={styles.comingSoonSubtext}>
-                  Próximamente podrás crear turnos directamente desde aquí
-                </Text>
-              </View>
-
-              <View style={styles.modalFooter}>
-                <TouchableOpacity
-                  style={styles.modalButtonSecondary}
-                  onPress={() => setShowCreateModal(false)}
-                >
-                  <Text style={styles.modalButtonSecondaryText}>Cerrar</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+          onClose={() => setShowCreateModal(false)}
+          onAppointmentCreated={async (newAppointment) => {
+            console.log('✅ Turno creado:', newAppointment);
+            // Recargar la lista de turnos
+            await loadDashboardData();
+          }}
+          preselectedSpecialistId={user?.id}
+        />
       </LinearGradient>
     </SafeAreaView>
   );
