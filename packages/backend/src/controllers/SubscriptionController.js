@@ -303,7 +303,7 @@ class SubscriptionController {
         const user = await User.create({
           firstName: userData.firstName,
           lastName: userData.lastName,
-          email: userData.email,
+          email: userData.email.toLowerCase(), // Normalizar email a minúsculas
           phone: userData.phone,
           password: hashedPassword,
           role: 'BUSINESS', // El creador del negocio es BUSINESS (owner del negocio)

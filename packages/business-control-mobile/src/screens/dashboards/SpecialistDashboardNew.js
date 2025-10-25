@@ -130,8 +130,12 @@ const AppointmentCard = ({ appointment, onPress, onAction }) => {
         </View>
 
         <View style={styles.priceContainer}>
-          <Text style={styles.priceText}>${appointment.price.toLocaleString()}</Text>
-          <Text style={styles.commissionText}>💰 {appointment.commissionPercentage}%</Text>
+          <Text style={styles.priceText}>
+            ${appointment.totalAmount ? parseFloat(appointment.totalAmount).toLocaleString() : '0'}
+          </Text>
+          <Text style={styles.commissionText}>
+            💰 {appointment.commissionPercentage || 0}%
+          </Text>
         </View>
       </View>
 

@@ -10,6 +10,55 @@ const { Op } = require('sequelize');
  */
 class ClientController {
   /**
+   * Buscar clientes por nombre o teléfono
+   * GET /api/business/:businessId/clients/search?q=juan
+   */
+  async searchClients(req, res) {
+    try {
+      const { businessId } = req.params;
+      const { q } = req.query;
+
+      if (!q || q.trim().length < 2) {
+        return res.json({ success: true, data: [] });
+      }
+
+      const searchTerm = q.trim();
+
+      const clients = await Client.findAll({
+        where: {
+          [Op.or]: [
+            { firstName: { [Op.iLike]: `%${searchTerm}%` } },
+            { lastName: { [Op.iLike]: `%${searchTerm}%` } },
+            { phone: { [Op.iLike]: `%${searchTerm}%` } },
+            { email: { [Op.iLike]: `%${searchTerm}%` } }
+          ],
+          status: 'ACTIVE'
+        },
+        attributes: ['id', 'firstName', 'lastName', 'phone', 'email'],
+        limit: 10,
+        order: [['firstName', 'ASC']]
+      });
+
+      // Formatear resultados
+      const results = clients.map(client => ({
+        id: client.id,
+        name: `${client.firstName} ${client.lastName}`.trim(),
+        phone: client.phone,
+        email: client.email
+      }));
+
+      return res.json({ success: true, data: results });
+    } catch (error) {
+      console.error('❌ Error en searchClients:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al buscar clientes',
+        error: error.message
+      });
+    }
+  }
+
+  /**
    * Listar todos los clientes de un negocio
    * GET /api/business/:businessId/clients
    */

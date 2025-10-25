@@ -3,7 +3,7 @@ const router = express.Router({ mergeParams: true });
 const ClientController = require('../controllers/ClientController');
 const VoucherController = require('../controllers/VoucherController');
 const { authenticateToken } = require('../middleware/auth');
-const { businessAndOwner } = require('../middleware/roleCheck');
+const { businessAndOwner, allStaffRoles } = require('../middleware/roleCheck');
 
 /**
  * Rutas de Clientes
@@ -11,11 +11,19 @@ const { businessAndOwner } = require('../middleware/roleCheck');
  * Base: /api/business/:businessId/clients
  */
 
+// Buscar clientes (debe ir ANTES de '/:clientId')
+router.get(
+  '/search',
+  authenticateToken,
+  allStaffRoles, // Permite a todos los roles de staff (OWNER, BUSINESS, SPECIALIST, RECEPTIONIST)
+  (req, res) => ClientController.searchClients(req, res)
+);
+
 // Listar clientes del negocio
 router.get(
   '/',
   authenticateToken,
-  businessAndOwner,
+  allStaffRoles, // Permite ver clientes a todo el staff
   (req, res) => ClientController.listClients(req, res)
 );
 
@@ -23,7 +31,7 @@ router.get(
 router.get(
   '/:clientId',
   authenticateToken,
-  businessAndOwner,
+  allStaffRoles, // Permite ver detalles a todo el staff
   (req, res) => ClientController.getClientDetails(req, res)
 );
 
@@ -31,7 +39,7 @@ router.get(
 router.post(
   '/',
   authenticateToken,
-  businessAndOwner,
+  allStaffRoles, // Permite crear clientes a todo el staff
   (req, res) => ClientController.createClient(req, res)
 );
 

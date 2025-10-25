@@ -37,7 +37,7 @@ class SpecialistServiceController {
     try {
       const { businessId, specialistId } = req.params;
       const { isActive } = req.query;
-      const { userId, role, businessId: userBusinessId } = req.user;
+      const { id: userId, role, businessId: userBusinessId } = req.user; // Usar 'id' en lugar de 'userId'
 
       // Validar que el businessId del path coincida con el del usuario (seguridad)
       if (userBusinessId && businessId !== userBusinessId) {
@@ -63,14 +63,25 @@ class SpecialistServiceController {
       }
 
       // Solo el especialista mismo, BUSINESS u OWNER pueden ver
-      if (!['BUSINESS', 'OWNER'].includes(role) && userId !== specialist.userId) {
+      // Permitir también a RECEPTIONIST y otros roles de staff
+      const allowedRoles = ['BUSINESS', 'OWNER', 'RECEPTIONIST'];
+      const isAllowedRole = allowedRoles.includes(role);
+      const isOwnProfile = userId === specialist.userId;
+      
+      if (!isAllowedRole && !isOwnProfile) {
+        console.log('❌ Acceso denegado - Role:', role, 'UserId:', userId, 'Specialist.userId:', specialist.userId);
         return res.status(403).json({
           success: false,
-          error: 'No tienes permiso para ver estos servicios'
+          error: 'No tienes permiso para ver estos servicios',
+          debug: { role, userId, specialistUserId: specialist.userId }
         });
       }
 
-      // ⚠️ IMPORTANTE: buscar por specialist.userId ya que specialistId en la tabla apunta a users
+      console.log('✅ Acceso permitido - Role:', role, 'IsOwnProfile:', isOwnProfile);
+
+      // Buscar servicios del especialista
+      // ⚠️ IMPORTANTE: La tabla specialist_services.specialistId referencia a users.id
+      // No a specialist_profiles.id, entonces usamos specialist.userId
       const whereClause = { specialistId: specialist.userId };
       if (isActive !== undefined) {
         whereClause.isActive = isActive === 'true';

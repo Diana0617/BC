@@ -541,7 +541,70 @@ class AppointmentController {
         console.log('✅ Especialista tiene acceso a la sucursal');
       }
 
-      // Verificar disponibilidad del especialista
+      // ✅ NUEVA VALIDACIÓN: Verificar que el especialista tenga horario configurado
+      const SpecialistBranchSchedule = require('../models/SpecialistBranchSchedule');
+      const appointmentDate = new Date(startTime);
+      const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][appointmentDate.getDay()];
+      const appointmentTime = appointmentDate.toTimeString().split(' ')[0]; // "HH:MM:SS"
+      
+      console.log('🔍 Verificando horario del especialista:', {
+        specialistProfileId: specialistProfile.id,
+        branchId,
+        dayOfWeek,
+        appointmentTime,
+        appointmentDate: appointmentDate.toISOString()
+      });
+
+      const schedules = await SpecialistBranchSchedule.findAll({
+        where: {
+          specialistId: specialistProfile.id, // specialistProfileId
+          branchId: branchId || null,
+          dayOfWeek,
+          isActive: true
+        }
+      });
+
+      console.log(`📅 Horarios encontrados: ${schedules.length}`);
+
+      if (schedules.length === 0) {
+        const dayNames = {
+          monday: 'lunes',
+          tuesday: 'martes',
+          wednesday: 'miércoles',
+          thursday: 'jueves',
+          friday: 'viernes',
+          saturday: 'sábado',
+          sunday: 'domingo'
+        };
+        
+        return res.status(400).json({
+          success: false,
+          error: `El especialista no trabaja los ${dayNames[dayOfWeek]}${branchId ? ' en esta sucursal' : ''}. Por favor, selecciona otro día u horario.`
+        });
+      }
+
+      // Validar que la hora esté dentro de algún rango configurado
+      const isWithinSchedule = schedules.some(schedule => {
+        const scheduleStart = schedule.startTime; // "09:00:00"
+        const scheduleEnd = schedule.endTime;     // "18:00:00"
+        
+        console.log(`⏰ Comparando: ${appointmentTime} entre ${scheduleStart} y ${scheduleEnd}`);
+        
+        return appointmentTime >= scheduleStart && appointmentTime < scheduleEnd;
+      });
+
+      if (!isWithinSchedule) {
+        const availableRanges = schedules.map(s => `${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)}`).join(', ');
+        
+        return res.status(400).json({
+          success: false,
+          error: `El especialista no está disponible a las ${appointmentTime.substring(0, 5)}. Horarios disponibles: ${availableRanges}`
+        });
+      }
+
+      console.log('✅ Horario válido según configuración del especialista');
+
+      // Verificar disponibilidad del especialista (conflictos con otras citas)
       const conflictingAppointment = await Appointment.findOne({
         where: {
           specialistId: specialist.id, // Usar el userId del especialista
@@ -866,6 +929,58 @@ class AppointmentController {
       // Si cambia el horario, validar disponibilidad
       if (startTime && endTime) {
         const targetSpecialistId = specialistId || appointment.specialistId;
+        const targetBranchId = branchId !== undefined ? branchId : appointment.branchId;
+        
+        // ✅ VALIDACIÓN: Verificar horario configurado del especialista
+        const SpecialistBranchSchedule = require('../models/SpecialistBranchSchedule');
+        const SpecialistProfile = require('../models/SpecialistProfile');
+        
+        const specialistProfile = await SpecialistProfile.findOne({
+          where: {
+            userId: targetSpecialistId,
+            businessId,
+            isActive: true
+          }
+        });
+
+        if (specialistProfile) {
+          const appointmentDate = new Date(startTime);
+          const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][appointmentDate.getDay()];
+          const appointmentTime = appointmentDate.toTimeString().split(' ')[0];
+
+          const schedules = await SpecialistBranchSchedule.findAll({
+            where: {
+              specialistId: specialistProfile.id,
+              branchId: targetBranchId || null,
+              dayOfWeek,
+              isActive: true
+            }
+          });
+
+          if (schedules.length === 0) {
+            const dayNames = {
+              monday: 'lunes', tuesday: 'martes', wednesday: 'miércoles',
+              thursday: 'jueves', friday: 'viernes', saturday: 'sábado', sunday: 'domingo'
+            };
+            
+            return res.status(400).json({
+              success: false,
+              error: `El especialista no trabaja los ${dayNames[dayOfWeek]}${targetBranchId ? ' en esta sucursal' : ''}.`
+            });
+          }
+
+          const isWithinSchedule = schedules.some(schedule => 
+            appointmentTime >= schedule.startTime && appointmentTime < schedule.endTime
+          );
+
+          if (!isWithinSchedule) {
+            const availableRanges = schedules.map(s => `${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)}`).join(', ');
+            return res.status(400).json({
+              success: false,
+              error: `El especialista no está disponible a las ${appointmentTime.substring(0, 5)}. Horarios: ${availableRanges}`
+            });
+          }
+        }
         
         // Verificar disponibilidad del especialista en el nuevo horario
         const conflictingAppointment = await Appointment.findOne({
@@ -1307,6 +1422,57 @@ class AppointmentController {
           validationErrors: validation.errors,
           warnings: validation.warnings
         });
+      }
+
+      // ✅ VALIDACIÓN: Verificar horario configurado del especialista
+      const SpecialistBranchSchedule = require('../models/SpecialistBranchSchedule');
+      const SpecialistProfile = require('../models/SpecialistProfile');
+      
+      const specialistProfile = await SpecialistProfile.findOne({
+        where: {
+          userId: appointment.specialistId,
+          businessId,
+          isActive: true
+        }
+      });
+
+      if (specialistProfile) {
+        const appointmentDate = new Date(newStartTime);
+        const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][appointmentDate.getDay()];
+        const appointmentTime = appointmentDate.toTimeString().split(' ')[0];
+
+        const schedules = await SpecialistBranchSchedule.findAll({
+          where: {
+            specialistId: specialistProfile.id,
+            branchId: appointment.branchId || null,
+            dayOfWeek,
+            isActive: true
+          }
+        });
+
+        if (schedules.length === 0) {
+          const dayNames = {
+            monday: 'lunes', tuesday: 'martes', wednesday: 'miércoles',
+            thursday: 'jueves', friday: 'viernes', saturday: 'sábado', sunday: 'domingo'
+          };
+          
+          return res.status(400).json({
+            success: false,
+            error: `El especialista no trabaja los ${dayNames[dayOfWeek]}${appointment.branchId ? ' en esta sucursal' : ''}.`
+          });
+        }
+
+        const isWithinSchedule = schedules.some(schedule => 
+          appointmentTime >= schedule.startTime && appointmentTime < schedule.endTime
+        );
+
+        if (!isWithinSchedule) {
+          const availableRanges = schedules.map(s => `${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)}`).join(', ');
+          return res.status(400).json({
+            success: false,
+            error: `El especialista no está disponible a las ${appointmentTime.substring(0, 5)}. Horarios: ${availableRanges}`
+          });
+        }
       }
 
       // Verificar disponibilidad del especialista en el nuevo horario

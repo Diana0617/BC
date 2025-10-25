@@ -118,7 +118,18 @@ const limiter = rateLimit({
     error: 'Demasiadas solicitudes, intenta nuevamente en 15 minutos'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  // Skip rate limiting in development or configure proper IP extraction
+  skip: (req) => process.env.NODE_ENV === 'development',
+  // En producción, confiar en el proxy para obtener la IP real
+  keyGenerator: (req) => {
+    // En desarrollo, usar una IP fija
+    if (process.env.NODE_ENV === 'development') {
+      return 'dev-local';
+    }
+    // En producción, usar X-Forwarded-For si existe
+    return req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+  }
 });
 
 app.use('/api/', limiter);
@@ -153,7 +164,15 @@ const authLimiter = rateLimit({
     success: false,
     error: 'Demasiados intentos de inicio de sesión, intenta nuevamente en 15 minutos'
   },
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
+  // Skip rate limiting in development or configure proper IP extraction
+  skip: (req) => process.env.NODE_ENV === 'development',
+  keyGenerator: (req) => {
+    if (process.env.NODE_ENV === 'development') {
+      return 'dev-local';
+    }
+    return req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+  }
 });
 
 // Comentado temporalmente para testing

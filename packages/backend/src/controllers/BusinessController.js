@@ -196,7 +196,7 @@ class BusinessController {
       const user = await User.create({
         firstName,
         lastName,
-        email: userEmail,
+        email: userEmail.toLowerCase(), // Normalizar email a minúsculas
         password: hashedPassword,
         role: 'BUSINESS',
         businessId: business.id,

@@ -323,7 +323,7 @@ class OwnerController {
         
         // Crear nuevo usuario BUSINESS
         owner = await User.create({
-          email: ownerEmail,
+          email: ownerEmail.toLowerCase(), // Normalizar email a minúsculas
           firstName: ownerFirstName,
           lastName: ownerLastName,
           phone: ownerPhone,

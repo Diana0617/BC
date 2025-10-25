@@ -3,6 +3,7 @@
 
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
+const bcrypt = require('bcryptjs');
 const Business = require('../models/Business');
 const SpecialistProfile = require('../models/SpecialistProfile');
 const Schedule = require('../models/Schedule');
@@ -135,6 +136,11 @@ class BusinessConfigService {
 
       if (filters.specialization) {
         whereClause.specialization = filters.specialization;
+      }
+
+      // Filtro por userId específico
+      if (filters.userId) {
+        whereClause.userId = filters.userId;
       }
 
       // Incluir usuario y sus sucursales asignadas
@@ -320,10 +326,17 @@ class BusinessConfigService {
         throw new Error('Negocio no encontrado');
       }
 
-      // Verificar que el email no esté en uso
-      const existingUser = await User.findOne({ where: { email: userData.email } });
+      // Verificar que el email no esté en uso (comparación case-insensitive)
+      const existingUser = await User.findOne({ where: { email: userData.email.toLowerCase() } });
       if (existingUser) {
         throw new Error('El correo electrónico ya está registrado');
+      }
+
+      // Hashear la contraseña antes de crear el usuario
+      let hashedPassword = userData.password;
+      if (userData.password) {
+        const salt = await bcrypt.genSalt(12);
+        hashedPassword = await bcrypt.hash(userData.password, salt);
       }
 
       // Manejar la sucursal principal
@@ -378,8 +391,8 @@ class BusinessConfigService {
       const user = await User.create({
         firstName: userData.firstName?.trim() || 'Sin',
         lastName: userData.lastName?.trim() || 'Apellido',
-        email: userData.email,
-        password: userData.password, // El modelo User debe hashear automáticamente
+        email: userData.email.toLowerCase(), // Normalizar email a minúsculas
+        password: hashedPassword, // Usar la contraseña hasheada
         phone: userData.phone || null,
         role: userData.role || 'SPECIALIST',
         businessId: businessId,
@@ -425,6 +438,23 @@ class BusinessConfigService {
         }));
         
         await UserBranch.bulkCreate(additionalBranchAssignments, { transaction });
+      }
+
+      // ==================== ASIGNAR SERVICIOS AL ESPECIALISTA ====================
+      // Si se enviaron serviceIds, crear las relaciones en specialist_services
+      if (profileData.serviceIds && Array.isArray(profileData.serviceIds) && profileData.serviceIds.length > 0) {
+        const SpecialistService = require('../models/SpecialistService');
+        
+        const serviceAssignments = profileData.serviceIds.map(serviceId => ({
+          specialistId: profile.id,
+          serviceId: serviceId,
+          businessId: businessId,
+          isActive: true
+          // customPrice se puede agregar después si se necesita
+        }));
+        
+        await SpecialistService.bulkCreate(serviceAssignments, { transaction });
+        console.log(`✅ ${serviceAssignments.length} servicios asignados al especialista ${profile.id}`);
       }
 
       await transaction.commit();
@@ -499,7 +529,7 @@ class BusinessConfigService {
       // Campos que van a la tabla users
       if (profileData.firstName !== undefined) userData.firstName = profileData.firstName;
       if (profileData.lastName !== undefined) userData.lastName = profileData.lastName;
-      if (profileData.email !== undefined) userData.email = profileData.email;
+      if (profileData.email !== undefined) userData.email = profileData.email.toLowerCase(); // Normalizar email a minúsculas
       if (profileData.phone !== undefined) userData.phone = profileData.phone;
       if (profileData.role !== undefined) userData.role = profileData.role;
       if (profileData.password !== undefined) {

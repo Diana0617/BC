@@ -23,6 +23,15 @@ const Schedule = sequelize.define('Schedule', {
       key: 'id'
     }
   },
+  branchId: {
+    type: DataTypes.UUID,
+    allowNull: true, // null = aplica a todas las sucursales
+    references: {
+      model: 'branches',
+      key: 'id'
+    },
+    comment: 'Sucursal específica para este horario. Si es null, aplica a todas las sucursales.'
+  },
   type: {
     type: DataTypes.ENUM('BUSINESS_DEFAULT', 'SPECIALIST_CUSTOM', 'TEMPORARY_OVERRIDE'),
     allowNull: false,
