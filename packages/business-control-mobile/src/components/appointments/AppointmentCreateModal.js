@@ -126,12 +126,14 @@ const AppointmentCreateModal = ({
     }
   }, [preselectedSpecialistId, specialists]);
 
-  // Buscar cliente con debounce
+  // Buscar cliente con debounce (mínimo 2 caracteres igual que en web)
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (clientSearch.length >= 3) {
+      if (clientSearch.length >= 2) {
+        console.log('⏱️ [MOBILE] Debounce trigger - calling searchClients after 500ms');
         searchClients();
       } else {
+        console.log('⏱️ [MOBILE] Search too short or empty, clearing results');
         setClientResults([]);
         setShowClientResults(false);
       }
@@ -216,14 +218,37 @@ const AppointmentCreateModal = ({
   };
 
   /**
-   * Buscar clientes por nombre o teléfono
+   * Buscar clientes por nombre o teléfono (igual que en web)
    */
   const searchClients = async () => {
+    console.log('🔍 [MOBILE] searchClients called with:', clientSearch);
+    console.log('🏢 [MOBILE] businessId:', businessId);
+    console.log('🔑 [MOBILE] token:', token ? 'exists' : 'missing');
+    
+    if (!clientSearch || clientSearch.trim().length < 2) {
+      console.log('⚠️ [MOBILE] Search term too short');
+      setClientResults([]);
+      setShowClientResults(false);
+      return;
+    }
+
+    if (!businessId) {
+      console.error('❌ [MOBILE] No businessId available');
+      return;
+    }
+
+    if (!token) {
+      console.error('❌ [MOBILE] No token available');
+      return;
+    }
+
     try {
       setSearchingClient(true);
       
+      console.log('📞 [MOBILE] Calling API:', `${API_CONFIG.BASE_URL}/api/business/${businessId}/clients/search?q=${clientSearch}`);
+      
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/api/clients/search?q=${encodeURIComponent(clientSearch)}&businessId=${businessId}`,
+        `${API_CONFIG.BASE_URL}/api/business/${businessId}/clients/search?q=${encodeURIComponent(clientSearch)}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -231,14 +256,25 @@ const AppointmentCreateModal = ({
           }
         }
       );
+
+      console.log('📡 [MOBILE] Response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
+        console.log('📊 [MOBILE] Results:', data.data?.length || 0, 'clients found');
+        console.log('📋 [MOBILE] Data:', data.data);
         setClientResults(data.data || []);
-        setShowClientResults(true);
+        setShowClientResults(data.data && data.data.length > 0);
+        console.log('✅ [MOBILE] Client results updated');
+      } else {
+        console.error('❌ [MOBILE] Response not OK:', response.status);
+        setClientResults([]);
+        setShowClientResults(false);
       }
     } catch (error) {
-      console.error('Error searching clients:', error);
+      console.error('❌ [MOBILE] Error searching clients:', error);
+      setClientResults([]);
+      setShowClientResults(false);
     } finally {
       setSearchingClient(false);
     }
