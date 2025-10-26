@@ -32,6 +32,8 @@ export * from './api/appointmentApi.js';
 export * from './api/advancePaymentApi.js';
 // 🔐 BUSINESS VALIDATION SYSTEM APIs
 export * from './api/businessValidationApi.js';
+// 💳 PAYMENT METHODS SYSTEM APIs
+export * from './api/paymentMethodsApi.js';
 
 // Export all store related
 export * from './store/index.js';
@@ -66,6 +68,8 @@ export * from './store/slices/ruleTemplateSlice.js';
 export * from './store/slices/advancePaymentSlice.js';
 // 🔐 BUSINESS VALIDATION SYSTEM SLICES
 export * from './store/slices/businessValidationSlice.js';
+// 💳 PAYMENT METHODS SYSTEM SLICES
+export * from './store/slices/paymentMethodsSlice.js';
 // 🏢 MULTI-BRANCH SYSTEM SLICES
 export * from './store/slices/userBranchSlice.js';
 // 💰 SPECIALIST SERVICE PRICING SLICES

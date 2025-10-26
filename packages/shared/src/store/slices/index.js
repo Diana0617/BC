@@ -66,10 +66,13 @@ export { default as consentSlice } from './consentSlice';
 // 🔐 PERMISSIONS SYSTEM SLICES (FM-28)
 export { default as permissionsSlice } from './permissionsSlice';
 
-// � TREATMENT PLANS SYSTEM SLICES (FM-28)
+// 💉 TREATMENT PLANS SYSTEM SLICES (FM-28)
 export { default as treatmentPlansSlice } from './treatmentPlansSlice';
 
-// �💳 ADVANCE PAYMENT EXPORTS
+// 💳 PAYMENT METHODS SYSTEM SLICES
+export { default as paymentMethodsSlice } from './paymentMethodsSlice';
+
+// 💳 ADVANCE PAYMENT EXPORTS
 export {
   // Thunks
   checkAdvancePaymentRequired,
@@ -262,3 +265,24 @@ export {
   selectCurrentPlanPendingSessions,
   selectCurrentPlanCompletedSessions
 } from './treatmentPlansSlice';
+
+// 💳 PAYMENT METHODS EXPORTS
+export {
+  // Thunks
+  fetchPaymentMethods,
+  createPaymentMethod,
+  updatePaymentMethod,
+  togglePaymentMethod,
+  deletePaymentMethod,
+  // Actions
+  clearErrors as clearPaymentMethodsErrors,
+  clearPaymentMethods,
+  // Selectors
+  selectPaymentMethods,
+  selectActivePaymentMethods,
+  selectPaymentMethodsLoading,
+  selectPaymentMethodsError,
+  selectPaymentMethodsCreating,
+  selectPaymentMethodsUpdating,
+  selectPaymentMethodsDeleting
+} from './paymentMethodsSlice';

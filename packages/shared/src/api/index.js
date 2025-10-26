@@ -98,6 +98,10 @@ import appointmentApi from './appointmentApi';
 export { default as treatmentPlansApi } from './treatmentPlansApi';
 import treatmentPlansApi from './treatmentPlansApi';
 
+// 💳 PAYMENT METHODS SYSTEM API
+export { paymentMethodsApi } from './paymentMethodsApi';
+import { paymentMethodsApi } from './paymentMethodsApi';
+
 // Export all OWNER APIs as a group
 export const ownerApis = {
   ownerApi,
@@ -136,5 +140,7 @@ export const businessApis = {
   commissionApi,
   consentApi,
   // Treatment Plans System API (FM-28)
-  treatmentPlansApi
+  treatmentPlansApi,
+  // Payment Methods System API
+  paymentMethodsApi
 };

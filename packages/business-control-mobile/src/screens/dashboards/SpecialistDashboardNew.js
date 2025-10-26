@@ -21,6 +21,7 @@ import {
   fetchUserPermissions
 } from '@shared/store/reactNativeStore';
 import { setFilters } from '@shared/store/slices/specialistDashboardSlice';
+import { Calendar } from 'react-native-big-calendar';
 
 // Permisos
 import { usePermissions } from '../../hooks/usePermissions';
@@ -204,13 +205,77 @@ export default function SpecialistDashboard({ navigation }) {
   console.log('📱 Specialist Dashboard - appointmentsFromHook type:', typeof appointmentsFromHook, 'isArray:', Array.isArray(appointmentsFromHook), 'value:', appointmentsFromHook);
   console.log('📱 Specialist Dashboard - Appointments:', appointmentsFromHook?.length || 0);
 
+  // Helper: Formatear appointments para las vistas
+  const formatAppointment = (appointment) => {
+    if (!appointment) return null;
+    
+    const startDate = new Date(appointment.startTime);
+    const endDate = new Date(appointment.endTime);
+    
+    return {
+      ...appointment,
+      // Formato de tiempos para visualización
+      startTime: startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      endTime: endDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      startTimeISO: appointment.startTime, // Mantener original para lógica
+      endTimeISO: appointment.endTime,
+      // Extraer datos del cliente
+      clientName: appointment.client 
+        ? `${appointment.client.firstName || ''} ${appointment.client.lastName || ''}`.trim()
+        : 'Cliente sin nombre',
+      clientPhone: appointment.client?.phone || '',
+      clientEmail: appointment.client?.email || '',
+      // Extraer datos del servicio
+      serviceName: appointment.service?.name || 'Servicio no especificado',
+      serviceCategory: appointment.service?.category || '',
+      serviceDuration: appointment.service?.duration || 0,
+      servicePrice: appointment.service?.price || '0',
+      // Extraer datos de la sucursal
+      branchName: appointment.branch?.name || 'Sin sucursal',
+      branchColor: appointment.branch?.color || '#8b5cf6',
+      // Datos adicionales
+      origin: appointment.isOnline ? 'online' : 'business',
+      totalAmount: appointment.totalAmount || '0',
+      commissionPercentage: appointment.specialistCommissionPercentage || 0,
+    };
+  };
+
   // Estados locales
   const [activeTab, setActiveTab] = useState('agenda'); // agenda | commissions
+  const [viewMode, setViewMode] = useState('list'); // list | calendar
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [calendarDate, setCalendarDate] = useState(new Date());
 
-  // 📊 Calcular estadísticas a partir de los turnos
+  // 📅 Navegación de calendario
+  const navigateCalendar = (direction) => {
+    const newDate = new Date(calendarDate);
+    
+    if (filters.period === 'day') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+    } else if (filters.period === 'week') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+    } else if (filters.period === 'month') {
+      newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
+    }
+    
+    setCalendarDate(newDate);
+  };
+
+  const goToToday = () => {
+    setCalendarDate(new Date());
+  };
+
+  // � Formatear appointments
+  const formattedAppointments = useMemo(() => {
+    if (!appointmentsFromHook || !Array.isArray(appointmentsFromHook)) {
+      return [];
+    }
+    return appointmentsFromHook.map(formatAppointment).filter(Boolean);
+  }, [appointmentsFromHook]);
+
+  // �📊 Calcular estadísticas a partir de los turnos
   const stats = useMemo(() => {
     // Validación defensiva: asegurar que appointments es un array
     if (!appointmentsFromHook || !Array.isArray(appointmentsFromHook)) {
@@ -260,7 +325,21 @@ export default function SpecialistDashboard({ navigation }) {
     };
   }, [appointmentsFromHook]);
 
-  // 🛡️ VALIDACIÓN DE ACCESO POR ROL
+  // � Convertir appointments a eventos de calendario
+  const calendarEvents = useMemo(() => {
+    if (!formattedAppointments || !Array.isArray(formattedAppointments)) {
+      return [];
+    }
+
+    return formattedAppointments.map(appointment => ({
+      title: appointment.clientName,
+      start: new Date(appointment.startTimeISO),
+      end: new Date(appointment.endTimeISO),
+      data: appointment,
+    }));
+  }, [formattedAppointments]);
+
+  // �🛡️ VALIDACIÓN DE ACCESO POR ROL
   useEffect(() => {
     if (user && user.role) {
       const userRole = user.role.toLowerCase();
@@ -670,24 +749,52 @@ export default function SpecialistDashboard({ navigation }) {
               </View>
 
               <View style={styles.agendaHeader}>
-                <Text style={styles.agendaTitle}>
-                  {filters.period === 'day' && 'Turnos de Hoy'}
-                  {filters.period === 'week' && 'Turnos de esta Semana'}
-                  {filters.period === 'month' && 'Turnos de este Mes'}
-                </Text>
-                
-                {/* Botón Agendar con validación de permisos */}
-                <PermissionButton
-                  permission="appointments.create"
-                  style={styles.createButton}
-                  textStyle={styles.createButtonText}
-                  onPress={handleCreateAppointment}
-                  icon="add"
-                  iconSize={20}
-                  showDisabled={true}
-                >
-                  Agendar
-                </PermissionButton>
+                <View>
+                  <Text style={styles.agendaTitle}>
+                    {filters.period === 'day' && 'Turnos de Hoy'}
+                    {filters.period === 'week' && 'Turnos de esta Semana'}
+                    {filters.period === 'month' && 'Turnos de este Mes'}
+                  </Text>
+                </View>
+
+                <View style={styles.agendaActions}>
+                  {/* Toggle vista Lista/Calendario */}
+                  <View style={styles.viewToggle}>
+                    <TouchableOpacity
+                      style={[styles.viewToggleButton, viewMode === 'list' && styles.viewToggleButtonActive]}
+                      onPress={() => setViewMode('list')}
+                    >
+                      <Ionicons 
+                        name="list" 
+                        size={20} 
+                        color={viewMode === 'list' ? '#ffffff' : '#6b7280'} 
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.viewToggleButton, viewMode === 'calendar' && styles.viewToggleButtonActive]}
+                      onPress={() => setViewMode('calendar')}
+                    >
+                      <Ionicons 
+                        name="calendar" 
+                        size={20} 
+                        color={viewMode === 'calendar' ? '#ffffff' : '#6b7280'} 
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {/* Botón Agendar con validación de permisos */}
+                  <PermissionButton
+                    permission="appointments.create"
+                    style={styles.createButton}
+                    textStyle={styles.createButtonText}
+                    onPress={handleCreateAppointment}
+                    icon="add"
+                    iconSize={20}
+                    showDisabled={true}
+                  >
+                    Agendar
+                  </PermissionButton>
+                </View>
               </View>
 
               {appointmentsLoading ? (
@@ -695,14 +802,91 @@ export default function SpecialistDashboard({ navigation }) {
               ) : (!appointmentsFromHook || appointmentsFromHook.length === 0) ? (
                 <View style={styles.emptyState}>
                   <Ionicons name="calendar-outline" size={64} color="#cbd5e1" />
-                  <Text style={styles.emptyStateText}>No hay turnos para hoy</Text>
+                  <Text style={styles.emptyStateText}>No hay turnos para este período</Text>
                   <Text style={styles.emptyStateSubtext}>
                     Presiona el botón "Agendar" para crear uno
                   </Text>
                 </View>
+              ) : viewMode === 'calendar' ? (
+                /* VISTA DE CALENDARIO */
+                <View style={styles.calendarContainer}>
+                  {/* Navegación de calendario */}
+                  <View style={styles.calendarNavigation}>
+                    <TouchableOpacity 
+                      style={styles.calendarNavButton}
+                      onPress={() => navigateCalendar('prev')}
+                    >
+                      <Ionicons name="chevron-back" size={24} color="#3b82f6" />
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.todayButton}
+                      onPress={goToToday}
+                    >
+                      <Text style={styles.todayButtonText}>Hoy</Text>
+                    </TouchableOpacity>
+                    
+                    <Text style={styles.calendarDateText}>
+                      {filters.period === 'day' 
+                        ? calendarDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+                        : filters.period === 'week'
+                        ? `Semana del ${calendarDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`
+                        : calendarDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+                      }
+                    </Text>
+                    
+                    <TouchableOpacity 
+                      style={styles.calendarNavButton}
+                      onPress={() => navigateCalendar('next')}
+                    >
+                      <Ionicons name="chevron-forward" size={24} color="#3b82f6" />
+                    </TouchableOpacity>
+                  </View>
+
+                  <Calendar
+                    events={calendarEvents}
+                    height={600}
+                    date={calendarDate}
+                    mode={filters.period === 'day' ? 'day' : filters.period === 'week' ? 'week' : '3days'}
+                    onPressEvent={(event) => {
+                      handleAppointmentPress(event.data);
+                    }}
+                    onPressCell={(date) => {
+                      // Abrir modal de creación con la fecha seleccionada
+                      setShowCreateModal(true);
+                    }}
+                    eventCellStyle={(event) => ({
+                      backgroundColor: 
+                        event.data.status === 'COMPLETED' ? '#10b981' :
+                        event.data.status === 'IN_PROGRESS' ? '#f59e0b' :
+                        event.data.status === 'CONFIRMED' ? '#3b82f6' :
+                        event.data.status === 'CANCELED' ? '#ef4444' :
+                        '#9ca3af',
+                    })}
+                    renderEvent={(event) => (
+                      <View style={styles.calendarEvent}>
+                        <Text style={styles.calendarEventTime} numberOfLines={1}>
+                          {new Date(event.start).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                        <Text style={styles.calendarEventTitle} numberOfLines={1}>
+                          {event.title}
+                        </Text>
+                        <Text style={styles.calendarEventService} numberOfLines={1}>
+                          {event.data.serviceName}
+                        </Text>
+                      </View>
+                    )}
+                    locale="es"
+                    ampm={false}
+                    swipeEnabled={true}
+                    scrollOffsetMinutes={480} // Empezar a las 8:00 AM
+                    showTime={true}
+                  />
+                </View>
               ) : (
+                /* VISTA DE LISTA */
                 <View style={styles.appointmentsList}>
-                  {(appointmentsFromHook || []).map((appointment) => (
+                  {(formattedAppointments || []).map((appointment) => (
                     <AppointmentCard
                       key={appointment.id}
                       appointment={appointment}
@@ -1202,5 +1386,92 @@ const styles = StyleSheet.create({
   },
   periodButtonTextActive: {
     color: '#ffffff',
+  },
+  // View Toggle (Lista/Calendario)
+  agendaActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    padding: 2,
+  },
+  viewToggleButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  viewToggleButtonActive: {
+    backgroundColor: '#3b82f6',
+  },
+  // Calendar Container
+  calendarContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginHorizontal: 20,
+    marginVertical: 10,
+  },
+  calendarNavigation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f9fafb',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  calendarNavButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  todayButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#3b82f6',
+  },
+  todayButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  calendarDateText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    textAlign: 'center',
+    marginHorizontal: 12,
+    textTransform: 'capitalize',
+  },
+  calendarEvent: {
+    padding: 4,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  calendarEventTime: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 2,
+  },
+  calendarEventTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 2,
+  },
+  calendarEventService: {
+    fontSize: 9,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
 });

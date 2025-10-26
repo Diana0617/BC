@@ -49,6 +49,8 @@ import consentReducer from './slices/consentSlice';
 import permissionsReducer from './slices/permissionsSlice';
 // 💉 TREATMENT PLANS SYSTEM REDUCERS (FM-28)
 import treatmentPlansReducer from './slices/treatmentPlansSlice';
+// 💳 PAYMENT METHODS SYSTEM REDUCERS
+import paymentMethodsReducer from './slices/paymentMethodsSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -103,7 +105,9 @@ export const createStore = (preloadedState = {}) => {
       // 🔐 PERMISSIONS SYSTEM REDUCERS (FM-28)
       permissions: permissionsReducer,
       // 💉 TREATMENT PLANS SYSTEM REDUCERS (FM-28)
-      treatmentPlans: treatmentPlansReducer
+      treatmentPlans: treatmentPlansReducer,
+      // 💳 PAYMENT METHODS SYSTEM REDUCERS
+      paymentMethods: paymentMethodsReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>

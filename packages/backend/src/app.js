@@ -267,6 +267,7 @@ const consentRoutes = require('./routes/consentRoutes');
 const specialistRoutes = require('./routes/specialistRoutes');
 const permissionRoutes = require('./routes/permissions');
 const treatmentPlanRoutes = require('./routes/treatmentPlans');
+const paymentRoutes = require('./routes/paymentRoutes');
 // const specialistServicesRoutes = require('./routes/specialistServices'); // DEPRECATED: Ahora usando rutas RESTful en businessConfig.js
 
 
@@ -279,6 +280,7 @@ app.use('/api/business/:businessId', commissionRoutes); // Rutas de comisiones
 app.use('/api/business/:businessId', consentRoutes); // Rutas de consentimientos
 app.use('/api/permissions', permissionRoutes); // Rutas de permisos
 app.use('/api/treatment-plans', treatmentPlanRoutes); // Rutas de tratamientos multi-sesión
+app.use('/api', paymentRoutes); // Rutas de pagos y métodos de pago
 app.use('/api', businessRulesRoutes); // Nuevas rutas simplificadas de reglas
 app.use('/api/rule-templates', ruleTemplateRoutes); // Rutas de plantillas de reglas (legacy)
 app.use('/api/receipts', receiptRoutes); // Rutas de recibos

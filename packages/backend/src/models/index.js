@@ -60,6 +60,9 @@ const OwnerExpense = require('./OwnerExpense');
 const SavedPaymentMethod = require('./SavedPaymentMethod');
 const BusinessInvitation = require('./BusinessInvitation');
 
+// Modelos de métodos de pago del negocio
+const PaymentMethod = require('./PaymentMethod');
+
 // Modelos de gastos del negocio
 const BusinessExpenseCategory = require('./BusinessExpenseCategory');
 const BusinessExpense = require('./BusinessExpense');
@@ -805,6 +808,16 @@ BusinessExpense.belongsTo(User, {
   foreignKey: 'approvedBy',
   as: 'approver'
 });
+
+// PaymentMethod - Business
+Business.hasMany(PaymentMethod, {
+  foreignKey: 'businessId',
+  as: 'paymentMethods'
+});
+PaymentMethod.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
 User.hasMany(BusinessExpense, {
   foreignKey: 'createdBy',
   as: 'createdBusinessExpenses'
@@ -1485,6 +1498,8 @@ module.exports = {
   OwnerExpense,
   SavedPaymentMethod,
   BusinessInvitation,
+  // Modelos de métodos de pago del negocio
+  PaymentMethod,
   // Modelos de gastos del negocio
   BusinessExpenseCategory,
   BusinessExpense,

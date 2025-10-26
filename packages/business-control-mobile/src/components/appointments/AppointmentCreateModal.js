@@ -45,7 +45,7 @@ const AppointmentCreateModal = ({
     clientEmail: '',
     serviceId: null,
     serviceName: '',
-    specialistId: preselectedSpecialistId,
+    specialistId: null, // No preseleccionar aquí, se hace en useEffect
     specialistName: '',
     branchId: null,
     branchName: '',
@@ -60,6 +60,8 @@ const AppointmentCreateModal = ({
   const [specialists, setSpecialists] = useState([]);
   const [branches, setBranches] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [filteredServices, setFilteredServices] = useState([]);
+  const [loadingSpecialistServices, setLoadingSpecialistServices] = useState(false);
   
   // Estados de UI
   const [showDateSelector, setShowDateSelector] = useState(false);
@@ -115,13 +117,26 @@ const AppointmentCreateModal = ({
 
   useEffect(() => {
     if (preselectedSpecialistId && specialists.length > 0) {
-      const specialist = specialists.find(s => s.id === preselectedSpecialistId);
+      console.log('🔍 [MOBILE] Looking for specialist with userId:', preselectedSpecialistId);
+      console.log('🔍 [MOBILE] Available specialists:', specialists.map(s => ({ 
+        id: s.id, 
+        userId: s.userId, 
+        name: `${s.firstName || ''} ${s.lastName || ''}`.trim() 
+      })));
+      
+      // Buscar por userId (preselectedSpecialistId es el user.id del especialista logueado)
+      const specialist = specialists.find(s => s.userId === preselectedSpecialistId);
+      
       if (specialist) {
+        const fullName = `${specialist.firstName || ''} ${specialist.lastName || ''}`.trim();
+        console.log('✅ [MOBILE] Specialist found:', { id: specialist.id, userId: specialist.userId, name: fullName });
         setFormData(prev => ({
           ...prev,
-          specialistId: specialist.id,
-          specialistName: specialist.name
+          specialistId: specialist.id, // Este es el specialistProfile.id
+          specialistName: fullName
         }));
+      } else {
+        console.log('⚠️ [MOBILE] Specialist not found for userId:', preselectedSpecialistId);
       }
     }
   }, [preselectedSpecialistId, specialists]);
@@ -142,12 +157,58 @@ const AppointmentCreateModal = ({
     return () => clearTimeout(timer);
   }, [clientSearch]);
 
-  // Verificar disponibilidad cuando cambian fecha/hora/servicio/especialista
+  // Cargar servicios del especialista cuando cambie (igual que en web)
   useEffect(() => {
-    if (formData.date && formData.time && formData.serviceId && formData.specialistId) {
-      checkAvailability();
+    console.log('🔄 [MOBILE] useEffect triggered - specialistId:', formData.specialistId, 'businessId:', businessId, 'token:', token ? 'exists' : 'missing');
+    
+    if (formData.specialistId && businessId && token) {
+      console.log('🔄 [MOBILE] Specialist changed, loading their services:', formData.specialistId);
+      loadSpecialistServices(formData.specialistId);
+    } else {
+      console.log('🔄 [MOBILE] No specialist selected or missing data, clearing filtered services');
+      setFilteredServices([]);
+      // Limpiar servicio seleccionado si se deselecciona especialista
+      if (formData.serviceId) {
+        setFormData(prev => ({ ...prev, serviceId: null, serviceName: '' }));
+      }
     }
-  }, [formData.date, formData.time, formData.serviceId, formData.specialistId]);
+  }, [formData.specialistId, businessId, token]);
+
+  // Filtrar especialistas cuando cambie la sucursal (solo si hay múltiples sucursales)
+  useEffect(() => {
+    // Solo filtrar si hay múltiples sucursales, hay una seleccionada, y NO hay especialista preseleccionado
+    if (branches.length > 1 && formData.branchId && specialists.length > 0 && !preselectedSpecialistId) {
+      console.log('🏢 [MOBILE] Branch changed, filtering specialists for branch:', formData.branchId);
+      // Filtrar especialistas que trabajan en esta sucursal
+      const filteredByBranch = specialists.filter(s => 
+        s.branches?.some(b => b.id === formData.branchId) || !s.branches || s.branches.length === 0
+      );
+      console.log('👥 [MOBILE] Specialists in this branch:', filteredByBranch.length);
+      
+      // Si el especialista actual no está en esta sucursal, limpiarlo
+      if (formData.specialistId) {
+        const currentSpecialistInBranch = filteredByBranch.find(s => s.id === formData.specialistId);
+        if (!currentSpecialistInBranch) {
+          console.log('⚠️ [MOBILE] Current specialist not in this branch, clearing');
+          setFormData(prev => ({
+            ...prev,
+            specialistId: null,
+            specialistName: '',
+            serviceId: null,
+            serviceName: ''
+          }));
+        }
+      }
+    }
+  }, [formData.branchId, specialists, preselectedSpecialistId, branches.length]);
+
+  // TEMPORAL: Deshabilitado - verificar disponibilidad cuando cambian fecha/hora/servicio/especialista
+  // TODO: Habilitar cuando se configuren horarios del especialista
+  // useEffect(() => {
+  //   if (formData.date && formData.time && formData.serviceId && formData.specialistId) {
+  //     checkAvailability();
+  //   }
+  // }, [formData.date, formData.time, formData.serviceId, formData.specialistId]);
 
   /**
    * Cargar datos iniciales (servicios, especialistas, sucursales)
@@ -171,9 +232,10 @@ const AppointmentCreateModal = ({
         setServices(servicesData.data || []);
       }
 
-      // Cargar especialistas
+      // Cargar especialistas (mismo endpoint que web)
+      console.log('👨‍⚕️ [MOBILE] Loading specialists from:', `${API_CONFIG.BASE_URL}/api/business/${businessId}/config/specialists`);
       const specialistsResponse = await fetch(
-        `${API_CONFIG.BASE_URL}/api/specialists?businessId=${businessId}`,
+        `${API_CONFIG.BASE_URL}/api/business/${businessId}/config/specialists?isActive=true`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -183,10 +245,13 @@ const AppointmentCreateModal = ({
       );
       if (specialistsResponse.ok) {
         const specialistsData = await specialistsResponse.json();
-        setSpecialists(specialistsData.data || []);
+        console.log('✅ [MOBILE] Specialists loaded:', specialistsData.data?.specialists?.length || 0);
+        console.log('👤 [MOBILE] First specialist structure:', specialistsData.data?.specialists?.[0]);
+        setSpecialists(specialistsData.data?.specialists || specialistsData.data || []);
       }
 
       // Cargar sucursales
+      console.log('🏢 [MOBILE] Loading branches...');
       const branchesResponse = await fetch(
         `${API_CONFIG.BASE_URL}/api/branches?businessId=${businessId}`,
         {
@@ -198,15 +263,28 @@ const AppointmentCreateModal = ({
       );
       if (branchesResponse.ok) {
         const branchesData = await branchesResponse.json();
-        setBranches(branchesData.data || []);
+        const branchesList = branchesData.data || [];
+        console.log('✅ [MOBILE] Branches loaded:', branchesList.length);
+        console.log('🏢 [MOBILE] Branches:', branchesList.map(b => ({ id: b.id, name: b.name })));
+        setBranches(branchesList);
         
-        // Seleccionar primera sucursal por defecto
-        if (branchesData.data && branchesData.data.length > 0) {
-          setFormData(prev => ({
-            ...prev,
-            branchId: branchesData.data[0].id,
-            branchName: branchesData.data[0].name
-          }));
+        // Seleccionar primera (y única) sucursal por defecto
+        if (branchesList.length === 1) {
+          console.log('🏢 [MOBILE] Single branch detected, auto-selecting:', branchesList[0].name);
+          console.log('🏢 [MOBILE] Branch ID:', branchesList[0].id);
+          setFormData(prev => {
+            const updated = {
+              ...prev,
+              branchId: branchesList[0].id,
+              branchName: branchesList[0].name
+            };
+            console.log('✅ [MOBILE] Branch auto-selected in formData:', updated.branchId);
+            return updated;
+          });
+        } else if (branchesList.length > 1) {
+          console.log('🏢 [MOBILE] Multiple branches detected:', branchesList.length);
+        } else {
+          console.log('⚠️ [MOBILE] No branches found');
         }
       }
     } catch (error) {
@@ -281,6 +359,86 @@ const AppointmentCreateModal = ({
   };
 
   /**
+   * Cargar servicios de un especialista específico (igual que en web)
+   */
+  const loadSpecialistServices = async (specialistId) => {
+    if (!specialistId || !businessId || !token) {
+      console.log('⚠️ [MOBILE] Missing data for loadSpecialistServices');
+      console.log('⚠️ [MOBILE] specialistId:', specialistId);
+      console.log('⚠️ [MOBILE] businessId:', businessId);
+      console.log('⚠️ [MOBILE] token:', token ? 'exists' : 'missing');
+      setFilteredServices(services); // Fallback a todos los servicios
+      return;
+    }
+
+    try {
+      setLoadingSpecialistServices(true);
+      console.log('🔧 [MOBILE] Loading services for specialist:', specialistId);
+      console.log('🔧 [MOBILE] businessId:', businessId);
+      
+      const url = `${API_CONFIG.BASE_URL}/api/business/${businessId}/specialists/${specialistId}/services`;
+      console.log('📞 [MOBILE] Full URL:', url);
+      
+      const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('📡 [MOBILE] Response status:', response.status);
+      console.log('📡 [MOBILE] Response ok:', response.ok);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔧 [MOBILE] Specialist services loaded:', data.data?.length || 0);
+        console.log('🔧 [MOBILE] First service structure:', data.data?.[0]);
+        
+        // Filtrar solo servicios activos
+        const activeServices = (data.data || []).filter(ss => ss.isActive);
+        
+        // Mapear a formato compatible (igual que web)
+        const mappedServices = activeServices.map(ss => ({
+          id: ss.serviceId,
+          name: ss.service?.name || ss.serviceName || ss.name || 'Servicio sin nombre',
+          duration: ss.service?.duration || ss.duration,
+          price: ss.customPrice !== null && ss.customPrice !== undefined 
+            ? ss.customPrice 
+            : (ss.service?.price || ss.price)
+        }));
+        
+        console.log('✅ [MOBILE] Mapped services:', mappedServices.length);
+        setFilteredServices(mappedServices);
+        
+        // Si el servicio seleccionado no está en la lista, limpiarlo
+        if (formData.serviceId && !mappedServices.find(s => s.id === formData.serviceId)) {
+          console.log('⚠️ [MOBILE] Current service not in specialist services, clearing');
+          setFormData(prev => ({ ...prev, serviceId: null, serviceName: '' }));
+        }
+      } else {
+        console.error('❌ [MOBILE] Error loading specialist services:', response.status);
+        
+        // Intentar leer el body del error
+        try {
+          const errorText = await response.text();
+          console.error('❌ [MOBILE] Error response body:', errorText);
+        } catch (e) {
+          console.error('❌ [MOBILE] Could not read error body');
+        }
+        
+        setFilteredServices(services); // Fallback
+      }
+    } catch (error) {
+      console.error('❌ [MOBILE] Error loading specialist services:', error);
+      console.error('❌ [MOBILE] Error details:', error.message);
+      setFilteredServices(services); // Fallback a todos los servicios
+    } finally {
+      setLoadingSpecialistServices(false);
+    }
+  };
+
+  /**
    * Seleccionar cliente de los resultados
    */
   const selectClient = (client) => {
@@ -328,10 +486,11 @@ const AppointmentCreateModal = ({
    * Seleccionar especialista
    */
   const selectSpecialist = (specialist) => {
+    const fullName = `${specialist.firstName || ''} ${specialist.lastName || ''}`.trim();
     setFormData(prev => ({
       ...prev,
       specialistId: specialist.id,
-      specialistName: specialist.name
+      specialistName: fullName
     }));
     setShowSpecialistPicker(false);
   };
@@ -377,6 +536,7 @@ const AppointmentCreateModal = ({
 
   /**
    * Verificar disponibilidad del especialista
+   * TEMPORAL: Solo registra en logs, no bloquea la creación
    */
   const checkAvailability = async () => {
     try {
@@ -385,6 +545,13 @@ const AppointmentCreateModal = ({
       const dateStr = formData.date.toISOString().split('T')[0];
       const timeStr = `${formData.time.getHours().toString().padStart(2, '0')}:${formData.time.getMinutes().toString().padStart(2, '0')}`;
       
+      console.log('🔍 [MOBILE] Checking availability:', {
+        specialistId: formData.specialistId,
+        date: dateStr,
+        time: timeStr,
+        duration: formData.duration
+      });
+
       const response = await fetch(
         `${API_CONFIG.BASE_URL}/api/appointments/check-availability`,
         {
@@ -403,16 +570,20 @@ const AppointmentCreateModal = ({
       );
       
       const data = await response.json();
+      console.log('📡 [MOBILE] Availability check response:', data);
       
-      if (!data.available) {
-        Alert.alert(
-          'No Disponible',
-          data.reason || 'El especialista no está disponible en este horario',
-          [{ text: 'OK' }]
-        );
-      }
+      // TEMPORAL: Comentado para permitir crear citas sin validación de horarios
+      // TODO: Descomentar cuando los especialistas tengan horarios configurados
+      // if (!data.available) {
+      //   Alert.alert(
+      //     'No Disponible',
+      //     data.reason || 'El especialista no está disponible en este horario',
+      //     [{ text: 'OK' }]
+      //   );
+      // }
     } catch (error) {
-      console.error('Error checking availability:', error);
+      console.error('❌ [MOBILE] Error checking availability:', error);
+      // TEMPORAL: No mostrar error al usuario, permitir continuar
     } finally {
       setCheckingAvailability(false);
     }
@@ -422,6 +593,16 @@ const AppointmentCreateModal = ({
    * Validar formulario
    */
   const validateForm = () => {
+    console.log('🔍 [MOBILE] Validating form...');
+    console.log('📋 [MOBILE] formData:', {
+      clientName: formData.clientName,
+      clientId: formData.clientId,
+      serviceId: formData.serviceId,
+      specialistId: formData.specialistId,
+      branchId: formData.branchId,
+      branchesCount: branches.length
+    });
+
     if (!formData.clientName.trim()) {
       Alert.alert('Error', 'Ingresa el nombre del cliente');
       return false;
@@ -442,11 +623,14 @@ const AppointmentCreateModal = ({
       return false;
     }
 
-    if (!formData.branchId) {
+    // Solo validar sucursal si hay múltiples sucursales
+    if (branches.length > 1 && !formData.branchId) {
+      console.log('❌ [MOBILE] Multiple branches but no branch selected');
       Alert.alert('Error', 'Selecciona una sucursal');
       return false;
     }
 
+    console.log('✅ [MOBILE] Form validation passed');
     return true;
   };
 
@@ -472,12 +656,14 @@ const AppointmentCreateModal = ({
         clientEmail: formData.clientEmail,
         serviceId: formData.serviceId,
         specialistId: formData.specialistId,
-        branchId: formData.branchId,
+        branchId: formData.branchId || (branches.length === 1 ? branches[0].id : null),
         startTime: appointmentDate.toISOString(),
         duration: formData.duration,
         notes: formData.notes,
         createdBy: user.id
       };
+
+      console.log('📝 [MOBILE] Creating appointment with data:', appointmentData);
 
       const response = await fetch(
         `${API_CONFIG.BASE_URL}/api/appointments`,
@@ -491,12 +677,16 @@ const AppointmentCreateModal = ({
         }
       );
 
+      console.log('📡 [MOBILE] Create appointment response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ [MOBILE] Create appointment error:', errorData);
         throw new Error(errorData.error || 'Error creando turno');
       }
 
       const data = await response.json();
+      console.log('✅ [MOBILE] Appointment created successfully:', data);
       
       Alert.alert(
         'Éxito',
@@ -514,7 +704,7 @@ const AppointmentCreateModal = ({
         ]
       );
     } catch (error) {
-      console.error('Error creating appointment:', error);
+      console.error('❌ [MOBILE] Error creating appointment:', error);
       Alert.alert('Error', error.message || 'No se pudo crear el turno');
     } finally {
       setLoading(false);
@@ -532,7 +722,7 @@ const AppointmentCreateModal = ({
       clientEmail: '',
       serviceId: null,
       serviceName: '',
-      specialistId: preselectedSpecialistId,
+      specialistId: null, // No preseleccionar aquí, se hace en useEffect
       specialistName: '',
       branchId: null,
       branchName: '',
@@ -653,49 +843,74 @@ const AppointmentCreateModal = ({
                 )}
               </View>
 
-              {/* SERVICIO */}
+              {/* SUCURSAL - Solo mostrar si hay múltiples sucursales */}
+              {branches.length > 1 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Sucursal *</Text>
+                  <TouchableOpacity
+                    style={styles.picker}
+                    onPress={() => setShowBranchPicker(true)}
+                  >
+                    <Ionicons name="business" size={20} color="#9ca3af" />
+                    <Text style={[styles.pickerText, !formData.branchName && styles.pickerPlaceholder]}>
+                      {formData.branchName || 'Seleccionar sucursal'}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="#9ca3af" />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* ESPECIALISTA - Solo bloquear si hay múltiples sucursales y no se ha seleccionado */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Especialista *</Text>
+                {branches.length > 1 && !formData.branchId ? (
+                  <View style={styles.disabledPicker}>
+                    <Ionicons name="person" size={20} color="#d1d5db" />
+                    <Text style={styles.disabledPickerText}>
+                      Primero selecciona una sucursal
+                    </Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.picker}
+                    onPress={() => setShowSpecialistPicker(true)}
+                  >
+                    <Ionicons name="person" size={20} color="#9ca3af" />
+                    <Text style={[styles.pickerText, !formData.specialistName && styles.pickerPlaceholder]}>
+                      {formData.specialistName || 'Seleccionar especialista'}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="#9ca3af" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* SERVICIO - Se filtra según el especialista seleccionado */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Servicio</Text>
-                <TouchableOpacity
-                  style={styles.picker}
-                  onPress={() => setShowServicePicker(true)}
-                >
-                  <Ionicons name="cut" size={20} color="#9ca3af" />
-                  <Text style={[styles.pickerText, !formData.serviceName && styles.pickerPlaceholder]}>
-                    {formData.serviceName || 'Seleccionar servicio'}
-                  </Text>
-                  <Ionicons name="chevron-down" size={20} color="#9ca3af" />
-                </TouchableOpacity>
-              </View>
-
-              {/* ESPECIALISTA */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Especialista</Text>
-                <TouchableOpacity
-                  style={styles.picker}
-                  onPress={() => setShowSpecialistPicker(true)}
-                >
-                  <Ionicons name="person" size={20} color="#9ca3af" />
-                  <Text style={[styles.pickerText, !formData.specialistName && styles.pickerPlaceholder]}>
-                    {formData.specialistName || 'Seleccionar especialista'}
-                  </Text>
-                  <Ionicons name="chevron-down" size={20} color="#9ca3af" />
-                </TouchableOpacity>
-              </View>
-
-              {/* SUCURSAL */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Sucursal</Text>
-                <TouchableOpacity
-                  style={styles.picker}
-                  onPress={() => setShowBranchPicker(true)}
-                >
-                  <Ionicons name="business" size={20} color="#9ca3af" />
-                  <Text style={[styles.pickerText, !formData.branchName && styles.pickerPlaceholder]}>
-                    {formData.branchName || 'Seleccionar sucursal'}
-                  </Text>
-                  <Ionicons name="chevron-down" size={20} color="#9ca3af" />
-                </TouchableOpacity>
+                {!formData.specialistId ? (
+                  <View style={styles.disabledPicker}>
+                    <Ionicons name="cut" size={20} color="#d1d5db" />
+                    <Text style={styles.disabledPickerText}>
+                      Primero selecciona un especialista
+                    </Text>
+                  </View>
+                ) : loadingSpecialistServices ? (
+                  <View style={styles.loadingPicker}>
+                    <ActivityIndicator size="small" color="#3b82f6" />
+                    <Text style={styles.loadingPickerText}>Cargando servicios...</Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.picker}
+                    onPress={() => setShowServicePicker(true)}
+                  >
+                    <Ionicons name="cut" size={20} color="#9ca3af" />
+                    <Text style={[styles.pickerText, !formData.serviceName && styles.pickerPlaceholder]}>
+                      {formData.serviceName || 'Seleccionar servicio'}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="#9ca3af" />
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* FECHA Y HORA */}
@@ -715,7 +930,11 @@ const AppointmentCreateModal = ({
 
                   <TouchableOpacity
                     style={styles.dateTimeButton}
-                    onPress={() => setShowTimeSelector(true)}
+                    onPress={() => {
+                      console.log('🕐 [MOBILE] Opening time selector, available slots:', timeSlots.length);
+                      console.log('🕐 [MOBILE] Time slots:', timeSlots);
+                      setShowTimeSelector(true);
+                    }}
                   >
                     <Ionicons name="time" size={20} color="#3b82f6" />
                     <Text style={styles.dateTimeText}>
@@ -819,15 +1038,23 @@ const AppointmentCreateModal = ({
                   </TouchableOpacity>
                 </View>
                 <ScrollView>
-                  {timeSlots.map((timeStr, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.pickerItem}
-                      onPress={() => selectTime(timeStr)}
-                    >
-                      <Text style={styles.pickerItemText}>{timeStr}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  {timeSlots.length === 0 ? (
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                      <Text style={{ color: '#6b7280', textAlign: 'center' }}>
+                        No hay horarios disponibles
+                      </Text>
+                    </View>
+                  ) : (
+                    timeSlots.map((timeStr, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.pickerItem}
+                        onPress={() => selectTime(timeStr)}
+                      >
+                        <Text style={styles.pickerItemText}>{timeStr}</Text>
+                      </TouchableOpacity>
+                    ))
+                  )}
                 </ScrollView>
               </View>
             </View>
@@ -849,18 +1076,28 @@ const AppointmentCreateModal = ({
                   </TouchableOpacity>
                 </View>
                 <ScrollView>
-                  {services.map((service) => (
-                    <TouchableOpacity
-                      key={service.id}
-                      style={styles.pickerItem}
-                      onPress={() => selectService(service)}
-                    >
-                      <Text style={styles.pickerItemText}>{service.name}</Text>
-                      <Text style={styles.pickerItemSubtext}>
-                        {service.duration} min • ${service.price}
+                  {filteredServices.length === 0 ? (
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                      <Text style={{ color: '#6b7280', textAlign: 'center' }}>
+                        {formData.specialistId 
+                          ? 'Este especialista no tiene servicios asignados' 
+                          : 'Selecciona un especialista primero'}
                       </Text>
-                    </TouchableOpacity>
-                  ))}
+                    </View>
+                  ) : (
+                    filteredServices.map((service) => (
+                      <TouchableOpacity
+                        key={service.id}
+                        style={styles.pickerItem}
+                        onPress={() => selectService(service)}
+                      >
+                        <Text style={styles.pickerItemText}>{service.name}</Text>
+                        <Text style={styles.pickerItemSubtext}>
+                          {service.duration} min • ${service.price?.toLocaleString()}
+                        </Text>
+                      </TouchableOpacity>
+                    ))
+                  )}
                 </ScrollView>
               </View>
             </View>
@@ -882,15 +1119,30 @@ const AppointmentCreateModal = ({
                   </TouchableOpacity>
                 </View>
                 <ScrollView>
-                  {specialists.map((specialist) => (
-                    <TouchableOpacity
-                      key={specialist.id}
-                      style={styles.pickerItem}
-                      onPress={() => selectSpecialist(specialist)}
-                    >
-                      <Text style={styles.pickerItemText}>{specialist.name}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  {specialists
+                    .filter(specialist => {
+                      // Solo filtrar por sucursal si hay múltiples sucursales
+                      if (branches.length <= 1) return true; // No filtrar si hay 0 o 1 sucursal
+                      if (!formData.branchId) return true; // Mostrar todos si no hay sucursal seleccionada
+                      if (!specialist.branches || specialist.branches.length === 0) return true; // Mostrar si no tiene sucursales asignadas
+                      return specialist.branches.some(b => b.id === formData.branchId);
+                    })
+                    .map((specialist) => {
+                      const fullName = `${specialist.firstName || ''} ${specialist.lastName || ''}`.trim();
+                      return (
+                        <TouchableOpacity
+                          key={specialist.id}
+                          style={styles.pickerItem}
+                          onPress={() => selectSpecialist(specialist)}
+                        >
+                          <Text style={styles.pickerItemText}>{fullName}</Text>
+                          {specialist.specialization && (
+                            <Text style={styles.pickerItemSubtext}>{specialist.specialization}</Text>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })
+                  }
                 </ScrollView>
               </View>
             </View>
@@ -1083,6 +1335,40 @@ const styles = StyleSheet.create({
   },
   pickerPlaceholder: {
     color: '#9ca3af',
+  },
+  disabledPicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    opacity: 0.6,
+  },
+  disabledPickerText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#9ca3af',
+    marginLeft: 8,
+    fontStyle: 'italic',
+  },
+  loadingPicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  loadingPickerText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#6b7280',
+    marginLeft: 8,
   },
   dateTimeRow: {
     flexDirection: 'row',

@@ -37,6 +37,7 @@ import InventoryConfigSection from './sections/InventoryConfigSection'
 import SuppliersConfigSection from './sections/SuppliersConfigSection'
 import AppointmentsConfigSection from './sections/AppointmentsConfigSection'
 import AppointmentPaymentsConfigSection from './sections/AppointmentPaymentsConfigSection'
+import PaymentMethodsSection from './sections/PaymentMethodsSection'
 import CalendarAccessSection from './sections/CalendarAccessSection'
 import CustomerHistorySection from './sections/CustomerHistorySection'
 import BusinessRuleModal from '../../../components/BusinessRuleModal'
@@ -220,6 +221,14 @@ const BusinessProfile = () => {
       setupStep: 'appointments-config'
     },
     {
+      id: 'payment-methods',
+      name: 'Métodos de Pago',
+      icon: CreditCardIcon,
+      component: PaymentMethodsSection,
+      alwaysVisible: true, // Disponible para todos
+      setupStep: 'payment-methods-config'
+    },
+    {
       id: 'appointment-payments',
       name: 'Pagos de Turnos Online',
       icon: CreditCardIcon,
@@ -296,6 +305,7 @@ const BusinessProfile = () => {
   // Filtrar secciones disponibles basadas en los módulos del plan
   const allSections = [
     ...profileSections,
+    ...modulesSections,        // ✅ Agregar modulesSections explícitamente
     ...dynamicModulesSections
   ]
 

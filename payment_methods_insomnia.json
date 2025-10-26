@@ -1,0 +1,495 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-01-19T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2024.10.0",
+  "resources": [
+    {
+      "_id": "wrk_payment_methods",
+      "parentId": null,
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "name": "Beauty Control - Payment Methods",
+      "description": "Endpoints para configuración de métodos de pago y registro de pagos",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_payment_methods",
+      "parentId": "wrk_payment_methods",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3000/api",
+        "auth_token": "YOUR_AUTH_TOKEN_HERE",
+        "business_id": "YOUR_BUSINESS_ID_HERE",
+        "appointment_id": "YOUR_APPOINTMENT_ID_HERE",
+        "payment_method_id": "YOUR_PAYMENT_METHOD_ID_HERE",
+        "payment_id": "YOUR_PAYMENT_ID_HERE"
+      },
+      "_type": "environment"
+    },
+    {
+      "_id": "folder_config",
+      "parentId": "wrk_payment_methods",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "name": "1. Payment Methods Configuration",
+      "description": "Endpoints para gestionar los métodos de pago del negocio",
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_get_methods",
+      "parentId": "folder_config",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/business/{{ business_id }}/payment-methods",
+      "name": "Get Active Payment Methods",
+      "description": "Obtiene los métodos de pago activos del negocio",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_all_methods",
+      "parentId": "folder_config",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/business/{{ business_id }}/payment-methods/all",
+      "name": "Get All Payment Methods (Including Inactive)",
+      "description": "Obtiene todos los métodos de pago del negocio (activos e inactivos)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_create_method",
+      "parentId": "folder_config",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/business/{{ business_id }}/payment-methods",
+      "name": "Create Payment Method",
+      "description": "Crea un nuevo método de pago personalizado",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Yape\",\n  \"type\": \"QR\",\n  \"requiresProof\": true,\n  \"icon\": \"qr-code-outline\",\n  \"bankInfo\": {\n    \"phoneNumber\": \"+51987654321\",\n    \"holderName\": \"Juan Pérez\"\n  },\n  \"metadata\": {\n    \"description\": \"Pago mediante código QR de Yape\"\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_create_plin",
+      "parentId": "folder_config",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/business/{{ business_id }}/payment-methods",
+      "name": "Create Payment Method - Plin",
+      "description": "Ejemplo: crear método Plin",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Plin\",\n  \"type\": \"QR\",\n  \"requiresProof\": true,\n  \"icon\": \"qr-code-outline\",\n  \"bankInfo\": {\n    \"phoneNumber\": \"+51912345678\",\n    \"holderName\": \"María López\"\n  },\n  \"metadata\": {\n    \"description\": \"Pago mediante código QR de Plin\"\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_create_transfer",
+      "parentId": "folder_config",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/business/{{ business_id }}/payment-methods",
+      "name": "Create Payment Method - Transferencia BCP",
+      "description": "Ejemplo: crear método de transferencia bancaria",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Transferencia BCP\",\n  \"type\": \"TRANSFER\",\n  \"requiresProof\": true,\n  \"icon\": \"swap-horizontal-outline\",\n  \"bankInfo\": {\n    \"bankName\": \"Banco de Crédito del Perú\",\n    \"accountNumber\": \"1234567890123456\",\n    \"accountType\": \"Cuenta Corriente\",\n    \"holderName\": \"Beauty Control SAC\",\n    \"cci\": \"00212300123456789012\"\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_update_method",
+      "parentId": "folder_config",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/business/{{ business_id }}/payment-methods/{{ payment_method_id }}",
+      "name": "Update Payment Method",
+      "description": "Actualiza un método de pago existente",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Yape - Actualizado\",\n  \"requiresProof\": false,\n  \"bankInfo\": {\n    \"phoneNumber\": \"+51999999999\",\n    \"holderName\": \"Juan Pérez González\"\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_delete_method",
+      "parentId": "folder_config",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/business/{{ business_id }}/payment-methods/{{ payment_method_id }}",
+      "name": "Delete Payment Method (Soft Delete)",
+      "description": "Desactiva un método de pago (soft delete)",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_delete_method_hard",
+      "parentId": "folder_config",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/business/{{ business_id }}/payment-methods/{{ payment_method_id }}?hardDelete=true",
+      "name": "Delete Payment Method (Hard Delete)",
+      "description": "Elimina permanentemente un método de pago",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [
+        {
+          "name": "hardDelete",
+          "value": "true"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_activate_method",
+      "parentId": "folder_config",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/business/{{ business_id }}/payment-methods/{{ payment_method_id }}/activate",
+      "name": "Activate Payment Method",
+      "description": "Reactiva un método de pago desactivado",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_reorder_methods",
+      "parentId": "folder_config",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/business/{{ business_id }}/payment-methods/reorder",
+      "name": "Reorder Payment Methods",
+      "description": "Cambia el orden de visualización de los métodos de pago",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"methodIds\": [\n    \"uuid-method-1\",\n    \"uuid-method-2\",\n    \"uuid-method-3\"\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "folder_payments",
+      "parentId": "wrk_payment_methods",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "name": "2. Appointment Payments",
+      "description": "Endpoints para registrar y gestionar pagos de citas",
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_register_payment",
+      "parentId": "folder_payments",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/appointments/{{ appointment_id }}/payments",
+      "name": "Register Payment",
+      "description": "Registra un pago para una cita",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": 50.00,\n  \"paymentMethodId\": \"uuid-of-payment-method\",\n  \"reference\": \"OP-123456\",\n  \"notes\": \"Pago parcial mediante Yape\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_register_payment_full",
+      "parentId": "folder_payments",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/appointments/{{ appointment_id }}/payments",
+      "name": "Register Full Payment",
+      "description": "Registra un pago completo (genera recibo automáticamente)",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": 150.00,\n  \"paymentMethodId\": \"uuid-of-cash-method\",\n  \"notes\": \"Pago completo en efectivo\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_appointment_payments",
+      "parentId": "folder_payments",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/appointments/{{ appointment_id }}/payments",
+      "name": "Get Appointment Payments",
+      "description": "Obtiene todos los pagos de una cita con resumen",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_upload_proof",
+      "parentId": "folder_payments",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/appointments/{{ appointment_id }}/payments/{{ payment_id }}/proof",
+      "name": "Upload Payment Proof",
+      "description": "Sube el comprobante de pago (imagen o PDF)",
+      "method": "POST",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "proof",
+            "type": "file",
+            "fileName": "comprobante.jpg",
+            "description": "Archivo del comprobante (JPEG, PNG, WEBP, PDF - Max 10MB)"
+          }
+        ]
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_refund_payment",
+      "parentId": "folder_payments",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/appointments/{{ appointment_id }}/payments/{{ payment_id }}/refund",
+      "name": "Refund Payment",
+      "description": "Reembolsa un pago y actualiza el estado de la cita",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"reason\": \"Cliente solicitó cancelación del servicio\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "folder_scenarios",
+      "parentId": "wrk_payment_methods",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "name": "3. Test Scenarios",
+      "description": "Escenarios de prueba completos",
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_scenario_partial",
+      "parentId": "folder_scenarios",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/appointments/{{ appointment_id }}/payments",
+      "name": "Scenario: Partial Payment 1 of 3",
+      "description": "Servicio de S/. 300 - Primer pago de S/. 100",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": 100.00,\n  \"paymentMethodId\": \"uuid-yape\",\n  \"reference\": \"YAPE-001\",\n  \"notes\": \"Primera cuota de 3\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_scenario_partial2",
+      "parentId": "folder_scenarios",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/appointments/{{ appointment_id }}/payments",
+      "name": "Scenario: Partial Payment 2 of 3",
+      "description": "Servicio de S/. 300 - Segundo pago de S/. 100",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": 100.00,\n  \"paymentMethodId\": \"uuid-efectivo\",\n  \"notes\": \"Segunda cuota de 3 - Efectivo\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_scenario_final",
+      "parentId": "folder_scenarios",
+      "modified": 1737244800000,
+      "created": 1737244800000,
+      "url": "{{ base_url }}/appointments/{{ appointment_id }}/payments",
+      "name": "Scenario: Final Payment (Generates Receipt)",
+      "description": "Servicio de S/. 300 - Tercer y último pago de S/. 100 (genera recibo)",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": 100.00,\n  \"paymentMethodId\": \"uuid-transfer\",\n  \"reference\": \"TRF-789\",\n  \"notes\": \"Última cuota - Transferencia BCP\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ auth_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    }
+  ]
+}

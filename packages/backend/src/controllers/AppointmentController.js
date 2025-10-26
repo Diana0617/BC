@@ -172,11 +172,11 @@ class AppointmentController {
    */
   static async getAppointmentDetail(req, res) {
     try {
-      const { appointmentId } = req.params;
+      const { id } = req.params; // ✅ FIXED: cambio de appointmentId a id
       const { businessId } = req.query;
       
       const where = {
-        id: appointmentId,
+        id: id,
         businessId
       };
 
@@ -377,10 +377,18 @@ class AppointmentController {
         serviceId,
         startTime,
         endTime,
+        duration,
         notes,
         clientNotes,
         branchId
       } = req.body;
+
+      // Calcular endTime si viene duration pero no endTime
+      let calculatedEndTime = endTime;
+      if (!calculatedEndTime && duration && startTime) {
+        const start = new Date(startTime);
+        calculatedEndTime = new Date(start.getTime() + duration * 60000); // duration en minutos
+      }
 
       // Buscar o crear cliente
       let client;
@@ -541,8 +549,10 @@ class AppointmentController {
         console.log('✅ Especialista tiene acceso a la sucursal');
       }
 
-      // ✅ NUEVA VALIDACIÓN: Verificar que el especialista tenga horario configurado
+      // ✅ VALIDACIÓN DE HORARIOS: Primero intentar horarios del especialista, luego horarios del negocio
       const SpecialistBranchSchedule = require('../models/SpecialistBranchSchedule');
+      const Branch = require('../models/Branch');
+      
       const appointmentDate = new Date(startTime);
       const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][appointmentDate.getDay()];
       const appointmentTime = appointmentDate.toTimeString().split(' ')[0]; // "HH:MM:SS"
@@ -555,17 +565,61 @@ class AppointmentController {
         appointmentDate: appointmentDate.toISOString()
       });
 
-      const schedules = await SpecialistBranchSchedule.findAll({
+      // 1. Intentar obtener horarios del especialista
+      let schedules = await SpecialistBranchSchedule.findAll({
         where: {
-          specialistId: specialistProfile.id, // specialistProfileId
+          specialistId: specialistProfile.id,
           branchId: branchId || null,
           dayOfWeek,
           isActive: true
         }
       });
 
-      console.log(`📅 Horarios encontrados: ${schedules.length}`);
+      console.log(`📅 Horarios del especialista encontrados: ${schedules.length}`);
 
+      // 2. Si no hay horarios del especialista, usar horarios del negocio (Branch)
+      let targetBranch = null;
+      if (schedules.length === 0) {
+        console.log('⚠️ No hay horarios del especialista, buscando horarios de la sucursal');
+        
+        // Si no se especificó branchId, buscar la sucursal principal o única del negocio
+        if (!branchId) {
+          const Branch = require('../models/Branch');
+          const branches = await Branch.findAll({
+            where: { businessId, status: 'ACTIVE' },
+            order: [['isMain', 'DESC']]
+          });
+          
+          if (branches.length > 0) {
+            targetBranch = branches[0]; // Tomar la principal o la primera
+            console.log('🏢 Usando sucursal:', targetBranch.name, '(id:', targetBranch.id + ')');
+          }
+        } else {
+          const Branch = require('../models/Branch');
+          targetBranch = await Branch.findByPk(branchId);
+        }
+        
+        if (targetBranch && targetBranch.businessHours && targetBranch.businessHours[dayOfWeek]) {
+          const branchHours = targetBranch.businessHours[dayOfWeek];
+          
+          console.log('🏢 Horarios de la sucursal:', branchHours);
+          
+          // Si la sucursal NO está cerrada ese día
+          if (!branchHours.closed && branchHours.open && branchHours.close) {
+            // Crear un schedule virtual con los horarios del negocio
+            schedules = [{
+              startTime: branchHours.open + ':00',  // Convertir "09:00" a "09:00:00"
+              endTime: branchHours.close + ':00',   // Convertir "18:00" a "18:00:00"
+              _isBranchHours: true // Flag para indicar que son horarios del negocio
+            }];
+            console.log('✅ Usando horarios de la sucursal como fallback');
+          } else {
+            console.log('❌ La sucursal está cerrada ese día');
+          }
+        }
+      }
+
+      // 3. Si aún no hay horarios (ni del especialista ni del negocio), rechazar
       if (schedules.length === 0) {
         const dayNames = {
           monday: 'lunes',
@@ -579,11 +633,11 @@ class AppointmentController {
         
         return res.status(400).json({
           success: false,
-          error: `El especialista no trabaja los ${dayNames[dayOfWeek]}${branchId ? ' en esta sucursal' : ''}. Por favor, selecciona otro día u horario.`
+          error: `No hay horarios disponibles para los ${dayNames[dayOfWeek]}${branchId ? ' en esta sucursal' : ''}. Por favor, selecciona otro día u horario.`
         });
       }
 
-      // Validar que la hora esté dentro de algún rango configurado
+      // 4. Validar que la hora esté dentro de algún rango configurado
       const isWithinSchedule = schedules.some(schedule => {
         const scheduleStart = schedule.startTime; // "09:00:00"
         const scheduleEnd = schedule.endTime;     // "18:00:00"
@@ -595,14 +649,15 @@ class AppointmentController {
 
       if (!isWithinSchedule) {
         const availableRanges = schedules.map(s => `${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)}`).join(', ');
+        const sourceType = schedules[0]._isBranchHours ? 'del negocio' : 'del especialista';
         
         return res.status(400).json({
           success: false,
-          error: `El especialista no está disponible a las ${appointmentTime.substring(0, 5)}. Horarios disponibles: ${availableRanges}`
+          error: `No hay disponibilidad a las ${appointmentTime.substring(0, 5)}. Horarios ${sourceType}: ${availableRanges}`
         });
       }
 
-      console.log('✅ Horario válido según configuración del especialista');
+      console.log('✅ Horario válido según configuración', schedules[0]._isBranchHours ? '(usando horarios del negocio)' : '(usando horarios del especialista)');
 
       // Verificar disponibilidad del especialista (conflictos con otras citas)
       const conflictingAppointment = await Appointment.findOne({
@@ -615,18 +670,18 @@ class AppointmentController {
           [Op.or]: [
             {
               startTime: {
-                [Op.between]: [new Date(startTime), new Date(endTime)]
+                [Op.between]: [new Date(startTime), calculatedEndTime]
               }
             },
             {
               endTime: {
-                [Op.between]: [new Date(startTime), new Date(endTime)]
+                [Op.between]: [new Date(startTime), calculatedEndTime]
               }
             },
             {
               [Op.and]: [
                 { startTime: { [Op.lte]: new Date(startTime) } },
-                { endTime: { [Op.gte]: new Date(endTime) } }
+                { endTime: { [Op.gte]: calculatedEndTime } }
               ]
             }
           ]
@@ -666,7 +721,7 @@ class AppointmentController {
         branchId: branchId || null, // Campo opcional
         appointmentNumber,
         startTime: new Date(startTime),
-        endTime: new Date(endTime),
+        endTime: calculatedEndTime,
         totalAmount: finalPrice,
         status: 'PENDING',
         notes,
@@ -931,9 +986,10 @@ class AppointmentController {
         const targetSpecialistId = specialistId || appointment.specialistId;
         const targetBranchId = branchId !== undefined ? branchId : appointment.branchId;
         
-        // ✅ VALIDACIÓN: Verificar horario configurado del especialista
+        // ✅ VALIDACIÓN: Verificar horario configurado (especialista o negocio)
         const SpecialistBranchSchedule = require('../models/SpecialistBranchSchedule');
         const SpecialistProfile = require('../models/SpecialistProfile');
+        const Branch = require('../models/Branch');
         
         const specialistProfile = await SpecialistProfile.findOne({
           where: {
@@ -948,7 +1004,8 @@ class AppointmentController {
           const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][appointmentDate.getDay()];
           const appointmentTime = appointmentDate.toTimeString().split(' ')[0];
 
-          const schedules = await SpecialistBranchSchedule.findAll({
+          // 1. Intentar horarios del especialista
+          let schedules = await SpecialistBranchSchedule.findAll({
             where: {
               specialistId: specialistProfile.id,
               branchId: targetBranchId || null,
@@ -956,6 +1013,36 @@ class AppointmentController {
               isActive: true
             }
           });
+
+          // 2. Si no hay horarios del especialista, usar horarios del negocio
+          let targetBranch = null;
+          if (schedules.length === 0) {
+            // Si no se especificó branchId, buscar la sucursal principal o única
+            if (!targetBranchId) {
+              const branches = await Branch.findAll({
+                where: { businessId, status: 'ACTIVE' },
+                order: [['isMain', 'DESC']]
+              });
+              
+              if (branches.length > 0) {
+                targetBranch = branches[0];
+              }
+            } else {
+              targetBranch = await Branch.findByPk(targetBranchId);
+            }
+            
+            if (targetBranch && targetBranch.businessHours && targetBranch.businessHours[dayOfWeek]) {
+              const branchHours = targetBranch.businessHours[dayOfWeek];
+              
+              if (!branchHours.closed && branchHours.open && branchHours.close) {
+                schedules = [{
+                  startTime: branchHours.open + ':00',
+                  endTime: branchHours.close + ':00',
+                  _isBranchHours: true
+                }];
+              }
+            }
+          }
 
           if (schedules.length === 0) {
             const dayNames = {
@@ -965,7 +1052,7 @@ class AppointmentController {
             
             return res.status(400).json({
               success: false,
-              error: `El especialista no trabaja los ${dayNames[dayOfWeek]}${targetBranchId ? ' en esta sucursal' : ''}.`
+              error: `No hay horarios disponibles para los ${dayNames[dayOfWeek]}${targetBranchId ? ' en esta sucursal' : ''}.`
             });
           }
 
@@ -977,7 +1064,7 @@ class AppointmentController {
             const availableRanges = schedules.map(s => `${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)}`).join(', ');
             return res.status(400).json({
               success: false,
-              error: `El especialista no está disponible a las ${appointmentTime.substring(0, 5)}. Horarios: ${availableRanges}`
+              error: `No hay disponibilidad a las ${appointmentTime.substring(0, 5)}. Horarios: ${availableRanges}`
             });
           }
         }
@@ -1424,9 +1511,10 @@ class AppointmentController {
         });
       }
 
-      // ✅ VALIDACIÓN: Verificar horario configurado del especialista
+      // ✅ VALIDACIÓN: Verificar horario configurado (especialista o negocio)
       const SpecialistBranchSchedule = require('../models/SpecialistBranchSchedule');
       const SpecialistProfile = require('../models/SpecialistProfile');
+      const Branch = require('../models/Branch');
       
       const specialistProfile = await SpecialistProfile.findOne({
         where: {
@@ -1441,7 +1529,8 @@ class AppointmentController {
         const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][appointmentDate.getDay()];
         const appointmentTime = appointmentDate.toTimeString().split(' ')[0];
 
-        const schedules = await SpecialistBranchSchedule.findAll({
+        // 1. Intentar horarios del especialista
+        let schedules = await SpecialistBranchSchedule.findAll({
           where: {
             specialistId: specialistProfile.id,
             branchId: appointment.branchId || null,
@@ -1449,6 +1538,36 @@ class AppointmentController {
             isActive: true
           }
         });
+
+        // 2. Si no hay horarios del especialista, usar horarios del negocio
+        let targetBranch = null;
+        if (schedules.length === 0) {
+          // Si no se especificó branchId en la cita, buscar la sucursal principal o única
+          if (!appointment.branchId) {
+            const branches = await Branch.findAll({
+              where: { businessId, status: 'ACTIVE' },
+              order: [['isMain', 'DESC']]
+            });
+            
+            if (branches.length > 0) {
+              targetBranch = branches[0];
+            }
+          } else {
+            targetBranch = await Branch.findByPk(appointment.branchId);
+          }
+          
+          if (targetBranch && targetBranch.businessHours && targetBranch.businessHours[dayOfWeek]) {
+            const branchHours = targetBranch.businessHours[dayOfWeek];
+            
+            if (!branchHours.closed && branchHours.open && branchHours.close) {
+              schedules = [{
+                startTime: branchHours.open + ':00',
+                endTime: branchHours.close + ':00',
+                _isBranchHours: true
+              }];
+            }
+          }
+        }
 
         if (schedules.length === 0) {
           const dayNames = {
@@ -1458,7 +1577,7 @@ class AppointmentController {
           
           return res.status(400).json({
             success: false,
-            error: `El especialista no trabaja los ${dayNames[dayOfWeek]}${appointment.branchId ? ' en esta sucursal' : ''}.`
+            error: `No hay horarios disponibles para los ${dayNames[dayOfWeek]}${appointment.branchId ? ' en esta sucursal' : ''}.`
           });
         }
 
@@ -1470,7 +1589,7 @@ class AppointmentController {
           const availableRanges = schedules.map(s => `${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)}`).join(', ');
           return res.status(400).json({
             success: false,
-            error: `El especialista no está disponible a las ${appointmentTime.substring(0, 5)}. Horarios: ${availableRanges}`
+            error: `No hay disponibilidad a las ${appointmentTime.substring(0, 5)}. Horarios: ${availableRanges}`
           });
         }
       }

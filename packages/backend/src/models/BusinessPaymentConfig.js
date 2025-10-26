@@ -126,21 +126,46 @@ const BusinessPaymentConfig = sequelize.define('BusinessPaymentConfig', {
     },
     comment: 'Configuración de depósitos y anticipos'
   },
-  // Métodos de pago habilitados para este negocio
-  enabledMethods: {
+  // Métodos de pago personalizados del negocio
+  paymentMethods: {
     type: DataTypes.JSONB,
     allowNull: true,
-    defaultValue: {
-      creditCard: true,
-      debitCard: true,
-      pse: true,
-      nequi: false,
-      daviplata: false,
-      bancolombia: false,
-      cash: true,
-      transfer: false
-    },
-    comment: 'Métodos de pago habilitados'
+    defaultValue: [
+      {
+        id: 'cash',
+        name: 'Efectivo',
+        type: 'CASH',
+        isActive: true,
+        requiresProof: false,
+        icon: 'cash-outline',
+        order: 1
+      },
+      {
+        id: 'card',
+        name: 'Tarjeta',
+        type: 'CARD',
+        isActive: true,
+        requiresProof: false,
+        icon: 'card-outline',
+        order: 2
+      },
+      {
+        id: 'transfer',
+        name: 'Transferencia',
+        type: 'TRANSFER',
+        isActive: true,
+        requiresProof: true,
+        icon: 'swap-horizontal-outline',
+        order: 3,
+        bankInfo: {
+          bankName: '',
+          accountNumber: '',
+          accountType: '',
+          holderName: ''
+        }
+      }
+    ],
+    comment: 'Métodos de pago configurados por el negocio. Cada método tiene: id, name, type, isActive, requiresProof, icon, order, y metadata opcional'
   },
   // Configuración de facturación
   invoiceSettings: {
