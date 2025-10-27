@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppointments } from '../../hooks/useAppointments';
 import { usePermissions } from '../../hooks/usePermissions';
+import PaymentStep from './PaymentStep';
 
 /**
  * Modal de detalles y gestión de turno
@@ -42,6 +43,11 @@ const AppointmentDetailsModal = ({
   const [cancelReason, setCancelReason] = useState('');
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState(appointment);
+  
+  // Estados para el flujo de pago
+  const [showPaymentStep, setShowPaymentStep] = useState(false);
+  const [paymentData, setPaymentData] = useState(null);
+  const [paymentValid, setPaymentValid] = useState(false);
 
   // Recargar detalles cuando se abre el modal
   useEffect(() => {
@@ -98,13 +104,17 @@ const AppointmentDetailsModal = ({
    */
   const handleConfirm = async () => {
     if (!hasPermission('appointments.confirm')) {
-      Alert.alert('Sin Permisos', 'No tienes permiso para confirmar turnos');
+      Alert.alert('Sin permiso', 'No tienes permiso para confirmar turnos');
       return;
     }
 
+    const clientName = appointmentDetails.client 
+      ? `${appointmentDetails.client.firstName} ${appointmentDetails.client.lastName}`
+      : appointmentDetails.clientName || 'el cliente';
+
     Alert.alert(
       'Confirmar Turno',
-      `¿Deseas confirmar el turno de ${appointmentDetails.clientName}?`,
+      `¿Deseas confirmar el turno de ${clientName}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -138,13 +148,17 @@ const AppointmentDetailsModal = ({
    */
   const handleStart = async () => {
     if (!hasPermission('appointments.start')) {
-      Alert.alert('Sin Permisos', 'No tienes permiso para iniciar turnos');
+      Alert.alert('Sin permiso', 'No tienes permiso para iniciar turnos');
       return;
     }
 
+    const clientName = appointmentDetails.client 
+      ? `${appointmentDetails.client.firstName} ${appointmentDetails.client.lastName}`
+      : appointmentDetails.clientName || 'el cliente';
+
     Alert.alert(
-      'Iniciar Procedimiento',
-      `¿Deseas iniciar el procedimiento para ${appointmentDetails.clientName}?`,
+      'Iniciar Turno',
+      `¿Deseas iniciar el procedimiento para ${clientName}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -176,6 +190,9 @@ const AppointmentDetailsModal = ({
   /**
    * Completar turno (con validaciones)
    */
+  /**
+   * Iniciar flujo de completar turno
+   */
   const handleComplete = async () => {
     // Validar con el hook
     const validation = canComplete(appointmentDetails);
@@ -188,9 +205,22 @@ const AppointmentDetailsModal = ({
       return;
     }
 
+    // Mostrar paso de pago
+    setShowPaymentStep(true);
+  };
+  
+  /**
+   * Completar turno con pago procesado
+   */
+  const handleCompleteWithPayment = async () => {
+    if (!paymentValid) {
+      Alert.alert('Error', 'Completa los datos de pago antes de continuar');
+      return;
+    }
+
     Alert.alert(
       'Completar Turno',
-      `¿Deseas completar el turno de ${appointmentDetails.clientName}?`,
+      `¿Deseas completar el turno de ${appointmentDetails.client?.firstName}?\n\nPago: $${paymentData?.amount} - ${paymentData?.method?.name}`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -198,12 +228,23 @@ const AppointmentDetailsModal = ({
           onPress: async () => {
             try {
               setActionLoading('complete');
-              await completeAppointment(appointmentDetails.id);
+              
+              // Preparar datos de pago para el backend
+              const paymentPayload = {
+                methodId: paymentData.methodId,
+                amount: paymentData.amount,
+                notes: paymentData.notes,
+                proofImageBase64: paymentData.proofImage // Ya viene en base64 del componente
+              };
+              
+              await completeAppointment(appointmentDetails.id, {
+                payment: paymentPayload
+              });
               
               // Actualizar estado local
               setAppointmentDetails(prev => ({ ...prev, status: 'COMPLETED' }));
               
-              Alert.alert('Éxito', 'Turno completado correctamente');
+              Alert.alert('Éxito', 'Turno completado y pago registrado correctamente');
               
               if (onAppointmentUpdated) {
                 onAppointmentUpdated({ ...appointmentDetails, status: 'COMPLETED' });
@@ -211,6 +252,7 @@ const AppointmentDetailsModal = ({
               
               // Cerrar modal después de completar
               setTimeout(() => {
+                setShowPaymentStep(false);
                 onClose();
               }, 1500);
             } catch (error) {
@@ -222,6 +264,15 @@ const AppointmentDetailsModal = ({
         }
       ]
     );
+  };
+  
+  /**
+   * Volver del paso de pago
+   */
+  const handleBackFromPayment = () => {
+    setShowPaymentStep(false);
+    setPaymentData(null);
+    setPaymentValid(false);
   };
 
   /**
@@ -353,17 +404,25 @@ const AppointmentDetailsModal = ({
                   <Ionicons name="person" size={20} color="#3b82f6" />
                   <Text style={styles.sectionTitle}>Cliente</Text>
                 </View>
-                <Text style={styles.clientName}>{appointmentDetails.clientName}</Text>
-                {appointmentDetails.clientPhone && (
+                <Text style={styles.clientName}>
+                  {appointmentDetails.client 
+                    ? `${appointmentDetails.client.firstName} ${appointmentDetails.client.lastName}`
+                    : appointmentDetails.clientName || 'Sin información'}
+                </Text>
+                {(appointmentDetails.client?.phone || appointmentDetails.clientPhone) && (
                   <View style={styles.infoRow}>
                     <Ionicons name="call" size={16} color="#6b7280" />
-                    <Text style={styles.infoText}>{appointmentDetails.clientPhone}</Text>
+                    <Text style={styles.infoText}>
+                      {appointmentDetails.client?.phone || appointmentDetails.clientPhone}
+                    </Text>
                   </View>
                 )}
-                {appointmentDetails.clientEmail && (
+                {(appointmentDetails.client?.email || appointmentDetails.clientEmail) && (
                   <View style={styles.infoRow}>
                     <Ionicons name="mail" size={16} color="#6b7280" />
-                    <Text style={styles.infoText}>{appointmentDetails.clientEmail}</Text>
+                    <Text style={styles.infoText}>
+                      {appointmentDetails.client?.email || appointmentDetails.clientEmail}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -374,12 +433,14 @@ const AppointmentDetailsModal = ({
                   <Ionicons name="cut" size={20} color="#3b82f6" />
                   <Text style={styles.sectionTitle}>Servicio</Text>
                 </View>
-                <Text style={styles.serviceName}>{appointmentDetails.serviceName}</Text>
+                <Text style={styles.serviceName}>
+                  {appointmentDetails.service?.name || appointmentDetails.serviceName || 'Sin información'}
+                </Text>
                 <View style={styles.serviceDetails}>
                   <View style={styles.serviceDetail}>
                     <Ionicons name="time" size={16} color="#6b7280" />
                     <Text style={styles.serviceDetailText}>
-                      {appointmentDetails.duration || 60} min
+                      {appointmentDetails.service?.duration || appointmentDetails.duration || 60} min
                     </Text>
                   </View>
                   {appointmentDetails.totalAmount && (

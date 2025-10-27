@@ -14,7 +14,6 @@ import BusinessDashboard from '../screens/dashboards/BusinessDashboard';
 import SpecialistDashboard from '../screens/dashboards/SpecialistDashboardNew';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
-import PaymentMethodsScreen from '../screens/settings/PaymentMethodsScreen';
 
 // Iconos
 import { Ionicons } from '@expo/vector-icons';
@@ -75,7 +74,6 @@ function AuthenticatedStack() {
       <Stack.Screen name="Tabs" component={MainTabs} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
-      <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} />
     </Stack.Navigator>
   );
 }

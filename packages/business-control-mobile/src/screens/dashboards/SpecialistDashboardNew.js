@@ -33,6 +33,15 @@ import { useAppointments } from '../../hooks/useAppointments';
 // Componentes
 import { AppointmentCreateModal, AppointmentDetailsModal } from '../../components/appointments';
 
+// Utilidades de timezone
+import { 
+  formatDateColombia, 
+  isToday as isTodayColombia, 
+  isTomorrow as isTomorrowColombia,
+  formatTimeColombia,
+  toColombiaTime
+} from '../../utils/timezone';
+
 // =====================================================
 // COMPONENTES AUXILIARES
 // =====================================================
@@ -53,22 +62,22 @@ const StatsCard = ({ title, value, subtitle, icon, color }) => (
 const AppointmentCard = ({ appointment, onPress, onAction }) => {
   const getStatusColor = (status) => {
     const colors = {
-      pending: '#9ca3af',
-      confirmed: '#3b82f6',
-      in_progress: '#f59e0b',
-      completed: '#10b981',
-      cancelled: '#ef4444',
+      PENDING: '#9ca3af',
+      CONFIRMED: '#3b82f6',
+      IN_PROGRESS: '#f59e0b',
+      COMPLETED: '#10b981',
+      CANCELED: '#ef4444',
     };
     return colors[status] || '#6b7280';
   };
 
   const getStatusText = (status) => {
     const texts = {
-      pending: 'Pendiente',
-      confirmed: 'Confirmado',
-      in_progress: 'En Progreso',
-      completed: 'Completado',
-      cancelled: 'Cancelado',
+      PENDING: 'Pendiente',
+      CONFIRMED: 'Confirmado',
+      IN_PROGRESS: 'En Progreso',
+      COMPLETED: 'Completado',
+      CANCELED: 'Cancelado',
     };
     return texts[status] || status;
   };
@@ -81,6 +90,41 @@ const AppointmentCard = ({ appointment, onPress, onAction }) => {
     };
     return icons[origin] || 'help-circle-outline';
   };
+  
+  // Formatear fecha y hora del appointment en hora de Colombia
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    
+    let dayLabel = '';
+    if (isTodayColombia(date)) {
+      dayLabel = 'Hoy';
+    } else if (isTomorrowColombia(date)) {
+      dayLabel = 'Mañana';
+    } else {
+      const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      
+      // Convertir a hora de Colombia
+      const colombiaDate = toColombiaTime(date);
+      dayLabel = `${days[colombiaDate.getUTCDay()]}, ${colombiaDate.getUTCDate()} ${months[colombiaDate.getUTCMonth()]}`;
+    }
+    
+    return {
+      dayLabel,
+      time: formatTimeColombia(date)
+    };
+  };
+  
+  const startDateTime = formatDateTime(appointment.startTimeISO);
+  const endTimeStr = formatTimeColombia(appointment.endTimeISO);
+  
+  // Obtener nombre del cliente
+  const clientName = appointment.client 
+    ? `${appointment.client.firstName} ${appointment.client.lastName}`
+    : appointment.clientName || 'Sin información';
+    
+  // Obtener nombre del servicio
+  const serviceName = appointment.service?.name || appointment.serviceName || 'Sin información';
 
   return (
     <TouchableOpacity 
@@ -88,12 +132,18 @@ const AppointmentCard = ({ appointment, onPress, onAction }) => {
       onPress={() => onPress(appointment)}
       activeOpacity={0.8}
     >
+      {/* Día del appointment */}
+      <View style={styles.appointmentDateBanner}>
+        <Ionicons name="calendar-outline" size={14} color="#6b7280" />
+        <Text style={styles.appointmentDateText}>{startDateTime.dayLabel}</Text>
+      </View>
+      
       {/* Header del turno */}
       <View style={styles.appointmentHeader}>
         <View style={styles.appointmentTime}>
           <Ionicons name="time-outline" size={20} color="#3b82f6" />
           <Text style={styles.appointmentTimeText}>
-            {appointment.startTime} - {appointment.endTime}
+            {startDateTime.time} - {endTimeStr}
           </Text>
         </View>
         
@@ -105,13 +155,13 @@ const AppointmentCard = ({ appointment, onPress, onAction }) => {
       {/* Cliente */}
       <View style={styles.appointmentRow}>
         <Ionicons name="person" size={18} color="#6b7280" />
-        <Text style={styles.appointmentClientName}>{appointment.clientName}</Text>
+        <Text style={styles.appointmentClientName}>{clientName}</Text>
       </View>
 
       {/* Servicio */}
       <View style={styles.appointmentRow}>
         <Ionicons name="cut" size={18} color="#6b7280" />
-        <Text style={styles.appointmentServiceName}>{appointment.serviceName}</Text>
+        <Text style={styles.appointmentServiceName}>{serviceName}</Text>
       </View>
 
       {/* Sucursal + Origen */}
@@ -200,25 +250,29 @@ export default function SpecialistDashboard({ navigation }) {
     canComplete
   } = useAppointments();
 
-  console.log('📱 Specialist Dashboard - User:', user);
-  console.log('📱 Specialist Dashboard - BusinessId:', businessId);
-  console.log('📱 Specialist Dashboard - appointmentsFromHook type:', typeof appointmentsFromHook, 'isArray:', Array.isArray(appointmentsFromHook), 'value:', appointmentsFromHook);
-  console.log('📱 Specialist Dashboard - Appointments:', appointmentsFromHook?.length || 0);
-
   // Helper: Formatear appointments para las vistas
   const formatAppointment = (appointment) => {
     if (!appointment) return null;
     
+    // Convertir fechas UTC del backend a hora de Colombia (UTC-5)
     const startDate = new Date(appointment.startTime);
     const endDate = new Date(appointment.endTime);
     
+    // Colombia está en UTC-5, ajustar para mostrar hora local correcta
+    const colombiaOffset = -5 * 60; // -5 horas en minutos
+    const localOffset = startDate.getTimezoneOffset(); // offset local en minutos
+    const colombiaStartDate = new Date(startDate.getTime() + (localOffset + colombiaOffset) * 60000);
+    const colombiaEndDate = new Date(endDate.getTime() + (localOffset + colombiaOffset) * 60000);
+    
     return {
       ...appointment,
-      // Formato de tiempos para visualización
-      startTime: startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-      endTime: endDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-      startTimeISO: appointment.startTime, // Mantener original para lógica
+      // Formato de tiempos para visualización en hora de Colombia
+      startTime: colombiaStartDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }),
+      endTime: colombiaEndDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }),
+      startTimeISO: appointment.startTime, // Mantener original UTC para lógica
       endTimeISO: appointment.endTime,
+      startTimeColombia: colombiaStartDate.toISOString(), // Fecha ajustada a Colombia
+      endTimeColombia: colombiaEndDate.toISOString(),
       // Extraer datos del cliente
       clientName: appointment.client 
         ? `${appointment.client.firstName || ''} ${appointment.client.lastName || ''}`.trim()
@@ -246,10 +300,19 @@ export default function SpecialistDashboard({ navigation }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [calendarDate, setCalendarDate] = useState(() => {
+    // Inicializar con la fecha de los filtros si existe, sino con hoy en hora de Colombia
+    if (filters.date) {
+      const [year, month, day] = filters.date.split('-');
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    }
+    // Fecha actual en Colombia (UTC-5)
+    const now = new Date();
+    return new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+  });
 
-  // 📅 Navegación de calendario
-  const navigateCalendar = (direction) => {
+  // 📅 Navegación de calendario (hora de Colombia)
+  const navigateCalendar = useCallback((direction) => {
     const newDate = new Date(calendarDate);
     
     if (filters.period === 'day') {
@@ -260,19 +323,74 @@ export default function SpecialistDashboard({ navigation }) {
       newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
     }
     
-    setCalendarDate(newDate);
-  };
+    // Asegurar que la fecha esté en contexto de Colombia
+    const colombiaDate = new Date(newDate.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+    const newDateString = colombiaDate.toISOString().split('T')[0];
+    
+    console.log('📅 navigateCalendar (Colombia):', {
+      direction,
+      oldDate: calendarDate.toISOString().split('T')[0],
+      newDate: newDateString,
+      period: filters.period,
+      colombiaDate: colombiaDate.toISOString()
+    });
+    
+    setCalendarDate(colombiaDate);
+    
+    // Actualizar filtros con la nueva fecha para cargar appointments
+    dispatch(setFilters({
+      ...filters,
+      date: newDateString // Format: YYYY-MM-DD
+    }));
+  }, [calendarDate, filters, dispatch]);
 
-  const goToToday = () => {
-    setCalendarDate(new Date());
-  };
+  const handlePeriodChange = useCallback((newPeriod) => {
+    console.log('📅 Cambiando período:', newPeriod);
+    dispatch(setFilters({ 
+      ...filters, 
+      period: newPeriod 
+    }));
+  }, [filters, dispatch]);
+
+  const goToToday = useCallback(() => {
+    // Obtener fecha actual en hora de Colombia
+    const now = new Date();
+    const colombiaToday = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+    const todayString = colombiaToday.toISOString().split('T')[0];
+    
+    console.log('📅 goToToday (Colombia):', {
+      utcNow: now.toISOString(),
+      colombiaToday: colombiaToday.toISOString(),
+      todayString
+    });
+    
+    setCalendarDate(colombiaToday);
+    
+    // Actualizar filtros a hoy
+    dispatch(setFilters({
+      ...filters,
+      date: todayString
+    }));
+  }, [filters, dispatch]);
 
   // � Formatear appointments
   const formattedAppointments = useMemo(() => {
     if (!appointmentsFromHook || !Array.isArray(appointmentsFromHook)) {
+      console.log('❌ formattedAppointments: appointmentsFromHook is not an array:', appointmentsFromHook);
       return [];
     }
-    return appointmentsFromHook.map(formatAppointment).filter(Boolean);
+    
+    const formatted = appointmentsFromHook.map(formatAppointment).filter(Boolean);
+    console.log('📋 formattedAppointments:', {
+      raw: appointmentsFromHook.length,
+      formatted: formatted.length,
+      sample: formatted[0] ? {
+        clientName: formatted[0].clientName,
+        startTimeISO: formatted[0].startTimeISO,
+        endTimeISO: formatted[0].endTimeISO
+      } : null
+    });
+    return formatted;
   }, [appointmentsFromHook]);
 
   // �📊 Calcular estadísticas a partir de los turnos
@@ -328,15 +446,49 @@ export default function SpecialistDashboard({ navigation }) {
   // � Convertir appointments a eventos de calendario
   const calendarEvents = useMemo(() => {
     if (!formattedAppointments || !Array.isArray(formattedAppointments)) {
+      console.log('❌ calendarEvents: formattedAppointments is not an array:', formattedAppointments);
       return [];
     }
-
-    return formattedAppointments.map(appointment => ({
-      title: appointment.clientName,
-      start: new Date(appointment.startTimeISO),
-      end: new Date(appointment.endTimeISO),
-      data: appointment,
-    }));
+    
+    const events = formattedAppointments.map(appointment => {
+      // Usar las fechas UTC originales para el calendario
+      // El componente Calendar manejará la conversión a hora local
+      const startDate = new Date(appointment.startTimeISO);
+      const endDate = new Date(appointment.endTimeISO);
+      
+      const event = {
+        title: appointment.clientName,
+        start: startDate,
+        end: endDate,
+        data: appointment,
+      };
+      
+      // Validar fechas
+      if (isNaN(event.start.getTime()) || isNaN(event.end.getTime())) {
+        console.log('❌ Invalid date in event:', {
+          startTimeISO: appointment.startTimeISO,
+          endTimeISO: appointment.endTimeISO,
+          parsedStart: event.start,
+          parsedEnd: event.end
+        });
+        return null;
+      }
+      
+      return event;
+    }).filter(Boolean);
+    
+    console.log('📅 Eventos para calendario (Colombia UTC-5):', {
+      total: events.length,
+      sample: events[0] ? {
+        title: events[0].title,
+        startUTC: events[0].start.toISOString(),
+        endUTC: events[0].end.toISOString(),
+        startColombia: events[0].start.toLocaleString('es-CO', { timeZone: 'America/Bogota' }),
+        endColombia: events[0].end.toLocaleString('es-CO', { timeZone: 'America/Bogota' })
+      } : null
+    });
+    
+    return events;
   }, [formattedAppointments]);
 
   // �🛡️ VALIDACIÓN DE ACCESO POR ROL
@@ -381,41 +533,59 @@ export default function SpecialistDashboard({ navigation }) {
     }
   }, [user?.id, businessId, dispatch]);
 
-  // Cargar datos iniciales
-  useEffect(() => {
-    if (user && businessId) {
-      loadDashboardData();
-    }
-  }, [user, businessId, filters.date, filters.period]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
-      console.log('📱 loadDashboardData - Usando useAppointments hook:', {
+      console.log('📱 Cargando appointments con filtros:', {
         date: filters.date,
         period: filters.period,
-        branchId: filters.branchId,
-        status: filters.status,
-        businessId: businessId,
-        user: user?.id,
-        userRole: user?.role
       });
       
-      // Usar el hook en lugar del Redux slice
       await fetchAppointments({
         date: filters.date,
         period: filters.period,
         branchId: filters.branchId,
         status: filters.status
       });
-      
-      console.log('✅ loadDashboardData - Datos cargados con useAppointments hook');
     } catch (error) {
       console.error('❌ Error loading dashboard data:', error);
       Alert.alert('Error', 'No se pudieron cargar los datos');
     }
-  };
+  }, [filters.date, filters.period, filters.branchId, filters.status, fetchAppointments]);
 
-  const onRefresh = async () => {
+  // Cargar datos iniciales
+  useEffect(() => {
+    if (user && businessId) {
+      loadDashboardData();
+    }
+  }, [user, businessId, loadDashboardData]);
+
+  // Sincronizar calendarDate con filters.date (hora de Colombia)
+  useEffect(() => {
+    if (filters.date) {
+      // Crear fecha en zona horaria de Colombia (UTC-5)
+      const [year, month, day] = filters.date.split('-');
+      const filterDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      
+      // Asegurar que la fecha esté en contexto de Colombia
+      const colombiaDate = new Date(filterDate.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+      const currentDate = new Date(calendarDate);
+      
+      // Solo actualizar si las fechas son diferentes (sin comparar hora)
+      const filterDateString = colombiaDate.toISOString().split('T')[0];
+      const currentDateString = currentDate.toISOString().split('T')[0];
+      
+      if (filterDateString !== currentDateString) {
+        console.log('📅 Sincronizando calendarDate con filters.date (Colombia):', {
+          filterDate: filterDateString,
+          currentDate: currentDateString,
+          newCalendarDate: colombiaDate.toISOString()
+        });
+        setCalendarDate(colombiaDate);
+      }
+    }
+  }, [filters.date]);
+
+  const onRefresh = useCallback(async () => {
     try {
       await refreshAppointments({
         date: filters.date,
@@ -426,7 +596,7 @@ export default function SpecialistDashboard({ navigation }) {
     } catch (error) {
       console.error('❌ Error refrescando:', error);
     }
-  };
+  }, [refreshAppointments, filters.date, filters.period, filters.branchId, filters.status]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -701,9 +871,7 @@ export default function SpecialistDashboard({ navigation }) {
               <View style={styles.periodSelector}>
                 <TouchableOpacity
                   style={[styles.periodButton, filters.period === 'day' && styles.periodButtonActive]}
-                  onPress={() => {
-                    dispatch(setFilters({ ...filters, period: 'day' }));
-                  }}
+                  onPress={() => handlePeriodChange('day')}
                 >
                   <Ionicons 
                     name="today" 
@@ -717,9 +885,7 @@ export default function SpecialistDashboard({ navigation }) {
 
                 <TouchableOpacity
                   style={[styles.periodButton, filters.period === 'week' && styles.periodButtonActive]}
-                  onPress={() => {
-                    dispatch(setFilters({ ...filters, period: 'week' }));
-                  }}
+                  onPress={() => handlePeriodChange('week')}
                 >
                   <Ionicons 
                     name="calendar" 
@@ -733,9 +899,7 @@ export default function SpecialistDashboard({ navigation }) {
 
                 <TouchableOpacity
                   style={[styles.periodButton, filters.period === 'month' && styles.periodButtonActive]}
-                  onPress={() => {
-                    dispatch(setFilters({ ...filters, period: 'month' }));
-                  }}
+                  onPress={() => handlePeriodChange('month')}
                 >
                   <Ionicons 
                     name="calendar-outline" 
@@ -809,7 +973,19 @@ export default function SpecialistDashboard({ navigation }) {
                 </View>
               ) : viewMode === 'calendar' ? (
                 /* VISTA DE CALENDARIO */
-                <View style={styles.calendarContainer}>
+                (() => {
+                  console.log('📅 Calendar render:', {
+                    calendarDate: calendarDate.toISOString(),
+                    period: filters.period,
+                    eventsCount: calendarEvents.length,
+                    events: calendarEvents.map(e => ({
+                      title: e.title,
+                      start: e.start.toISOString(),
+                      end: e.end.toISOString()
+                    }))
+                  });
+                  return (
+                    <View style={styles.calendarContainer}>
                   {/* Navegación de calendario */}
                   <View style={styles.calendarNavigation}>
                     <TouchableOpacity 
@@ -828,10 +1004,23 @@ export default function SpecialistDashboard({ navigation }) {
                     
                     <Text style={styles.calendarDateText}>
                       {filters.period === 'day' 
-                        ? calendarDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+                        ? calendarDate.toLocaleDateString('es-CO', { 
+                            weekday: 'long', 
+                            day: 'numeric', 
+                            month: 'long',
+                            timeZone: 'America/Bogota'
+                          })
                         : filters.period === 'week'
-                        ? `Semana del ${calendarDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`
-                        : calendarDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+                        ? `Semana del ${calendarDate.toLocaleDateString('es-CO', { 
+                            day: 'numeric', 
+                            month: 'short',
+                            timeZone: 'America/Bogota' 
+                          })}`
+                        : calendarDate.toLocaleDateString('es-CO', { 
+                            month: 'long', 
+                            year: 'numeric',
+                            timeZone: 'America/Bogota'
+                          })
                       }
                     </Text>
                     
@@ -847,12 +1036,17 @@ export default function SpecialistDashboard({ navigation }) {
                     events={calendarEvents}
                     height={600}
                     date={calendarDate}
-                    mode={filters.period === 'day' ? 'day' : filters.period === 'week' ? 'week' : '3days'}
+                    mode={filters.period === 'day' ? 'day' : filters.period === 'week' ? 'week' : 'month'}
                     onPressEvent={(event) => {
+                      console.log('📅 Event pressed:', {
+                        title: event.title,
+                        start: event.start,
+                        data: event.data
+                      });
                       handleAppointmentPress(event.data);
                     }}
                     onPressCell={(date) => {
-                      // Abrir modal de creación con la fecha seleccionada
+                      console.log('📅 Cell pressed:', date);
                       setShowCreateModal(true);
                     }}
                     eventCellStyle={(event) => ({
@@ -863,26 +1057,41 @@ export default function SpecialistDashboard({ navigation }) {
                         event.data.status === 'CANCELED' ? '#ef4444' :
                         '#9ca3af',
                     })}
-                    renderEvent={(event) => (
-                      <View style={styles.calendarEvent}>
-                        <Text style={styles.calendarEventTime} numberOfLines={1}>
-                          {new Date(event.start).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                        </Text>
-                        <Text style={styles.calendarEventTitle} numberOfLines={1}>
-                          {event.title}
-                        </Text>
-                        <Text style={styles.calendarEventService} numberOfLines={1}>
-                          {event.data.serviceName}
-                        </Text>
-                      </View>
-                    )}
-                    locale="es"
+                    renderEvent={(event) => {
+                      console.log('📅 Rendering event (Colombia):', {
+                        title: event.title,
+                        startUTC: event.start.toISOString(),
+                        startColombia: event.start.toLocaleString('es-CO', { timeZone: 'America/Bogota' }),
+                        calendarDate: calendarDate.toISOString(),
+                        eventDate: event.start.toISOString()
+                      });
+                      return (
+                        <View style={styles.calendarEvent}>
+                          <Text style={styles.calendarEventTime} numberOfLines={1}>
+                            {event.start.toLocaleTimeString('es-CO', { 
+                              hour: '2-digit', 
+                              minute: '2-digit',
+                              timeZone: 'America/Bogota'
+                            })}
+                          </Text>
+                          <Text style={styles.calendarEventTitle} numberOfLines={1}>
+                            {event.title}
+                          </Text>
+                          <Text style={styles.calendarEventService} numberOfLines={1}>
+                            {event.data.serviceName}
+                          </Text>
+                        </View>
+                      );
+                    }}
+                    locale="es-CO"
                     ampm={false}
                     swipeEnabled={true}
                     scrollOffsetMinutes={480} // Empezar a las 8:00 AM
                     showTime={true}
                   />
                 </View>
+                  );
+                })()
               ) : (
                 /* VISTA DE LISTA */
                 <View style={styles.appointmentsList}>
@@ -1147,9 +1356,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  appointmentDateBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingBottom: 8,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  appointmentDateText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6b7280',
   },
   appointmentHeader: {
     flexDirection: 'row',

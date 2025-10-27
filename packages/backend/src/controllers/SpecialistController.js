@@ -25,6 +25,13 @@ class SpecialistController {
       const { businessId } = req.query;
       const specialistId = req.specialist.id;
       
+      console.log('🔍 getMyAppointments - Searching for:', { 
+        businessId, 
+        specialistId,
+        userId: req.user.id,
+        userRole: req.user.role 
+      });
+      
       // Parámetros de filtrado
       const {
         page = 1,
@@ -40,22 +47,89 @@ class SpecialistController {
         businessId,
         specialistId,
       };
+      
+      console.log('📋 Query WHERE:', where);
 
       // Filtros opcionales
       if (status && status !== 'null' && status !== null) {
         where.status = status;
       }
 
+      // Manejo de filtros de fecha con soporte para period
+      const { period } = req.query;
+      
+      // Zona horaria de Colombia (UTC-5)
+      const COLOMBIA_OFFSET = -5 * 60; // -5 horas en minutos
+      
       if (date) {
-        // Filtrar por día específico
-        const targetDate = new Date(date);
-        const nextDay = new Date(targetDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        
-        where.startTime = {
-          [Op.gte]: targetDate,
-          [Op.lt]: nextDay
-        };
+        if (period === 'week') {
+          // Filtrar por semana completa
+          const targetDate = new Date(date + 'T00:00:00-05:00'); // Colombia timezone
+          const dayOfWeek = targetDate.getDay(); // 0 = Domingo, 1 = Lunes, etc.
+          
+          // Calcular inicio de semana (Lunes) en Colombia
+          const startOfWeek = new Date(targetDate);
+          const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+          startOfWeek.setDate(targetDate.getDate() + diff);
+          startOfWeek.setHours(0, 0, 0, 0);
+          
+          // Calcular fin de semana (Domingo) en Colombia
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(startOfWeek.getDate() + 6);
+          endOfWeek.setHours(23, 59, 59, 999);
+          
+          where.startTime = {
+            [Op.gte]: startOfWeek,
+            [Op.lte]: endOfWeek
+          };
+          
+          console.log('📅 Week filter (Colombia time):', { 
+            startOfWeek: startOfWeek.toISOString(), 
+            endOfWeek: endOfWeek.toISOString() 
+          });
+        } else if (period === 'month') {
+          // Filtrar por mes completo en Colombia timezone
+          const targetDate = new Date(date + 'T00:00:00-05:00');
+          const startOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1, 0, 0, 0, 0);
+          const endOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59, 999);
+          
+          // Ajustar a Colombia timezone
+          const offsetMs = COLOMBIA_OFFSET * 60 * 1000;
+          startOfMonth.setTime(startOfMonth.getTime() - offsetMs);
+          endOfMonth.setTime(endOfMonth.getTime() - offsetMs);
+          
+          where.startTime = {
+            [Op.gte]: startOfMonth,
+            [Op.lte]: endOfMonth
+          };
+          
+          console.log('📅 Month filter (Colombia time):', { 
+            startOfMonth: startOfMonth.toISOString(), 
+            endOfMonth: endOfMonth.toISOString() 
+          });
+        } else {
+          // Filtrar por día específico en Colombia timezone
+          // Crear fecha en Colombia (UTC-5) y convertir a UTC para la consulta
+          const [year, month, day] = date.split('-');
+          
+          // Inicio del día en Colombia = 00:00:00 Colombia time
+          const startOfDay = new Date(date + 'T00:00:00-05:00');
+          
+          // Fin del día en Colombia = 23:59:59.999 Colombia time
+          const endOfDay = new Date(date + 'T23:59:59.999-05:00');
+          
+          where.startTime = {
+            [Op.gte]: startOfDay,
+            [Op.lte]: endOfDay
+          };
+          
+          console.log('📅 Day filter (Colombia timezone):', { 
+            inputDate: date,
+            startOfDay: startOfDay.toISOString(),
+            endOfDay: endOfDay.toISOString(),
+            colombiaTime: `${date} 00:00:00 COT`
+          });
+        }
       } else if (startDate && endDate) {
         // Filtrar por rango de fechas
         where.startTime = {
@@ -98,6 +172,8 @@ class SpecialistController {
         limit: parseInt(limit),
         offset
       });
+      
+      console.log('📊 Query result:', { count, foundAppointments: appointments.length });
 
       // Agregar información adicional sobre pagos adelantados
       const appointmentsWithPaymentInfo = appointments.map(appointment => {
@@ -114,6 +190,8 @@ class SpecialistController {
 
         return appointmentData;
       });
+      
+      console.log('📤 Returning appointments:', appointmentsWithPaymentInfo.length);
 
       res.json({
         success: true,

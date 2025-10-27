@@ -164,7 +164,12 @@ export const useAppointments = () => {
         ...cleanFilters
       });
       
-      console.log('🔍 Fetching appointments:', { endpoint, filters: cleanFilters, businessId: user.businessId });
+      console.log('🔍 Fetching appointments:', { 
+        endpoint, 
+        filters: cleanFilters, 
+        businessId: user.businessId,
+        fullUrl: `${API_CONFIG.BASE_URL}${endpoint}?${params.toString()}`
+      });
       
       const response = await fetch(
         `${API_CONFIG.BASE_URL}${endpoint}?${params}`,
@@ -172,12 +177,19 @@ export const useAppointments = () => {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
           }
         }
       );
       
       console.log('📡 Appointments response status:', response.status);
+      console.log('📡 Response headers:', {
+        cacheControl: response.headers.get('cache-control'),
+        contentType: response.headers.get('content-type'),
+        contentLength: response.headers.get('content-length')
+      });
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -187,6 +199,7 @@ export const useAppointments = () => {
       
       const result = await response.json();
       console.log('📦 Backend response:', result);
+      console.log('📦 Response type:', typeof result, 'Has data:', !!result.data, 'Has appointments:', !!result.data?.appointments);
       
       // El backend retorna: { success: true, data: { appointments: [...], pagination: {...} } }
       const appointmentsData = result.data?.appointments || result.data || [];
@@ -500,27 +513,39 @@ export const useAppointments = () => {
    */
   const getAppointmentById = useCallback(async (appointmentId) => {
     try {
+      if (!user?.businessId) {
+        throw new Error('Business ID no disponible');
+      }
+      
+      const params = new URLSearchParams({
+        businessId: user.businessId
+      });
+      
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/api/appointments/${appointmentId}`,
+        `${API_CONFIG.BASE_URL}/api/appointments/${appointmentId}?${params}`,
         {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
           }
         }
       );
       
       if (!response.ok) {
-        throw new Error('Error obteniendo turno');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || 'Error obteniendo turno');
       }
       
       const data = await response.json();
       return data.data;
     } catch (err) {
+      console.error('Error obteniendo detalle de cita:', err);
       throw new Error(err.message || 'Error obteniendo turno');
     }
-  }, [token]);
+  }, [token, user?.businessId]);
   
   return {
     // Datos

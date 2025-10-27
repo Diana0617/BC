@@ -1280,7 +1280,7 @@ class AppointmentController {
     try {
       const { id } = req.params;
       const { businessId } = req.query;
-      const { rating, feedback, finalAmount } = req.body;
+      const { rating, feedback, finalAmount, payment } = req.body;
 
       const where = {
         id,
@@ -1407,6 +1407,108 @@ class AppointmentController {
         // Continuar sin comisión si hay error
       }
 
+      // ===== PROCESAR PAGO SI SE PROPORCIONÓ =====
+      let paymentRecord = null;
+      if (payment && payment.methodId && payment.amount) {
+        try {
+          const PaymentMethod = require('../models/PaymentMethod');
+          const cloudinary = require('../config/cloudinary');
+          
+          // Verificar que el método de pago existe y está activo
+          const paymentMethod = await PaymentMethod.findOne({
+            where: {
+              id: payment.methodId,
+              businessId,
+              isActive: true
+            }
+          });
+          
+          if (!paymentMethod) {
+            return res.status(400).json({
+              success: false,
+              error: 'Método de pago no válido o inactivo'
+            });
+          }
+          
+          // Subir comprobante a Cloudinary si existe
+          let proofUrl = null;
+          let proofPublicId = null;
+          
+          if (payment.proofImageBase64) {
+            try {
+              const uploadResult = await cloudinary.uploader.upload(payment.proofImageBase64, {
+                folder: `beauty-control/businesses/${businessId}/payment-proofs`,
+                resource_type: 'image',
+                transformation: [
+                  { quality: 'auto', fetch_format: 'auto' },
+                  { width: 1200, height: 1200, crop: 'limit' }
+                ]
+              });
+              
+              proofUrl = uploadResult.secure_url;
+              proofPublicId = uploadResult.public_id;
+              
+              console.log('✅ Payment proof uploaded:', proofUrl);
+            } catch (uploadError) {
+              console.error('Error uploading payment proof:', uploadError);
+              // Si requiere comprobante y falla la subida, retornar error
+              if (paymentMethod.requiresProof) {
+                return res.status(400).json({
+                  success: false,
+                  error: 'Error al subir el comprobante de pago'
+                });
+              }
+            }
+          } else if (paymentMethod.requiresProof) {
+            return res.status(400).json({
+              success: false,
+              error: 'Este método de pago requiere adjuntar un comprobante'
+            });
+          }
+          
+          // Crear registro de pago (asumiendo que tienes un modelo AppointmentPayment)
+          // Si no existe, puedes crearlo o guardar en metadata del appointment
+          const AppointmentPayment = require('../models/AppointmentPayment');
+          
+          paymentRecord = await AppointmentPayment.create({
+            appointmentId: appointment.id,
+            businessId,
+            paymentMethodId: payment.methodId,
+            amount: payment.amount,
+            proofUrl,
+            proofPublicId,
+            notes: payment.notes || null,
+            createdBy: req.user.id,
+            createdAt: new Date()
+          });
+          
+          // Actualizar monto pagado del appointment
+          const newPaidAmount = (appointment.paidAmount || 0) + parseFloat(payment.amount);
+          updateData.paidAmount = newPaidAmount;
+          
+          // Actualizar estado de pago
+          if (newPaidAmount >= appointment.totalAmount) {
+            updateData.paymentStatus = 'PAID';
+          } else if (newPaidAmount > 0) {
+            updateData.paymentStatus = 'PARTIAL';
+          }
+          
+          console.log('💰 Payment processed:', {
+            methodId: payment.methodId,
+            amount: payment.amount,
+            paidAmount: newPaidAmount,
+            totalAmount: appointment.totalAmount
+          });
+          
+        } catch (paymentError) {
+          console.error('Error procesando pago:', paymentError);
+          return res.status(400).json({
+            success: false,
+            error: 'Error al procesar el pago: ' + paymentError.message
+          });
+        }
+      }
+
       // Actualizar la cita
       await appointment.update(updateData);
 
@@ -1445,7 +1547,20 @@ class AppointmentController {
       res.json({
         success: true,
         message: 'Cita completada exitosamente',
-        data: completedAppointment
+        data: {
+          appointment: completedAppointment,
+          payment: paymentRecord ? {
+            id: paymentRecord.id,
+            amount: paymentRecord.amount,
+            methodId: paymentRecord.paymentMethodId,
+            proofUrl: paymentRecord.proofUrl,
+            notes: paymentRecord.notes
+          } : null,
+          commission: updateData.specialistCommission ? {
+            specialist: updateData.specialistCommission,
+            business: updateData.businessCommission
+          } : null
+        }
       });
 
     } catch (error) {
