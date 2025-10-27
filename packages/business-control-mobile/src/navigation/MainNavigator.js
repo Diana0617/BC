@@ -11,7 +11,8 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import BusinessDashboard from '../screens/dashboards/BusinessDashboard';
-import SpecialistDashboard from '../screens/dashboards/SpecialistCalendarSimple';
+import SpecialistDashboard from '../screens/dashboards/SpecialistDashboardV2';
+import SpecialistCalendarFixed from '../screens/dashboards/SpecialistCalendarFixed';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 
@@ -70,6 +71,7 @@ function AuthenticatedStack() {
       <Stack.Screen name="DashboardBusiness" component={BusinessDashboard} />
       <Stack.Screen name="DashboardSpecialist" component={SpecialistDashboard} />
       <Stack.Screen name="DashboardReceptionist" component={DashboardScreen} />
+      <Stack.Screen name="SpecialistCalendar" component={SpecialistCalendarFixed} />
       {/* Otras pantallas principales */}
       <Stack.Screen name="Tabs" component={MainTabs} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
