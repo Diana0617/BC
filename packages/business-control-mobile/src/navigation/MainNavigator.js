@@ -11,7 +11,7 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import BusinessDashboard from '../screens/dashboards/BusinessDashboard';
-import SpecialistDashboard from '../screens/dashboards/SpecialistDashboardNew';
+import SpecialistDashboard from '../screens/dashboards/SpecialistCalendarSimple';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 
