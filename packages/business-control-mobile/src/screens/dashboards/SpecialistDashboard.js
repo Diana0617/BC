@@ -408,6 +408,13 @@ const SpecialistDashboard = ({ navigation }) => {
           </TouchableOpacity>
           
           <TouchableOpacity 
+            onPress={() => navigation.navigate('SpecialistCalendar')}
+            className="w-12 h-12 bg-blue-500/20 rounded-full items-center justify-center"
+          >
+            <Ionicons name="calendar" size={24} color="#3b82f6" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
             onPress={handleLogout}
             className="w-12 h-12 bg-red-500/20 rounded-full items-center justify-center"
           >

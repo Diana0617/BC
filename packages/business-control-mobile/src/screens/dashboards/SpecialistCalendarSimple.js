@@ -11,7 +11,7 @@ import {
 import { Calendar } from 'react-native-big-calendar';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
-import { setFilters } from '../../redux/slices/specialistDashboardSlice';
+import { setFilters } from '@shared/store/slices/specialistDashboardSlice';
 import { useAppointments } from '../../hooks/useAppointments';
 
 export default function SpecialistCalendarSimple() {
@@ -23,23 +23,88 @@ export default function SpecialistCalendarSimple() {
   // Local state - simplificado
   const [calendarDate, setCalendarDate] = useState(() => new Date());
   const [viewMode, setViewMode] = useState('day'); // day, week, month
+  const [calendarKey, setCalendarKey] = useState(0); // Key para forzar re-render
+  
+  // Obtener user para businessId
+  const { user } = useSelector(state => state.auth);
+  
+  // Inicializar filtros cuando el usuario esté disponible
+  useEffect(() => {
+    if (user?.businessId && !filters.businessId) {
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
+      
+      console.log('📅 Setting filters with businessId:', {
+        businessId: user.businessId,
+        date: todayString,
+        period: viewMode
+      });
+      
+      dispatch(setFilters({
+        date: todayString,
+        period: viewMode,
+        businessId: user.businessId,
+        branchId: null,
+        status: null
+      }));
+    }
+  }, [user?.businessId, dispatch, viewMode]);
+  
+  // Actualizar filtros cuando cambie la fecha o modo de vista
+  useEffect(() => {
+    if (filters.businessId) {
+      const dateString = calendarDate.toISOString().split('T')[0];
+      if (filters.date !== dateString || filters.period !== viewMode) {
+        console.log('📅 Updating filters for date/view change:', {
+          oldDate: filters.date,
+          newDate: dateString,
+          oldPeriod: filters.period,
+          newPeriod: viewMode
+        });
+        
+        dispatch(setFilters({
+          ...filters,
+          date: dateString,
+          period: viewMode
+        }));
+      }
+    }
+  }, [calendarDate, viewMode, filters, dispatch]);
   
   // Hook para appointments
   const { 
     appointments: rawAppointments, 
     loading, 
     error, 
-    refetch 
+    refetch,
+    fetchAppointments
   } = useAppointments();
+  
+  // Cargar appointments cuando los filtros estén listos
+  useEffect(() => {
+    if (filters.businessId && filters.date && filters.period) {
+      console.log('📅 Loading appointments with filters:', filters);
+      fetchAppointments(filters);
+    }
+  }, [filters, fetchAppointments]);
 
   // Formatear appointments para el calendario
   const calendarEvents = useMemo(() => {
+    console.log('📅 Calendar Events Debug:', {
+      rawAppointments: rawAppointments?.length || 0,
+      loading,
+      error,
+      filters,
+      user: user ? { businessId: user.businessId, role: user.role } : null,
+      calendarDate: calendarDate.toISOString().split('T')[0]
+    });
+    
     if (!rawAppointments?.length) {
       console.log('📅 No appointments for calendar');
       return [];
     }
 
-    const events = rawAppointments.map(appointment => {
+    const events = rawAppointments.map((appointment, index) => {
       try {
         // Fechas UTC directas del backend
         const start = new Date(appointment.startTime);
@@ -51,16 +116,41 @@ export default function SpecialistCalendarSimple() {
           return null;
         }
 
+        // Crear fechas apropiadas según la vista
+        let localStart, localEnd;
+        
+        if (viewMode === 'month') {
+          // Para vista mensual, usar las fechas originales
+          localStart = new Date(start.getTime());
+          localEnd = new Date(end.getTime());
+        } else {
+          // Para vista día y semana, crear fechas locales sin timezone offset
+          const startDate = new Date(appointment.startTime);
+          const endDate = new Date(appointment.endTime);
+          
+          // Crear nuevas fechas ajustando el offset de timezone
+          localStart = new Date(startDate.getTime() - (startDate.getTimezoneOffset() * 60000));
+          localEnd = new Date(endDate.getTime() - (endDate.getTimezoneOffset() * 60000));
+        }
+
+        console.log(`Event ${index}:`, {
+          originalStart: start.toISOString(),
+          originalEnd: end.toISOString(),
+          localStart: localStart.toISOString(),
+          localEnd: localEnd.toISOString(),
+          title: `${appointment.client?.firstName || ''} ${appointment.client?.lastName || ''}`.trim(),
+          service: appointment.service?.name
+        });
+
         return {
           title: `${appointment.client?.firstName || ''} ${appointment.client?.lastName || ''}`.trim() || 'Cliente',
-          start,
-          end,
-          id: appointment.id,
-          // Datos adicionales
+          start: localStart,
+          end: localEnd,
+          id: appointment.id || `event-${index}`,
+          // Simplificar datos adicionales
           clientName: `${appointment.client?.firstName || ''} ${appointment.client?.lastName || ''}`.trim(),
           serviceName: appointment.service?.name || 'Servicio',
-          status: appointment.status || 'PENDING',
-          originalAppointment: appointment
+          status: appointment.status || 'PENDING'
         };
       } catch (error) {
         console.error('Error formatting appointment for calendar:', error);
@@ -69,8 +159,17 @@ export default function SpecialistCalendarSimple() {
     }).filter(Boolean);
 
     console.log('📅 Calendar events created:', events.length);
+    console.log('📅 Events array:', events);
     return events;
-  }, [rawAppointments]);
+  }, [rawAppointments, viewMode]); // Agregar viewMode como dependencia
+
+  // Forzar re-render del calendario cuando cambien los eventos
+  useEffect(() => {
+    if (calendarEvents.length > 0) {
+      console.log('🔄 Forcing calendar re-render due to events change');
+      setCalendarKey(prev => prev + 1);
+    }
+  }, [calendarEvents.length]);
 
   // Navegar fechas
   const navigateDate = useCallback((direction) => {
@@ -87,13 +186,20 @@ export default function SpecialistCalendarSimple() {
     setCalendarDate(newDate);
     
     // Actualizar filtros para cargar datos del nuevo día
-    const dateString = newDate.toISOString().split('T')[0];
-    dispatch(setFilters({
+    const newFilters = {
       ...filters,
       date: dateString,
       period: viewMode
-    }));
-  }, [calendarDate, viewMode, filters, dispatch]);
+    };
+    
+    dispatch(setFilters(newFilters));
+    
+    // Cargar appointments para la nueva fecha
+    if (newFilters.businessId) {
+      console.log('📅 Navigating to date, loading appointments:', newFilters);
+      fetchAppointments(newFilters);
+    }
+  }, [calendarDate, viewMode, filters, dispatch, fetchAppointments]);
 
   // Ir a hoy
   const goToToday = useCallback(() => {
@@ -101,21 +207,38 @@ export default function SpecialistCalendarSimple() {
     setCalendarDate(today);
     
     const todayString = today.toISOString().split('T')[0];
-    dispatch(setFilters({
+    const newFilters = {
       ...filters,
       date: todayString,
       period: viewMode
-    }));
-  }, [viewMode, filters, dispatch]);
+    };
+    
+    dispatch(setFilters(newFilters));
+    
+    // Cargar appointments para hoy
+    if (newFilters.businessId) {
+      console.log('📅 Going to today, loading appointments:', newFilters);
+      fetchAppointments(newFilters);
+    }
+  }, [viewMode, filters, dispatch, fetchAppointments]);
 
   // Cambiar modo de vista
   const changeViewMode = useCallback((mode) => {
     setViewMode(mode);
-    dispatch(setFilters({
+    
+    const newFilters = {
       ...filters,
       period: mode
-    }));
-  }, [filters, dispatch]);
+    };
+    
+    dispatch(setFilters(newFilters));
+    
+    // Recargar appointments con el nuevo período
+    if (newFilters.businessId) {
+      console.log('📅 Changing view mode, loading appointments:', newFilters);
+      fetchAppointments(newFilters);
+    }
+  }, [filters, dispatch, fetchAppointments]);
 
   // Manejar presión en evento
   const handleEventPress = useCallback((event) => {
@@ -126,6 +249,14 @@ export default function SpecialistCalendarSimple() {
       [{ text: 'OK' }]
     );
   }, []);
+
+  // Log final antes del render
+  console.log('📅 Rendering calendar with:', {
+    eventsCount: calendarEvents.length,
+    date: calendarDate.toISOString(),
+    mode: viewMode,
+    events: calendarEvents
+  });
 
   return (
     <View style={styles.container}>
@@ -175,30 +306,46 @@ export default function SpecialistCalendarSimple() {
       {/* Calendario */}
       <View style={styles.calendarContainer}>
         <Calendar
+          key={`calendar-${calendarKey}-${calendarEvents.length}`} // Key única para forzar re-render
           events={calendarEvents}
           height={500}
           date={calendarDate}
           mode={viewMode}
           onPressEvent={handleEventPress}
-          locale="es-CO"
+          locale="es"
           ampm={false}
           showTime={true}
-          scrollOffsetMinutes={480} // Empezar a las 8:00 AM
+          scrollOffsetMinutes={viewMode === 'day' || viewMode === 'week' ? 720 : 600} // 12:00 PM para día/semana, 10:00 AM para mes
+          hourRowHeight={60}
+          eventMinHeightForMonthView={20}
+          theme={{
+            palette: {
+              primary: {
+                main: '#3b82f6',
+                contrastText: '#ffffff',
+              },
+              gray: {
+                100: '#f3f4f6',
+                200: '#e5e7eb',
+                300: '#d1d5db',
+                500: '#6b7280',
+                800: '#1f2937',
+              },
+            },
+          }}
           eventCellStyle={(event) => ({
-            backgroundColor: 
-              event.status === 'COMPLETED' ? '#10b981' :
-              event.status === 'IN_PROGRESS' ? '#f59e0b' :
-              event.status === 'CONFIRMED' ? '#3b82f6' :
-              event.status === 'CANCELED' ? '#ef4444' :
-              '#9ca3af',
+            backgroundColor: '#3b82f6',
+            borderRadius: 4,
+            padding: 2,
+            minHeight: 20,
           })}
           renderEvent={(event) => (
-            <View style={styles.eventContainer}>
+            <View style={[styles.eventContainer, { backgroundColor: '#3b82f6' }]}>
               <Text style={styles.eventTime} numberOfLines={1}>
                 {event.start.toLocaleTimeString('es-CO', {
                   hour: '2-digit',
                   minute: '2-digit',
-                  timeZone: 'America/Bogota'
+                  hour12: false
                 })}
               </Text>
               <Text style={styles.eventTitle} numberOfLines={1}>
@@ -224,6 +371,14 @@ export default function SpecialistCalendarSimple() {
         <Text style={styles.debugText}>
           Eventos: {calendarEvents.length} | Fecha: {calendarDate.toDateString()}
         </Text>
+        <Text style={styles.debugText}>
+          Raw Appointments: {rawAppointments?.length || 0} | Loading: {loading ? 'Sí' : 'No'}
+        </Text>
+        {calendarEvents.length > 0 && (
+          <Text style={styles.debugText}>
+            Primer evento: {calendarEvents[0].title} - {calendarEvents[0].start.toLocaleString('es-CO')}
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -290,6 +445,10 @@ const styles = StyleSheet.create({
   eventContainer: {
     flex: 1,
     padding: 4,
+    backgroundColor: '#3b82f6',
+    borderRadius: 4,
+    minHeight: 20,
+    justifyContent: 'center',
   },
   eventTime: {
     fontSize: 10,
