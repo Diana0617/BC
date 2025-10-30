@@ -126,7 +126,7 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
-    const newValue = type === 'checkbox' ? checked : value
+    let newValue = type === 'checkbox' ? checked : value
     
     setFormData(prev => {
       const updated = {
@@ -137,6 +137,15 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
       // Auto-generar subdominio cuando cambia el nombre del negocio
       if (name === 'businessName' && newValue) {
         updated.businessCode = generateSubdomain(newValue)
+      }
+      
+      // Normalizar businessCode a lowercase si se edita manualmente
+      if (name === 'businessCode' && typeof newValue === 'string') {
+        updated.businessCode = newValue
+          .toLowerCase()
+          .replace(/[^a-z0-9-]/g, '') // Solo permitir letras minúsculas, números y guiones
+          .replace(/-+/g, '-') // Remover guiones múltiples
+          .replace(/^-|-$/g, '') // Remover guiones al inicio y final
       }
       
       return updated

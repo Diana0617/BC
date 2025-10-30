@@ -531,7 +531,7 @@ class Payment3DSController {
   static async createPublic3DSPayment(req, res) {
     try {
       const { 
-        businessCode, // Para registro nuevo
+        businessCode: rawBusinessCode, // Para registro nuevo
         subscriptionPlanId,
         customerEmail,
         amount,
@@ -543,6 +543,15 @@ class Payment3DSController {
         threeDsAuthType = 'challenge_v2', // Para testing - valor correcto según documentación Wompi
         registrationData // Datos completos del negocio y usuario para crear después del pago
       } = req.body;
+
+      // Normalizar businessCode a minúsculas y sin caracteres especiales
+      const businessCode = rawBusinessCode
+        ? rawBusinessCode
+            .toLowerCase()
+            .replace(/[^a-z0-9-]/g, '')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '')
+        : null;
 
       // Validaciones
       if (!businessCode || !subscriptionPlanId || !customerEmail || !amount || !cardToken || !acceptanceToken || !browserInfo || !registrationData) {
