@@ -12,7 +12,7 @@
       "env": {
         "EXPO_PUBLIC_ENVIRONMENT": "dev",
         "EXPO_PUBLIC_API_URL": "http://192.168.0.213:3001",
-        "EXPO_PUBLIC_WEB_URL": "http://192.168.0.213:3000"
+        "EXPO_PUBLIC_WEB_URL": "http://192.168.0.213:3000/subscribe"
       }
     },
     "preview": {
@@ -27,7 +27,7 @@
       "env": {
         "EXPO_PUBLIC_ENVIRONMENT": "staging",
         "EXPO_PUBLIC_API_URL": "https://bc-16wt.onrender.com",
-        "EXPO_PUBLIC_WEB_URL": "https://bc-webapp-henna.vercel.app"
+        "EXPO_PUBLIC_WEB_URL": "https://bc-nine-alpha.vercel.app/subscribe"
       }
     },
     "production": {
@@ -37,7 +37,7 @@
       "env": {
         "EXPO_PUBLIC_ENVIRONMENT": "prod",
         "EXPO_PUBLIC_API_URL": "https://bc-16wt.onrender.com",
-        "EXPO_PUBLIC_WEB_URL": "https://bc-webapp-henna.vercel.app"
+        "EXPO_PUBLIC_WEB_URL": "https://bc-nine-alpha.vercel.app/subscribe"
       }
     }
   },
