@@ -13,11 +13,11 @@ class SandboxSimulatorController {
       const { transactionId } = req.params;
       const { delaySeconds = 10 } = req.body;
 
-      // Solo en ambiente de desarrollo
-      if (process.env.NODE_ENV !== 'development') {
+      // Solo en ambiente de test/sandbox de Wompi
+      if (process.env.WOMPI_ENVIRONMENT === 'production') {
         return res.status(403).json({
           success: false,
-          error: 'Endpoint solo disponible en desarrollo'
+          error: 'Endpoint solo disponible en ambiente de test/sandbox'
         });
       }
 

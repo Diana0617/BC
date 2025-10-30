@@ -681,15 +681,16 @@ class Payment3DSController {
         }
       });
 
-      // 🤖 Auto-simulación en desarrollo (opcional)
+      // 🤖 Auto-simulación en ambiente de test/sandbox (opcional)
       console.log('🔍 DEBUG Auto-simulación:', {
         NODE_ENV: process.env.NODE_ENV,
+        WOMPI_ENVIRONMENT: process.env.WOMPI_ENVIRONMENT,
         AUTO_SIMULATE_PAYMENTS: process.env.AUTO_SIMULATE_PAYMENTS,
-        shouldAutoSimulate: process.env.NODE_ENV === 'development' && process.env.AUTO_SIMULATE_PAYMENTS === 'true'
+        shouldAutoSimulate: process.env.WOMPI_ENVIRONMENT !== 'production' && process.env.AUTO_SIMULATE_PAYMENTS === 'true'
       });
       
-      if (process.env.NODE_ENV === 'development' && process.env.AUTO_SIMULATE_PAYMENTS === 'true') {
-        console.log('🤖 Programando auto-simulación para desarrollo...');
+      if (process.env.WOMPI_ENVIRONMENT !== 'production' && process.env.AUTO_SIMULATE_PAYMENTS === 'true') {
+        console.log('🤖 Programando auto-simulación para ambiente de test/sandbox...');
         setTimeout(async () => {
           try {
             const TestingController = require('./TestingController');
