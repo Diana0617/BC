@@ -1,4 +1,4 @@
-const { Service, Business, User } = require('../models');
+const { Service, Business, User, ConsentTemplate } = require('../models');
 const { Op } = require('sequelize');
 
 class ServiceController {
@@ -380,6 +380,75 @@ class ServiceController {
       res.status(500).json({
         success: false,
         message: 'Error al subir imagen',
+        error: error.message
+      });
+    }
+  }
+
+  // GET /api/services/:id/consent-template - Obtener template de consentimiento del servicio
+  static async getConsentTemplate(req, res) {
+    try {
+      const { id } = req.params;
+      const businessId = req.user.businessId;
+
+      console.log('📝 GET /services/:id/consent-template');
+      console.log('📝 Service ID:', id);
+      console.log('📝 Business ID:', businessId);
+
+      // Buscar el servicio con su template de consentimiento
+      const service = await Service.findOne({
+        where: { id, businessId },
+        include: [{
+          model: ConsentTemplate,
+          as: 'consentTemplate',
+          attributes: ['id', 'name', 'code', 'content', 'category', 'version', 'editableFields', 'pdfConfig', 'isActive']
+        }],
+        attributes: ['id', 'name', 'requiresConsent', 'consentTemplateId']
+      });
+
+      if (!service) {
+        console.log('❌ Servicio no encontrado');
+        return res.status(404).json({
+          success: false,
+          message: 'Servicio no encontrado'
+        });
+      }
+
+      if (!service.requiresConsent) {
+        console.log('⚠️ El servicio no requiere consentimiento');
+        return res.status(400).json({
+          success: false,
+          message: 'Este servicio no requiere consentimiento'
+        });
+      }
+
+      if (!service.consentTemplate) {
+        console.log('❌ Template de consentimiento no configurado');
+        return res.status(404).json({
+          success: false,
+          message: 'Template de consentimiento no configurado para este servicio'
+        });
+      }
+
+      console.log('✅ Template encontrado:', service.consentTemplate.name);
+      
+      res.json({
+        success: true,
+        data: {
+          service: {
+            id: service.id,
+            name: service.name,
+            requiresConsent: service.requiresConsent
+          },
+          template: service.consentTemplate
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Error fetching consent template:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al obtener template de consentimiento',
         error: error.message
       });
     }

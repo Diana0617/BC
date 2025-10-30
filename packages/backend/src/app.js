@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 
 // Intentamos cargar la configuración de Swagger; si falla (por ejemplo
 // por un bloque @swagger mal formateado), no queremos que el servidor
@@ -190,6 +191,9 @@ if (process.env.NODE_ENV === 'development') {
 } else {
   app.use(morgan('combined'));
 }
+
+// Servir archivos estáticos (PDFs de consentimientos)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check
 app.get('/health', (req, res) => {

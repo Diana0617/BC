@@ -2,6 +2,10 @@ const Client = require('../models/Client');
 const Appointment = require('../models/Appointment');
 const Voucher = require('../models/Voucher');
 const CustomerBookingBlock = require('../models/CustomerBookingBlock');
+const ConsentSignature = require('../models/ConsentSignature');
+const Service = require('../models/Service');
+const User = require('../models/User');
+const ConsentTemplate = require('../models/ConsentTemplate');
 const { Op } = require('sequelize');
 
 /**
@@ -519,6 +523,252 @@ class ClientController {
       case 'recent':
       default:
         return [['createdAt', 'DESC']];
+    }
+  }
+
+  /**
+   * Obtener historial completo del cliente
+   * GET /api/business/:businessId/clients/:clientId/history
+   */
+  async getClientHistory(req, res) {
+    try {
+      const { businessId, clientId } = req.params;
+
+      console.log('📋 Obteniendo historial del cliente:', clientId);
+
+      // Verificar que el cliente existe
+      const client = await Client.findByPk(clientId, {
+        attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'medicalInfo', 'notes']
+      });
+
+      if (!client) {
+        return res.status(404).json({
+          success: false,
+          error: 'Cliente no encontrado'
+        });
+      }
+
+      // 1. Obtener todas las citas del cliente
+      const appointments = await Appointment.findAll({
+        where: {
+          businessId,
+          clientId,
+          status: {
+            [Op.in]: ['COMPLETED', 'IN_PROGRESS', 'CONFIRMED', 'CANCELED']
+          }
+        },
+        include: [
+          {
+            model: Service,
+            as: 'service',
+            attributes: ['id', 'name', 'category', 'duration', 'requiresConsent']
+          },
+          {
+            model: User,
+            as: 'specialist',
+            attributes: ['id', 'firstName', 'lastName', 'email']
+          },
+          {
+            model: ConsentSignature,
+            as: 'consentSignature',
+            attributes: ['id', 'signedAt', 'signedPdfUrl'],
+            include: [
+              {
+                model: ConsentTemplate,
+                as: 'template',
+                attributes: ['id', 'title', 'version']
+              }
+            ]
+          }
+        ],
+        order: [['startTime', 'DESC']],
+        limit: 50 // Últimas 50 citas
+      });
+
+      // 2. Obtener todos los consentimientos firmados
+      const consents = await ConsentSignature.findAll({
+        where: {
+          businessId,
+          customerId: clientId
+        },
+        include: [
+          {
+            model: ConsentTemplate,
+            as: 'template',
+            attributes: ['id', 'title', 'version', 'category']
+          },
+          {
+            model: Service,
+            as: 'service',
+            attributes: ['id', 'name']
+          }
+        ],
+        order: [['signedAt', 'DESC']]
+      });
+
+      // 3. Obtener historial de cancelaciones
+      const cancellations = await Appointment.findAll({
+        where: {
+          businessId,
+          clientId,
+          status: 'CANCELED'
+        },
+        include: [
+          {
+            model: Service,
+            as: 'service',
+            attributes: ['id', 'name']
+          },
+          {
+            model: User,
+            as: 'canceledByUser',
+            attributes: ['id', 'firstName', 'lastName']
+          }
+        ],
+        attributes: ['id', 'startTime', 'canceledAt', 'cancelReason'],
+        order: [['canceledAt', 'DESC']],
+        limit: 20
+      });
+
+      // 4. Obtener bloqueos activos
+      const blocks = await CustomerBookingBlock.findAll({
+        where: {
+          businessId,
+          customerId: clientId,
+          status: {
+            [Op.in]: ['ACTIVE', 'LIFTED']
+          }
+        },
+        order: [['blockedAt', 'DESC']]
+      });
+
+      // 5. Obtener vouchers
+      const vouchers = await Voucher.findAll({
+        where: {
+          businessId,
+          customerId: clientId
+        },
+        order: [['createdAt', 'DESC']]
+      });
+
+      // Formatear respuesta
+      const history = {
+        client: {
+          id: client.id,
+          name: `${client.firstName} ${client.lastName}`,
+          email: client.email,
+          phone: client.phone,
+          dateOfBirth: client.dateOfBirth,
+          medicalInfo: client.medicalInfo,
+          notes: client.notes
+        },
+        statistics: {
+          totalAppointments: appointments.length,
+          completedAppointments: appointments.filter(a => a.status === 'COMPLETED').length,
+          canceledAppointments: cancellations.length,
+          activeBlocks: blocks.filter(b => b.status === 'ACTIVE').length,
+          totalConsents: consents.length,
+          availableVouchers: vouchers.filter(v => v.status === 'ACTIVE' && new Date(v.expiresAt) > new Date()).length
+        },
+        appointments: appointments.map(apt => ({
+          id: apt.id,
+          appointmentNumber: apt.appointmentNumber,
+          startTime: apt.startTime,
+          endTime: apt.endTime,
+          status: apt.status,
+          service: apt.service ? {
+            id: apt.service.id,
+            name: apt.service.name,
+            category: apt.service.category,
+            duration: apt.service.duration
+          } : null,
+          specialist: apt.specialist ? {
+            id: apt.specialist.id,
+            name: `${apt.specialist.firstName} ${apt.specialist.lastName}`
+          } : null,
+          evidence: apt.evidence || { before: [], after: [], documents: [] },
+          specialistNotes: apt.specialistNotes,
+          rating: apt.rating,
+          feedback: apt.feedback,
+          hasConsent: apt.hasConsent,
+          consentSignature: apt.consentSignature ? {
+            id: apt.consentSignature.id,
+            signedAt: apt.consentSignature.signedAt,
+            pdfUrl: apt.consentSignature.signedPdfUrl,
+            template: apt.consentSignature.template
+          } : null,
+          totalAmount: apt.totalAmount,
+          paidAmount: apt.paidAmount,
+          paymentStatus: apt.paymentStatus
+        })),
+        consents: consents.map(consent => ({
+          id: consent.id,
+          signedAt: consent.signedAt,
+          pdfUrl: consent.signedPdfUrl,
+          template: consent.template ? {
+            id: consent.template.id,
+            title: consent.template.title,
+            version: consent.template.version,
+            category: consent.template.category
+          } : null,
+          service: consent.service ? {
+            id: consent.service.id,
+            name: consent.service.name
+          } : null
+        })),
+        cancellations: cancellations.map(cancel => ({
+          id: cancel.id,
+          appointmentDate: cancel.startTime,
+          canceledAt: cancel.canceledAt,
+          reason: cancel.cancelReason,
+          service: cancel.service ? {
+            id: cancel.service.id,
+            name: cancel.service.name
+          } : null,
+          canceledBy: cancel.canceledByUser ? {
+            id: cancel.canceledByUser.id,
+            name: `${cancel.canceledByUser.firstName} ${cancel.canceledByUser.lastName}`
+          } : null
+        })),
+        blocks: blocks.map(block => ({
+          id: block.id,
+          status: block.status,
+          reason: block.reason,
+          blockedAt: block.blockedAt,
+          expiresAt: block.expiresAt,
+          liftedAt: block.liftedAt,
+          cancellationCount: block.cancellationCount,
+          notes: block.notes
+        })),
+        vouchers: vouchers.map(voucher => ({
+          id: voucher.id,
+          code: voucher.code,
+          type: voucher.type,
+          value: voucher.value,
+          status: voucher.status,
+          expiresAt: voucher.expiresAt,
+          usedAt: voucher.usedAt,
+          reason: voucher.reason
+        }))
+      };
+
+      console.log('✅ Historial obtenido:', {
+        totalAppointments: history.appointments.length,
+        totalConsents: history.consents.length,
+        totalCancellations: history.cancellations.length
+      });
+
+      return res.json({
+        success: true,
+        data: history
+      });
+
+    } catch (error) {
+      console.error('❌ Error al obtener historial del cliente:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Error al obtener el historial del cliente'
+      });
     }
   }
 }

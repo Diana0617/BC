@@ -24,6 +24,7 @@ import { StorageHelper } from '@shared/utils/storage';
 import { STORAGE_KEYS } from '@shared/constants/api';
 import PaymentStep from './PaymentStep';
 import EvidenceCaptureModal from './EvidenceCaptureModal';
+import ConsentCaptureModal from '../ConsentCaptureModal';
 
 /**
  * Modal de detalles y gestión de turno
@@ -62,6 +63,9 @@ const AppointmentDetailsModal = ({
   // Estados para evidencia fotográfica
   const [showEvidenceCapture, setShowEvidenceCapture] = useState(false);
   const [evidenceData, setEvidenceData] = useState(null);
+  
+  // Estados para consentimiento
+  const [showConsentCapture, setShowConsentCapture] = useState(false);
 
   // Recargar detalles cuando se abre el modal
   useEffect(() => {
@@ -243,8 +247,8 @@ const AppointmentDetailsModal = ({
           { 
             text: 'Firmar Ahora', 
             onPress: () => {
-              // TODO: Abrir modal de firma de consentimiento
-              Alert.alert('Info', 'Funcionalidad de firma de consentimiento próximamente');
+              console.log('📝 Abriendo modal de consentimiento');
+              setShowConsentCapture(true);
             }
           }
         ]
@@ -290,6 +294,23 @@ const AppointmentDetailsModal = ({
         }
       ],
       { cancelable: false }
+    );
+  };
+  
+  /**
+   * Callback cuando se firma el consentimiento
+   */
+  const handleConsentSigned = async () => {
+    console.log('✅ Consentimiento firmado exitosamente');
+    setShowConsentCapture(false);
+    
+    // Recargar detalles del appointment para obtener hasConsent actualizado
+    await loadAppointmentDetails();
+    
+    Alert.alert(
+      'Consentimiento Firmado',
+      'El consentimiento ha sido firmado exitosamente. Ahora puedes completar el turno.',
+      [{ text: 'OK' }]
     );
   };
   
@@ -374,6 +395,30 @@ const AppointmentDetailsModal = ({
 
               if (!response.ok) {
                 const errorData = await response.json();
+                
+                // Si el error es por falta de consentimiento, mostrar el modal de firma
+                if (errorData.requiresConsent || errorData.error?.includes('consentimiento')) {
+                  console.log('❌ Backend rechazó por falta de consentimiento');
+                  setActionLoading(null);
+                  setShowPaymentStep(false);
+                  
+                  Alert.alert(
+                    'Consentimiento Requerido',
+                    `El servicio "${appointmentDetails.service?.name}" requiere consentimiento firmado antes de completar el turno.`,
+                    [
+                      { text: 'Entendido', style: 'cancel' },
+                      { 
+                        text: 'Firmar Ahora', 
+                        onPress: () => {
+                          console.log('📝 Abriendo modal de consentimiento desde pago');
+                          setShowConsentCapture(true);
+                        }
+                      }
+                    ]
+                  );
+                  return;
+                }
+                
                 throw new Error(errorData.error || errorData.message || 'Error al completar turno');
               }
 
@@ -856,6 +901,15 @@ const AppointmentDetailsModal = ({
         onSave={handleEvidenceSaved}
         initialEvidence={appointmentDetails.evidence || { before: [], after: [], documents: [] }}
         appointment={appointmentDetails}
+      />
+      
+      {/* Modal de Firma de Consentimiento */}
+      <ConsentCaptureModal
+        visible={showConsentCapture}
+        appointment={appointmentDetails}
+        specialistId={user?.id}
+        onClose={() => setShowConsentCapture(false)}
+        onConsentCaptured={handleConsentSigned}
       />
     </Modal>
   );

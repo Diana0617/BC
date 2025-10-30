@@ -115,13 +115,17 @@ router.get(
   (req, res) => VoucherController.getCustomerBlockStatus(req, res)
 );
 
-// Obtener historial del cliente
-router.get('/:id/history', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de historial del cliente aún no implementada'
-  });
-});
+// =====================================================
+// RUTA DE HISTORIAL COMPLETO DEL CLIENTE
+// =====================================================
+
+// Obtener historial completo del cliente (citas, consentimientos, evidencias, cancelaciones)
+router.get(
+  '/:clientId/history',
+  authenticateToken,
+  allStaffRoles, // Todo el staff puede ver el historial
+  (req, res) => ClientController.getClientHistory(req, res)
+);
 
 // Obtener planes de tratamiento del cliente
 const TreatmentPlanController = require('../controllers/TreatmentPlanController');

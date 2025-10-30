@@ -24,6 +24,9 @@ router.post('/', requireFullAccess, /* businessAndOwner, */ ServiceController.cr
 // Obtener servicio por ID (acceso básico)
 router.get('/:id', requireBasicAccess, ServiceController.getServiceById);
 
+// Obtener template de consentimiento del servicio (sin restricción de suscripción - funcionalidad core)
+router.get('/:id/consent-template', ServiceController.getConsentTemplate);
+
 // Actualizar servicio
 router.put('/:id', requireFullAccess, /* businessAndOwner, */ (req, res, next) => {
   console.log('🔵 ROUTE: PUT /:id middleware');

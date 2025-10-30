@@ -147,6 +147,15 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  consentSignatureId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'consent_signatures',
+      key: 'id'
+    },
+    comment: 'Firma de consentimiento asociada a esta cita'
+  },
   evidence: {
     type: DataTypes.JSONB,
     allowNull: true,
