@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getApiUrl } from '../../constants/api';
 import { StorageHelper } from '../../utils/storage.js';
 import { STORAGE_KEYS } from '../../constants/api.js';
+import { getTodayColombia } from '../../utils/timezone.js';
 
 // Helper para obtener headers con token
 const getAuthHeaders = async () => {
@@ -177,9 +178,12 @@ export const confirmAppointment = createAsyncThunk(
 
 export const startAppointment = createAsyncThunk(
   'specialistDashboard/start',
-  async (appointmentId, { rejectWithValue }) => {
+  async (appointmentId, { rejectWithValue, getState }) => {
     try {
-      const url = `${getApiUrl()}/api/specialists/me/appointments/${appointmentId}/start`;
+      const state = getState();
+      const businessId = state.auth.user?.businessId;
+      
+      const url = `${getApiUrl()}/api/appointments/${appointmentId}/start?businessId=${businessId}`;
       const headers = await getAuthHeaders();
       
       const response = await fetch(url, {
@@ -189,7 +193,7 @@ export const startAppointment = createAsyncThunk(
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al iniciar');
+        throw new Error(errorData.message || errorData.error || 'Error al iniciar');
       }
 
       const data = await response.json();
@@ -286,7 +290,7 @@ const initialState = {
     pendingCommissions: 0,
   },
   filters: {
-    date: new Date().toISOString().split('T')[0], // Hoy por defecto
+    date: getTodayColombia(), // Hoy en hora de Colombia
     period: 'day', // 'day', 'week', 'month'
     branchId: null,
     status: null,

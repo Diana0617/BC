@@ -11,6 +11,8 @@ import appointmentCalendarReducer from './slices/appointmentCalendarSlice.js';
 import timeSlotReducer from './slices/timeSlotSlice.js';
 // Import specialist dashboard slice
 import specialistDashboardReducer from './slices/specialistDashboardSlice.js';
+// Import receptionist dashboard slice
+import receptionistDashboardReducer from './slices/receptionistDashboardSlice.js';
 // Import permissions system slice (FM-28)
 import permissionsReducer from './slices/permissionsSlice.js';
 
@@ -269,6 +271,8 @@ export const createReactNativeStore = () => {
       timeSlot: timeSlotReducer,
       // Specialist dashboard reducer
       specialistDashboard: specialistDashboardReducer,
+      // Receptionist dashboard reducer
+      receptionistDashboard: receptionistDashboardReducer,
       // Permissions system reducer (FM-28)
       permissions: permissionsReducer
     },
@@ -306,6 +310,19 @@ export const selectSpecialistFilters = (state) => state.specialistDashboard.filt
 export const selectSpecialistSelectedAppointment = (state) => state.specialistDashboard.selectedAppointment;
 export const selectSpecialistDashboardLoading = (state) => state.specialistDashboard.loading;
 
+// Receptionist Dashboard selectors
+export const selectReceptionistAppointments = (state) => state.receptionistDashboard.appointments;
+export const selectReceptionistStats = (state) => state.receptionistDashboard.stats;
+export const selectReceptionistFilters = (state) => state.receptionistDashboard.filters;
+export const selectReceptionistSelectedAppointment = (state) => state.receptionistDashboard.selectedAppointment;
+export const selectReceptionistViewMode = (state) => state.receptionistDashboard.viewMode;
+export const selectReceptionistDashboardLoading = (state) => state.receptionistDashboard.loading;
+export const selectReceptionistStatsLoading = (state) => state.receptionistDashboard.statsLoading;
+export const selectReceptionistActionLoading = (state) => state.receptionistDashboard.actionLoading;
+export const selectReceptionistDashboardError = (state) => state.receptionistDashboard.error;
+export const selectReceptionistActionError = (state) => state.receptionistDashboard.actionError;
+export const selectReceptionistPagination = (state) => state.receptionistDashboard.pagination;
+
 // Permissions selectors (FM-28) - Memoizados para evitar re-renders innecesarios
 const selectPermissionsState = (state) => state.permissions;
 
@@ -337,3 +354,21 @@ export const selectPermissionsError = createSelector(
 export const selectSpecialistDashboardError = (state) => state.specialistDashboard.error;
 export const selectSpecialistActionLoading = (state) => state.specialistDashboard.actionLoading;
 export const selectSpecialistActionError = (state) => state.specialistDashboard.actionError;
+
+// Re-export receptionist dashboard actions and thunks
+export {
+  fetchReceptionistAppointments,
+  fetchReceptionistStats,
+  createAppointmentForSpecialist,
+  updateAppointmentStatus,
+  setFilters as setReceptionistFilters,
+  setDate as setReceptionistDate,
+  setBranchFilter as setReceptionistBranchFilter,
+  setSpecialistFilter as setReceptionistSpecialistFilter,
+  setStatusFilter as setReceptionistStatusFilter,
+  setPeriod as setReceptionistPeriod,
+  setSelectedAppointment as setReceptionistSelectedAppointment,
+  setViewMode as setReceptionistViewMode,
+  clearError as clearReceptionistError,
+  resetState as resetReceptionistState
+} from './slices/receptionistDashboardSlice.js';

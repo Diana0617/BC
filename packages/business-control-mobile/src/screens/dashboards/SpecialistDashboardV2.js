@@ -36,11 +36,13 @@ import {
   setFilters,
   clearError
 } from '@shared/store/slices/specialistDashboardSlice';
+import { fetchUserPermissions } from '@shared/store/slices/permissionsSlice';
 
 // Hooks y Componentes
 import { usePermissions } from '../../hooks/usePermissions';
 import { PermissionButton, PermissionGuard } from '../../components/permissions';
 import { AppointmentCreateModal, AppointmentDetailsModal } from '../../components/appointments';
+import PaymentFlowManager from '../../components/payment/PaymentFlowManager';
 
 // Utilidades
 import { 
@@ -48,7 +50,8 @@ import {
   isToday as isTodayColombia, 
   isTomorrow as isTomorrowColombia,
   formatTimeColombia,
-  toColombiaTime
+  toColombiaTime,
+  getTodayColombia
 } from '../../utils/timezone';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -72,7 +75,7 @@ const StatsCard = ({ title, value, subtitle, icon, color = '#8b5cf6' }) => (
 );
 
 // Card de Cita Mejorada
-const AppointmentCard = ({ appointment, onPress, onAction }) => {
+const AppointmentCard = ({ appointment, onPress, onAction, hasCompletePermission, hasCloseWithPaymentPermission }) => {
   const getStatusColor = (status) => {
     const colors = {
       pending: '#9ca3af',
@@ -158,22 +161,24 @@ const AppointmentCard = ({ appointment, onPress, onAction }) => {
         </View>
       </View>
 
-      {/* Acciones según estado */}
-      {appointment.status === 'confirmed' && (
+      {/* Acciones según estado y permisos */}
+      {hasCompletePermission && (appointment.status === 'pending' || appointment.status === 'confirmed') && (
         <TouchableOpacity 
           style={styles.actionButton}
           onPress={() => onAction(appointment, 'start')}
         >
-          <Text style={styles.actionButtonText}>Iniciar Procedimiento</Text>
+          <Ionicons name="play" size={16} color="#ffffff" style={{ marginRight: 6 }} />
+          <Text style={styles.actionButtonText}>Iniciar Turno</Text>
         </TouchableOpacity>
       )}
 
-      {appointment.status === 'in_progress' && (
+      {hasCloseWithPaymentPermission && appointment.status === 'in_progress' && (
         <TouchableOpacity 
-          style={[styles.actionButton, { backgroundColor: '#10b981' }]}
+          style={[styles.actionButton, { backgroundColor: '#8b5cf6' }]}
           onPress={() => onAction(appointment, 'complete')}
         >
-          <Text style={styles.actionButtonText}>Completar Turno</Text>
+          <Ionicons name="cash-outline" size={16} color="#ffffff" style={{ marginRight: 6 }} />
+          <Text style={styles.actionButtonText}>Cerrar y Cobrar</Text>
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -198,6 +203,9 @@ const SpecialistDashboardV2 = ({ navigation }) => {
   const error = useSelector(selectSpecialistDashboardError);
   const actionLoading = useSelector(selectSpecialistActionLoading);
 
+  // 🔐 Hook de permisos
+  const { hasPermission } = usePermissions();
+
   console.log('📱 Specialist Dashboard V2 - User:', user);
   console.log('📱 Specialist Dashboard V2 - BusinessId:', businessId);
   console.log('📱 Specialist Dashboard V2 - Appointments:', appointments?.length || 0);
@@ -211,10 +219,13 @@ const SpecialistDashboardV2 = ({ navigation }) => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    return today.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+    return getTodayColombia(); // Usar fecha actual de Colombia
   });
   const [createAppointmentDate, setCreateAppointmentDate] = useState(null);
+  
+  // Estados para flujo de pago
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [appointmentForPayment, setAppointmentForPayment] = useState(null);
 
   // 🛡️ VALIDACIÓN DE ACCESO POR ROL
   useEffect(() => {
@@ -246,6 +257,14 @@ const SpecialistDashboardV2 = ({ navigation }) => {
       }
     }
   }, [user, navigation]);
+
+  // 🔑 CARGAR PERMISOS DEL USUARIO
+  useEffect(() => {
+    if (user?.id && businessId) {
+      console.log('🔑 SpecialistDashboardV2 - Cargando permisos para usuario:', user.id, 'businessId:', businessId);
+      dispatch(fetchUserPermissions({ userId: user.id, businessId }));
+    }
+  }, [user?.id, businessId, dispatch]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -410,9 +429,15 @@ const SpecialistDashboardV2 = ({ navigation }) => {
           ]
         );
       } else if (action === 'start') {
+        // Validar permiso para completar citas
+        if (!hasPermission('appointments.complete')) {
+          Alert.alert('Sin Permiso', 'No tienes permiso para iniciar turnos');
+          return;
+        }
+
         Alert.alert(
-          'Iniciar Procedimiento',
-          `¿Deseas iniciar el procedimiento para ${appointment.clientName}?`,
+          'Iniciar Turno',
+          `¿Deseas iniciar el turno de ${appointment.clientName}?`,
           [
             { text: 'Cancelar', style: 'cancel' },
             { 
@@ -420,34 +445,24 @@ const SpecialistDashboardV2 = ({ navigation }) => {
               onPress: async () => {
                 try {
                   await dispatch(startAppointment(appointment.id)).unwrap();
-                  Alert.alert('Éxito', 'Procedimiento iniciado');
+                  Alert.alert('Éxito', 'Turno iniciado');
                 } catch (error) {
-                  Alert.alert('Error', error || 'No se pudo iniciar el procedimiento');
+                  Alert.alert('Error', error || 'No se pudo iniciar el turno');
                 }
               }
             },
           ]
         );
       } else if (action === 'complete') {
-        Alert.alert(
-          'Completar Turno',
-          `¿Deseas completar el turno de ${appointment.clientName}?`,
-          [
-            { text: 'Cancelar', style: 'cancel' },
-            { 
-              text: 'Completar', 
-              onPress: async () => {
-                try {
-                  await dispatch(completeAppointment(appointment.id)).unwrap();
-                  Alert.alert('Éxito', 'Turno completado correctamente');
-                  await loadDashboardData(); // Refrescar stats
-                } catch (error) {
-                  Alert.alert('Error', error || 'No se pudo completar el turno');
-                }
-              }
-            },
-          ]
-        );
+        // Validar permiso para cerrar con pago
+        if (!hasPermission('appointments.close_with_payment')) {
+          Alert.alert('Sin Permiso', 'No tienes permiso para cerrar turnos y cobrar');
+          return;
+        }
+
+        // Abrir modal de pago
+        setAppointmentForPayment(appointment);
+        setShowPaymentModal(true);
       } else if (action === 'cancel') {
         Alert.prompt(
           'Cancelar Turno',
@@ -477,7 +492,28 @@ const SpecialistDashboardV2 = ({ navigation }) => {
     } catch (error) {
       console.error('Error handling appointment action:', error);
     }
-  }, [dispatch, loadDashboardData]);
+  }, [dispatch, loadDashboardData, hasPermission, setAppointmentForPayment, setShowPaymentModal]);
+
+  // Handler para pago exitoso
+  const handlePaymentSuccess = useCallback(async (paymentData) => {
+    console.log('💰 Pago exitoso:', paymentData);
+
+    try {
+      // Completar el turno
+      if (appointmentForPayment) {
+        await dispatch(completeAppointment(appointmentForPayment.id)).unwrap();
+        Alert.alert('✅ Turno Cerrado', 'El turno ha sido completado y el pago registrado exitosamente');
+        await loadDashboardData(); // Refrescar stats
+      }
+    } catch (error) {
+      console.error('Error al completar turno:', error);
+      Alert.alert('Error', 'Hubo un problema al completar el turno');
+    } finally {
+      // Cerrar modal
+      setShowPaymentModal(false);
+      setAppointmentForPayment(null);
+    }
+  }, [appointmentForPayment, dispatch, loadDashboardData]);
 
   const handleLogout = useCallback(() => {
     Alert.alert(
@@ -775,6 +811,8 @@ const SpecialistDashboardV2 = ({ navigation }) => {
                     appointment={appointment}
                     onPress={handleAppointmentPress}
                     onAction={handleAppointmentAction}
+                    hasCompletePermission={hasPermission('appointments.complete')}
+                    hasCloseWithPaymentPermission={hasPermission('appointments.close_with_payment')}
                   />
                 ))}
               </View>
@@ -836,6 +874,17 @@ const SpecialistDashboardV2 = ({ navigation }) => {
         onCancel={handleAppointmentAction}
         onComplete={handleAppointmentAction}
       />
+
+      {/* Modal de Flujo de Pago - DESHABILITADO temporalmente, usando PaymentStep en AppointmentDetailsModal */}
+      {/* <PaymentFlowManager
+        visible={showPaymentModal}
+        appointment={appointmentForPayment}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setAppointmentForPayment(null);
+        }}
+        onSuccess={handlePaymentSuccess}
+      /> */}
     </SafeAreaView>
   );
 };// =====================================================

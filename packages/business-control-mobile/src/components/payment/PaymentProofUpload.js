@@ -84,8 +84,7 @@ const PaymentProofUpload = ({
       setUploading(true);
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
+        allowsEditing: false, // Deshabilitado para evitar problemas en Android
         quality: 0.8
       });
 

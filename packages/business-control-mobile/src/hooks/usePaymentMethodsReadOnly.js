@@ -16,12 +16,20 @@ export const usePaymentMethodsReadOnly = () => {
   const businessId = user?.businessId;
 
   const fetchPaymentMethods = useCallback(async () => {
+    console.log('🔍 usePaymentMethodsReadOnly - Iniciando fetch:', {
+      businessId,
+      hasToken: !!token,
+      apiUrl: ENV.apiUrl
+    });
+    
     if (!businessId) {
+      console.log('❌ usePaymentMethodsReadOnly - Business ID no disponible');
       setError('Business ID no disponible');
       return;
     }
 
     if (!token) {
+      console.log('❌ usePaymentMethodsReadOnly - Token no disponible');
       setError('Token de autenticación no disponible');
       return;
     }
@@ -30,27 +38,32 @@ export const usePaymentMethodsReadOnly = () => {
     setError(null);
 
     try {
-      const response = await fetch(
-        `${ENV.apiUrl}/api/business/${businessId}/payment-methods`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+      const url = `${ENV.apiUrl}/api/business/${businessId}/payment-methods`;
+      console.log('🌐 usePaymentMethodsReadOnly - Llamando a:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
+      console.log('📡 usePaymentMethodsReadOnly - Response status:', response.status);
+      
       const data = await response.json();
+      console.log('📦 usePaymentMethodsReadOnly - Response data:', data);
 
       if (response.ok && data.success) {
+        console.log('✅ usePaymentMethodsReadOnly - Métodos cargados:', data.data?.length || 0);
         setMethods(data.data || []);
       } else {
+        console.log('❌ usePaymentMethodsReadOnly - Error en respuesta:', data.message);
         setError(data.message || 'Error obteniendo métodos de pago');
         setMethods([]);
       }
     } catch (err) {
-      console.error('Error fetching payment methods:', err);
+      console.error('💥 usePaymentMethodsReadOnly - Error de conexión:', err);
       setError('Error de conexión con el servidor');
       setMethods([]);
     } finally {

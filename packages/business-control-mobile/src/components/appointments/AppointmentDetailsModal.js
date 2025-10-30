@@ -12,9 +12,18 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useDispatch, useSelector } from 'react-redux';
 import { useAppointments } from '../../hooks/useAppointments';
 import { usePermissions } from '../../hooks/usePermissions';
+import { 
+  startAppointment as startAppointmentAction,
+  completeAppointment as completeAppointmentAction 
+} from '@shared/store/slices/specialistDashboardSlice';
+import { getApiUrl } from '@shared/constants/api';
+import { StorageHelper } from '@shared/utils/storage';
+import { STORAGE_KEYS } from '@shared/constants/api';
 import PaymentStep from './PaymentStep';
+import EvidenceCaptureModal from './EvidenceCaptureModal';
 
 /**
  * Modal de detalles y gestión de turno
@@ -26,10 +35,11 @@ const AppointmentDetailsModal = ({
   onClose, 
   onAppointmentUpdated 
 }) => {
+  const dispatch = useDispatch();
+  const { user } = useSelector(state => state.auth);
+  
   const {
     confirmAppointment,
-    startAppointment,
-    completeAppointment,
     cancelAppointment,
     canComplete,
     canCancel,
@@ -48,10 +58,19 @@ const AppointmentDetailsModal = ({
   const [showPaymentStep, setShowPaymentStep] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
   const [paymentValid, setPaymentValid] = useState(false);
+  
+  // Estados para evidencia fotográfica
+  const [showEvidenceCapture, setShowEvidenceCapture] = useState(false);
+  const [evidenceData, setEvidenceData] = useState(null);
 
   // Recargar detalles cuando se abre el modal
   useEffect(() => {
     if (visible && appointment?.id) {
+      console.log('📋 Modal abierto - Appointment:', {
+        id: appointment.id,
+        status: appointment.status,
+        clientName: appointment.clientName
+      });
       loadAppointmentDetails();
     }
   }, [visible, appointment?.id]);
@@ -63,6 +82,12 @@ const AppointmentDetailsModal = ({
     try {
       setLoading(true);
       const details = await getAppointmentById(appointment.id);
+      console.log('📋 Detalles cargados:', {
+        id: details.id,
+        status: details.status,
+        requiresConsent: details.requiresConsent,
+        hasConsent: details.hasConsent
+      });
       setAppointmentDetails(details);
     } catch (error) {
       console.error('Error loading appointment details:', error);
@@ -147,7 +172,7 @@ const AppointmentDetailsModal = ({
    * Iniciar procedimiento
    */
   const handleStart = async () => {
-    if (!hasPermission('appointments.start')) {
+    if (!hasPermission('appointments.complete')) {
       Alert.alert('Sin permiso', 'No tienes permiso para iniciar turnos');
       return;
     }
@@ -166,7 +191,9 @@ const AppointmentDetailsModal = ({
           onPress: async () => {
             try {
               setActionLoading('start');
-              await startAppointment(appointmentDetails.id);
+              
+              // Usar Redux action que tiene la ruta correcta
+              await dispatch(startAppointmentAction(appointmentDetails.id)).unwrap();
               
               // Actualizar estado local
               setAppointmentDetails(prev => ({ ...prev, status: 'IN_PROGRESS' }));
@@ -177,7 +204,7 @@ const AppointmentDetailsModal = ({
                 onAppointmentUpdated({ ...appointmentDetails, status: 'IN_PROGRESS' });
               }
             } catch (error) {
-              Alert.alert('Error', error.message || 'No se pudo iniciar el procedimiento');
+              Alert.alert('Error', error.message || error || 'No se pudo iniciar el procedimiento');
             } finally {
               setActionLoading(null);
             }
@@ -194,9 +221,43 @@ const AppointmentDetailsModal = ({
    * Iniciar flujo de completar turno
    */
   const handleComplete = async () => {
+    console.log('🔵 handleComplete - Iniciando...');
+    console.log('🔵 Appointment details:', appointmentDetails);
+    
+    // Validar permiso
+    if (!hasPermission('appointments.close_with_payment')) {
+      console.log('❌ Sin permiso: appointments.close_with_payment');
+      Alert.alert('Sin permiso', 'No tienes permiso para cerrar turnos y cobrar');
+      return;
+    }
+    console.log('✅ Permiso validado: appointments.close_with_payment');
+
+    // VALIDACIÓN OBLIGATORIA: Consentimiento
+    if (appointmentDetails.service?.requiresConsent && !appointmentDetails.hasConsent) {
+      console.log('❌ Falta consentimiento obligatorio');
+      Alert.alert(
+        'Consentimiento Requerido',
+        `El servicio "${appointmentDetails.service.name}" requiere consentimiento firmado antes de completar el turno.`,
+        [
+          { text: 'Entendido', style: 'cancel' },
+          { 
+            text: 'Firmar Ahora', 
+            onPress: () => {
+              // TODO: Abrir modal de firma de consentimiento
+              Alert.alert('Info', 'Funcionalidad de firma de consentimiento próximamente');
+            }
+          }
+        ]
+      );
+      return;
+    }
+
     // Validar con el hook
     const validation = canComplete(appointmentDetails);
+    console.log('🔍 Validación canComplete:', validation);
+    
     if (!validation.allowed) {
+      console.log('❌ Validación falló:', validation.reason);
       Alert.alert(
         'No se puede completar',
         validation.reason,
@@ -205,7 +266,40 @@ const AppointmentDetailsModal = ({
       return;
     }
 
-    // Mostrar paso de pago
+    console.log('✅ Todas las validaciones pasadas');
+    
+    // PREGUNTA OPCIONAL: ¿Capturar evidencia?
+    Alert.alert(
+      'Captura de Evidencia',
+      '¿Deseas capturar fotos del resultado del procedimiento?',
+      [
+        { 
+          text: 'No', 
+          style: 'cancel',
+          onPress: () => {
+            console.log('📸 Usuario omitió captura de evidencia');
+            setShowPaymentStep(true);
+          }
+        },
+        { 
+          text: 'Sí, capturar', 
+          onPress: () => {
+            console.log('📸 Usuario eligió capturar evidencia');
+            setShowEvidenceCapture(true);
+          }
+        }
+      ],
+      { cancelable: false }
+    );
+  };
+  
+  /**
+   * Guardar evidencia y continuar al pago
+   */
+  const handleEvidenceSaved = async (evidence) => {
+    console.log('📸 Evidencia capturada:', evidence);
+    setEvidenceData(evidence);
+    setShowEvidenceCapture(false);
     setShowPaymentStep(true);
   };
   
@@ -218,9 +312,13 @@ const AppointmentDetailsModal = ({
       return;
     }
 
+    const clientName = appointmentDetails.client 
+      ? `${appointmentDetails.client.firstName} ${appointmentDetails.client.lastName}`
+      : appointmentDetails.clientName || 'el cliente';
+
     Alert.alert(
       'Completar Turno',
-      `¿Deseas completar el turno de ${appointmentDetails.client?.firstName}?\n\nPago: $${paymentData?.amount} - ${paymentData?.method?.name}`,
+      `¿Deseas completar el turno de ${clientName}?\n\nPago: $${paymentData?.amount} - ${paymentData?.method?.name}`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -229,17 +327,57 @@ const AppointmentDetailsModal = ({
             try {
               setActionLoading('complete');
               
-              // Preparar datos de pago para el backend
+              // 1. Si hay evidencia, subirla primero
+              if (evidenceData) {
+                console.log('📸 Subiendo evidencia...');
+                const token = await StorageHelper.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+                const evidenceUrl = `${getApiUrl()}/api/appointments/${appointmentDetails.id}/evidence?businessId=${user.businessId}`;
+                
+                const evidenceResponse = await fetch(evidenceUrl, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    evidence: evidenceData
+                  })
+                });
+
+                if (!evidenceResponse.ok) {
+                  console.warn('⚠️ No se pudo guardar la evidencia, pero continuaremos');
+                }
+              }
+              
+              // 2. Preparar datos de pago para el backend
               const paymentPayload = {
                 methodId: paymentData.methodId,
                 amount: paymentData.amount,
                 notes: paymentData.notes,
-                proofImageBase64: paymentData.proofImage // Ya viene en base64 del componente
+                proofImageBase64: paymentData.proofImage
               };
+
+              // 3. Llamar API para completar el turno
+              const token = await StorageHelper.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+              const url = `${getApiUrl()}/api/appointments/${appointmentDetails.id}/complete?businessId=${user.businessId}`;
               
-              await completeAppointment(appointmentDetails.id, {
-                payment: paymentPayload
+              const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  payment: paymentPayload
+                })
               });
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || errorData.message || 'Error al completar turno');
+              }
+
+              const data = await response.json();
               
               // Actualizar estado local
               setAppointmentDetails(prev => ({ ...prev, status: 'COMPLETED' }));
@@ -256,6 +394,7 @@ const AppointmentDetailsModal = ({
                 onClose();
               }, 1500);
             } catch (error) {
+              console.error('Error completando turno:', error);
               Alert.alert('Error', error.message || 'No se pudo completar el turno');
             } finally {
               setActionLoading(null);
@@ -341,6 +480,9 @@ const AppointmentDetailsModal = ({
    * Formatear fecha y hora
    */
   const formatDateTime = (dateString) => {
+    if (!dateString) {
+      return { date: 'Fecha no disponible', time: 'Hora no disponible' };
+    }
     const date = new Date(dateString);
     const dateStr = date.toLocaleDateString('es-AR', {
       weekday: 'long',
@@ -396,7 +538,52 @@ const AppointmentDetailsModal = ({
               <ActivityIndicator size="large" color="#3b82f6" />
               <Text style={styles.loadingText}>Cargando detalles...</Text>
             </View>
+          ) : showPaymentStep ? (
+            // Mostrar SOLO el paso de pago cuando está activo
+            <View style={styles.paymentContainer}>
+              <PaymentStep
+                appointment={appointmentDetails}
+                onPaymentDataChange={(data) => {
+                  console.log('💳 Datos de pago actualizados:', data);
+                  setPaymentData(data);
+                }}
+                onValidationChange={(isValid) => {
+                  console.log('✅ Validación de pago:', isValid);
+                  setPaymentValid(isValid);
+                }}
+              />
+              
+              {/* Botones del paso de pago */}
+              <View style={styles.paymentActions}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.cancelButton]}
+                  onPress={() => {
+                    console.log('❌ Cancelar pago');
+                    setShowPaymentStep(false);
+                  }}
+                >
+                  <Ionicons name="close-circle" size={20} color="#ef4444" />
+                  <Text style={[styles.actionButtonText, { color: '#ef4444' }]}>Cancelar</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.completeButton, (!paymentValid || actionLoading === 'complete') && styles.buttonDisabled]}
+                  onPress={handleCompleteWithPayment}
+                  disabled={!paymentValid || actionLoading === 'complete'}
+                >
+                  {actionLoading === 'complete' ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
+                      <Text style={styles.actionButtonText}>Confirmar y Completar</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
           ) : (
+            <>
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
               {/* Cliente */}
               <View style={styles.section}>
@@ -598,63 +785,52 @@ const AppointmentDetailsModal = ({
                 </View>
               )}
             </ScrollView>
-          )}
 
-          {/* Botones de acción */}
-          {!loading && !showCancelForm && appointmentDetails.status !== 'COMPLETED' && appointmentDetails.status !== 'CANCELED' && (
-            <View style={styles.actionsContainer}>
-              {appointmentDetails.status === 'PENDING' && hasPermission('appointments.confirm') && (
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.confirmButton, actionLoading === 'confirm' && styles.buttonDisabled]}
-                  onPress={handleConfirm}
-                  disabled={actionLoading === 'confirm'}
-                >
-                  {actionLoading === 'confirm' ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <>
-                      <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
-                      <Text style={styles.actionButtonText}>Confirmar</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              )}
+            {/* Botones de acción */}
+            {!showCancelForm && appointmentDetails.status !== 'COMPLETED' && appointmentDetails.status !== 'CANCELED' && (
+              <View style={styles.actionsContainer}>
+                {/* Botón Iniciar - Para turnos PENDING o CONFIRMED */}
+                {(appointmentDetails.status === 'PENDING' || appointmentDetails.status === 'CONFIRMED') && hasPermission('appointments.complete') && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.startButton, actionLoading === 'start' && styles.buttonDisabled]}
+                    onPress={handleStart}
+                    disabled={actionLoading === 'start'}
+                  >
+                    {actionLoading === 'start' ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <>
+                        <Ionicons name="play-circle" size={20} color="#ffffff" />
+                        <Text style={styles.actionButtonText}>Iniciar Turno</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
 
-              {appointmentDetails.status === 'CONFIRMED' && hasPermission('appointments.start') && (
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.startButton, actionLoading === 'start' && styles.buttonDisabled]}
-                  onPress={handleStart}
-                  disabled={actionLoading === 'start'}
-                >
-                  {actionLoading === 'start' ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <>
-                      <Ionicons name="play-circle" size={20} color="#ffffff" />
-                      <Text style={styles.actionButtonText}>Iniciar</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              )}
+                {/* Botón Completar con Pago - Para turnos IN_PROGRESS */}
+                {appointmentDetails.status === 'IN_PROGRESS' && hasPermission('appointments.close_with_payment') && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.completeButton, actionLoading === 'complete' && styles.buttonDisabled]}
+                    onPress={() => {
+                      console.log('🟢 Botón "Cerrar y Cobrar" presionado');
+                      console.log('🟢 Status actual:', appointmentDetails.status);
+                      console.log('🟢 Tiene permiso close_with_payment:', hasPermission('appointments.close_with_payment'));
+                      handleComplete();
+                    }}
+                    disabled={actionLoading === 'complete'}
+                  >
+                    {actionLoading === 'complete' ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <>
+                        <Ionicons name="cash" size={20} color="#ffffff" />
+                        <Text style={styles.actionButtonText}>Cerrar y Cobrar</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
 
-              {appointmentDetails.status === 'IN_PROGRESS' && hasPermission('appointments.complete') && (
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.completeButton, actionLoading === 'complete' && styles.buttonDisabled]}
-                  onPress={handleComplete}
-                  disabled={actionLoading === 'complete'}
-                >
-                  {actionLoading === 'complete' ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <>
-                      <Ionicons name="checkmark-done-circle" size={20} color="#ffffff" />
-                      <Text style={styles.actionButtonText}>Completar</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              )}
-
-              {hasPermission('appointments.cancel') && (
+                {/* Botón Cancelar - Siempre visible si no está completado/cancelado */}
                 <TouchableOpacity
                   style={[styles.actionButton, styles.cancelButton]}
                   onPress={showCancelDialog}
@@ -662,11 +838,25 @@ const AppointmentDetailsModal = ({
                   <Ionicons name="close-circle" size={20} color="#ef4444" />
                   <Text style={[styles.actionButtonText, { color: '#ef4444' }]}>Cancelar</Text>
                 </TouchableOpacity>
-              )}
-            </View>
+              </View>
+            )}
+            </>
           )}
         </View>
       </View>
+      
+      {/* Modal de Captura de Evidencia */}
+      <EvidenceCaptureModal
+        visible={showEvidenceCapture}
+        onClose={() => {
+          setShowEvidenceCapture(false);
+          // Si cierra sin guardar, ir directo al pago
+          setShowPaymentStep(true);
+        }}
+        onSave={handleEvidenceSaved}
+        initialEvidence={appointmentDetails.evidence || { before: [], after: [], documents: [] }}
+        appointment={appointmentDetails}
+      />
     </Modal>
   );
 };
@@ -681,7 +871,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '90%',
+    height: '90%',
+    flex: 1,
   },
   header: {
     borderTopLeftRadius: 20,
@@ -925,6 +1116,17 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
+  },
+  paymentContainer: {
+    flex: 1,
+  },
+  paymentActions: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
   },
 });
 

@@ -220,6 +220,51 @@ const appointmentApi = {
       `/api/appointments/${appointmentId}/history?businessId=${businessId}`
     );
     return response.data;
+  },
+
+  // ==================== PAYMENT MANAGEMENT ====================
+
+  /**
+   * Obtener historial de pagos de una cita
+   * @param {string} appointmentId - ID de la cita
+   * @param {string} businessId - ID del negocio
+   * @returns {Promise} { success, data: { payments } }
+   */
+  getAppointmentPayments: async (appointmentId, businessId) => {
+    const response = await api.get(`/api/appointments/${appointmentId}/payments`, {
+      params: { businessId }
+    });
+    return response.data;
+  },
+
+  /**
+   * Registrar un pago de cita
+   * @param {Object} paymentData - Datos del pago
+   * @returns {Promise} { success, data: payment, message }
+   */
+  registerPayment: async (paymentData) => {
+    const response = await api.post(`/api/appointments/${paymentData.appointmentId}/payments`, paymentData);
+    return response.data;
+  },
+
+  /**
+   * Subir comprobante de pago
+   * @param {string} appointmentId - ID de la cita
+   * @param {string} paymentId - ID del pago
+   * @param {FormData} formData - Datos del archivo
+   * @returns {Promise} { success, data: payment, message }
+   */
+  uploadPaymentProof: async (appointmentId, paymentId, formData) => {
+    const response = await api.post(
+      `/api/appointments/${appointmentId}/payments/${paymentId}/proof`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
   }
 };
 

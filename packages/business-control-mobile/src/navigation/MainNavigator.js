@@ -13,6 +13,8 @@ import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import BusinessDashboard from '../screens/dashboards/BusinessDashboard';
 import SpecialistDashboard from '../screens/dashboards/SpecialistDashboardV2';
 import SpecialistCalendarFixed from '../screens/dashboards/SpecialistCalendarFixed';
+import ReceptionistDashboard from '../screens/dashboards/ReceptionistDashboard';
+import ReceptionistSpecialistDashboard from '../screens/dashboards/ReceptionistSpecialistDashboard';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 
@@ -43,6 +45,8 @@ function InitialDashboard() {
   const user = useSelector((state) => state.auth?.user);
   const userRole = user?.role?.toLowerCase();
   
+  console.log('🎯 InitialDashboard - User role:', userRole);
+  
   // Determinar qué dashboard mostrar basado en el rol
   switch (userRole) {
     case 'business':
@@ -50,8 +54,11 @@ function InitialDashboard() {
     case 'specialist':
       return <SpecialistDashboard />;
     case 'receptionist':
-      return <DashboardScreen />;
+      return <ReceptionistDashboard />;
+    case 'receptionist_specialist':
+      return <ReceptionistSpecialistDashboard />;
     default:
+      console.log('❌ Unknown role, fallback to BusinessDashboard:', userRole);
       return <BusinessDashboard />; // Default fallback
   }
 }
@@ -70,7 +77,8 @@ function AuthenticatedStack() {
       {/* Dashboards específicos por rol para navegación interna */}
       <Stack.Screen name="DashboardBusiness" component={BusinessDashboard} />
       <Stack.Screen name="DashboardSpecialist" component={SpecialistDashboard} />
-      <Stack.Screen name="DashboardReceptionist" component={DashboardScreen} />
+      <Stack.Screen name="DashboardReceptionist" component={ReceptionistDashboard} />
+      <Stack.Screen name="DashboardReceptionistSpecialist" component={ReceptionistSpecialistDashboard} />
       <Stack.Screen name="SpecialistCalendar" component={SpecialistCalendarFixed} />
       {/* Otras pantallas principales */}
       <Stack.Screen name="Tabs" component={MainTabs} />

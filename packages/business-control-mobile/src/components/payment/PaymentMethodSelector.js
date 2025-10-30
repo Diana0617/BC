@@ -1,84 +1,70 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  TextInput,
-  ActivityIndicator
+  ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 /**
  * Selector de método de pago para cierre de turno
  * Muestra los métodos configurados por el negocio y permite seleccionar uno
+ * ACTUALIZADO: Enfocado en cierre de turno (no advance payment)
  */
 const PaymentMethodSelector = ({
   methods = [],
-  selectedMethod = null,
-  onSelectMethod,
-  amount = 0,
-  onAmountChange,
-  loading = false,
-  disabled = false
+  onMethodSelect, // Cambié de onSelectMethod a onMethodSelect para consistency
+  paymentType = 'closure'
 }) => {
-  const [expanded, setExpanded] = useState(false);
 
-  // Iconos según tipo de método
   const getMethodIcon = (type) => {
-    switch (type) {
+    const icons = {
+      'CASH': 'cash-outline',
+      'CARD': 'card-outline',
+      'TRANSFER': 'send-outline',
+      'QR': 'qr-code-outline',
+      'ONLINE': 'globe-outline',
+      'OTHER': 'ellipsis-horizontal-circle-outline'
+    };
+    
+    return icons[type] || 'ellipsis-horizontal-circle-outline';
+  };
+
+  const getMethodDescription = (method) => {
+    switch (method.type) {
       case 'CASH':
-        return 'cash-outline';
+        return 'Pago en efectivo';
       case 'CARD':
-        return 'card-outline';
+        return 'Tarjeta de crédito/débito';
       case 'TRANSFER':
-        return 'swap-horizontal-outline';
+        return method.bankInfo?.bankName 
+          ? `Transferencia - ${method.bankInfo.bankName}`
+          : 'Transferencia bancaria';
       case 'QR':
-        return 'qr-code-outline';
+        return method.qrInfo?.phoneNumber 
+          ? `${method.name} - ${method.qrInfo.phoneNumber}`
+          : `Pago QR - ${method.name}`;
       case 'ONLINE':
-        return 'globe-outline';
+        return 'Pago en línea';
       default:
-        return 'wallet-outline';
+        return method.name || 'Método de pago';
     }
   };
 
-  // Color según tipo
-  const getMethodColor = (type) => {
-    switch (type) {
-      case 'CASH':
-        return '#10B981'; // Verde
-      case 'CARD':
-        return '#3B82F6'; // Azul
-      case 'TRANSFER':
-        return '#8B5CF6'; // Púrpura
-      case 'QR':
-        return '#F59E0B'; // Naranja
-      case 'ONLINE':
-        return '#EC4899'; // Rosa
-      default:
-        return '#6B7280'; // Gris
-    }
+  const handleMethodPress = (method) => {
+    console.log('💳 Method selected for closure:', method);
+    onMethodSelect?.(method);
   };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color="#8B5CF6" />
-        <Text style={styles.loadingText}>Cargando métodos de pago...</Text>
-      </View>
-    );
-  }
 
   if (!methods || methods.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="alert-circle-outline" size={32} color="#F59E0B" />
-        <Text style={styles.emptyText}>
-          No hay métodos de pago configurados
-        </Text>
-        <Text style={styles.emptySubtext}>
-          Contacta al administrador del negocio
+        <Ionicons name="card-outline" size={48} color="#9ca3af" />
+        <Text style={styles.emptyTitle}>Sin métodos de pago</Text>
+        <Text style={styles.emptyMessage}>
+          No hay métodos de pago configurados para este negocio
         </Text>
       </View>
     );
@@ -86,387 +72,192 @@ const PaymentMethodSelector = ({
 
   return (
     <View style={styles.container}>
-      {/* Campo de monto */}
-      <View style={styles.amountSection}>
-        <Text style={styles.label}>Monto a cobrar *</Text>
-        <View style={styles.amountInputContainer}>
-          <Text style={styles.currencySymbol}>$</Text>
-          <TextInput
-            style={styles.amountInput}
-            value={amount?.toString() || ''}
-            onChangeText={onAmountChange}
-            keyboardType="numeric"
-            placeholder="0.00"
-            placeholderTextColor="#9CA3AF"
-            editable={!disabled}
-          />
-        </View>
-      </View>
-
-      {/* Selector de método */}
-      <View style={styles.methodSection}>
-        <Text style={styles.label}>Método de pago *</Text>
-        
-        {/* Botón para expandir/colapsar */}
-        <TouchableOpacity
-          style={[
-            styles.selectedMethodButton,
-            disabled && styles.disabledButton
-          ]}
-          onPress={() => !disabled && setExpanded(!expanded)}
-          disabled={disabled}
-        >
-          {selectedMethod ? (
-            <View style={styles.selectedMethodContent}>
-              <View
-                style={[
-                  styles.methodIconContainer,
-                  { backgroundColor: getMethodColor(selectedMethod.type) }
-                ]}
-              >
-                <Ionicons
-                  name={getMethodIcon(selectedMethod.type)}
-                  size={20}
-                  color="#FFFFFF"
-                />
-              </View>
-              <View style={styles.selectedMethodInfo}>
-                <Text style={styles.selectedMethodName}>
-                  {selectedMethod.name}
+      <Text style={styles.title}>Selecciona método de pago</Text>
+      
+      <ScrollView style={styles.methodsList} showsVerticalScrollIndicator={false}>
+        {methods.map((method, index) => (
+          <TouchableOpacity
+            key={method.id || index}
+            style={styles.methodCard}
+            onPress={() => handleMethodPress(method)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.methodIcon}>
+              <Ionicons 
+                name={getMethodIcon(method.type)} 
+                size={24} 
+                color="#3b82f6" 
+              />
+            </View>
+            
+            <View style={styles.methodInfo}>
+              <Text style={styles.methodName}>{method.name}</Text>
+              <Text style={styles.methodDescription}>
+                {getMethodDescription(method)}
+              </Text>
+              
+              {/* Información adicional según el tipo */}
+              {method.type === 'TRANSFER' && method.bankInfo?.accountNumber && (
+                <Text style={styles.methodDetails}>
+                  Cuenta: ***{method.bankInfo.accountNumber.slice(-4)}
                 </Text>
-                <Text style={styles.selectedMethodType}>
-                  {selectedMethod.type}
-                </Text>
-              </View>
+              )}
+              
+              {method.requiresProof && (
+                <View style={styles.requiresBadge}>
+                  <Ionicons name="document-text-outline" size={12} color="#f59e0b" />
+                  <Text style={styles.requiresText}>Requiere comprobante</Text>
+                </View>
+              )}
             </View>
-          ) : (
-            <View style={styles.placeholderContent}>
-              <Ionicons name="wallet-outline" size={20} color="#9CA3AF" />
-              <Text style={styles.placeholderText}>
-                Selecciona un método de pago
-              </Text>
+            
+            <View style={styles.methodAction}>
+              <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
             </View>
-          )}
-          <Ionicons
-            name={expanded ? 'chevron-up' : 'chevron-down'}
-            size={20}
-            color="#6B7280"
-          />
-        </TouchableOpacity>
-
-        {/* Lista de métodos (expandible) */}
-        {expanded && (
-          <View style={styles.methodsList}>
-            <ScrollView style={styles.methodsScrollView}>
-              {methods.map((method) => (
-                <TouchableOpacity
-                  key={method.id}
-                  style={[
-                    styles.methodItem,
-                    selectedMethod?.id === method.id && styles.methodItemSelected
-                  ]}
-                  onPress={() => {
-                    onSelectMethod(method);
-                    setExpanded(false);
-                  }}
-                >
-                  <View
-                    style={[
-                      styles.methodIconContainer,
-                      { backgroundColor: getMethodColor(method.type) }
-                    ]}
-                  >
-                    <Ionicons
-                      name={getMethodIcon(method.type)}
-                      size={20}
-                      color="#FFFFFF"
-                    />
-                  </View>
-                  <View style={styles.methodInfo}>
-                    <Text style={styles.methodName}>{method.name}</Text>
-                    <Text style={styles.methodType}>{method.type}</Text>
-                  </View>
-                  {selectedMethod?.id === method.id && (
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={24}
-                      color="#10B981"
-                    />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      
+      {/* Nota informativa */}
+      <View style={styles.noteContainer}>
+        <Ionicons name="information-circle-outline" size={16} color="#6b7280" />
+        <Text style={styles.noteText}>
+          {paymentType === 'closure' 
+            ? 'Se registrará el pago final del turno'
+            : 'Métodos disponibles para pago anticipado'
+          }
+        </Text>
       </View>
-
-      {/* Información adicional del método seleccionado */}
-      {selectedMethod && (
-        <View style={styles.methodDetailsSection}>
-          {/* Información bancaria para TRANSFER */}
-          {selectedMethod.type === 'TRANSFER' && selectedMethod.bankInfo && (
-            <View style={styles.detailsCard}>
-              <Text style={styles.detailsTitle}>
-                Información de transferencia
-              </Text>
-              {selectedMethod.bankInfo.bankName && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Banco:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedMethod.bankInfo.bankName}
-                  </Text>
-                </View>
-              )}
-              {selectedMethod.bankInfo.accountNumber && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Cuenta:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedMethod.bankInfo.accountNumber}
-                  </Text>
-                </View>
-              )}
-              {selectedMethod.bankInfo.accountType && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Tipo:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedMethod.bankInfo.accountType}
-                  </Text>
-                </View>
-              )}
-              {selectedMethod.bankInfo.holderName && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Titular:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedMethod.bankInfo.holderName}
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Información QR */}
-          {selectedMethod.type === 'QR' && selectedMethod.qrInfo && (
-            <View style={styles.detailsCard}>
-              <Text style={styles.detailsTitle}>Información de pago QR</Text>
-              {selectedMethod.qrInfo.phoneNumber && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Teléfono:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedMethod.qrInfo.phoneNumber}
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Indicador de comprobante requerido */}
-          {selectedMethod.requiresProof && (
-            <View style={styles.proofRequiredBanner}>
-              <Ionicons name="camera-outline" size={20} color="#F59E0B" />
-              <Text style={styles.proofRequiredText}>
-                Este método requiere comprobante de pago
-              </Text>
-            </View>
-          )}
-        </View>
-      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    gap: 16
+    marginVertical: 16,
   },
-  loadingContainer: {
+
+  title: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+
+  methodsList: {
+    maxHeight: 400,
+  },
+
+  methodCard: {
     flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+
+  methodIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
-    gap: 12
+    marginRight: 12,
   },
-  loadingText: {
+
+  methodInfo: {
+    flex: 1,
+  },
+
+  methodName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+
+  methodDescription: {
     fontSize: 14,
-    color: '#6B7280'
+    color: '#6b7280',
+    marginBottom: 4,
   },
+
+  methodDetails: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginBottom: 4,
+  },
+
+  requiresBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+
+  requiresText: {
+    fontSize: 10,
+    color: '#92400e',
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+
+  methodAction: {
+    marginLeft: 8,
+  },
+
   emptyContainer: {
     alignItems: 'center',
-    padding: 32,
-    gap: 8
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
   },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginTop: 8
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center'
-  },
-  amountSection: {
-    gap: 8
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937'
-  },
-  amountInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 12
-  },
-  currencySymbol: {
+
+  emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#6B7280',
-    marginRight: 4
+    color: '#374151',
+    marginTop: 16,
+    marginBottom: 8,
   },
-  amountInput: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    paddingVertical: 12
-  },
-  methodSection: {
-    gap: 8
-  },
-  selectedMethodButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    padding: 12
-  },
-  disabledButton: {
-    opacity: 0.5
-  },
-  selectedMethodContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12
-  },
-  methodIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  selectedMethodInfo: {
-    flex: 1
-  },
-  selectedMethodName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937'
-  },
-  selectedMethodType: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2
-  },
-  placeholderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12
-  },
-  placeholderText: {
+
+  emptyMessage: {
     fontSize: 14,
-    color: '#9CA3AF'
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
-  methodsList: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    marginTop: 8,
-    maxHeight: 240
-  },
-  methodsScrollView: {
-    maxHeight: 240
-  },
-  methodItem: {
+
+  noteContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6'
+    backgroundColor: '#f9fafb',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 16,
   },
-  methodItemSelected: {
-    backgroundColor: '#F0FDF4'
-  },
-  methodInfo: {
-    flex: 1
-  },
-  methodName: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#1F2937'
-  },
-  methodType: {
+
+  noteText: {
     fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2
-  },
-  methodDetailsSection: {
-    gap: 12
-  },
-  detailsCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    padding: 12,
-    gap: 8
-  },
-  detailsTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 4
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 4
-  },
-  detailLabel: {
-    fontSize: 13,
-    color: '#6B7280'
-  },
-  detailValue: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#1F2937'
-  },
-  proofRequiredBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    borderRadius: 8,
-    padding: 12,
-    gap: 8
-  },
-  proofRequiredText: {
+    color: '#6b7280',
+    marginLeft: 8,
     flex: 1,
-    fontSize: 13,
-    color: '#92400E',
-    fontWeight: '500'
-  }
+  },
 });
 
 export default PaymentMethodSelector;

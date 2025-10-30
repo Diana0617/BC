@@ -22,12 +22,29 @@ const PaymentStep = ({
   onPaymentDataChange,
   onValidationChange 
 }) => {
+  console.log('💰 PaymentStep - Renderizando con appointment:', appointment?.id);
+  
   const { methods, loading: loadingMethods, error: methodsError } = usePaymentMethodsReadOnly();
+  
+  console.log('💰 PaymentStep - Métodos de pago:', {
+    count: methods?.length || 0,
+    loading: loadingMethods,
+    error: methodsError
+  });
   
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [amount, setAmount] = useState(appointment?.totalAmount?.toString() || '0');
   const [proofImage, setProofImage] = useState(null);
   const [notes, setNotes] = useState('');
+  
+  // Log cuando cambian los métodos
+  useEffect(() => {
+    console.log('💰 PaymentStep - useEffect métodos cambió:', {
+      count: methods?.length,
+      loading: loadingMethods,
+      error: methodsError
+    });
+  }, [methods, loadingMethods, methodsError]);
   
   // Validar y notificar cambios
   useEffect(() => {
@@ -122,7 +139,9 @@ const PaymentStep = ({
     }
   };
   
+  // Estados de carga y error con logs
   if (loadingMethods) {
+    console.log('💰 PaymentStep - Mostrando loading...');
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3B82F6" />
@@ -132,6 +151,7 @@ const PaymentStep = ({
   }
   
   if (methodsError) {
+    console.log('💰 PaymentStep - Mostrando error:', methodsError);
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="warning-outline" size={48} color="#EF4444" />
@@ -142,6 +162,7 @@ const PaymentStep = ({
   }
   
   if (methods.length === 0) {
+    console.log('💰 PaymentStep - Mostrando empty state (sin métodos)');
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="card-outline" size={48} color="#9CA3AF" />
@@ -153,8 +174,14 @@ const PaymentStep = ({
     );
   }
   
+  console.log('💰 PaymentStep - Renderizando formulario completo con', methods.length, 'métodos');
+  
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Información del turno */}
       <View style={styles.appointmentInfo}>
         <View style={styles.infoRow}>
@@ -203,7 +230,7 @@ const PaymentStep = ({
         <PaymentMethodSelector
           methods={methods}
           selectedMethod={selectedMethod}
-          onSelectMethod={handleMethodSelect}
+          onMethodSelect={handleMethodSelect}
           amount={amount}
           onAmountChange={handleAmountChange}
         />
@@ -258,7 +285,7 @@ const PaymentStep = ({
             Este método de pago requiere adjuntar un comprobante
           </Text>
           <PaymentProofUpload
-            image={proofImage}
+            proofImage={proofImage}
             onImageSelected={setProofImage}
             required={true}
           />
@@ -299,56 +326,9 @@ const PaymentStep = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  errorText: {
-    marginTop: 16,
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    textAlign: 'center',
-  },
-  errorSubtext: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  emptyText: {
-    marginTop: 16,
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    textAlign: 'center',
-  },
-  emptySubtext: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
+  contentContainer: {
+    paddingBottom: 20,
   },
   appointmentInfo: {
     backgroundColor: '#F3F4F6',
@@ -477,6 +457,58 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: '#92400E',
+  },
+  // Estados de carga y error
+  loadingContainer: {
+    minHeight: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  errorContainer: {
+    minHeight: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#EF4444',
+    textAlign: 'center',
+  },
+  errorSubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    minHeight: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
 });
 

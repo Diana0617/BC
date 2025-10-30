@@ -17,11 +17,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '@shared/store/reactNativeStore';
+import { fetchUserPermissions } from '@shared/store/slices/permissionsSlice';
 
 // Hooks personalizados para el flujo del especialista
 import { useAppointmentValidation } from '../../hooks/useAppointmentValidation';
 import { useBusinessRules } from '../../hooks/useBusinessRules';
 import { useCommissionManager } from '../../hooks/useCommissionManager';
+import { usePermissions } from '../../hooks/usePermissions';
 
 // Componentes específicos del flujo de cierre
 import AppointmentClosureValidator from '../../components/AppointmentClosureValidator';
@@ -29,6 +31,7 @@ import ConsentCaptureModal from '../../components/ConsentCaptureModal';
 import EvidenceUploader from '../../components/EvidenceUploader';
 import PaymentProcessor from '../../components/PaymentProcessor';
 import CommissionManager from '../../components/CommissionManager';
+import PaymentFlowManager from '../../components/payment/PaymentFlowManager';
 // import PaymentRequestGenerator from '../../components/PaymentRequestGenerator';
 
 const { width } = Dimensions.get('window');
@@ -94,10 +97,34 @@ const SpecialistDashboard = ({ navigation }) => {
       }
     }
   }, [user, navigation]);
+
+  // 🔑 CARGAR PERMISOS DEL USUARIO
+  useEffect(() => {
+    if (user?.id && businessId) {
+      console.log('SpecialistDashboard - Cargando permisos para usuario:', user.id, 'businessId:', businessId);
+      dispatch(fetchUserPermissions({ userId: user.id, businessId }));
+    }
+  }, [user?.id, businessId, dispatch]);
   
   // Hooks personalizados (ahora seguros porque user existe)
   // const { validateAppointment, validationResult, isValidating } = useAppointmentValidation();
   const { checkBusinessRules, rulesLoaded, ruleChecks } = useBusinessRules(businessId);
+  const { hasPermission } = usePermissions();
+  
+  // 🔍 DEBUG: Obtener permisos del usuario desde Redux para logging
+  const userPermissions = useSelector(state => state.permissions?.currentUserPermissions || []);
+  
+  // 🔍 DEBUG: Log de permisos cuando cambien
+  useEffect(() => {
+    console.log('🔑 SpecialistDashboard - Permisos del usuario:', {
+      userId: user?.id,
+      role: user?.role,
+      permissionsCount: userPermissions.length,
+      permissions: userPermissions.map(p => ({ key: p.key, isGranted: p.isGranted })),
+      hasCompletePermission: hasPermission('appointments.complete'),
+      hasCloseWithPaymentPermission: hasPermission('appointments.close_with_payment')
+    });
+  }, [userPermissions, user, hasPermission]);
   // const { 
   //   pendingCommissions, 
   //   paymentRequests, 
@@ -114,6 +141,10 @@ const SpecialistDashboard = ({ navigation }) => {
   const [showClosureModal, setShowClosureModal] = useState(false);
   const [showCommissionModal, setShowCommissionModal] = useState(false);
   const [currentStep, setCurrentStep] = useState('overview'); // overview, consent, evidence, payment, inventory, commission
+  
+  // Estados para flujo de pago
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [appointmentForPayment, setAppointmentForPayment] = useState(null);
 
   // Mock data - En producción vendría de APIs
   const [mockData] = useState({
@@ -253,6 +284,96 @@ const SpecialistDashboard = ({ navigation }) => {
       ]
     );
   };
+
+  // =====================================================
+  // FUNCIONES DE INICIO Y CIERRE DE TURNO
+  // =====================================================
+
+  const handleStartTurn = useCallback(async (appointment) => {
+    // Validar permiso - usar appointments.complete (el que realmente existe)
+    if (!hasPermission('appointments.complete')) {
+      Alert.alert('Sin Permiso', 'No tienes permiso para iniciar turnos');
+      return;
+    }
+
+    Alert.alert(
+      'Iniciar Turno',
+      `¿Deseas iniciar el turno para ${appointment.clientName}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Iniciar',
+          onPress: async () => {
+            try {
+              // TODO: Implementar actualización de estado a IN_PROGRESS
+              // await dispatch(updateAppointmentStatus({
+              //   appointmentId: appointment.id,
+              //   status: 'IN_PROGRESS'
+              // })).unwrap();
+              
+              // Por ahora, actualizar localmente
+              const updatedAppointments = todayAppointments.map(apt => 
+                apt.id === appointment.id 
+                  ? { ...apt, status: 'in_progress' }
+                  : apt
+              );
+              setTodayAppointments(updatedAppointments);
+              
+              Alert.alert('✓ Turno iniciado', 'El turno ha comenzado correctamente');
+            } catch (error) {
+              console.error('❌ Error starting turn:', error);
+              Alert.alert('Error', 'No se pudo iniciar el turno');
+            }
+          }
+        }
+      ]
+    );
+  }, [hasPermission, todayAppointments]);
+
+  const handleCloseTurn = useCallback((appointment) => {
+    // Validar permiso - usar appointments.close_with_payment (el que realmente existe)
+    if (!hasPermission('appointments.close_with_payment')) {
+      Alert.alert('Sin Permiso', 'No tienes permiso para cobrar pagos');
+      return;
+    }
+
+    // Guardar la cita y abrir modal de pago
+    setAppointmentForPayment(appointment);
+    setShowPaymentModal(true);
+  }, [hasPermission]);
+
+  const handlePaymentSuccess = useCallback(async () => {
+    // Cerrar modal de pago
+    setShowPaymentModal(false);
+    setAppointmentForPayment(null);
+    
+    // Actualizar estado de la cita a COMPLETED
+    if (appointmentForPayment) {
+      try {
+        // TODO: Implementar actualización de estado
+        // await dispatch(updateAppointmentStatus({
+        //   appointmentId: appointmentForPayment.id,
+        //   status: 'COMPLETED'
+        // })).unwrap();
+        
+        // Por ahora, actualizar localmente
+        const updatedAppointments = todayAppointments.map(apt => 
+          apt.id === appointmentForPayment.id 
+            ? { ...apt, status: 'completed', paymentStatus: 'completed' }
+            : apt
+        );
+        setTodayAppointments(updatedAppointments);
+        
+        Alert.alert(
+          '✓ Turno cerrado',
+          'El turno se ha cerrado correctamente y el pago fue registrado'
+        );
+      } catch (error) {
+        console.error('❌ Error completing appointment:', error);
+        Alert.alert('Error', 'El pago se registró pero hubo un problema al cerrar el turno');
+      }
+    }
+  }, [appointmentForPayment, todayAppointments]);
 
   // =====================================================
   // FUNCIONES DE MANEJO DE CITAS
@@ -640,6 +761,29 @@ const SpecialistDashboard = ({ navigation }) => {
               </Text>
             </View>
           </View>
+
+          {/* Botones de acción según estado y permisos */}
+          {hasPermission('appointments.complete') && (appointment.status === 'pending' || appointment.status === 'confirmed') && (
+            <TouchableOpacity
+              onPress={() => handleStartTurn(appointment)}
+              className="mt-3 bg-blue-500 py-2 px-4 rounded-lg flex-row items-center justify-center"
+              activeOpacity={0.7}
+            >
+              <Ionicons name="play" size={16} color="#ffffff" />
+              <Text className="text-white font-semibold ml-2">Iniciar Turno</Text>
+            </TouchableOpacity>
+          )}
+
+          {hasPermission('appointments.close_with_payment') && appointment.status === 'in_progress' && (
+            <TouchableOpacity
+              onPress={() => handleCloseTurn(appointment)}
+              className="mt-3 bg-purple-600 py-2 px-4 rounded-lg flex-row items-center justify-center"
+              activeOpacity={0.7}
+            >
+              <Ionicons name="cash-outline" size={16} color="#ffffff" />
+              <Text className="text-white font-semibold ml-2">Cerrar Turno y Cobrar</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -799,6 +943,17 @@ const SpecialistDashboard = ({ navigation }) => {
           onGenerate={handleGeneratePaymentRequest}
           isGenerating={isGenerating}
         /> */}
+
+        {/* Modal de Flujo de Pago */}
+        <PaymentFlowManager
+          visible={showPaymentModal}
+          appointment={appointmentForPayment}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setAppointmentForPayment(null);
+          }}
+          onSuccess={handlePaymentSuccess}
+        />
       </LinearGradient>
     </SafeAreaView>
   );
