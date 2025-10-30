@@ -165,21 +165,6 @@ const Appointment = sequelize.define('Appointment', {
       documents: []
     }
   },
-  reminderSent: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-    comment: 'Si se envió recordatorio de WhatsApp'
-  },
-  reminderSentAt: {
-    type: DataTypes.DATE,
-    allowNull: true,
-    comment: 'Fecha y hora de envío del recordatorio'
-  },
-  reminderMessageId: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    comment: 'ID del mensaje de WhatsApp enviado'
-  },
   rating: {
     type: DataTypes.INTEGER,
     allowNull: true,

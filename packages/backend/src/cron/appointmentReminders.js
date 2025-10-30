@@ -23,6 +23,7 @@ let isRunning = false;
 /**
  * Envía recordatorios a citas que estén 24 horas antes
  * @returns {Object} Estadísticas de envío {sent, failed, total}
+ */
 async function sendReminders() {
   if (isRunning) {
     console.log('⏭️  Proceso de recordatorios ya en ejecución, saltando...');
