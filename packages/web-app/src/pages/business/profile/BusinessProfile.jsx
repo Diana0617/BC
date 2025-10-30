@@ -13,7 +13,9 @@ import {
   WrenchScrewdriverIcon,
   ShieldCheckIcon,
   ArrowRightOnRectangleIcon,
-  PaintBrushIcon
+  PaintBrushIcon,
+  ChatBubbleLeftRightIcon,
+  CubeIcon
 } from '@heroicons/react/24/outline'
 
 // Redux actions
@@ -40,6 +42,7 @@ import AppointmentPaymentsConfigSection from './sections/AppointmentPaymentsConf
 import PaymentMethodsSection from './sections/PaymentMethodsSection'
 import CalendarAccessSection from './sections/CalendarAccessSection'
 import CustomerHistorySection from './sections/CustomerHistorySection'
+import WhatsAppConfigSection from './sections/WhatsAppConfigSection'
 import BusinessRuleModal from '../../../components/BusinessRuleModal'
 
 // Hook personalizado para la configuración del negocio
@@ -61,6 +64,7 @@ const BusinessProfile = () => {
   // Estados locales
   const [activeSection, setActiveSection] = useState('subscription')
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false)
+  const [activeInitialConfigTab, setActiveInitialConfigTab] = useState('basic-info')
 
   // Estados de Redux
   const { user } = useSelector(state => state.auth)
@@ -137,28 +141,56 @@ const BusinessProfile = () => {
       alwaysVisible: true
     },
     {
-      id: 'business-rules',
-      name: 'Reglas de Negocio',
-      icon: ShieldCheckIcon,
-      component: null, // No tiene componente de sección, abre modal
+      id: 'initial-config',
+      name: 'Configuración Inicial',
+      icon: CogIcon,
+      component: null, // Se renderiza con tabs internos
       alwaysVisible: true,
-      isModalTrigger: true
-    },
-    {
-      id: 'basic-info',
-      name: 'Información Básica',
-      icon: BuildingStorefrontIcon,
-      component: BasicInfoSection,
-      setupStep: 'basic-info',
-      alwaysVisible: true
-    },
-    {
-      id: 'branding',
-      name: 'Branding',
-      icon: PaintBrushIcon,
-      component: BrandingSection,
-      setupStep: 'branding',
-      alwaysVisible: true
+      hasTabs: true,
+      tabs: [
+        {
+          id: 'basic-info',
+          name: 'Datos Básicos',
+          icon: BuildingStorefrontIcon,
+          component: BasicInfoSection,
+          setupStep: 'basic-info'
+        },
+        {
+          id: 'branding',
+          name: 'Branding',
+          icon: PaintBrushIcon,
+          component: BrandingSection,
+          setupStep: 'branding'
+        },
+        {
+          id: 'business-rules',
+          name: 'Reglas de Negocio',
+          icon: ShieldCheckIcon,
+          component: null,
+          isModalTrigger: true
+        },
+        {
+          id: 'services',
+          name: 'Servicios',
+          icon: ClipboardDocumentListIcon,
+          component: ServicesSection,
+          setupStep: 'services'
+        },
+        {
+          id: 'staff',
+          name: 'Equipo de Trabajo',
+          icon: UsersIcon,
+          component: StaffManagementSection,
+          setupStep: 'specialists'
+        },
+        {
+          id: 'payment-methods',
+          name: 'Métodos de Pago',
+          icon: CreditCardIcon,
+          component: PaymentMethodsSection,
+          setupStep: 'payment-methods-config'
+        }
+      ]
     },
     {
       id: 'branches',
@@ -168,23 +200,6 @@ const BusinessProfile = () => {
       setupStep: 'branches',
       moduleRequired: 'multi_branch', // ✅ Requiere módulo multi-sucursal
       alwaysVisible: false // ❌ No siempre visible
-    },
-   
-    {
-      id: 'services',
-      name: 'Servicios',
-      icon: ClipboardDocumentListIcon,
-      component: ServicesSection,
-      setupStep: 'services',
-      alwaysVisible: true
-    },
-     {
-      id: 'staff',
-      name: 'Equipo de Trabajo',
-      icon: UsersIcon,
-      component: StaffManagementSection,
-      setupStep: 'specialists',
-      alwaysVisible: true
     },
     {
       id: 'calendar-access',
@@ -205,6 +220,24 @@ const BusinessProfile = () => {
   // Secciones modulares basadas en el plan
   const modulesSections = [
     {
+      id: 'inventory',
+      name: 'Inventario',
+      icon: CubeIcon,
+      component: InventoryConfigSection,
+      moduleRequired: 'inventario',
+      setupStep: 'inventory-config',
+      hasExternalLink: true,
+      externalPath: '/business/inventory'
+    },
+    {
+      id: 'whatsapp-integration',
+      name: 'WhatsApp Business',
+      icon: ChatBubbleLeftRightIcon,
+      component: WhatsAppConfigSection,
+      moduleRequired: 'appointment-reminders',
+      setupStep: 'whatsapp-config'
+    },
+    {
       id: 'taxxa',
       name: 'Facturación (Taxxa)',
       icon: CogIcon,
@@ -219,14 +252,6 @@ const BusinessProfile = () => {
       component: AppointmentsConfigSection,
       moduleRequired: 'gestion_de_turnos',
       setupStep: 'appointments-config'
-    },
-    {
-      id: 'payment-methods',
-      name: 'Métodos de Pago',
-      icon: CreditCardIcon,
-      component: PaymentMethodsSection,
-      alwaysVisible: true, // Disponible para todos
-      setupStep: 'payment-methods-config'
     },
     {
       id: 'appointment-payments',
@@ -259,6 +284,19 @@ const BusinessProfile = () => {
     'clientes',
     'clients',
     'client_management',
+    // Reserva de citas (se maneja desde "Gestión de Turnos" y "Calendario y Acceso")
+    'reserva_de_citas',
+    'booking',
+    'appointments_booking',
+    'citas',
+    'appointment',
+    'reservas',
+    // Pagos básicos (se maneja desde "Métodos de Pago" en Configuración Inicial)
+    'pagos_basicos',
+    'basic_payments',
+    'payments',
+    'pagos',
+    'payment',
     // Control de Stock (ya está incluido en "Inventario" con InventoryConfigSection)
     'stock-control',
     'stock_control',
@@ -323,19 +361,22 @@ const BusinessProfile = () => {
   const handleSectionChange = (sectionId) => {
     const section = sectionsWithAvailability.find(s => s.id === sectionId)
 
-    // Si es un trigger de modal, abrir el modal correspondiente
-    if (section?.isModalTrigger) {
-      if (sectionId === 'business-rules') {
-        setIsRuleModalOpen(true)
-        return
-      }
-    }
-
     // Si la sección no está disponible, mostrar mensaje de upgrade
     if (section && !section.isAvailable) {
       console.log(`Sección ${sectionId} no disponible. Requiere módulo: ${section.requiredModule}`)
       // TODO: Mostrar modal de upgrade de plan
       return
+    }
+
+    // Si la sección tiene un link externo, navegar a esa ruta
+    if (section?.hasExternalLink && section?.externalPath) {
+      navigate(section.externalPath)
+      return
+    }
+
+    // Si es una sección con tabs, activar la primera tab
+    if (section?.hasTabs && section.tabs?.length > 0) {
+      setActiveInitialConfigTab(section.tabs[0].id)
     }
 
     setActiveSection(sectionId)
@@ -346,6 +387,22 @@ const BusinessProfile = () => {
       newParams.set('step', sectionId)
       navigate(`?${newParams.toString()}`, { replace: true })
     }
+  }
+
+  // Función para manejar el cambio de tab dentro de Configuración Inicial
+  const handleTabChange = (tabId) => {
+    const section = sectionsWithAvailability.find(s => s.id === 'initial-config')
+    const tab = section?.tabs?.find(t => t.id === tabId)
+
+    // Si es un trigger de modal, abrir el modal correspondiente
+    if (tab?.isModalTrigger) {
+      if (tabId === 'business-rules') {
+        setIsRuleModalOpen(true)
+        return
+      }
+    }
+
+    setActiveInitialConfigTab(tabId)
   }
 
   // Función para completar el setup
@@ -392,6 +449,97 @@ const BusinessProfile = () => {
           >
             Ver Planes Disponibles
           </button>
+        </div>
+      )
+    }
+
+    // Si es una sección con tabs (Configuración Inicial), renderizar tabs
+    if (section.hasTabs && section.tabs) {
+      return (
+        <div>
+          {/* Navegación de tabs */}
+          <div className="border-b border-gray-200 mb-6">
+            <nav className="-mb-px flex space-x-6 overflow-x-auto">
+              {section.tabs.map((tab) => {
+                const TabIcon = tab.icon
+                const isActiveTab = activeInitialConfigTab === tab.id
+                const isCompleted = tab.setupStep ? isStepCompleted(tab.setupStep) : false
+
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id)}
+                    className={`
+                      whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center space-x-2
+                      transition-colors
+                      ${isActiveTab
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }
+                    `}
+                    style={isActiveTab ? {
+                      borderBottomColor: branding?.primaryColor || '#2563eb',
+                      color: branding?.primaryColor || '#2563eb'
+                    } : {}}
+                  >
+                    <TabIcon className="h-5 w-5" />
+                    <span>{tab.name}</span>
+                    {isSetupMode && isCompleted && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    )}
+                  </button>
+                )
+              })}
+            </nav>
+          </div>
+
+          {/* Contenido de la tab activa */}
+          <div>
+            {section.tabs.map((tab) => {
+              if (tab.id !== activeInitialConfigTab) return null
+
+              // Si es un trigger de modal (como Reglas de Negocio), mostrar mensaje
+              if (tab.isModalTrigger) {
+                return (
+                  <div key={tab.id} className="text-center py-12">
+                    <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
+                      <tab.icon className="h-8 w-8" style={{ color: branding?.primaryColor || '#2563eb' }} />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {tab.name}
+                    </h3>
+                    <p className="text-gray-600 mb-6 max-w-sm mx-auto">
+                      Configura las reglas de negocio que rigen el funcionamiento de tu establecimiento.
+                    </p>
+                    <button
+                      onClick={() => setIsRuleModalOpen(true)}
+                      className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center space-x-2"
+                      style={{ backgroundColor: branding?.primaryColor || '#2563eb' }}
+                    >
+                      <ShieldCheckIcon className="h-5 w-5" />
+                      <span>Abrir Configuración de Reglas</span>
+                    </button>
+                  </div>
+                )
+              }
+
+              // Renderizar componente de la tab
+              if (tab.component) {
+                const Component = tab.component
+                return (
+                  <div key={tab.id}>
+                    <Component
+                      isSetupMode={isSetupMode}
+                      onComplete={() => completeStep(tab.setupStep)}
+                      isCompleted={tab.setupStep ? isStepCompleted(tab.setupStep) : false}
+                    />
+                  </div>
+                )
+              }
+
+              return null
+            })}
+          </div>
         </div>
       )
     }
@@ -549,11 +697,11 @@ const BusinessProfile = () => {
                     disabled={!isAvailable}
                     className={`w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors relative ${!isAvailable
                         ? 'text-gray-400 bg-gray-50 cursor-not-allowed opacity-60'
-                        : isActive
+                        : isActive && !section.hasExternalLink
                           ? 'bg-opacity-10 border-l-4'
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
-                    style={isActive && isAvailable ? {
+                    style={isActive && isAvailable && !section.hasExternalLink ? {
                       backgroundColor: `${branding?.primaryColor || '#dbeafe'}20`,
                       borderLeftColor: branding?.primaryColor || '#2563eb',
                       color: branding?.primaryColor || '#1d4ed8'
@@ -561,6 +709,13 @@ const BusinessProfile = () => {
                   >
                     <Icon className="h-5 w-5 mr-3" />
                     <span className="flex-1 text-left">{section.name}</span>
+
+                    {/* Indicador de link externo */}
+                    {section.hasExternalLink && isAvailable && (
+                      <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    )}
 
                     {/* Indicador de disponibilidad */}
                     {!isAvailable && (

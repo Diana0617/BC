@@ -117,11 +117,20 @@ class ClientController {
         clients.map(async (client) => {
           const clientData = client.toJSON();
 
-          // Contar citas
-          const appointmentsCount = await Appointment.count({
+          // Contar citas totales
+          const totalAppointments = await Appointment.count({
             where: {
               businessId,
               clientId: clientData.id
+            }
+          });
+
+          // Contar citas completadas
+          const completedAppointments = await Appointment.count({
+            where: {
+              businessId,
+              clientId: clientData.id,
+              status: 'COMPLETED'
             }
           });
 
@@ -135,9 +144,9 @@ class ClientController {
           });
 
           // Contar vouchers activos (si la tabla existe)
-          let vouchersCount = 0;
+          let activeVouchersCount = 0;
           try {
-            vouchersCount = await Voucher.count({
+            activeVouchersCount = await Voucher.count({
               where: {
                 businessId,
                 customerId: clientData.id,
@@ -185,15 +194,33 @@ class ClientController {
             0
           );
 
+          // Contar consentimientos firmados
+          let consentsCount = 0;
+          try {
+            consentsCount = await ConsentSignature.count({
+              where: {
+                businessId,
+                customerId: clientData.id
+              }
+            });
+          } catch (error) {
+            // Tabla consent_signatures no existe aún, devolver 0
+            if (error.parent?.code !== '42P01') {
+              throw error;
+            }
+          }
+
           return {
             id: clientData.id,
             name: `${clientData.firstName} ${clientData.lastName}`,
             email: clientData.email,
             phone: clientData.phone,
             avatar: clientData.avatar,
-            appointmentsCount,
+            totalAppointments,
+            completedAppointments,
             cancellationsCount,
-            vouchersCount,
+            activeVouchersCount,
+            consentsCount,
             isBlocked: blockRecord !== null || clientData.status === 'BLOCKED',
             blockReason: blockRecord?.reason || null,
             lastAppointment: clientData.lastAppointment,

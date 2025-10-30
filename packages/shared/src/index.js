@@ -28,6 +28,8 @@ export * from './api/businessProfileApi.js';
 export * from './api/businessSpecialistsApi.js';
 export { default as businessBranchesApi } from './api/businessBranchesApi.js';
 export * from './api/appointmentApi.js';
+// 📦 PRODUCTS & INVENTORY APIs
+export * from './api/productsApi.js';
 // 💳 ADVANCE PAYMENT SYSTEM APIs
 export * from './api/advancePaymentApi.js';
 // 🔐 BUSINESS VALIDATION SYSTEM APIs
@@ -78,6 +80,8 @@ export * from './store/slices/specialistServiceSlice.js';
 export * from './store/slices/scheduleSlice.js';
 export * from './store/slices/appointmentCalendarSlice.js';
 export * from './store/slices/timeSlotSlice.js';
+// 📦 PRODUCTS & INVENTORY SLICES
+export * from './store/slices/productsSlice.js';
 
 // Export selectors
 export * from './store/selectors/authSelectors.js';

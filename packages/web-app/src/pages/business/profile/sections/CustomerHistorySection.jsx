@@ -5,7 +5,8 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   XMarkIcon,
-  PlusIcon
+  PlusIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline'
 import { apiClient } from '@shared/api/client'
 import toast from 'react-hot-toast'
@@ -75,7 +76,8 @@ const CustomerHistorySection = () => {
   const stats = {
     total: clients.length,
     blocked: clients.filter(c => c.isBlocked).length,
-    withVouchers: clients.filter(c => c.vouchersCount > 0).length,
+    withVouchers: clients.filter(c => c.activeVouchersCount > 0).length,
+    withConsents: clients.filter(c => c.consentsCount > 0).length,
     frequentCancellers: clients.filter(c => c.cancellationsCount >= 3).length
   }
 
@@ -142,7 +144,7 @@ const CustomerHistorySection = () => {
       </div>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -174,7 +176,19 @@ const CustomerHistorySection = () => {
               <p className="text-2xl font-bold text-green-600">{stats.withVouchers}</p>
             </div>
             <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-              <UsersIcon className="h-6 w-6 text-green-600" />
+              <ClipboardDocumentListIcon className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Con Consentimientos</p>
+              <p className="text-2xl font-bold text-indigo-600">{stats.withConsents}</p>
+            </div>
+            <div className="h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center">
+              <ClipboardDocumentListIcon className="h-6 w-6 text-indigo-600" />
             </div>
           </div>
         </div>

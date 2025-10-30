@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Business Integration - Propuesta</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 4px solid #25D366;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #25D366;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .executive-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+            page-break-inside: avoid;
+        }
+        
+        .executive-summary h2 {
+            margin-top: 0;
+            font-size: 24px;
+        }
+        
+        .recommendation-box {
+            background: #fff;
+            color: #333;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 5px solid #FFD700;
+        }
+        
+        .recommendation-box h3 {
+            color: #25D366;
+            margin-top: 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        
+        th {
+            background: #25D366;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        
+        .pros, .cons {
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .pros {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .cons {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+        }
+        
+        .pros h3 {
+            color: #4caf50;
+            margin-top: 0;
+        }
+        
+        .cons h3 {
+            color: #ff9800;
+            margin-top: 0;
+        }
+        
+        .option-card {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        
+        .option-card h2 {
+            color: #25D366;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .badge-recommended {
+            background: #FFD700;
+            color: #333;
+        }
+        
+        .badge-quick {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .badge-premium {
+            background: #9C27B0;
+            color: white;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .comparison-item.winner {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+        }
+        
+        .comparison-item.neutral {
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+        }
+        
+        .comparison-item.loser {
+            background: #ffebee;
+            border: 2px solid #f44336;
+        }
+        
+        .cost-table {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        
+        .highlight-green {
+            background: #4caf50;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .highlight-red {
+            background: #f44336;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .timeline {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding-left: 20px;
+            border-left: 3px solid #25D366;
+        }
+        
+        .emoji {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        
+        h1, h2, h3 {
+            page-break-after: avoid;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .no-print {
+                display: none;
+            }
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- PORTADA -->
+    <div class="header">
+        <h1>📱 WhatsApp Business Integration</h1>
+        <p style="font-size: 20px; font-weight: 600;">Propuesta de Implementación</p>
+        <p>Beauty Control - Sistema de Gestión de Salones</p>
+        <p style="margin-top: 30px; color: #999;">Enero 30, 2025</p>
+    </div>
+
+    <!-- RESUMEN EJECUTIVO -->
+    <div class="executive-summary">
+        <h2>🎯 Resumen Ejecutivo</h2>
+        <p style="font-size: 18px; margin-bottom: 20px;">
+            Necesitamos elegir cómo implementar WhatsApp para envío automático de recordatorios de citas. 
+            Existen <strong>3 opciones principales</strong>, cada una con diferentes ventajas según el tipo de cliente.
+        </p>
+        
+        <div class="recommendation-box">
+            <h3>✅ Recomendación: Meta Cloud API con Asistencia</h3>
+            <p style="font-size: 16px;">
+                <strong>Razón principal:</strong> Ya ayudamos a nuestros clientes a configurar Taxxa (facturación) 
+                y Wompi (pagos). WhatsApp Meta sigue el mismo modelo de asistencia técnica.
+            </p>
+            <ul style="font-size: 15px;">
+                <li>✅ <strong>Gratis para siempre</strong> (sin costos por mensaje)</li>
+                <li>✅ <strong>Número propio</strong> del negocio (profesional)</li>
+                <li>✅ <strong>Nombre verificado</strong> en WhatsApp</li>
+                <li>✅ <strong>Escalable</strong> sin costos adicionales</li>
+                <li>⏱️ Setup: 30 minutos con nuestra ayuda (una sola vez)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- TABLA COMPARATIVA PRINCIPAL -->
+    <h2 style="color: #25D366; margin-top: 40px;">📊 Comparación de Opciones</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 30%;">Característica</th>
+                <th style="width: 23%;">🟢 Meta Cloud API</th>
+                <th style="width: 23%;">🟡 Twilio Sandbox</th>
+                <th style="width: 23%;">🔵 Twilio Business</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Setup inicial</strong></td>
+                <td>20-30 min</td>
+                <td>5 min</td>
+                <td>15 min</td>
+            </tr>
+            <tr>
+                <td><strong>Asistencia BC</strong></td>
+                <td>✅ Sí (como Taxxa/Wompi)</td>
+                <td>❌ No necesaria</td>
+                <td>✅ Sí</td>
+            </tr>
+            <tr style="background: #e8f5e9;">
+                <td><strong>Número enviador</strong></td>
+                <td><strong>✅ Propio del negocio</strong></td>
+                <td>❌ Número BC compartido</td>
+                <td>✅ Propio del negocio</td>
+            </tr>
+            <tr style="background: #e8f5e9;">
+                <td><strong>Aparece nombre</strong></td>
+                <td><strong>✅ Nombre verificado ✓</strong></td>
+                <td>❌ Número desconocido</td>
+                <td>✅ Nombre del negocio</td>
+            </tr>
+            <tr style="background: #e8f5e9;">
+                <td><strong>Costo por mensaje</strong></td>
+                <td><span class="highlight-green">$0 USD</span></td>
+                <td><span class="highlight-red">$0.005 USD</span></td>
+                <td><span class="highlight-red">$0.01-0.02 USD</span></td>
+            </tr>
+            <tr style="background: #e8f5e9;">
+                <td><strong>Costo mensual estimado</strong></td>
+                <td><span class="highlight-green">$0 USD</span></td>
+                <td><span class="highlight-red">$5-15 USD</span></td>
+                <td><span class="highlight-red">$50-200 USD</span></td>
+            </tr>
+            <tr>
+                <td><strong>Templates</strong></td>
+                <td>Aprobar cada uno (24-48h)</td>
+                <td>✅ Pre-aprobados</td>
+                <td>✅ Pre-aprobados</td>
+            </tr>
+            <tr>
+                <td><strong>Escalabilidad</strong></td>
+                <td>✅ Ilimitada</td>
+                <td>⚠️ 1,000 msg/día</td>
+                <td>✅ Ilimitada</td>
+            </tr>
+            <tr style="background: #e8f5e9;">
+                <td><strong>Marca profesional</strong></td>
+                <td><strong>✅✅✅ Excelente</strong></td>
+                <td>❌ Pobre</td>
+                <td>✅✅ Buena</td>
+            </tr>
+            <tr>
+                <td><strong>Soporte técnico</strong></td>
+                <td>Meta (limitado)</td>
+                <td>Twilio 24/7</td>
+                <td>Twilio Premium</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <!-- OPCIÓN 1: META CLOUD API -->
+    <div class="option-card" style="border-color: #25D366; background: #f1f8f4;">
+        <h2>
+            <span class="emoji">🟢</span>
+            Opción 1: Meta Cloud API
+            <span class="badge badge-recommended">RECOMENDADA</span>
+        </h2>
+        
+        <div class="pros-cons">
+            <div class="pros">
+                <h3>✅ Ventajas</h3>
+                <ul>
+                    <li>📱 Mensajes <strong>desde el número del negocio</strong></li>
+                    <li>✅ <strong>Nombre verificado</strong> aparece en WhatsApp</li>
+                    <li>🆓 <strong>GRATIS</strong> - Sin costos por mensaje</li>
+                    <li>🏆 <strong>Profesional</strong> - WhatsApp Business oficial</li>
+                    <li>📈 <strong>Escalable</strong> - Sin límites de mensajes</li>
+                    <li>🔒 <strong>Privacidad</strong> - El negocio controla sus datos</li>
+                    <li>📊 Analytics propios en Meta Business Suite</li>
+                </ul>
+            </div>
+            
+            <div class="cons">
+                <h3>⚠️ Consideraciones</h3>
+                <ul>
+                    <li>⏱️ Setup inicial: 20-30 min (con nuestra ayuda)</li>
+                    <li>📋 Verificación: 1-2 días para aprobar cuenta</li>
+                    <li>🎨 Templates: Cada uno debe aprobarse (24-48h)</li>
+                    <li>🔧 Requiere crear cuenta desarrollador Meta</li>
+                </ul>
+                <p style="margin-top: 15px; padding: 10px; background: white; border-radius: 5px;">
+                    <strong>💡 Solución:</strong> Igual que con Taxxa/Wompi, ofrecemos asistencia 
+                    completa en el proceso de configuración.
+                </p>
+            </div>
+        </div>
+        
+        <div class="timeline">
+            <h3 style="color: #25D366; margin-top: 0;">🛠️ Proceso de Setup (CON ASISTENCIA BC)</h3>
+            
+            <div class="timeline-item">
+                <strong>Paso 1 (5 min):</strong> Crear cuenta Meta Developer
+                <br><small>→ Video tutorial + screenshots + link directo</small>
+            </div>
+            
+            <div class="timeline-item">
+                <strong>Paso 2 (3 min):</strong> Crear App de Facebook
+                <br><small>→ Plantilla pre-configurada, solo completar nombre</small>
+            </div>
+            
+            <div class="timeline-item">
+                <strong>Paso 3 (5 min):</strong> Agregar WhatsApp Business
+                <br><small>→ Wizard guiado paso a paso + verificación de número</small>
+            </div>
+            
+            <div class="timeline-item">
+                <strong>Paso 4 (2 min):</strong> Obtener credenciales
+                <br><small>→ Copy-paste automático + validación en vivo</small>
+            </div>
+            
+            <div class="timeline-item">
+                <strong>Paso 5 (5 min):</strong> Configurar en Beauty Control
+                <br><small>→ Pegar tokens + test de conexión + ¡Listo! ✅</small>
+            </div>
+            
+            <p style="margin-top: 20px; text-align: center; font-size: 18px; color: #25D366;">
+                <strong>⏱️ Total: 20 minutos (primera vez) - Soporte BC disponible</strong>
+            </p>
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- OPCIÓN 2: TWILIO SANDBOX -->
+    <div class="option-card" style="border-color: #FFC107;">
+        <h2>
+            <span class="emoji">🟡</span>
+            Opción 2: Twilio Sandbox
+            <span class="badge badge-quick">RÁPIDA</span>
+        </h2>
+        
+        <div class="pros-cons">
+            <div class="pros">
+                <h3>✅ Ventajas</h3>
+                <ul>
+                    <li>⚡ <strong>Setup ultra rápido</strong>: 5 minutos</li>
+                    <li>🎯 <strong>Sin trámites</strong>: No requiere cuenta Meta</li>
+                    <li>✅ Funciona inmediatamente</li>
+                    <li>📱 Templates pre-aprobados</li>
+                    <li>🔧 Control total para BC</li>
+                    <li>📊 Dashboard centralizado</li>
+                </ul>
+            </div>
+            
+            <div class="cons">
+                <h3>❌ Desventajas</h3>
+                <ul>
+                    <li>❌ <strong>Número desconocido</strong>: +1-415-523-8886</li>
+                    <li>⚠️ Puede verse como <strong>spam</strong></li>
+                    <li>😕 Cliente no sabe quién envía (hasta leer)</li>
+                    <li>💸 <strong>Costo continuo</strong>: $0.005 USD/mensaje</li>
+                    <li>🏷️ <strong>Sin marca propia</strong>: Todos igual</li>
+                    <li>📉 Menor tasa de apertura (~60-70%)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <h3 style="color: #FFC107; margin-top: 30px;">📱 Ejemplo de Mensaje Recibido</h3>
+        <div style="background: white; border: 2px solid #ddd; border-radius: 10px; padding: 20px; margin: 20px 0; font-family: monospace;">
+            <p style="color: #999; margin-bottom: 10px;">De: <strong style="color: #f44336;">+1 (415) 523-8886</strong> ← Número desconocido ⚠️</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
+            <p style="margin: 10px 0;">📅 <strong>Recordatorio de Cita - Salon María</strong></p>
+            <p style="margin: 10px 0;">Hola Juan! 👋</p>
+            <p style="margin: 10px 0;">Tu cita en <strong>Salon María</strong> es mañana...</p>
+        </div>
+        <p style="color: #f44336; font-weight: bold; text-align: center;">
+            ⚠️ El cliente NO ve el número del salón, ve un número de Estados Unidos
+        </p>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- ANÁLISIS DE COSTOS -->
+    <div class="cost-table">
+        <h2 style="color: #25D366; margin-top: 0;">💰 Análisis de Costos a Escala</h2>
+        
+        <h3 style="color: #666;">Escenario 1: 50 Negocios Activos</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th>Meta Cloud API</th>
+                    <th>Twilio Sandbox</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Mensajes por negocio/mes</td>
+                    <td>200</td>
+                    <td>200</td>
+                </tr>
+                <tr>
+                    <td>Total mensajes/mes</td>
+                    <td>10,000</td>
+                    <td>10,000</td>
+                </tr>
+                <tr>
+                    <td>Costo por mensaje</td>
+                    <td>$0.00 USD</td>
+                    <td>$0.005 USD</td>
+                </tr>
+                <tr style="background: #e8f5e9; font-weight: bold;">
+                    <td>COSTO MENSUAL TOTAL</td>
+                    <td><span class="highlight-green">$0 USD</span></td>
+                    <td><span class="highlight-red">$500 USD</span></td>
+                </tr>
+                <tr style="background: #e8f5e9; font-weight: bold;">
+                    <td>COSTO ANUAL TOTAL</td>
+                    <td><span class="highlight-green">$0 USD</span></td>
+                    <td><span class="highlight-red">$6,000 USD</span></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <h3 style="color: #666; margin-top: 30px;">Escenario 2: 200 Negocios Activos</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th>Meta Cloud API</th>
+                    <th>Twilio Sandbox</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Mensajes totales/mes</td>
+                    <td>40,000</td>
+                    <td>40,000</td>
+                </tr>
+                <tr style="background: #e8f5e9; font-weight: bold;">
+                    <td>COSTO MENSUAL TOTAL</td>
+                    <td><span class="highlight-green">$0 USD</span></td>
+                    <td><span class="highlight-red">$2,000 USD</span></td>
+                </tr>
+                <tr style="background: #e8f5e9; font-weight: bold;">
+                    <td>COSTO ANUAL TOTAL</td>
+                    <td><span class="highlight-green">$0 USD</span></td>
+                    <td><span class="highlight-red">$24,000 USD</span></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <p style="background: white; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 5px solid #25D366; font-size: 16px;">
+            <strong>💡 Conclusión:</strong> Meta es gratis para siempre. Twilio crece exponencialmente con cada cliente.
+            Al año, con 200 negocios, ahorraríamos <strong>$24,000 USD</strong> usando Meta.
+        </p>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- EXPERIENCIA DEL CLIENTE FINAL -->
+    <h2 style="color: #25D366;">🎓 Experiencia del Cliente Final</h2>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 30px 0;">
+        <div style="border: 3px solid #4caf50; border-radius: 10px; padding: 20px; background: #e8f5e9;">
+            <h3 style="color: #4caf50; margin-top: 0; text-align: center;">
+                ✅ Con Meta Cloud API
+            </h3>
+            
+            <div style="background: white; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                <p style="margin: 5px 0;"><strong>1️⃣ Cliente ve en WhatsApp:</strong></p>
+                <p style="margin: 10px 0; color: #25D366; font-weight: bold;">
+                    De: Salon María ✓ (verificado)<br>
+                    +57 300 123 4567
+                </p>
+                <p style="margin: 10px 0;">📅 Recordatorio de Cita</p>
+                <p style="margin: 10px 0;">Hola Juan! 👋<br>Tu cita es mañana a las 2:30 PM...</p>
+            </div>
+            
+            <div style="background: white; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                <p style="margin: 5px 0;"><strong>2️⃣ Cliente piensa:</strong></p>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li>✅ "Es de mi salon de confianza"</li>
+                    <li>✅ "Puedo responder por WhatsApp"</li>
+                    <li>✅ "Está verificado, es legítimo"</li>
+                </ul>
+            </div>
+            
+            <div style="background: #4caf50; color: white; border-radius: 8px; padding: 15px; margin: 15px 0; text-align: center;">
+                <p style="margin: 0; font-size: 18px;"><strong>Tasa de apertura: 90-95%</strong></p>
+                <p style="margin: 5px 0; font-size: 14px;">Respuestas: Directas al negocio</p>
+            </div>
+        </div>
+        
+        <div style="border: 3px solid #f44336; border-radius: 10px; padding: 20px; background: #ffebee;">
+            <h3 style="color: #f44336; margin-top: 0; text-align: center;">
+                ❌ Con Twilio Sandbox
+            </h3>
+            
+            <div style="background: white; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                <p style="margin: 5px 0;"><strong>1️⃣ Cliente ve en WhatsApp:</strong></p>
+                <p style="margin: 10px 0; color: #f44336; font-weight: bold;">
+                    De: +1 (415) 523-8886 ⚠️
+                </p>
+                <p style="margin: 10px 0;">📅 Recordatorio de Cita - Salon María</p>
+                <p style="margin: 10px 0;">Hola Juan! 👋<br>Tu cita es mañana a las 2:30 PM...</p>
+            </div>
+            
+            <div style="background: white; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                <p style="margin: 5px 0;"><strong>2️⃣ Cliente piensa:</strong></p>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li>❓ "¿Quién es este número?"</li>
+                    <li>⚠️ "¿Es spam?"</li>
+                    <li>🤔 "Dice Salon María pero el número no es"</li>
+                </ul>
+            </div>
+            
+            <div style="background: #f44336; color: white; border-radius: 8px; padding: 15px; margin: 15px 0; text-align: center;">
+                <p style="margin: 0; font-size: 18px;"><strong>Tasa de apertura: 60-70%</strong></p>
+                <p style="margin: 5px 0; font-size: 14px;">Respuestas: No puede responder</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- MODELO DE ASISTENCIA -->
+    <h2 style="color: #25D366;">📞 Modelo de Asistencia Beauty Control</h2>
+    
+    <p style="font-size: 16px; background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 5px solid #25D366;">
+        <strong>Propuesta:</strong> Seguir el mismo modelo exitoso que usamos con Taxxa y Wompi
+    </p>
+    
+    <table style="margin-top: 20px;">
+        <thead>
+            <tr>
+                <th style="width: 25%;">Servicio</th>
+                <th style="width: 25%;">Primera vez</th>
+                <th style="width: 25%;">Mantenimiento</th>
+                <th style="width: 25%;">SLA</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Taxxa (Facturación)</strong></td>
+                <td>
+                    • Videollamada 30 min<br>
+                    • Configurar RUT<br>
+                    • Certificado digital<br>
+                    • Test de facturas
+                </td>
+                <td>
+                    • Email support<br>
+                    • Knowledge base<br>
+                    • Chat en app
+                </td>
+                <td>
+                    Respuesta: &lt; 2h<br>
+                    Resolución: &lt; 24h
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Wompi (Pagos)</strong></td>
+                <td>
+                    • Videollamada 20 min<br>
+                    • Configurar API keys<br>
+                    • Webhooks<br>
+                    • Test de pagos
+                </td>
+                <td>
+                    • Email support<br>
+                    • Knowledge base<br>
+                    • Chat en app
+                </td>
+                <td>
+                    Respuesta: &lt; 2h<br>
+                    Resolución: &lt; 24h
+                </td>
+            </tr>
+            <tr style="background: #e8f5e9;">
+                <td><strong>WhatsApp Meta</strong></td>
+                <td>
+                    • <strong>Videollamada 30 min</strong><br>
+                    • <strong>Configurar cuenta Meta</strong><br>
+                    • <strong>Obtener tokens</strong><br>
+                    • <strong>Test de mensajes</strong>
+                </td>
+                <td>
+                    • <strong>Email support</strong><br>
+                    • <strong>Knowledge base</strong><br>
+                    • <strong>Chat en app</strong>
+                </td>
+                <td>
+                    <strong>Respuesta: &lt; 2h</strong><br>
+                    <strong>Resolución: &lt; 24h</strong>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <p style="margin-top: 20px; font-size: 16px; background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 5px solid #FFC107;">
+        <strong>💡 Insight:</strong> Nuestros clientes están acostumbrados a recibir asistencia técnica. 
+        30 minutos de videollamada es NORMAL y ESPERADO. La diferencia es que WhatsApp será gratis después.
+    </p>
+
+    <div class="page-break"></div>
+
+    <!-- PLAN DE IMPLEMENTACIÓN -->
+    <h2 style="color: #25D366;">🚀 Plan de Implementación</h2>
+    
+    <div class="timeline" style="background: linear-gradient(to right, #e8f5e9, #f1f8f4);">
+        <h3 style="color: #25D366; margin-top: 0;">Fase 1: Preparación (1-2 semanas)</h3>
+        <div class="timeline-item">
+            <strong>Crear wizard paso a paso en UI</strong>
+            <br><small>Interface visual con cada paso del proceso Meta</small>
+        </div>
+        <div class="timeline-item">
+            <strong>Grabar video tutorial (5 min)</strong>
+            <br><small>Screencast mostrando todo el proceso de configuración</small>
+        </div>
+        <div class="timeline-item">
+            <strong>Documentación con screenshots</strong>
+            <br><small>Guía escrita con imágenes de cada pantalla</small>
+        </div>
+        <div class="timeline-item">
+            <strong>Templates de mensajes pre-diseñados</strong>
+            <br><small>Plantillas listas para usar en español</small>
+        </div>
+        <div class="timeline-item">
+            <strong>Script de soporte para equipo BC</strong>
+            <br><small>Guión para asistir a clientes en videollamada</small>
+        </div>
+    </div>
+    
+    <div class="timeline" style="background: linear-gradient(to right, #fff3e0, #fff8e1); margin-top: 20px;">
+        <h3 style="color: #ff9800; margin-top: 0;">Fase 2: Pilot (1-2 semanas)</h3>
+        <div class="timeline-item" style="border-left-color: #ff9800;">
+            <strong>Seleccionar 3-5 negocios piloto</strong>
+            <br><small>Clientes de confianza para probar el proceso</small>
+        </div>
+        <div class="timeline-item" style="border-left-color: #ff9800;">
+            <strong>Acompañar setup completo</strong>
+            <br><small>Videollamadas completas con documentación del proceso</small>
+        </div>
+        <div class="timeline-item" style="border-left-color: #ff9800;">
+            <strong>Documentar dudas frecuentes</strong>
+            <br><small>Crear FAQ basada en preguntas reales</small>
+        </div>
+        <div class="timeline-item" style="border-left-color: #ff9800;">
+            <strong>Ajustar wizard según feedback</strong>
+            <br><small>Mejorar UI basándose en experiencia de pilotos</small>
+        </div>
+    </div>
+    
+    <div class="timeline" style="background: linear-gradient(to right, #e3f2fd, #e1f5fe); margin-top: 20px;">
+        <h3 style="color: #2196F3; margin-top: 0;">Fase 3: Rollout (Ongoing)</h3>
+        <div class="timeline-item" style="border-left-color: #2196F3;">
+            <strong>Oferta a todos los clientes con módulo</strong>
+            <br><small>Email + notificación in-app</small>
+        </div>
+        <div class="timeline-item" style="border-left-color: #2196F3;">
+            <strong>Soporte inicial</strong>
+            <br><small>Videollamadas programadas según demanda</small>
+        </div>
+        <div class="timeline-item" style="border-left-color: #2196F3;">
+            <strong>Métricas de adopción</strong>
+            <br><small>Dashboard de % de clientes que activan WhatsApp</small>
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- DECISIÓN FINAL -->
+    <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; padding: 40px; border-radius: 15px; margin: 40px 0;">
+        <h2 style="color: white; text-align: center; font-size: 28px; margin-top: 0;">
+            🏆 Decisión Recomendada
+        </h2>
+        
+        <div style="background: white; color: #333; padding: 30px; border-radius: 10px; margin-top: 20px;">
+            <h3 style="color: #25D366; margin-top: 0; text-align: center; font-size: 24px;">
+                Meta Cloud API con Wizard de Asistencia
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 25px;">
+                <div>
+                    <h4 style="color: #25D366;">✅ Razones Principales:</h4>
+                    <ul style="line-height: 1.8;">
+                        <li>Modelo probado (Taxxa/Wompi)</li>
+                        <li>Gratis para siempre</li>
+                        <li>Mejor experiencia del cliente</li>
+                        <li>Marca profesional</li>
+                        <li>Escalable sin costos</li>
+                        <li>Control total</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 style="color: #ff9800;">⚠️ Trade-off Aceptable:</h4>
+                    <ul style="line-height: 1.8;">
+                        <li>30 min setup (una sola vez)</li>
+                        <li>Asistencia inicial requerida</li>
+                        <li>Templates a aprobar (reutilizables)</li>
+                    </ul>
+                    
+                    <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #4caf50;">
+                        <strong style="color: #25D366;">💰 ROI:</strong>
+                        <p style="margin: 5px 0; font-size: 14px;">
+                            Inversión: 1-2 semanas desarrollo<br>
+                            Retorno: $0 costos + mejor producto<br>
+                            Ahorro: $6k-24k USD/año vs Twilio
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: #FFD700; color: #333; padding: 20px; border-radius: 8px; margin-top: 25px; text-align: center;">
+                <p style="margin: 0; font-size: 18px; font-weight: bold;">
+                    ⏱️ Timeline Estimado: 2 semanas desarrollo + 2 semanas pilot = 1 mes total
+                </p>
+                <p style="margin: 10px 0; font-size: 16px;">
+                    📅 Fecha estimada de lanzamiento: <strong>Febrero 15, 2025</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <p><strong>Beauty Control - Sistema de Gestión de Salones</strong></p>
+        <p>Documento de Propuesta - WhatsApp Business Integration</p>
+        <p>Fecha: Enero 30, 2025 | Versión: 1.0</p>
+        <p style="margin-top: 20px; color: #999; font-size: 12px;">
+            Para discutir esta propuesta o aclarar dudas, contactar al equipo técnico de Beauty Control
+        </p>
+    </div>
+    
+    <div class="no-print" style="position: fixed; top: 20px; right: 20px; background: #25D366; color: white; padding: 15px 25px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onclick="window.print()">
+        🖨️ Imprimir / Guardar PDF
+    </div>
+    
+    <script>
+        // Auto-print on load (opcional)
+        // window.onload = function() { window.print(); }
+    </script>
+</body>
+</html>

@@ -10,7 +10,8 @@ import {
   CalendarDaysIcon,
   EyeIcon,
   PlusCircleIcon,
-  NoSymbolIcon
+  NoSymbolIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 const ClientList = ({ clients, loading, onClientClick, onCreateVoucher }) => {
@@ -70,6 +71,9 @@ const ClientList = ({ clients, loading, onClientClick, onCreateVoucher }) => {
               </th>
               <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Vouchers
+              </th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Consentimientos
               </th>
               <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Estado
@@ -171,6 +175,20 @@ const ClientRow = ({ client, onClientClick, onCreateVoucher }) => {
         </div>
       </td>
 
+      {/* Consentimientos */}
+      <td className="px-6 py-4 whitespace-nowrap text-center">
+        <div className="flex items-center justify-center">
+          {client.consentsCount > 0 ? (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <DocumentTextIcon className="h-4 w-4 mr-1" />
+              {client.consentsCount}
+            </span>
+          ) : (
+            <span className="text-sm text-gray-500">0</span>
+          )}
+        </div>
+      </td>
+
       {/* Estado */}
       <td className="px-6 py-4 whitespace-nowrap text-center">
         {client.isBlocked ? (
@@ -240,7 +258,7 @@ const ClientCard = ({ client, onClientClick, onCreateVoucher }) => {
       </div>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-4 gap-2 mb-3">
         <div className="text-center p-2 bg-gray-50 rounded">
           <div className="text-xs text-gray-500">Citas</div>
           <div className="text-sm font-medium text-gray-900">
@@ -257,6 +275,12 @@ const ClientCard = ({ client, onClientClick, onCreateVoucher }) => {
           <div className="text-xs text-gray-500">Vouchers</div>
           <div className="text-sm font-medium text-green-600">
             {client.activeVouchersCount || 0}
+          </div>
+        </div>
+        <div className="text-center p-2 bg-gray-50 rounded">
+          <div className="text-xs text-gray-500">Consents</div>
+          <div className="text-sm font-medium text-blue-600">
+            {client.consentsCount || 0}
           </div>
         </div>
       </div>

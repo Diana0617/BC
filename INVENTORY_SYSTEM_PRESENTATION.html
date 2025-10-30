@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Inventario y Caja - Beauty Control</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 4px solid #10B981;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #10B981;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .module-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        
+        .module-card h2 {
+            color: #10B981;
+            margin-top: 0;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+        
+        .flow-box {
+            background: #f3f4f6;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        
+        .flow-box h4 {
+            color: #3b82f6;
+            margin-top: 0;
+        }
+        
+        .step {
+            background: white;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border-left: 3px solid #10B981;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            page-break-inside: avoid;
+        }
+        
+        th {
+            background: #10B981;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        .emoji {
+            font-size: 24px;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .architecture-diagram {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            font-family: monospace;
+        }
+        
+        .entity-box {
+            background: white;
+            border: 2px solid #10B981;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        
+        .entity-box h4 {
+            color: #10B981;
+            margin-top: 0;
+        }
+        
+        .field-list {
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- PORTADA -->
+    <div class="header">
+        <h1>💰 Sistema de Inventario, Caja y Flujo de Efectivo</h1>
+        <p style="font-size: 20px; font-weight: 600;">Arquitectura y Diseño Técnico</p>
+        <p>Beauty Control - Sistema de Gestión Integral</p>
+        <p style="margin-top: 30px; color: #999;">Enero 30, 2025 | Versión 1.0</p>
+    </div>
+
+    <!-- RESUMEN EJECUTIVO -->
+    <div class="highlight-box">
+        <h2 style="color: white; margin-top: 0;">🎯 Resumen Ejecutivo</h2>
+        <p style="font-size: 16px;">
+            Sistema integrado que gestiona el ciclo completo de inventario, flujo de caja y 
+            contabilidad para salones de belleza. Incluye control de compras a proveedores, 
+            ventas de productos, consumo interno, turnos de caja con arqueo, gastos operativos 
+            y cuentas por pagar.
+        </p>
+        <ul style="font-size: 15px;">
+            <li>✅ <strong>Trazabilidad total</strong>: Quién, qué, cuándo y por qué</li>
+            <li>✅ <strong>Control de caja</strong>: Turnos con apertura, arqueo y cierre</li>
+            <li>✅ <strong>Documentación</strong>: Facturas, comprobantes y recibos almacenados</li>
+            <li>✅ <strong>Permisos granulares</strong>: Control de acceso por rol</li>
+            <li>✅ <strong>Reportes en tiempo real</strong>: Dashboards y analytics</li>
+        </ul>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- MÓDULOS INTEGRADOS -->
+    <h2 style="color: #10B981;">📦 Módulos del Sistema</h2>
+    
+    <div class="architecture-diagram">
+        <pre style="font-size: 14px; text-align: left; line-height: 1.4;">
+┌─────────────────────────────────────────────────────────┐
+│              BEAUTY CONTROL - SISTEMA INTEGRAL          │
+└─────────────────────────────────────────────────────────┘
+                          │
+      ┌───────────────────┼───────────────────┐
+      ▼                   ▼                   ▼
+ 📦 INVENTARIO      💵 CAJA/TURNOS       📊 CONTABILIDAD
+      │                   │                   │
+      ├─ Productos        ├─ Ingresos         ├─ Gastos
+      ├─ Stock           ├─ Egresos          ├─ Cuentas x Pagar
+      ├─ Compras         ├─ Arqueo           ├─ Reportes
+      └─ Movimientos     └─ Cierres          └─ Balance
+        </pre>
+    </div>
+
+    <!-- MÓDULO 1: INVENTARIO -->
+    <div class="module-card">
+        <h2>📦 1. Módulo de Inventario</h2>
+        
+        <h3 style="color: #3b82f6;">Entidades Principales</h3>
+        
+        <div class="entity-box">
+            <h4>Product (Productos)</h4>
+            <div class="field-list">
+id, businessId, name, sku, barcode, category, brand<br>
+price, cost, currentStock, minStock, maxStock<br>
+trackInventory, unit, images, taxable, taxRate<br>
+expirationTracking, batchTracking, serialTracking
+            </div>
+        </div>
+        
+        <div class="entity-box">
+            <h4>InventoryMovement (Movimientos)</h4>
+            <div class="field-list">
+id, businessId, productId, userId<br>
+movementType: PURCHASE | SALE | CONSUMPTION | ADJUSTMENT<br>
+quantity, unitCost, totalCost<br>
+previousStock, newStock<br>
+reason, notes, referenceType, referenceId<br>
+batchNumber, expirationDate, documentUrl
+            </div>
+        </div>
+        
+        <div class="entity-box">
+            <h4>PurchaseOrder (Órdenes de Compra)</h4>
+            <div class="field-list">
+id, businessId, supplierId, orderNumber<br>
+status: DRAFT | SENT | RECEIVED | CANCELLED<br>
+items[], subtotal, tax, total<br>
+<strong style="color: #dc2626;">invoiceUrl, invoiceNumber, invoiceDueDate ⭐</strong><br>
+<strong style="color: #dc2626;">isPaid, paidAt, paymentProofUrl ⭐</strong><br>
+deliveryDate, notes, createdBy, approvedBy
+            </div>
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- FLUJO 1: COMPRA A PROVEEDOR -->
+    <h2 style="color: #10B981;">🛒 Flujo 1: Compra a Proveedor</h2>
+    
+    <div class="flow-box">
+        <h4>Paso 1: Crear Orden de Compra</h4>
+        <div class="step">1. Seleccionar proveedor</div>
+        <div class="step">2. Agregar productos + cantidades + costos</div>
+        <div class="step">3. Calcular subtotal, impuestos y total</div>
+        <div class="step">4. 📄 <strong>Cargar factura del proveedor (PDF)</strong></div>
+        <div class="step">5. 📅 <strong>Registrar fecha de vencimiento de pago</strong></div>
+        <div class="step">6. Guardar PurchaseOrder (status: SENT)</div>
+    </div>
+    
+    <div class="flow-box">
+        <h4>Paso 2: Recibir Mercancía</h4>
+        <div class="step">1. Buscar orden de compra pendiente</div>
+        <div class="step">2. Verificar productos recibidos vs solicitados</div>
+        <div class="step">3. Por cada producto:</div>
+        <div class="step" style="margin-left: 20px;">
+            → Crear InventoryMovement(PURCHASE)<br>
+            → Actualizar Product.currentStock += cantidad<br>
+            → Opcional: Registrar lote y fecha expiración
+        </div>
+        <div class="step">4. Actualizar PurchaseOrder (status: RECEIVED)</div>
+    </div>
+    
+    <div class="flow-box">
+        <h4>Paso 3: Pagar Factura</h4>
+        <div class="step">1. Cuando llegue la fecha de vencimiento</div>
+        <div class="step">2. Realizar pago (efectivo, transferencia, etc.)</div>
+        <div class="step">3. 📄 <strong>Cargar comprobante de pago (PDF/imagen)</strong></div>
+        <div class="step">4. Actualizar PurchaseOrder:</div>
+        <div class="step" style="margin-left: 20px;">
+            → isPaid = true<br>
+            → paidAt = fecha actual<br>
+            → paymentProofUrl = URL del comprobante
+        </div>
+        <div class="step">5. 💵 <strong>Crear CashMovement(EXPENSE)</strong></div>
+        <div class="step">6. Registrar egreso en turno de caja activo</div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- FLUJO 2: VENTA DE PRODUCTO -->
+    <h2 style="color: #10B981;">💰 Flujo 2: Venta de Producto</h2>
+    
+    <div class="flow-box">
+        <h4>Proceso de Venta</h4>
+        <div class="step">1. Verificar permisos del usuario (quién puede vender)</div>
+        <div class="step">2. Buscar productos (barcode, nombre o SKU)</div>
+        <div class="step">3. Seleccionar cantidad a vender</div>
+        <div class="step">4. Verificar stock disponible (no vender sin stock)</div>
+        <div class="step">5. Calcular total (precio × cantidad + IVA si aplica)</div>
+        <div class="step">6. Seleccionar método de pago</div>
+        <div class="step">7. Crear Receipt (PDF descargable)</div>
+        <div class="step">8. Por cada producto:</div>
+        <div class="step" style="margin-left: 20px;">
+            → Crear InventoryMovement(SALE)<br>
+            → Actualizar Product.currentStock -= cantidad
+        </div>
+        <div class="step">9. 💵 <strong>Crear CashMovement(SALE)</strong></div>
+        <div class="step">10. Registrar ingreso en turno de caja activo</div>
+        <div class="step">11. Opcional: Enviar recibo por WhatsApp</div>
+    </div>
+
+    <!-- FLUJO 3: CONSUMO INTERNO -->
+    <h2 style="color: #10B981;">🔧 Flujo 3: Consumo Interno (Servicios)</h2>
+    
+    <div class="flow-box">
+        <h4>Retiro de Productos para Servicios</h4>
+        <div class="step">1. Especialista o Receptionist retira producto</div>
+        <div class="step">2. Seleccionar producto y cantidad</div>
+        <div class="step">3. <strong>Indicar para quién</strong> (si es receptionist retirando)</div>
+        <div class="step">4. Razón del retiro (ejemplo: "Tratamiento cliente")</div>
+        <div class="step">5. Opcional: Asociar a una cita específica</div>
+        <div class="step">6. Crear InventoryMovement(CONSUMPTION):</div>
+        <div class="step" style="margin-left: 20px;">
+            → userId = quien retiró<br>
+            → notes = "Para: [Especialista] - Cliente: [Nombre]"<br>
+            → referenceType = 'APPOINTMENT' (si aplica)<br>
+            → referenceId = appointmentId
+        </div>
+        <div class="step">7. Actualizar Product.currentStock -= cantidad</div>
+        <div class="step">8. ⚠️ <strong>NO afecta Caja</strong> (es consumo interno, no venta)</div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- MÓDULO 2: CAJA Y TURNOS -->
+    <div class="module-card">
+        <h2>💵 2. Módulo de Caja y Turnos</h2>
+        
+        <h3 style="color: #3b82f6;">Entidades Principales</h3>
+        
+        <div class="entity-box">
+            <h4>CashRegisterShift (Turno de Caja)</h4>
+            <div class="field-list">
+id, businessId, shiftNumber<br>
+openedBy, closedBy, openedAt, closedAt<br>
+status: OPEN | CLOSED<br>
+<strong>initialCash, expectedCash, actualCash, difference</strong><br>
+totalSales, totalServices, totalExpenses, totalWithdrawals<br>
+cashPayments, cardPayments, transferPayments<br>
+notes
+            </div>
+        </div>
+        
+        <div class="entity-box">
+            <h4>CashMovement (Movimiento de Caja)</h4>
+            <div class="field-list">
+id, businessId, shiftId, userId<br>
+movementType: SALE | SERVICE | EXPENSE | WITHDRAWAL<br>
+amount, paymentMethod, category, description<br>
+referenceType, referenceId<br>
+documentUrl, createdAt
+            </div>
+        </div>
+        
+        <div class="entity-box">
+            <h4>Expense (Gasto General)</h4>
+            <div class="field-list">
+id, businessId, expenseNumber<br>
+category: SUPPLIES | UTILITIES | RENT | SALARIES | etc.<br>
+description, amount, expenseDate, dueDate<br>
+<strong style="color: #dc2626;">invoiceUrl, invoiceNumber ⭐</strong><br>
+<strong style="color: #dc2626;">isPaid, paidAt, paymentProofUrl ⭐</strong><br>
+supplierId, supplierName, userId, notes
+            </div>
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- FLUJO TURNO DE CAJA -->
+    <h2 style="color: #10B981;">🔄 Ciclo de Turno de Caja</h2>
+    
+    <div class="flow-box">
+        <h4>🔓 Apertura de Turno</h4>
+        <div class="step">1. Usuario autorizado inicia turno</div>
+        <div class="step">2. Contar efectivo inicial en caja</div>
+        <div class="step">3. Registrar monto inicial (ejemplo: $100,000)</div>
+        <div class="step">4. Crear CashRegisterShift (status: OPEN)</div>
+        <div class="step">5. A partir de aquí se registran todos los movimientos</div>
+    </div>
+    
+    <div class="flow-box">
+        <h4>💰 Durante el Turno - Ingresos</h4>
+        <div class="step"><strong>Venta de Productos:</strong></div>
+        <div class="step" style="margin-left: 20px;">
+            → Receipt creado<br>
+            → CashMovement(SALE) creado<br>
+            → Suma al total del turno
+        </div>
+        <div class="step"><strong>Pago de Servicio/Cita:</strong></div>
+        <div class="step" style="margin-left: 20px;">
+            → Appointment pagado<br>
+            → Receipt creado<br>
+            → CashMovement(SERVICE) creado
+        </div>
+    </div>
+    
+    <div class="flow-box">
+        <h4>💸 Durante el Turno - Egresos</h4>
+        <div class="step"><strong>Gastos Generales:</strong></div>
+        <div class="step" style="margin-left: 20px;">
+            → Crear Expense<br>
+            → Cargar comprobante<br>
+            → CashMovement(EXPENSE) creado
+        </div>
+        <div class="step"><strong>Pago a Proveedor:</strong></div>
+        <div class="step" style="margin-left: 20px;">
+            → Marcar PurchaseOrder como pagado<br>
+            → Cargar comprobante de pago<br>
+            → CashMovement(EXPENSE) creado
+        </div>
+        <div class="step"><strong>Retiro de Efectivo:</strong></div>
+        <div class="step" style="margin-left: 20px;">
+            → Razón del retiro<br>
+            → CashMovement(WITHDRAWAL) creado
+        </div>
+    </div>
+    
+    <div class="flow-box">
+        <h4>🔒 Cierre de Turno</h4>
+        <div class="step">1. Contar efectivo físico en caja</div>
+        <div class="step">2. Sistema calcula efectivo esperado:</div>
+        <div class="step" style="margin-left: 20px;">
+            → Inicial + Ingresos - Egresos = Esperado
+        </div>
+        <div class="step">3. Comparar: Físico vs Esperado</div>
+        <div class="step">4. Si hay diferencia: Justificar (faltante/sobrante)</div>
+        <div class="step">5. Generar reporte de cierre (PDF)</div>
+        <div class="step">6. Actualizar CashRegisterShift (status: CLOSED)</div>
+        <div class="step">7. Depositar o guardar efectivo según política</div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- EJEMPLO DE CIERRE -->
+    <h2 style="color: #10B981;">📊 Ejemplo de Cierre de Turno</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th colspan="2" style="background: #3b82f6;">Resumen del Turno #47</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Efectivo inicial:</strong></td>
+                <td style="text-align: right;">$100,000</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="background: #e8f5e9;"><strong>INGRESOS</strong></td>
+            </tr>
+            <tr>
+                <td style="padding-left: 20px;">Ventas de productos (15)</td>
+                <td style="text-align: right;">$320,000</td>
+            </tr>
+            <tr>
+                <td style="padding-left: 20px;">Servicios pagados (8)</td>
+                <td style="text-align: right;">$450,000</td>
+            </tr>
+            <tr>
+                <td><strong>Total ingresos:</strong></td>
+                <td style="text-align: right;"><strong>$770,000</strong></td>
+            </tr>
+            <tr>
+                <td colspan="2" style="background: #ffebee;"><strong>EGRESOS</strong></td>
+            </tr>
+            <tr>
+                <td style="padding-left: 20px;">Gastos generales (3)</td>
+                <td style="text-align: right;">-$80,000</td>
+            </tr>
+            <tr>
+                <td style="padding-left: 20px;">Pago proveedores (1)</td>
+                <td style="text-align: right;">-$150,000</td>
+            </tr>
+            <tr>
+                <td style="padding-left: 20px;">Retiros (1)</td>
+                <td style="text-align: right;">-$200,000</td>
+            </tr>
+            <tr>
+                <td><strong>Total egresos:</strong></td>
+                <td style="text-align: right;"><strong>-$430,000</strong></td>
+            </tr>
+            <tr style="background: #fff3cd;">
+                <td><strong>Efectivo esperado:</strong></td>
+                <td style="text-align: right;"><strong>$440,000</strong></td>
+            </tr>
+            <tr style="background: #fff3cd;">
+                <td><strong>Efectivo contado:</strong></td>
+                <td style="text-align: right;"><strong>$438,000</strong></td>
+            </tr>
+            <tr style="background: #ffebee;">
+                <td><strong>Diferencia:</strong></td>
+                <td style="text-align: right; color: #dc2626;"><strong>-$2,000 ⚠️</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3 style="color: #3b82f6;">Desglose por Método de Pago</h3>
+    <table>
+        <tr>
+            <td><strong>Efectivo:</strong></td>
+            <td style="text-align: right;">$438,000</td>
+        </tr>
+        <tr>
+            <td><strong>Tarjeta:</strong></td>
+            <td style="text-align: right;">$250,000</td>
+        </tr>
+        <tr>
+            <td><strong>Transferencia:</strong></td>
+            <td style="text-align: right;">$82,000</td>
+        </tr>
+        <tr style="background: #e8f5e9;">
+            <td><strong>Total:</strong></td>
+            <td style="text-align: right;"><strong>$770,000</strong></td>
+        </tr>
+    </table>
+
+    <div class="page-break"></div>
+
+    <!-- CATEGORÍAS DE GASTOS -->
+    <h2 style="color: #10B981;">📝 Categorías de Gastos</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 30%;">Categoría</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>SUPPLIES</strong></td>
+                <td>Insumos y materiales para servicios</td>
+            </tr>
+            <tr>
+                <td><strong>INVENTORY</strong></td>
+                <td>Compra de productos para reventa</td>
+            </tr>
+            <tr>
+                <td><strong>UTILITIES</strong></td>
+                <td>Servicios públicos (agua, luz, gas)</td>
+            </tr>
+            <tr>
+                <td><strong>RENT</strong></td>
+                <td>Arriendo del local</td>
+            </tr>
+            <tr>
+                <td><strong>INTERNET</strong></td>
+                <td>Internet y teléfono</td>
+            </tr>
+            <tr>
+                <td><strong>SALARIES</strong></td>
+                <td>Salarios del personal</td>
+            </tr>
+            <tr>
+                <td><strong>COMMISSIONS</strong></td>
+                <td>Comisiones de especialistas</td>
+            </tr>
+            <tr>
+                <td><strong>MARKETING</strong></td>
+                <td>Publicidad y marketing</td>
+            </tr>
+            <tr>
+                <td><strong>MAINTENANCE</strong></td>
+                <td>Mantenimiento de equipos</td>
+            </tr>
+            <tr>
+                <td><strong>TAXES</strong></td>
+                <td>Impuestos y contribuciones</td>
+            </tr>
+            <tr>
+                <td><strong>BANK_FEES</strong></td>
+                <td>Comisiones bancarias</td>
+            </tr>
+            <tr>
+                <td><strong>OTHER</strong></td>
+                <td>Otros gastos operativos</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <!-- PERMISOS Y ROLES -->
+    <h2 style="color: #10B981;">🔐 Permisos por Rol</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 40%;">Acción</th>
+                <th>Roles Permitidos</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Ver productos</td>
+                <td>TODOS los roles</td>
+            </tr>
+            <tr>
+                <td>Crear/editar productos</td>
+                <td>OWNER, BUSINESS, MANAGER</td>
+            </tr>
+            <tr>
+                <td>Eliminar productos</td>
+                <td>OWNER, BUSINESS</td>
+            </tr>
+            <tr style="background: #fff3cd;">
+                <td><strong>Vender productos</strong></td>
+                <td><strong>CONFIGURABLE por negocio</strong><br>
+                    <small>Default: OWNER, BUSINESS, MANAGER, RECEPTIONIST</small>
+                </td>
+            </tr>
+            <tr style="background: #fff3cd;">
+                <td><strong>Retirar para servicios</strong></td>
+                <td><strong>CONFIGURABLE por negocio</strong><br>
+                    <small>Default: OWNER, BUSINESS, MANAGER, SPECIALIST</small>
+                </td>
+            </tr>
+            <tr>
+                <td>Ver movimientos de inventario</td>
+                <td>OWNER, BUSINESS, MANAGER</td>
+            </tr>
+            <tr>
+                <td>Crear órdenes de compra</td>
+                <td>OWNER, BUSINESS, MANAGER</td>
+            </tr>
+            <tr>
+                <td>Abrir/cerrar turno de caja</td>
+                <td>OWNER, BUSINESS, MANAGER, RECEPTIONIST</td>
+            </tr>
+            <tr>
+                <td>Registrar gastos</td>
+                <td>OWNER, BUSINESS, MANAGER</td>
+            </tr>
+            <tr>
+                <td>Ver reportes financieros</td>
+                <td>OWNER, BUSINESS, MANAGER</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <!-- ESTRUCTURA TÉCNICA -->
+    <h2 style="color: #10B981;">🏗️ Estructura de Componentes Web</h2>
+    
+    <div class="architecture-diagram">
+        <pre style="font-size: 12px; text-align: left;">
+web-app/src/pages/
+├── inventory/
+│   ├── InventoryDashboard.jsx
+│   ├── products/
+│   │   ├── ProductList.jsx
+│   │   ├── ProductForm.jsx
+│   │   └── ProductDetail.jsx
+│   ├── stock/
+│   │   ├── StockInitial.jsx        ← FASE 1
+│   │   ├── StockAdjustment.jsx
+│   │   └── StockAlerts.jsx
+│   ├── purchases/
+│   │   ├── PurchaseOrderList.jsx
+│   │   ├── PurchaseOrderForm.jsx   ← Con upload factura
+│   │   ├── ReceiveMerchandise.jsx
+│   │   └── PaymentRegister.jsx     ← Registrar pago
+│   ├── sales/
+│   │   ├── ProductSale.jsx         ← WebView mobile
+│   │   └── SalesHistory.jsx
+│   ├── consumption/
+│   │   ├── InternalConsumption.jsx
+│   │   └── ConsumptionHistory.jsx
+│   └── movements/
+│       └── MovementsList.jsx
+│
+├── cash-register/
+│   ├── CashRegisterDashboard.jsx
+│   ├── shifts/
+│   │   ├── OpenShift.jsx
+│   │   ├── CurrentShift.jsx
+│   │   ├── CloseShift.jsx
+│   │   └── ShiftHistory.jsx
+│   └── movements/
+│       ├── RegisterIncome.jsx
+│       ├── RegisterExpense.jsx
+│       └── MovementsList.jsx
+│
+├── expenses/
+│   ├── ExpensesDashboard.jsx
+│   ├── ExpenseForm.jsx             ← Con upload comprobante
+│   └── ExpensesList.jsx
+│
+└── accounting/
+    ├── AccountingDashboard.jsx
+    ├── AccountsPayable.jsx
+    └── FinancialReports.jsx
+        </pre>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- PLAN DE IMPLEMENTACIÓN -->
+    <h2 style="color: #10B981;">🚀 Plan de Implementación</h2>
+    
+    <div class="module-card" style="border-color: #10B981; background: #f0fdf4;">
+        <h3 style="color: #10B981;">Fase 1: Base de Inventario (Semana 1-2)</h3>
+        <div class="step">✅ ProductList.jsx - CRUD básico de productos</div>
+        <div class="step">✅ ProductForm.jsx - Crear/editar con validaciones</div>
+        <div class="step">✅ StockInitial.jsx - Carga inicial de stock</div>
+        <div class="step">✅ API endpoints productos</div>
+        <div class="step">✅ Migraciones de base de datos</div>
+    </div>
+    
+    <div class="module-card" style="border-color: #3b82f6;">
+        <h3 style="color: #3b82f6;">Fase 2: Compras y Proveedores (Semana 3)</h3>
+        <div class="step">✅ PurchaseOrderForm.jsx - Con upload factura</div>
+        <div class="step">✅ ReceiveMerchandise.jsx - Recibir stock</div>
+        <div class="step">✅ InventoryMovements - Tracking completo</div>
+        <div class="step">✅ Cuentas por pagar - Vista inicial</div>
+    </div>
+    
+    <div class="module-card" style="border-color: #f59e0b;">
+        <h3 style="color: #f59e0b;">Fase 3: Ventas (Semana 4)</h3>
+        <div class="step">✅ ProductSale.jsx - WebView mobile</div>
+        <div class="step">✅ Receipt PDF generator</div>
+        <div class="step">✅ Integración con WhatsApp</div>
+        <div class="step">✅ Permisos de venta configurables</div>
+    </div>
+    
+    <div class="module-card" style="border-color: #8b5cf6;">
+        <h3 style="color: #8b5cf6;">Fase 4: Caja y Turnos (Semana 5-6)</h3>
+        <div class="step">✅ CashRegisterShift - Abrir/Cerrar</div>
+        <div class="step">✅ CashMovements - Registro de movimientos</div>
+        <div class="step">✅ Arqueo de caja con diferencias</div>
+        <div class="step">✅ Reportes de turno en PDF</div>
+    </div>
+    
+    <div class="module-card" style="border-color: #ec4899;">
+        <h3 style="color: #ec4899;">Fase 5: Gastos y Contabilidad (Semana 7)</h3>
+        <div class="step">✅ Expense management completo</div>
+        <div class="step">✅ Categorías de gastos</div>
+        <div class="step">✅ Cuentas por pagar con alertas</div>
+        <div class="step">✅ Registro de pagos con comprobantes</div>
+    </div>
+    
+    <div class="module-card" style="border-color: #14b8a6;">
+        <h3 style="color: #14b8a6;">Fase 6: Reportes y Analytics (Semana 8)</h3>
+        <div class="step">✅ Dashboards interactivos</div>
+        <div class="step">✅ Reportes financieros completos</div>
+        <div class="step">✅ Alertas automáticas (stock bajo, pagos)</div>
+        <div class="step">✅ Exportación de datos (Excel/PDF)</div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <p><strong>Beauty Control - Sistema de Gestión de Salones</strong></p>
+        <p>Documento Técnico - Sistema de Inventario, Caja y Flujo de Efectivo</p>
+        <p>Fecha: Enero 30, 2025 | Versión: 1.0.0</p>
+        <p style="margin-top: 20px; font-size: 12px;">
+            Este documento describe la arquitectura completa del sistema integrado de inventario,<br>
+            caja y contabilidad para salones de belleza.
+        </p>
+    </div>
+    
+    <div class="no-print" style="position: fixed; top: 20px; right: 20px; background: #10B981; color: white; padding: 15px 25px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onclick="window.print()">
+        🖨️ Imprimir / Guardar PDF
+    </div>
+</body>
+</html>

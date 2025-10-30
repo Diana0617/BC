@@ -2,24 +2,14 @@
  * Configuración de Cron Jobs para Beauty Control
  * 
  * Jobs programados:
- * - Verificación diaria de suscripciones (8:  static async runManualSubscriptionCheck() {
-    // console.log('🧘 Ejecutando verificación manual...');
-    try {
-      const result = await SubscriptionStatusService.runDailyStatusCheck();
-      const attention = await SubscriptionStatusService.getSubscriptionsRequiringAttention();)
- * - Limpiez  static async runManualAutoRenewal() {
-    // console.log('🧘 Ejecutando auto-renovación manual...');
-    try {
-      const result = await AutoRenewalService.processAutoRenewals();
-      // console.log('✅ Auto-renovación manual completada:', result);tokens exp  static async runManualPaymentRetries() {
-    // console.log('🧘 Ejecutando reintentos manual...');
-    try {
-      await AutoRenewalService.processPaymentRetries();
-      // console.log('✅ Reintentos manuales completados');s (2:00 A  static async runManualNotifications() {
-    // console.log('🧘 Ejecutando notificaciones manual...');
-    try {
-      await AutoRenewalService.notifyUpcomingExpirations();
-      // console.log('✅ Notificaciones manuales enviadas');* - Generación de reportes financieros (9:00 AM)
+ * - Verificación diaria de suscripciones (8:00 AM)
+ * - Limpieza de tokens expirados (2:00 AM)
+ * - Generación de reportes financieros (9:00 AM lunes)
+ * - Auto-renovación de suscripciones (6:00 AM)
+ * - Reintentos de pagos fallidos (10:00 AM y 3:00 PM)
+ * - Notificaciones de próximos vencimientos (9:00 AM)
+ * - Recordatorios WhatsApp de citas (cada 15 minutos)
+ * - Verificación horaria de recordatorios WhatsApp (cada hora - backup)
  */
 
 const cron = require('node-cron');
@@ -135,6 +125,34 @@ class CronJobManager {
       timezone: "America/Bogota"
     });
 
+    // =================================================
+    // RECORDATORIOS WHATSAPP
+    // =================================================
+    
+    // Enviar recordatorios de citas - Cada 15 minutos
+    cron.schedule('*/15 * * * *', async () => {
+      try {
+        const appointmentReminderCron = require('../cron/appointmentReminders');
+        await appointmentReminderCron.sendReminders();
+      } catch (error) {
+        console.error('❌ Error enviando recordatorios WhatsApp:', error);
+      }
+    }, {
+      timezone: "America/Bogota"
+    });
+
+    // Verificación cada hora para recordatorios pendientes (backup)
+    cron.schedule('0 * * * *', async () => {
+      try {
+        const appointmentReminderCron = require('../cron/appointmentReminders');
+        await appointmentReminderCron.sendReminders();
+      } catch (error) {
+        console.error('❌ Error en verificación horaria de recordatorios:', error);
+      }
+    }, {
+      timezone: "America/Bogota"
+    });
+
     // console.log('✅ Cron Jobs inicializados correctamente');
   }
 
@@ -197,6 +215,38 @@ class CronJobManager {
       console.log('✅ Notificaciones manuales enviadas');
     } catch (error) {
       console.error('❌ Error en notificaciones manuales:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Ejecuta envío de recordatorios WhatsApp manual (para testing)
+   */
+  static async runManualWhatsAppReminders() {
+    console.log('🧪 Ejecutando recordatorios WhatsApp manual...');
+    try {
+      const appointmentReminderCron = require('../cron/appointmentReminders');
+      const result = await appointmentReminderCron.sendReminders();
+      console.log('✅ Recordatorios WhatsApp enviados:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error en recordatorios WhatsApp manual:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Envía recordatorio WhatsApp inmediato para una cita específica (para testing)
+   */
+  static async sendImmediateReminder(appointmentId) {
+    console.log(`🧪 Enviando recordatorio inmediato para cita ${appointmentId}...`);
+    try {
+      const appointmentReminderCron = require('../cron/appointmentReminders');
+      const result = await appointmentReminderCron.sendImmediateReminder(appointmentId);
+      console.log('✅ Recordatorio inmediato enviado:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error enviando recordatorio inmediato:', error);
       throw error;
     }
   }

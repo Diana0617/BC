@@ -32,6 +32,7 @@ import OwnerReports from './pages/owner/reports/OwnerReports'
 // Business Pages
 import BusinessProfile from './pages/business/profile/BusinessProfile.jsx'
 import ConsentTemplatesPage from './pages/ConsentTemplatesPage.jsx'
+import InventoryDashboard from './pages/business/inventory/InventoryDashboard.jsx'
 
 // Public Pages
 import LandingPage from './pages/public/LandingPage'
@@ -105,6 +106,7 @@ function AppLayout() {
             <>
               <Route path="/business/profile" element={<BusinessProfile />} />
               <Route path="/business/consent-templates" element={<ConsentTemplatesPage />} />
+              <Route path="/business/inventory" element={<InventoryDashboard />} />
             </>
           )}
           

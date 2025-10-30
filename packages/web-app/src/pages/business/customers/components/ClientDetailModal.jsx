@@ -16,7 +16,8 @@ import {
   ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
-  PencilIcon
+  PencilIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import {
   fetchCustomerStats,
@@ -87,6 +88,7 @@ const ClientDetailModal = ({ client, onClose, onCreateVoucher, onClientUpdated }
   const tabs = [
     { id: 'info', label: 'Información', icon: UserIcon },
     { id: 'appointments', label: 'Citas', icon: CalendarDaysIcon },
+    { id: 'consents', label: 'Consentimientos', icon: DocumentTextIcon },
     { id: 'vouchers', label: 'Vouchers', icon: TicketIcon },
     { id: 'stats', label: 'Estadísticas', icon: ChartBarIcon }
   ];
@@ -168,6 +170,7 @@ const ClientDetailModal = ({ client, onClose, onCreateVoucher, onClientUpdated }
           <div className="flex-1 overflow-y-auto p-6">
             {activeTab === 'info' && <InfoTab client={client} onLiftBlock={handleLiftBlock} />}
             {activeTab === 'appointments' && <AppointmentsTab client={client} />}
+            {activeTab === 'consents' && <ConsentsTab client={client} />}
             {activeTab === 'vouchers' && <VouchersTab client={client} onCreateVoucher={onCreateVoucher} />}
             {activeTab === 'stats' && <StatsTab stats={customerStats} history={cancellationHistory} />}
           </div>
@@ -515,6 +518,177 @@ const StatsTab = ({ stats, history }) => {
             ))}
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Tab de Consentimientos
+ */
+const ConsentsTab = ({ client }) => {
+  const [consents, setConsents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { currentBusiness } = useSelector(state => state.business);
+
+  useEffect(() => {
+    const loadConsents = async () => {
+      if (!client?.id || !currentBusiness?.id) return;
+      
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `/api/business/${currentBusiness.id}/clients/${client.id}/history`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          setConsents(data.data?.consents || []);
+        }
+      } catch (error) {
+        console.error('Error loading consents:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadConsents();
+  }, [client, currentBusiness]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mr-3"></div>
+        <span className="text-gray-600">Cargando consentimientos...</span>
+      </div>
+    );
+  }
+
+  if (consents.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-4 text-lg font-medium text-gray-900">
+          Sin consentimientos firmados
+        </h3>
+        <p className="mt-2 text-sm text-gray-500">
+          Este cliente aún no ha firmado ningún consentimiento informado.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-medium text-gray-900">
+          Consentimientos Firmados
+        </h3>
+        <span className="text-sm text-gray-500">
+          Total: {consents.length}
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        {consents.map((consent) => (
+          <div 
+            key={consent.id} 
+            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-2">
+                  <DocumentTextIcon className="h-5 w-5 text-indigo-600" />
+                  <h4 className="text-sm font-medium text-gray-900">
+                    {consent.template?.title || 'Consentimiento'}
+                  </h4>
+                  {consent.template?.version && (
+                    <span className="text-xs text-gray-500">
+                      v{consent.template.version}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-500">Servicio:</span>
+                    <span className="ml-2 text-gray-900">
+                      {consent.service?.name || 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Categoría:</span>
+                    <span className="ml-2 text-gray-900">
+                      {consent.template?.category || 'General'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Firmado:</span>
+                    <span className="ml-2 text-gray-900">
+                      {new Date(consent.signedAt).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Firmado por:</span>
+                    <span className="ml-2 text-gray-900">
+                      {consent.signedBy || client.name}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ml-4 flex flex-col space-y-2">
+                {consent.pdfUrl && (
+                  <a
+                    href={consent.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors"
+                  >
+                    <DocumentTextIcon className="h-4 w-4 mr-1" />
+                    Ver PDF
+                  </a>
+                )}
+                {consent.pdfGeneratedAt && (
+                  <span className="text-xs text-green-600 flex items-center">
+                    <CheckCircleIcon className="h-3 w-3 mr-1" />
+                    PDF generado
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Campos editables si existen */}
+            {consent.editableFieldsData && Object.keys(consent.editableFieldsData).length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="text-xs font-medium text-gray-700 mb-2">
+                  Datos capturados:
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {Object.entries(consent.editableFieldsData).map(([key, value]) => (
+                    <div key={key} className="bg-gray-50 p-2 rounded">
+                      <span className="text-gray-500 capitalize">
+                        {key.replace(/([A-Z])/g, ' $1').trim()}:
+                      </span>
+                      <span className="ml-1 text-gray-900">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

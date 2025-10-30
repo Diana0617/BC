@@ -2,133 +2,35 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const { requireBasicAccess, requireFullAccess } = require('../middleware/subscription');
-// const tenancyMiddleware = require('../middleware/tenancy');
- const { allStaffRoles, businessAndOwner } = require('../middleware/roleCheck');
+const { businessAndOwner } = require('../middleware/roleCheck');
+const productController = require('../controllers/productController');
 
 // Todas las rutas de productos requieren autenticación
 router.use(authenticateToken);
-// router.use(tenancyMiddleware);
-// router.use(allStaffRoles);
 
-// Obtener lista de productos (acceso básico)
-router.get('/', requireBasicAccess, (req, res) => {
+// Rutas especiales primero (antes de rutas con parámetros)
+router.get('/categories', requireBasicAccess, productController.getCategories);
+router.post('/bulk-initial-stock', requireFullAccess, businessAndOwner, productController.bulkInitialStock);
+
+// CRUD básico de productos
+router.get('/', requireBasicAccess, productController.getProducts);
+router.post('/', requireFullAccess, businessAndOwner, productController.createProduct);
+router.get('/:id', requireBasicAccess, productController.getProductById);
+router.put('/:id', requireFullAccess, businessAndOwner, productController.updateProduct);
+router.delete('/:id', requireFullAccess, businessAndOwner, productController.deleteProduct);
+
+// Movimientos de inventario (implementaremos después)
+router.get('/:id/movements', requireBasicAccess, (req, res) => {
   res.status(501).json({
     success: false,
-    error: 'Ruta de obtener productos aún no implementada'
+    error: 'Ruta de movimientos de inventario pendiente de implementación'
   });
 });
 
-// Crear nuevo producto (requiere acceso completo)
-router.post('/', requireFullAccess, /* businessAndOwner, */ (req, res) => {
+router.post('/:id/movements', requireFullAccess, (req, res) => {
   res.status(501).json({
     success: false,
-    error: 'Ruta de crear producto aún no implementada'
-  });
-});
-
-// Obtener producto por ID (acceso básico)
-router.get('/:id', requireBasicAccess, (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de obtener producto por ID aún no implementada'
-  });
-});
-
-// Actualizar producto
-router.put('/:id', /* businessAndOwner, */ (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de actualizar producto aún no implementada'
-  });
-});
-
-// Eliminar producto
-router.delete('/:id', /* businessAndOwner, */ (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de eliminar producto aún no implementada'
-  });
-});
-
-// Obtener categorías de productos
-router.get('/categories', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de categorías de productos aún no implementada'
-  });
-});
-
-// Obtener movimientos de inventario
-router.get('/:id/movements', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de movimientos de inventario aún no implementada'
-  });
-});
-
-// Crear movimiento de inventario
-router.post('/:id/movements', /* businessAndOwner, */ (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de crear movimiento de inventario aún no implementada'
-  });
-});
-
-module.exports = router;
-
-// Obtener lista de productos
-router.get('/', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de obtener productos aún no implementada'
-  });
-});
-
-// Crear nuevo producto
-router.post('/', businessAndOwner, (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de crear producto aún no implementada'
-  });
-});
-
-// Obtener producto por ID
-router.get('/:id', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de obtener producto por ID aún no implementada'
-  });
-});
-
-// Actualizar producto
-router.put('/:id', businessAndOwner, (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de actualizar producto aún no implementada'
-  });
-});
-
-// Eliminar producto
-router.delete('/:id', businessAndOwner, (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de eliminar producto aún no implementada'
-  });
-});
-
-// Obtener movimientos de inventario
-router.get('/:id/movements', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de movimientos de inventario aún no implementada'
-  });
-});
-
-// Registrar movimiento de inventario
-router.post('/:id/movements', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de registrar movimiento de inventario aún no implementada'
+    error: 'Ruta de crear movimiento de inventario pendiente de implementación'
   });
 });
 
