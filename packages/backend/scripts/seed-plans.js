@@ -266,7 +266,11 @@ const basePlans = [
   }
 ];
 
-async function seedPlans() {
+/**
+ * Seed de planes de suscripción
+ * @param {boolean} closeConnection - Si debe cerrar la conexión al finalizar (default: false para API)
+ */
+async function seedPlans(closeConnection = false) {
   try {
     console.log('🌱 Iniciando seeding de planes de suscripción...');
     
@@ -346,17 +350,25 @@ async function seedPlans() {
     console.log(`   • Total de planes base: ${basePlans.length}`);
     console.log('🎉 Seeding de planes completado exitosamente!\n');
     
+    return {
+      created: createdCount,
+      skipped: skippedCount,
+      total: basePlans.length
+    };
+    
   } catch (error) {
     console.error('❌ Error durante el seeding de planes:', error);
-    process.exit(1);
+    throw error;
   } finally {
-    await sequelize.close();
+    if (closeConnection) {
+      await sequelize.close();
+    }
   }
 }
 
 // Ejecutar el seeding si el script se ejecuta directamente
 if (require.main === module) {
-  seedPlans()
+  seedPlans(true) // Cerrar conexión cuando se ejecuta como script
     .then(() => {
       console.log('✨ Script de seeding de planes finalizado.');
       process.exit(0);
@@ -367,4 +379,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { seedPlans, basePlans };
+module.exports = seedPlans; // Exportar solo la función

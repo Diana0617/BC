@@ -284,7 +284,11 @@ const baseModules = [
   }
 ];
 
-async function seedModules() {
+/**
+ * Seed de módulos base
+ * @param {boolean} closeConnection - Si debe cerrar la conexión al finalizar (default: false para API)
+ */
+async function seedModules(closeConnection = false) {
   try {
     console.log('🌱 Iniciando seeding de módulos base...');
     
@@ -317,17 +321,25 @@ async function seedModules() {
     console.log(`   • Total de módulos base: ${baseModules.length}`);
     console.log('🎉 Seeding completado exitosamente!\n');
     
+    return {
+      created: createdCount,
+      skipped: skippedCount,
+      total: baseModules.length
+    };
+    
   } catch (error) {
     console.error('❌ Error durante el seeding de módulos:', error);
-    process.exit(1);
+    throw error;
   } finally {
-    await sequelize.close();
+    if (closeConnection) {
+      await sequelize.close();
+    }
   }
 }
 
 // Ejecutar el seeding si el script se ejecuta directamente
 if (require.main === module) {
-  seedModules()
+  seedModules(true) // Cerrar conexión cuando se ejecuta como script
     .then(() => {
       console.log('✨ Script de seeding finalizado.');
       process.exit(0);
@@ -338,4 +350,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { seedModules, baseModules };
+module.exports = seedModules; // Exportar solo la función

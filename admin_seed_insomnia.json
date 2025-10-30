@@ -1,0 +1,162 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-10-30T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "req_admin_seed_all",
+      "parentId": "fld_admin",
+      "modified": 1730246400000,
+      "created": 1730246400000,
+      "url": "{{ _.base_url }}/api/admin/seed/all",
+      "name": "Seed Completo (Módulos + Planes + Reglas)",
+      "description": "Ejecuta todos los scripts de seed en orden. Solo SUPER_ADMIN",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}",
+          "description": ""
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1730246400000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_admin_seed_modules",
+      "parentId": "fld_admin",
+      "modified": 1730246400000,
+      "created": 1730246400000,
+      "url": "{{ _.base_url }}/api/admin/seed/modules",
+      "name": "Seed Módulos",
+      "description": "Carga los módulos base del sistema. Solo SUPER_ADMIN",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}",
+          "description": ""
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1730246300000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_admin_seed_plans",
+      "parentId": "fld_admin",
+      "modified": 1730246400000,
+      "created": 1730246400000,
+      "url": "{{ _.base_url }}/api/admin/seed/plans",
+      "name": "Seed Planes",
+      "description": "Carga los planes de suscripción. Solo SUPER_ADMIN",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}",
+          "description": ""
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1730246200000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_admin_seed_rules",
+      "parentId": "fld_admin",
+      "modified": 1730246400000,
+      "created": 1730246400000,
+      "url": "{{ _.base_url }}/api/admin/seed/rule-templates",
+      "name": "Seed Plantillas de Reglas",
+      "description": "Carga las plantillas de reglas de negocio. Solo SUPER_ADMIN",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}",
+          "description": ""
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1730246100000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_admin",
+      "parentId": "wrk_main",
+      "modified": 1730246400000,
+      "created": 1730246400000,
+      "name": "🔧 Admin - Seeding",
+      "description": "Endpoints de administración para carga de datos iniciales",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1730246400000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "wrk_main",
+      "parentId": null,
+      "modified": 1730246400000,
+      "created": 1730246400000,
+      "name": "Beauty Control API",
+      "description": "",
+      "scope": "collection",
+      "_type": "workspace"
+    }
+  ]
+}

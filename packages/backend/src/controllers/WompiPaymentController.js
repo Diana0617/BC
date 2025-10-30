@@ -286,13 +286,16 @@ class WompiPaymentController {
       // Extraer merchant ID de la public key (formato: pub_test_merchantId)
       const merchantId = publicKey ? publicKey.split('_').pop() : null;
       
+      // Usar WOMPI_ENVIRONMENT en lugar de NODE_ENV
+      const wompiEnvironment = process.env.WOMPI_ENVIRONMENT || 'test';
+      
       res.json({
         success: true,
         data: {
           publicKey: publicKey,
           merchantId: merchantId,
           currency: 'COP',
-          environment: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
+          environment: wompiEnvironment === 'production' ? 'production' : 'sandbox'
         }
       });
     } catch (error) {

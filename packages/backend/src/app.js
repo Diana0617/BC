@@ -272,10 +272,12 @@ const specialistRoutes = require('./routes/specialistRoutes');
 const permissionRoutes = require('./routes/permissions');
 const treatmentPlanRoutes = require('./routes/treatmentPlans');
 const paymentRoutes = require('./routes/paymentRoutes');
+const adminRoutes = require('./routes/admin'); // Rutas de administración
 // const specialistServicesRoutes = require('./routes/specialistServices'); // DEPRECATED: Ahora usando rutas RESTful en businessConfig.js
 
 
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes); // Rutas de administración (seed, etc.)
 app.use('/api/business', businessRoutes);
 app.use('/api/business', businessConfigRoutes); // Rutas de configuración del negocio
 app.use('/api/business', branchRoutes); // Rutas de sucursales

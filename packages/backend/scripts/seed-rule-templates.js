@@ -542,7 +542,11 @@ const ruleTemplates = [
   }
 ];
 
-async function seedRuleTemplates() {
+/**
+ * Seed de plantillas de reglas
+ * @param {boolean} closeConnection - Si debe cerrar la conexión al finalizar (default: false para API)
+ */
+async function seedRuleTemplates(closeConnection = false) {
   try {
     console.log('🌱 Iniciando seeding de plantillas de reglas...');
     
@@ -592,15 +596,27 @@ async function seedRuleTemplates() {
 
     console.log('\n🎉 Seeding completado exitosamente');
     
+    return {
+      created,
+      updated,
+      skipped,
+      total: created + updated + skipped,
+      totalInDb
+    };
+    
   } catch (error) {
     console.error('❌ Error durante el seeding:', error);
     throw error;
+  } finally {
+    if (closeConnection) {
+      await sequelize.close();
+    }
   }
 }
 
 // Ejecutar el seeding
 if (require.main === module) {
-  seedRuleTemplates()
+  seedRuleTemplates(true) // Cerrar conexión cuando se ejecuta como script
     .then(() => {
       console.log('✅ Script ejecutado correctamente');
       process.exit(0);
@@ -611,4 +627,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { seedRuleTemplates, ruleTemplates };
+module.exports = seedRuleTemplates; // Exportar solo la función
