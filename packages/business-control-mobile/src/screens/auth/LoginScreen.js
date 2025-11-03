@@ -168,22 +168,53 @@ export default function LoginScreen({ navigation }) {
                   fontSize: 14, 
                   color: '#64748b', 
                   textAlign: 'center', 
-                  marginBottom: 24 
+                  marginBottom: 8,
+                  fontWeight: '500'
                 }}>
                   Accede a tu cuenta de Business Control
                 </Text>
+                <Text style={{ 
+                  fontSize: 12, 
+                  color: '#94a3b8', 
+                  textAlign: 'center', 
+                  marginBottom: 24,
+                  paddingHorizontal: 16
+                }}>
+                  Necesitas 3 datos: código de tu negocio, correo y contraseña
+                </Text>
 
-                {/* Subdomain Input - Movido arriba */}
+                {/* Subdomain Input - MEJORADO CON INSTRUCCIONES CLARAS */}
                 <View style={{ marginBottom: 24, marginTop: 16 }}>
-                  <Text style={{ 
-                    fontSize: 14, 
-                    fontWeight: '600', 
-                    color: '#374151', 
-                    marginBottom: 12, 
-                    marginLeft: 4 
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, marginLeft: 4 }}>
+                    <Ionicons name="business" size={16} color="#ec4899" style={{ marginRight: 6 }} />
+                    <Text style={{ 
+                      fontSize: 14, 
+                      fontWeight: '600', 
+                      color: '#374151'
+                    }}>
+                      Código de tu negocio
+                    </Text>
+                  </View>
+                  
+                  {/* Instrucción explicativa */}
+                  <View style={{
+                    backgroundColor: '#fef3c7',
+                    borderLeftWidth: 3,
+                    borderLeftColor: '#f59e0b',
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    marginBottom: 12,
+                    marginHorizontal: 4
                   }}>
-                    Subdominio de tu negocio
-                  </Text>
+                    <Text style={{ fontSize: 12, color: '#92400e', fontWeight: '500' }}>
+                      💡 Ingresa el identificador único de tu salón
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#78350f', marginTop: 4 }}>
+                      Ejemplo: Si tu salón se llama "Bella Vista", ingresa: bella-vista
+                    </Text>
+                  </View>
+
                   <View style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -214,7 +245,7 @@ export default function LoginScreen({ navigation }) {
                         fontWeight: '500',
                         color: '#1e293b'
                       }}
-                      placeholder="mi-salon"
+                      placeholder="bella-vista"
                       value={formData.subdomain}
                       onChangeText={(text) => setFormData({ ...formData, subdomain: text.toLowerCase() })}
                       autoCapitalize="none"
@@ -229,8 +260,8 @@ export default function LoginScreen({ navigation }) {
                       marginLeft: 8
                     }}>
                       <Text style={{ 
-                        fontSize: 14, 
-                        fontWeight: '500', 
+                        fontSize: 12, 
+                        fontWeight: '600', 
                         color: '#64748b' 
                       }}>
                         .businesscontrol.app

@@ -8,16 +8,17 @@ import {
   Alert,
   Image,
   StyleSheet,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '@shared/store/reactNativeStore';
-import WebView from 'react-native-webview';
 import { useBranding } from '../../contexts/BrandingContext';
 import BrandedButton from '../../components/BrandedButton';
 import BrandedHeader from '../../components/BrandedHeader';
+import ENV from '../../config/env';
 
 // Componentes de métricas
 const MetricCard = ({ title, value, subtitle, icon, color, onPress }) => (
@@ -87,7 +88,6 @@ export default function BusinessDashboard({ navigation }) {
   }, [user, navigation]);
   
   const [refreshing, setRefreshing] = useState(false);
-  const [showWebView, setShowWebView] = useState(false);
   
   // Estado de métricas (temporal - luego conectar con Redux)
   const [metrics, setMetrics] = useState({
@@ -118,8 +118,25 @@ export default function BusinessDashboard({ navigation }) {
     setRefreshing(false);
   };
 
-  const openWebApp = () => {
-    setShowWebView(true);
+  const openWebApp = async () => {
+    const subdomain = user?.business?.subdomain || 'demo-salon';
+    const baseUrl = ENV.webUrl; // https://bc-nine-alpha.vercel.app (sin /subscribe)
+    const url = `${baseUrl}`;
+    
+    console.log('🌐 Abriendo URL en navegador:', url);
+    
+    try {
+      const supported = await Linking.canOpenURL(url);
+      
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', `No se puede abrir la URL: ${url}`);
+      }
+    } catch (error) {
+      console.error('Error abriendo navegador:', error);
+      Alert.alert('Error', 'No se pudo abrir el navegador web');
+    }
   };
 
   const handleLogout = () => {
@@ -139,50 +156,6 @@ export default function BusinessDashboard({ navigation }) {
       ]
     );
   };
-
-  const getWebViewUrl = () => {
-    const subdomain = user?.business?.subdomain || 'demo';
-    const baseUrl = 'http://localhost:3000'; // FRONTEND_URL del .env
-    const token = user?.token || '';
-    
-    // URL con autenticación automática
-    return `${baseUrl}/${subdomain}/dashboard?token=${token}&mobile=true`;
-  };
-
-  if (showWebView) {
-    return (
-      <SafeAreaView className="flex-1 bg-white">
-        <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
-          <TouchableOpacity
-            onPress={() => setShowWebView(false)}
-            className="flex-row items-center"
-          >
-            <Ionicons name="arrow-back" size={24} color="#374151" />
-            <Text className="ml-2 text-lg font-semibold text-gray-800">
-              Panel Completo
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowWebView(false)}>
-            <Ionicons name="close" size={24} color="#374151" />
-          </TouchableOpacity>
-        </View>
-        
-        <WebView
-          source={{ uri: getWebViewUrl() }}
-          style={{ flex: 1 }}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          startInLoadingState={true}
-          scalesPageToFit={true}
-          onError={(syntheticEvent) => {
-            const { nativeEvent } = syntheticEvent;
-            Alert.alert('Error', 'No se pudo cargar la página web');
-            setShowWebView(false);
-          }}
-        />
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>

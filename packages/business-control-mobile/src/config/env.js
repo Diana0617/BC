@@ -3,15 +3,18 @@ import Constants from 'expo-constants';
 const ENV = {
   dev: {
     apiUrl: 'http://192.168.0.213:3001',
-    webUrl: 'http://192.168.0.213:3000/subscribe',
+    webUrl: 'http://192.168.0.213:3000',
+    subscribeUrl: 'http://192.168.0.213:3000/subscribe',
   },
   staging: {
     apiUrl: 'https://bc-16wt.onrender.com',
-    webUrl: 'https://bc-nine-alpha.vercel.app/subscribe',
+    webUrl: 'https://bc-nine-alpha.vercel.app',
+    subscribeUrl: 'https://bc-nine-alpha.vercel.app/subscribe',
   },
   prod: {
     apiUrl: 'https://bc-16wt.onrender.com',
-    webUrl: 'https://bc-nine-alpha.vercel.app/subscribe',
+    webUrl: 'https://bc-nine-alpha.vercel.app',
+    subscribeUrl: 'https://bc-nine-alpha.vercel.app/subscribe',
   },
 };
 
@@ -21,6 +24,7 @@ const getEnvVars = () => {
     return {
       apiUrl: process.env.EXPO_PUBLIC_API_URL,
       webUrl: process.env.EXPO_PUBLIC_WEB_URL,
+      subscribeUrl: process.env.EXPO_PUBLIC_SUBSCRIBE_URL || `${process.env.EXPO_PUBLIC_WEB_URL}/subscribe`,
     };
   }
   

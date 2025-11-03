@@ -22,9 +22,9 @@ function WelcomeScreen({ navigation }) {
   };
 
   const handleDontHaveApp = async () => {
-    const webUrl = ENV.webUrl; // Usa la URL del entorno configurado
+    const subscribeUrl = ENV.subscribeUrl; // URL específica para registro/suscripción
     try {
-      await Linking.openURL(webUrl);
+      await Linking.openURL(subscribeUrl);
     } catch (error) {
       console.error('Error al abrir la URL:', error);
     }

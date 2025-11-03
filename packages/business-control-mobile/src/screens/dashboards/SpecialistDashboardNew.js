@@ -93,15 +93,7 @@ const AppointmentCard = ({ appointment, onPress, onAction }) => {
   
   // Formatear fecha y hora del appointment en hora de Colombia
   const formatDateTime = (dateString) => {
-    if (!dateString) return { dayLabel: 'Fecha inválida', time: '--:--' };
-    
     const date = new Date(dateString);
-    
-    // Validar que la fecha sea válida
-    if (isNaN(date.getTime())) {
-      console.warn('Invalid date string:', dateString);
-      return { dayLabel: 'Fecha inválida', time: '--:--' };
-    }
     
     let dayLabel = '';
     if (isTodayColombia(date)) {
@@ -262,40 +254,25 @@ export default function SpecialistDashboard({ navigation }) {
   const formatAppointment = (appointment) => {
     if (!appointment) return null;
     
-    // Validar fechas antes de procesarlas
-    if (!appointment.startTime || !appointment.endTime) return null;
-    
-    // Crear fechas de forma segura
+    // Convertir fechas UTC del backend a hora de Colombia (UTC-5)
     const startDate = new Date(appointment.startTime);
     const endDate = new Date(appointment.endTime);
     
-    // Validar que las fechas sean válidas
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      console.warn('Invalid dates in appointment:', appointment.id, appointment.startTime, appointment.endTime);
-      return null;
-    }
-    
-    // Usar toLocaleString directamente para convertir a hora de Colombia de forma segura
-    const startTimeColombia = startDate.toLocaleString('es-CO', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      timeZone: 'America/Bogota' 
-    });
-    const endTimeColombia = endDate.toLocaleString('es-CO', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      timeZone: 'America/Bogota' 
-    });
+    // Colombia está en UTC-5, ajustar para mostrar hora local correcta
+    const colombiaOffset = -5 * 60; // -5 horas en minutos
+    const localOffset = startDate.getTimezoneOffset(); // offset local en minutos
+    const colombiaStartDate = new Date(startDate.getTime() + (localOffset + colombiaOffset) * 60000);
+    const colombiaEndDate = new Date(endDate.getTime() + (localOffset + colombiaOffset) * 60000);
     
     return {
       ...appointment,
       // Formato de tiempos para visualización en hora de Colombia
-      startTime: startTimeColombia,
-      endTime: endTimeColombia,
+      startTime: colombiaStartDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }),
+      endTime: colombiaEndDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }),
       startTimeISO: appointment.startTime, // Mantener original UTC para lógica
       endTimeISO: appointment.endTime,
-      startTimeColombia: appointment.startTime, // Mantener UTC original como fallback
-      endTimeColombia: appointment.endTime,
+      startTimeColombia: colombiaStartDate.toISOString(), // Fecha ajustada a Colombia
+      endTimeColombia: colombiaEndDate.toISOString(),
       // Extraer datos del cliente
       clientName: appointment.client 
         ? `${appointment.client.firstName || ''} ${appointment.client.lastName || ''}`.trim()
@@ -329,11 +306,9 @@ export default function SpecialistDashboard({ navigation }) {
       const [year, month, day] = filters.date.split('-');
       return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     }
-    // Fecha actual en Colombia (UTC-5) - usando método más seguro
+    // Fecha actual en Colombia (UTC-5)
     const now = new Date();
-    // Obtener fecha en Colombia de forma más confiable
-    const colombiaDateString = now.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }); // formato YYYY-MM-DD
-    return new Date(colombiaDateString);
+    return new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
   });
 
   // 📅 Navegación de calendario (hora de Colombia)
@@ -348,14 +323,14 @@ export default function SpecialistDashboard({ navigation }) {
       newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
     }
     
-    // Convertir a fecha de Colombia de forma más segura
-    const colombiaDateString = newDate.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }); // formato YYYY-MM-DD
-    const colombiaDate = new Date(colombiaDateString);
+    // Asegurar que la fecha esté en contexto de Colombia
+    const colombiaDate = new Date(newDate.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+    const newDateString = colombiaDate.toISOString().split('T')[0];
     
     console.log('📅 navigateCalendar (Colombia):', {
       direction,
       oldDate: calendarDate.toISOString().split('T')[0],
-      newDate: colombiaDateString,
+      newDate: newDateString,
       period: filters.period,
       colombiaDate: colombiaDate.toISOString()
     });
