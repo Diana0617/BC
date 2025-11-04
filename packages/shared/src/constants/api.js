@@ -17,17 +17,28 @@ export const getApiUrl = () => {
     console.log('📡 Using fallback API URL:', url);
     return url;
   } else if (typeof window !== 'undefined') {
-    // Web browser environment
-    // Check for Vite env vars (injected at build time)
-    // Note: Using globalThis to avoid import.meta which breaks in React Native
-    const viteApiUrl = typeof globalThis !== 'undefined' && 
-                       globalThis.__VITE_API_URL__;
+    // Web browser environment - detectar automáticamente
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isLanIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
     
-    if (viteApiUrl) {
-      return viteApiUrl;
+    // Si está en localhost o IP LAN, usar el mismo host para el API
+    if (isLocalhost || isLanIp) {
+      const apiUrl = `${protocol}//${hostname}:3001`;
+      console.log('🔵 [SHARED API_CONFIG] Auto-detectado:', apiUrl);
+      return apiUrl;
     }
     
-    return window.__BC_API_URL__ || 'http://localhost:3001';
+    // Si hay window.__BC_API_URL__ configurado en index.html, usarlo
+    if (window.__BC_API_URL__) {
+      console.log('🔵 [SHARED API_CONFIG] Desde window:', window.__BC_API_URL__);
+      return window.__BC_API_URL__;
+    }
+    
+    // Fallback para producción
+    console.log('🔵 [SHARED API_CONFIG] Fallback producción');
+    return 'http://localhost:3001';
   } else {
     // Node.js environment
     return process.env.API_BASE_URL || 'http://localhost:3001';

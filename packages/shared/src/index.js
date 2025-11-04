@@ -41,6 +41,7 @@ export * from './api/paymentMethodsApi.js';
 export * from './store/index.js';
 export * from './store/slices/authSlice.js';
 export * from './store/slices/userSlice.js';
+export * from './store/slices/businessSlice.js';
 
 // Export permission system
 export * from './constants/permissions.js';

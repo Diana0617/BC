@@ -241,8 +241,8 @@ export default function LoginScreen({ navigation }) {
                     <TextInput
                       style={{
                         flex: 1,
-                        fontSize: 16,
-                        fontWeight: '500',
+                        fontSize: 18,
+                        fontWeight: '600',
                         color: '#1e293b'
                       }}
                       placeholder="bella-vista"
@@ -252,22 +252,17 @@ export default function LoginScreen({ navigation }) {
                       autoCorrect={false}
                       placeholderTextColor="#94a3b8"
                     />
-                    <View style={{
-                      backgroundColor: '#e2e8f0',
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 8,
-                      marginLeft: 8
-                    }}>
-                      <Text style={{ 
-                        fontSize: 12, 
-                        fontWeight: '600', 
-                        color: '#64748b' 
-                      }}>
-                        .businesscontrol.app
-                      </Text>
-                    </View>
                   </View>
+                  
+                  {/* Hint del dominio completo */}
+                  <Text style={{ 
+                    fontSize: 12, 
+                    color: '#64748b', 
+                    marginTop: 8,
+                    marginLeft: 4
+                  }}>
+                    Tu dominio completo: {formData.subdomain || 'tu-salon'}.businesscontrol.app
+                  </Text>
                 </View>
 
                 {/* Error Message */}

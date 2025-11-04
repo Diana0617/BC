@@ -45,7 +45,8 @@ const MetricCard = ({ title, value, subtitle, icon, color, onPress }) => (
 
 export default function BusinessDashboard({ navigation }) {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
+  const user = useSelector((state) => state.auth.user);
+  const token = useSelector((state) => state.auth.token); // ✅ Obtener token del state
   const { branding, colors, isLoading: brandingLoading } = useBranding();
   
   console.log('📱 Business Dashboard - User:', user);
@@ -88,6 +89,7 @@ export default function BusinessDashboard({ navigation }) {
   }, [user, navigation]);
   
   const [refreshing, setRefreshing] = useState(false);
+  const [isOpeningWeb, setIsOpeningWeb] = useState(false);
   
   // Estado de métricas (temporal - luego conectar con Redux)
   const [metrics, setMetrics] = useState({
@@ -120,22 +122,39 @@ export default function BusinessDashboard({ navigation }) {
 
   const openWebApp = async () => {
     const subdomain = user?.business?.subdomain || 'demo-salon';
-    const baseUrl = ENV.webUrl; // https://bc-nine-alpha.vercel.app (sin /subscribe)
-    const url = `${baseUrl}`;
+    const baseUrl = ENV.webUrl; // http://192.168.0.213:3000 en dev
+    const authToken = token || ''; // ✅ Usar token del state
     
-    console.log('🌐 Abriendo URL en navegador:', url);
+    setIsOpeningWeb(true);
     
     try {
-      const supported = await Linking.canOpenURL(url);
+      // Construir URL con token y timestamp para evitar caché
+      const timestamp = Date.now();
+      const cacheBuster = Math.random().toString(36).substring(7);
+      const url = `${baseUrl}?token=${authToken}&mobile=true&t=${timestamp}&v=${cacheBuster}`;
+      
+      console.log('🌐 Abriendo URL en navegador con token directo');
+      console.log('🔗 URL COMPLETA:', url); // Mostrar URL completa para debug
+      console.log('🔑 TOKEN:', authToken);
+      console.log('⏰ Cache buster:', cacheBuster);
+      
+      const supported = await Linking.canOpenURL(baseUrl); // Verificar solo el dominio
       
       if (supported) {
         await Linking.openURL(url);
+        // Limpiar el loading después de un breve delay
+        setTimeout(() => setIsOpeningWeb(false), 1000);
       } else {
-        Alert.alert('Error', `No se puede abrir la URL: ${url}`);
+        setIsOpeningWeb(false);
+        Alert.alert('Error', `No se puede abrir la URL`);
       }
     } catch (error) {
-      console.error('Error abriendo navegador:', error);
-      Alert.alert('Error', 'No se pudo abrir el navegador web');
+      console.error('❌ Error abriendo navegador:', error);
+      setIsOpeningWeb(false);
+      Alert.alert(
+        'Error', 
+        'No se pudo abrir el panel web. Por favor verifica tu conexión.'
+      );
     }
   };
 
@@ -258,6 +277,7 @@ export default function BusinessDashboard({ navigation }) {
             <BrandedButton
               variant="primary"
               onPress={openWebApp}
+              loading={isOpeningWeb}
               style={styles.actionButton}
             >
               <View style={styles.buttonContent}>

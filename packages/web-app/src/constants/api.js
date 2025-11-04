@@ -1,6 +1,25 @@
 // API Configuration for web app
+// Detectar dinámicamente la URL del API basándose en el host actual
+const getApiBaseUrl = () => {
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  const isLanIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+  
+  // Si está en localhost o IP LAN, usar el mismo host para el API
+  if (isLocalhost || isLanIp) {
+    const apiUrl = `${protocol}//${hostname}:3001`;
+    console.log('[WEB API_CONFIG] Auto-detectado:', apiUrl);
+    return apiUrl;
+  }
+  
+  // Fallback para producción
+  console.log('[WEB API_CONFIG] Fallback producción');
+  return 'http://localhost:3001';
+};
+
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:3001',
+  BASE_URL: getApiBaseUrl(),
   ENDPOINTS: {
     // Auth endpoints
     AUTH: {

@@ -21,6 +21,10 @@ class ApiClient {
       } else {
         token = StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
       }
+
+      if (!token && typeof window !== 'undefined') {
+        token = window.__BC_AUTH_TOKEN__ || null;
+      }
       
      
       return token;
@@ -72,14 +76,18 @@ class ApiClient {
       body
     };
 
-    console.log('ApiClient request:', {
+    const requestDebug = {
       url,
       method: config.method || 'GET',
       hasAuthHeader: !!headers.Authorization,
       authPreview: headers.Authorization ? `${headers.Authorization.substring(0, 20)}...` : null,
       contentType: headers['Content-Type'] || null,
       isFormData: body instanceof FormData
-    });
+    };
+    console.log('ApiClient request:', requestDebug);
+    if (typeof window !== 'undefined' && window.__BC_DEBUG_LOG) {
+      window.__BC_DEBUG_LOG(`🌐 ApiClient request ${requestDebug.method} -> ${requestDebug.url}`);
+    }
 
     try {
       const controller = new AbortController();
@@ -112,6 +120,9 @@ class ApiClient {
         statusText: response.statusText
       };
     } catch (error) {
+      if (typeof window !== 'undefined' && window.__BC_DEBUG_LOG) {
+        window.__BC_DEBUG_LOG(`❌ ApiClient error (${config.method || 'GET'} ${url}): ${error && error.message ? error.message : error}`);
+      }
       if (error.name === 'AbortError') {
         throw new Error('Request timeout');
       }

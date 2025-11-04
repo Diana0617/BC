@@ -50,7 +50,7 @@ async function sendReminders() {
         status: {
           [Op.in]: ['CONFIRMED', 'PENDING'] // Solo citas confirmadas o pendientes
         },
-        reminderSent: {
+        remindersSent: {
           [Op.or]: [null, false] // Que no se haya enviado recordatorio
         }
       },
@@ -104,7 +104,7 @@ async function sendReminders() {
         if (result.success) {
           // Marcar como enviado
           await appointment.update({
-            reminderSent: true,
+            remindersSent: true,
             reminderSentAt: new Date(),
             reminderMessageId: result.messageId
           });
@@ -203,7 +203,7 @@ async function sendImmediateReminder(appointmentId) {
 
     if (result.success) {
       await appointment.update({
-        reminderSent: true,
+        remindersSent: true,
         reminderSentAt: new Date(),
         reminderMessageId: result.messageId
       });

@@ -367,7 +367,37 @@ const authSlice = createSlice({
       })
       .addCase(getUserProfile.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload;
+        // El payload tiene estructura: { success: true, data: { user: {...} } }
+        state.user = action.payload?.data?.user || action.payload;
+        state.isAuthenticated = true;
+        
+        // Asegurarnos de que el token esté en el estado si está en localStorage
+        if (!state.token) {
+          const isReactNative = typeof window === 'undefined' || 
+                               (typeof navigator !== 'undefined' && navigator.product === 'ReactNative');
+          
+          if (!isReactNative) {
+            const token = StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
+            if (token) {
+              state.token = token;
+            }
+          }
+        }
+        
+        // Guardar en storage
+        try {
+          const userData = action.payload?.data?.user || action.payload;
+          const isReactNative = typeof window === 'undefined' || 
+                               (typeof navigator !== 'undefined' && navigator.product === 'ReactNative');
+          
+          if (isReactNative) {
+            StorageHelper.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+          } else {
+            StorageHelper.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+          }
+        } catch (error) {
+          console.warn('Error saving user data to storage:', error);
+        }
       })
       .addCase(getUserProfile.rejected, (state, action) => {
         state.isLoading = false;

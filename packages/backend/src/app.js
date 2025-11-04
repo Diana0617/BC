@@ -275,8 +275,12 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const adminRoutes = require('./routes/admin'); // Rutas de administración
 // const specialistServicesRoutes = require('./routes/specialistServices'); // DEPRECATED: Ahora usando rutas RESTful en businessConfig.js
 
+// Rutas de sesiones móviles
+const mobileRoutes = require('./routes/mobile.routes.js');
+
 
 app.use('/api/auth', authRoutes);
+app.use('/api/mobile', mobileRoutes); // Rutas de auto-login desde móvil
 app.use('/api/admin', adminRoutes); // Rutas de administración (seed, etc.)
 app.use('/api/business', businessRoutes);
 app.use('/api/business', businessConfigRoutes); // Rutas de configuración del negocio
