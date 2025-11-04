@@ -749,7 +749,6 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
       </div>
     </div>
   );
-
   const renderStep3 = () => {
     // Si es RECEPTIONIST, mostrar confirmación en lugar de datos profesionales
     if (formData.role === 'RECEPTIONIST') {
@@ -762,22 +761,7 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
       <h4 className="font-medium text-gray-900">Datos Profesionales (Opcional)</h4>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Especialización
-          </label>
-          <div className="relative">
-            <AcademicCapIcon className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              name="specialization"
-              value={formData.specialization}
-              onChange={handleInputChange}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Ej: Colorimetría, Corte Avanzado, Diseño de Uñas"
-            />
-          </div>
-        </div>
+        
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
