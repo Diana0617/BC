@@ -171,6 +171,13 @@ class AuthController {
         });
       }
 
+      console.log('🔐 Login attempt:', { 
+        emailOriginal: email, 
+        emailLowerCase: email.toLowerCase(),
+        passwordLength: password?.length,
+        timestamp: new Date().toISOString()
+      });
+
       // Buscar usuario por email
       const user = await User.findOne({
         where: { 
@@ -208,7 +215,23 @@ class AuthController {
       });
 
       if (!user) {
-        console.log('❌ Usuario no encontrado:', email);
+        console.log('❌ Usuario no encontrado:', { 
+          searchedEmail: email.toLowerCase(),
+          originalEmail: email 
+        });
+        
+        // Debug: Buscar sin el filtro de status
+        const userAnyStatus = await User.findOne({ 
+          where: { email: email.toLowerCase() },
+          attributes: ['id', 'email', 'status', 'role']
+        });
+        
+        if (userAnyStatus) {
+          console.log('⚠️  Usuario existe pero con status:', userAnyStatus.status);
+        } else {
+          console.log('⚠️  Usuario no existe en la BD');
+        }
+        
         return res.status(401).json({
           success: false,
           error: 'Credenciales inválidas'
@@ -224,9 +247,15 @@ class AuthController {
       });
 
       // Verificar contraseña
+      console.log('🔑 Verificando contraseña...');
       const isPasswordValid = await bcrypt.compare(password, user.password);
+      
       if (!isPasswordValid) {
-        console.log('❌ Contraseña inválida para:', email);
+        console.log('❌ Contraseña inválida para:', { 
+          email: user.email,
+          passwordProvided: password.substring(0, 3) + '***',
+          hashInDB: user.password.substring(0, 20) + '...'
+        });
         return res.status(401).json({
           success: false,
           error: 'Credenciales inválidas'
