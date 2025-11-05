@@ -72,7 +72,13 @@ export { default as treatmentPlansSlice } from './treatmentPlansSlice';
 // 💳 PAYMENT METHODS SYSTEM SLICES
 export { default as paymentMethodsSlice } from './paymentMethodsSlice';
 
-// 💳 ADVANCE PAYMENT EXPORTS
+// � WHATSAPP BUSINESS PLATFORM SLICES
+export { default as whatsappTokenSlice } from './whatsappTokenSlice';
+export { default as whatsappTemplatesSlice } from './whatsappTemplatesSlice';
+export { default as whatsappMessagesSlice } from './whatsappMessagesSlice';
+export { default as whatsappWebhookEventsSlice } from './whatsappWebhookEventsSlice';
+
+// �💳 ADVANCE PAYMENT EXPORTS
 export {
   // Thunks
   checkAdvancePaymentRequired,

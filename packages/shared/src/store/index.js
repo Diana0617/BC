@@ -51,7 +51,12 @@ import permissionsReducer from './slices/permissionsSlice';
 import treatmentPlansReducer from './slices/treatmentPlansSlice';
 // 💳 PAYMENT METHODS SYSTEM REDUCERS
 import paymentMethodsReducer from './slices/paymentMethodsSlice';
-// 📦 PRODUCTS & INVENTORY SYSTEM REDUCERS
+// � WHATSAPP BUSINESS PLATFORM REDUCERS
+import whatsappTokenReducer from './slices/whatsappTokenSlice';
+import whatsappTemplatesReducer from './slices/whatsappTemplatesSlice';
+import whatsappMessagesReducer from './slices/whatsappMessagesSlice';
+import whatsappWebhookEventsReducer from './slices/whatsappWebhookEventsSlice';
+// �📦 PRODUCTS & INVENTORY SYSTEM REDUCERS
 import productsReducer from './slices/productsSlice';
 
 // Create and configure the Redux store
@@ -110,7 +115,12 @@ export const createStore = (preloadedState = {}) => {
       treatmentPlans: treatmentPlansReducer,
       // 💳 PAYMENT METHODS SYSTEM REDUCERS
       paymentMethods: paymentMethodsReducer,
-      // 📦 PRODUCTS & INVENTORY SYSTEM REDUCERS
+      // � WHATSAPP BUSINESS PLATFORM REDUCERS
+      whatsappToken: whatsappTokenReducer,
+      whatsappTemplates: whatsappTemplatesReducer,
+      whatsappMessages: whatsappMessagesReducer,
+      whatsappWebhookEvents: whatsappWebhookEventsReducer,
+      // �📦 PRODUCTS & INVENTORY SYSTEM REDUCERS
       products: productsReducer
     },
     preloadedState,

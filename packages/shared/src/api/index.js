@@ -102,6 +102,10 @@ import treatmentPlansApi from './treatmentPlansApi';
 export { paymentMethodsApi } from './paymentMethodsApi';
 import { paymentMethodsApi } from './paymentMethodsApi';
 
+// 💬 WHATSAPP BUSINESS PLATFORM API
+export { default as whatsappApi } from './whatsappApi';
+import whatsappApi from './whatsappApi';
+
 // Export all OWNER APIs as a group
 export const ownerApis = {
   ownerApi,
@@ -142,5 +146,7 @@ export const businessApis = {
   // Treatment Plans System API (FM-28)
   treatmentPlansApi,
   // Payment Methods System API
-  paymentMethodsApi
+  paymentMethodsApi,
+  // WhatsApp Business Platform API
+  whatsappApi
 };
