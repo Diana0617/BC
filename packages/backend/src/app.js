@@ -247,6 +247,7 @@ const financialRoutes = require('./routes/financial');
 const ownerRoutes = require('./routes/owner');
 const wompiPaymentRoutes = require('./routes/wompiPayments');
 const whatsappWebhookRoutes = require('./routes/whatsappWebhookRoutes'); // WhatsApp webhooks
+const whatsappAdminRoutes = require('./routes/whatsappAdminRoutes'); // WhatsApp admin (business self-service)
 const autoRenewalTestRoutes = require('./routes/autoRenewalTest');
 const ownerBusinessManagementRoutes = require('./routes/ownerBusinessManagement');
 const publicInvitationRoutes = require('./routes/publicInvitation');
@@ -317,6 +318,7 @@ app.use('/api/public', publicInvitationRoutes);
 app.use('/api/public/bookings', publicBookingsRoutes); // Nuevas rutas públicas para bookings
 app.use('/api/wompi', wompiPaymentRoutes);
 app.use('/api/webhooks/whatsapp', whatsappWebhookRoutes); // WhatsApp Business Platform webhooks
+app.use('/api/admin/whatsapp', whatsappAdminRoutes); // WhatsApp admin endpoints (business self-service)
 app.use('/api/payments/3ds', payment3DSRoutes); // Rutas de pagos 3D Secure
 app.use('/api/test/auto-renewal', autoRenewalTestRoutes);
 app.use('/api/testing', testingRoutes); // Rutas de testing (solo desarrollo)
