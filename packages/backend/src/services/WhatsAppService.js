@@ -1,18 +1,34 @@
 /**
  * WhatsApp Business Cloud API Service
  * Servicio para enviar mensajes a través de la API de WhatsApp Business de Meta
+ * 
+ * Versión 2.0 - Multi-tenant con soporte para tokens encriptados
+ * 
+ * Features:
+ * - Backward compatibility con business.settings.communications.whatsapp
+ * - Soporte para tokens encriptados vía WhatsAppTokenManager
+ * - Message tracking en whatsapp_messages table
+ * - Feature flag para gradual rollout
  */
 
 const axios = require('axios');
 const { Business } = require('../models');
+const WhatsAppMessage = require('../models/WhatsAppMessage');
+const whatsappTokenManager = require('./WhatsAppTokenManager');
+const logger = require('../utils/logger');
 
 class WhatsAppService {
   constructor() {
     this.baseUrl = 'https://graph.facebook.com/v18.0';
+    // Feature flag para nuevo sistema (se puede controlar por negocio)
+    this.useNewTokenSystem = process.env.WHATSAPP_USE_NEW_TOKEN_SYSTEM === 'true';
   }
 
   /**
    * Obtener configuración de WhatsApp de un negocio
+   * 
+   * Versión 2.0: Intenta primero obtener token del nuevo sistema (encriptado),
+   * si no existe hace fallback al sistema legacy (business.settings)
    */
   async getBusinessConfig(businessId) {
     try {
@@ -21,6 +37,32 @@ class WhatsAppService {
         throw new Error('Negocio no encontrado');
       }
 
+      // NUEVO SISTEMA: Intentar obtener token del WhatsAppTokenManager
+      if (this.useNewTokenSystem || business.whatsapp_enabled) {
+        try {
+          const tokenData = await whatsappTokenManager.getToken(businessId);
+          
+          if (tokenData && business.whatsapp_phone_number_id) {
+            logger.info(`Using new token system for business ${businessId}`);
+            
+            return {
+              phoneNumberId: business.whatsapp_phone_number_id,
+              accessToken: tokenData.token,
+              phoneNumber: business.whatsapp_phone_number || '',
+              sendReminders: true,  // TODO: leer de settings o DB
+              sendAppointments: true,
+              sendReceipts: true,
+              usingNewSystem: true,
+              metadata: tokenData.metadata
+            };
+          }
+        } catch (error) {
+          logger.warn(`Failed to get token from new system for business ${businessId}:`, error.message);
+          // Fallback to legacy system below
+        }
+      }
+
+      // LEGACY SYSTEM: Leer configuración desde business.settings.communications.whatsapp
       const settings = business.settings || {};
       const communications = settings.communications || {};
       const whatsapp = communications.whatsapp || {};
@@ -37,44 +79,84 @@ class WhatsAppService {
         throw new Error('Número de WhatsApp no configurado');
       }
 
+      logger.info(`Using legacy token system for business ${businessId}`);
+
       return {
         phoneNumberId: whatsapp.phone_number_id || whatsapp.business_account_id,
         accessToken: whatsapp.access_token,
         phoneNumber: whatsapp.phone_number,
         sendReminders: whatsapp.send_reminders !== false,
         sendAppointments: whatsapp.send_appointments !== false,
-        sendReceipts: whatsapp.send_receipts !== false
+        sendReceipts: whatsapp.send_receipts !== false,
+        usingNewSystem: false
       };
     } catch (error) {
-      console.error('❌ Error obteniendo configuración de WhatsApp:', error);
+      logger.error('Error obteniendo configuración de WhatsApp:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Registrar mensaje en la base de datos para tracking
+   * 
+   * @private
+   */
+  async _trackMessage(businessId, payload, result, options = {}) {
+    try {
+      const config = await this.getBusinessConfig(businessId);
+      
+      const messageData = {
+        businessId,
+        clientId: options.clientId || null,
+        appointmentId: options.appointmentId || null,
+        to: payload.to,
+        phoneNumberId: config.phoneNumberId,
+        messageType: payload.type,
+        payload,
+        providerMessageId: result.success ? result.messageId : null,
+        status: result.success ? 'SENT' : 'FAILED',
+        errorCode: result.success ? null : result.errorCode,
+        errorMessage: result.success ? null : result.error,
+        sentAt: result.success ? new Date() : null
+      };
+
+      const message = await WhatsAppMessage.create(messageData);
+      logger.info(`Message tracked: ${message.id}`);
+      
+      return message.id;
+    } catch (error) {
+      // No fallar el envío si falla el tracking
+      logger.error('Error tracking message:', error);
+      return null;
     }
   }
 
   /**
    * Enviar mensaje de texto simple
    */
-  async sendTextMessage(businessId, recipientPhone, message) {
+  async sendTextMessage(businessId, recipientPhone, message, options = {}) {
     try {
       const config = await this.getBusinessConfig(businessId);
 
       // Limpiar número de teléfono (remover espacios, guiones, etc.)
       const cleanPhone = recipientPhone.replace(/[^\d+]/g, '');
 
-      console.log(`📱 Enviando WhatsApp a ${cleanPhone}...`);
+      logger.info(`Enviando WhatsApp a ${cleanPhone}...`);
+
+      const payload = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: cleanPhone,
+        type: 'text',
+        text: {
+          preview_url: false,
+          body: message
+        }
+      };
 
       const response = await axios.post(
         `${this.baseUrl}/${config.phoneNumberId}/messages`,
-        {
-          messaging_product: 'whatsapp',
-          recipient_type: 'individual',
-          to: cleanPhone,
-          type: 'text',
-          text: {
-            preview_url: false,
-            body: message
-          }
-        },
+        payload,
         {
           headers: {
             'Authorization': `Bearer ${config.accessToken}`,
@@ -83,20 +165,40 @@ class WhatsAppService {
         }
       );
 
-      console.log('✅ Mensaje WhatsApp enviado:', response.data);
+      logger.info('Mensaje WhatsApp enviado:', response.data);
 
-      return {
+      const result = {
         success: true,
         messageId: response.data.messages[0].id,
         data: response.data
       };
+
+      // Track message en DB (solo si el nuevo sistema está activo)
+      if (config.usingNewSystem) {
+        await this._trackMessage(businessId, payload, result, options);
+      }
+
+      return result;
     } catch (error) {
-      console.error('❌ Error enviando mensaje WhatsApp:', error.response?.data || error.message);
+      logger.error('Error enviando mensaje WhatsApp:', error.response?.data || error.message);
       
-      return {
+      const result = {
         success: false,
-        error: error.response?.data?.error?.message || error.message
+        error: error.response?.data?.error?.message || error.message,
+        errorCode: error.response?.data?.error?.code || 'UNKNOWN'
       };
+
+      // Track failed message también
+      try {
+        const config = await this.getBusinessConfig(businessId);
+        if (config.usingNewSystem) {
+          await this._trackMessage(businessId, payload, result, options);
+        }
+      } catch (trackError) {
+        logger.error('Error tracking failed message:', trackError);
+      }
+
+      return result;
     }
   }
 
@@ -158,13 +260,13 @@ class WhatsAppService {
       const config = await this.getBusinessConfig(businessId);
 
       if (!config.sendReminders) {
-        console.log('⏭️  Recordatorios de WhatsApp deshabilitados');
+        logger.info('Recordatorios de WhatsApp deshabilitados');
         return { success: false, error: 'Recordatorios deshabilitados' };
       }
 
       const clientPhone = appointment.client?.phone;
       if (!clientPhone) {
-        console.log('⚠️  Cliente sin número de teléfono');
+        logger.warn('Cliente sin número de teléfono');
         return { success: false, error: 'Cliente sin teléfono' };
       }
 
@@ -198,9 +300,12 @@ ${appointment.business?.address ? `Dirección: ${appointment.business.address}` 
 
 _Para cancelar o reprogramar, por favor contáctanos con anticipación._`;
 
-      return await this.sendTextMessage(businessId, clientPhone, message);
+      return await this.sendTextMessage(businessId, clientPhone, message, {
+        clientId: appointment.clientId,
+        appointmentId: appointment.id
+      });
     } catch (error) {
-      console.error('❌ Error enviando recordatorio:', error);
+      logger.error('Error enviando recordatorio:', error);
       return {
         success: false,
         error: error.message
@@ -216,7 +321,7 @@ _Para cancelar o reprogramar, por favor contáctanos con anticipación._`;
       const config = await this.getBusinessConfig(businessId);
 
       if (!config.sendAppointments) {
-        console.log('⏭️  Confirmaciones de WhatsApp deshabilitadas');
+        logger.info('Confirmaciones de WhatsApp deshabilitadas');
         return { success: false, error: 'Confirmaciones deshabilitadas' };
       }
 
@@ -253,9 +358,12 @@ ${appointment.business?.name ? `📍 ${appointment.business.name}` : ''}
 
 ¡Nos vemos pronto! 😊`;
 
-      return await this.sendTextMessage(businessId, clientPhone, message);
+      return await this.sendTextMessage(businessId, clientPhone, message, {
+        clientId: appointment.clientId,
+        appointmentId: appointment.id
+      });
     } catch (error) {
-      console.error('❌ Error enviando confirmación:', error);
+      logger.error('Error enviando confirmación:', error);
       return {
         success: false,
         error: error.message
@@ -303,9 +411,12 @@ Si deseas agendar una nueva cita, por favor contáctanos.
 
 ¡Gracias! 🙏`;
 
-      return await this.sendTextMessage(businessId, clientPhone, message);
+      return await this.sendTextMessage(businessId, clientPhone, message, {
+        clientId: appointment.clientId,
+        appointmentId: appointment.id
+      });
     } catch (error) {
-      console.error('❌ Error enviando cancelación:', error);
+      logger.error('Error enviando cancelación:', error);
       return {
         success: false,
         error: error.message
@@ -321,7 +432,7 @@ Si deseas agendar una nueva cita, por favor contáctanos.
       const config = await this.getBusinessConfig(businessId);
 
       if (!config.sendReceipts) {
-        console.log('⏭️  Recibos de WhatsApp deshabilitados');
+        logger.info('Recibos de WhatsApp deshabilitados');
         return { success: false, error: 'Recibos deshabilitados' };
       }
 
@@ -354,9 +465,11 @@ ${receipt.business?.name ? `\n📍 ${receipt.business.name}` : ''}
 
 ¡Gracias por tu preferencia! 😊`;
 
-      return await this.sendTextMessage(businessId, clientPhone, message);
+      return await this.sendTextMessage(businessId, clientPhone, message, {
+        clientId: receipt.clientId
+      });
     } catch (error) {
-      console.error('❌ Error enviando recibo:', error);
+      logger.error('Error enviando recibo:', error);
       return {
         success: false,
         error: error.message
@@ -381,20 +494,60 @@ ${receipt.business?.name ? `\n📍 ${receipt.business.name}` : ''}
         }
       );
 
-      console.log('✅ Conexión con WhatsApp exitosa:', response.data);
+      logger.info('Conexión con WhatsApp exitosa:', response.data);
 
       return {
         success: true,
         data: response.data,
-        message: 'Conexión exitosa con WhatsApp Business API'
+        message: 'Conexión exitosa con WhatsApp Business API',
+        usingNewSystem: config.usingNewSystem
       };
     } catch (error) {
-      console.error('❌ Error probando conexión:', error.response?.data || error.message);
+      logger.error('Error probando conexión:', error.response?.data || error.message);
       
       return {
         success: false,
         error: error.response?.data?.error?.message || error.message
       };
+    }
+  }
+
+  /**
+   * Actualizar estado de mensaje desde webhook
+   * 
+   * @param {string} providerMessageId - WhatsApp message ID
+   * @param {string} status - New status (DELIVERED, READ, FAILED)
+   * @param {Object} metadata - Additional metadata from webhook
+   */
+  async updateMessageStatus(providerMessageId, status, metadata = {}) {
+    try {
+      const message = await WhatsAppMessage.findOne({
+        where: { providerMessageId }
+      });
+
+      if (!message) {
+        logger.warn(`Message not found for update: ${providerMessageId}`);
+        return null;
+      }
+
+      const updates = { status };
+
+      if (status === 'DELIVERED') {
+        updates.deliveredAt = new Date();
+      } else if (status === 'READ') {
+        updates.readAt = new Date();
+      } else if (status === 'FAILED') {
+        updates.errorCode = metadata.errorCode;
+        updates.errorMessage = metadata.errorMessage;
+      }
+
+      await message.update(updates);
+      logger.info(`Message ${providerMessageId} updated to status: ${status}`);
+
+      return message;
+    } catch (error) {
+      logger.error('Error updating message status:', error);
+      throw error;
     }
   }
 }
