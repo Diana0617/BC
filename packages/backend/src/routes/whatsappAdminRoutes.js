@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const WhatsAppAdminController = require('../controllers/WhatsAppAdminController');
-const { authenticateToken, checkRole } = require('../middleware/auth');
+const { authenticateToken, authorizeRole } = require('../middleware/auth');
 
 /**
  * WhatsApp Admin Routes
  * 
  * All routes require:
  * - Authentication (authenticateToken)
- * - BUSINESS role (checkRole(['BUSINESS']))
+ * - BUSINESS role (authorizeRole(['BUSINESS']))
  * 
  * Routes are scoped to /api/admin/whatsapp
  */
@@ -25,7 +25,7 @@ const { authenticateToken, checkRole } = require('../middleware/auth');
 router.post(
   '/businesses/:businessId/tokens',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.storeToken
 );
 
@@ -37,7 +37,7 @@ router.post(
 router.get(
   '/businesses/:businessId/tokens',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.getTokenInfo
 );
 
@@ -49,7 +49,7 @@ router.get(
 router.post(
   '/businesses/:businessId/tokens/rotate',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.rotateToken
 );
 
@@ -61,7 +61,7 @@ router.post(
 router.delete(
   '/businesses/:businessId/tokens',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.deleteToken
 );
 
@@ -73,7 +73,7 @@ router.delete(
 router.post(
   '/businesses/:businessId/test-connection',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.testConnection
 );
 
@@ -89,7 +89,7 @@ router.post(
 router.get(
   '/embedded-signup/config',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.getEmbeddedSignupConfig
 );
 
@@ -101,7 +101,7 @@ router.get(
 router.post(
   '/embedded-signup/callback',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.handleEmbeddedSignupCallback
 );
 
@@ -117,7 +117,7 @@ router.post(
 router.get(
   '/businesses/:businessId/templates',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.getTemplates
 );
 
@@ -129,7 +129,7 @@ router.get(
 router.post(
   '/businesses/:businessId/templates',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.createTemplate
 );
 
@@ -141,7 +141,7 @@ router.post(
 router.put(
   '/businesses/:businessId/templates/:templateId',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.updateTemplate
 );
 
@@ -153,7 +153,7 @@ router.put(
 router.delete(
   '/businesses/:businessId/templates/:templateId',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.deleteTemplate
 );
 
@@ -165,7 +165,7 @@ router.delete(
 router.post(
   '/businesses/:businessId/templates/:templateId/submit',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.submitTemplate
 );
 
@@ -177,7 +177,7 @@ router.post(
 router.get(
   '/businesses/:businessId/templates/sync',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.syncTemplates
 );
 
@@ -193,7 +193,7 @@ router.get(
 router.get(
   '/businesses/:businessId/messages',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.getMessages
 );
 
@@ -205,7 +205,7 @@ router.get(
 router.get(
   '/businesses/:businessId/messages/:messageId',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.getMessageById
 );
 
@@ -221,7 +221,7 @@ router.get(
 router.get(
   '/businesses/:businessId/webhook-events',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.getWebhookEvents
 );
 
@@ -233,7 +233,7 @@ router.get(
 router.get(
   '/businesses/:businessId/webhook-events/:eventId',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.getWebhookEventById
 );
 
@@ -245,7 +245,7 @@ router.get(
 router.post(
   '/businesses/:businessId/webhook-events/:eventId/replay',
   authenticateToken,
-  checkRole(['BUSINESS']),
+  authorizeRole(['BUSINESS']),
   WhatsAppAdminController.replayWebhookEvent
 );
 

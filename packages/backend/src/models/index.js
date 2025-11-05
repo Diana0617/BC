@@ -1,5 +1,10 @@
 const { sequelize } = require('../config/database');
 
+// WhatsApp Business Platform Models
+const WhatsAppToken = require('./WhatsAppToken');
+const WhatsAppMessage = require('./WhatsAppMessage');
+const WhatsAppMessageTemplate = require('./WhatsAppMessageTemplate');
+const WhatsAppWebhookEvent = require('./WhatsAppWebhookEvent');
 
 // Importar modelos en orden de dependencias (sin referencias primero)
 const SubscriptionPlan = require('./SubscriptionPlan');
@@ -1528,5 +1533,10 @@ module.exports = {
   UserBusinessPermission,
   // Modelos de tratamientos multi-sesión
   TreatmentPlan,
-  TreatmentSession
+  TreatmentSession,
+  // Modelos de WhatsApp Business Platform
+  WhatsAppToken,
+  WhatsAppMessage,
+  WhatsAppMessageTemplate,
+  WhatsAppWebhookEvent
 };

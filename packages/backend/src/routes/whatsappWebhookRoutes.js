@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const whatsappWebhookController = require('../controllers/WhatsAppWebhookController');
-const { authenticateToken } = require('../middleware/authMiddleware');
+const { authenticateToken } = require('../middleware/auth');
 
 /**
  * WhatsApp Webhook Routes
