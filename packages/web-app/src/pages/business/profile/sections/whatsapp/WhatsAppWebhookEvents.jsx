@@ -17,7 +17,7 @@ import {
   WhatsAppLoadingState, 
   WhatsAppErrorState, 
   WhatsAppEmptyState 
-} from '../shared'
+} from './shared'
 import WebhookEventCard from './WebhookEventCard'
 import {
   BellIcon,

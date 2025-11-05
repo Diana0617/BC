@@ -22,7 +22,7 @@ import {
   WhatsAppErrorState, 
   WhatsAppEmptyState,
   TemplateStatusBadge
-} from '../shared'
+} from './shared'
 import {
   DocumentTextIcon,
   PlusIcon,

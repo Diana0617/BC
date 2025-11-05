@@ -21,7 +21,7 @@ import {
   WhatsAppErrorState, 
   WhatsAppEmptyState,
   MessageStatusBadge
-} from '../shared'
+} from './shared'
 import {
   EnvelopeIcon,
   FunnelIcon,

@@ -4,7 +4,7 @@ import { fetchTokenInfo } from '@shared/store/slices/whatsappTokenSlice'
 import WhatsAppEmbeddedSignup from './WhatsAppEmbeddedSignup'
 import WhatsAppTokenManagement from './WhatsAppTokenManagement'
 import WhatsAppConnectionCard from './WhatsAppConnectionCard'
-import { WhatsAppLoadingState, WhatsAppErrorState } from '../shared'
+import { WhatsAppLoadingState, WhatsAppErrorState } from './shared'
 
 /**
  * WhatsAppConnectionTab Component
