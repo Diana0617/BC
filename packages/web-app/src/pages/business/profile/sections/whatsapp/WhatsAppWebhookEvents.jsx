@@ -52,7 +52,14 @@ const WhatsAppWebhookEvents = () => {
   // Load events on mount and when filters/pagination change
   useEffect(() => {
     dispatch(fetchWebhookEvents({ ...filters, ...pagination }))
-  }, [dispatch, filters, pagination])
+  }, [
+    dispatch, 
+    filters.eventType, 
+    filters.startDate, 
+    filters.endDate, 
+    pagination.page, 
+    pagination.limit
+  ])
 
   const handleFilterChange = (key, value) => {
     dispatch(setFilters({ ...filters, [key]: value }))

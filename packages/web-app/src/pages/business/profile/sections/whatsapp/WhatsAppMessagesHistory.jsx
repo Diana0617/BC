@@ -56,7 +56,15 @@ const WhatsAppMessagesHistory = () => {
   // Load messages on mount and when filters/pagination change
   useEffect(() => {
     dispatch(fetchMessages({ ...filters, ...pagination }))
-  }, [dispatch, filters, pagination])
+  }, [
+    dispatch, 
+    filters.status, 
+    filters.startDate, 
+    filters.endDate, 
+    filters.clientId, 
+    pagination.page, 
+    pagination.limit
+  ])
 
   const handleFilterChange = (key, value) => {
     dispatch(setFilters({ ...filters, [key]: value }))

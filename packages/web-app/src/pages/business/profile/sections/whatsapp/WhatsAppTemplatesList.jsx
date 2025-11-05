@@ -61,7 +61,7 @@ const WhatsAppTemplatesList = ({ onCreateTemplate, onEditTemplate }) => {
   // Load templates on mount and when filters/pagination change
   useEffect(() => {
     dispatch(fetchTemplates({ ...filters, ...pagination }))
-  }, [dispatch, filters, pagination])
+  }, [dispatch, filters.status, filters.category, pagination.page, pagination.limit])
 
   const handleSync = async () => {
     const result = await dispatch(syncTemplates())

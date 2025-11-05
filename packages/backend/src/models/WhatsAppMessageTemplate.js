@@ -23,34 +23,52 @@ const WhatsAppMessageTemplate = sequelize.define('WhatsAppMessageTemplate', {
     },
     field: 'business_id'
   },
-  name: {
-    type: DataTypes.STRING,
+  templateName: {
+    type: DataTypes.STRING(100),
     allowNull: false,
+    field: 'template_name',
     comment: 'Template name (lowercase, underscores only)'
   },
   language: {
     type: DataTypes.STRING(10),
     allowNull: false,
+    defaultValue: 'es',
     comment: 'Language code (es, en, pt_BR, etc.)'
   },
   category: {
-    type: DataTypes.ENUM('UTILITY', 'MARKETING', 'AUTHENTICATION'),
+    type: DataTypes.STRING(50),
     allowNull: false,
-    comment: 'Template category as per WhatsApp requirements'
+    defaultValue: 'TRANSACTIONAL',
+    comment: 'Template category'
+  },
+  body: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+    comment: 'Template body text'
+  },
+  header: {
+    type: DataTypes.STRING(500),
+    allowNull: true,
+    comment: 'Optional header text'
+  },
+  footer: {
+    type: DataTypes.STRING(500),
+    allowNull: true,
+    comment: 'Optional footer text'
+  },
+  buttons: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    comment: 'Optional buttons configuration'
   },
   status: {
-    type: DataTypes.ENUM('DRAFT', 'PENDING', 'APPROVED', 'REJECTED'),
-    defaultValue: 'DRAFT',
+    type: DataTypes.STRING(20),
+    defaultValue: 'PENDING',
     allowNull: false,
     comment: 'Template approval status'
   },
-  components: {
-    type: DataTypes.JSONB,
-    allowNull: false,
-    comment: 'Template components (header, body, footer, buttons)'
-  },
   metaTemplateId: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(100),
     allowNull: true,
     field: 'meta_template_id',
     comment: 'Template ID assigned by Meta after submission'
@@ -61,23 +79,11 @@ const WhatsAppMessageTemplate = sequelize.define('WhatsAppMessageTemplate', {
     field: 'rejection_reason',
     comment: 'Reason for rejection if status is REJECTED'
   },
-  submittedAt: {
-    type: DataTypes.DATE,
-    allowNull: true,
-    field: 'submitted_at',
-    comment: 'When template was submitted to Meta'
-  },
   approvedAt: {
     type: DataTypes.DATE,
     allowNull: true,
     field: 'approved_at',
     comment: 'When template was approved by Meta'
-  },
-  lastSyncedAt: {
-    type: DataTypes.DATE,
-    allowNull: true,
-    field: 'last_synced_at',
-    comment: 'Last time template was synced from Meta'
   }
 }, {
   tableName: 'whatsapp_message_templates',
@@ -91,11 +97,8 @@ const WhatsAppMessageTemplate = sequelize.define('WhatsAppMessageTemplate', {
       fields: ['status']
     },
     {
-      fields: ['meta_template_id']
-    },
-    {
       unique: true,
-      fields: ['business_id', 'name', 'language']
+      fields: ['business_id', 'template_name']
     }
   ]
 });

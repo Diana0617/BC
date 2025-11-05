@@ -579,8 +579,9 @@ class WhatsAppAdminController {
       }
 
       const where = { business_id: businessId };
-      if (status) where.status = status;
-      if (category) where.template_category = category;
+      // Only add filters if they have valid values (not null, undefined, or "null" string)
+      if (status && status !== 'null') where.status = status;
+      if (category && category !== 'null') where.category = category;
 
       const offset = (page - 1) * limit;
 
@@ -641,10 +642,13 @@ class WhatsAppAdminController {
       const template = await WhatsAppMessageTemplate.create({
         business_id: businessId,
         template_name: name,
-        template_language: language,
-        template_category: category,
-        status: 'DRAFT',
-        components: components
+        language: language,
+        category: category,
+        status: 'PENDING',
+        body: components.body || '',
+        header: components.header,
+        footer: components.footer,
+        buttons: components.buttons
       });
 
       logger.info(`Template created for business ${businessId}: ${name}`);
@@ -692,20 +696,23 @@ class WhatsAppAdminController {
         });
       }
 
-      // Only allow editing DRAFT templates
-      if (template.status !== 'DRAFT') {
+      // Only allow editing PENDING templates
+      if (template.status !== 'PENDING') {
         return res.status(400).json({
           success: false,
-          error: 'Solo se pueden editar plantillas en estado DRAFT'
+          error: 'Solo se pueden editar plantillas en estado PENDING'
         });
       }
 
       // Update template
       await template.update({
         template_name: name || template.template_name,
-        template_language: language || template.template_language,
-        template_category: category || template.template_category,
-        components: components || template.components
+        language: language || template.language,
+        category: category || template.category,
+        body: components?.body || template.body,
+        header: components?.header !== undefined ? components.header : template.header,
+        footer: components?.footer !== undefined ? components.footer : template.footer,
+        buttons: components?.buttons !== undefined ? components.buttons : template.buttons
       });
 
       logger.info(`Template updated: ${templateId}`);
@@ -925,13 +932,24 @@ class WhatsAppAdminController {
 
       const where = { business_id: businessId };
       
-      if (status) where.status = status;
-      if (clientId) where.client_id = clientId;
+      // Only add filters if they have valid values (not null, undefined, or "null" string)
+      if (status && status !== 'null') where.status = status;
+      if (clientId && clientId !== 'null') where.client_id = clientId;
       
-      if (startDate || endDate) {
+      if ((startDate && startDate !== 'null') || (endDate && endDate !== 'null')) {
         where.created_at = {};
-        if (startDate) where.created_at[Op.gte] = new Date(startDate);
-        if (endDate) where.created_at[Op.lte] = new Date(endDate);
+        if (startDate && startDate !== 'null') {
+          const date = new Date(startDate);
+          if (!isNaN(date.getTime())) {
+            where.created_at[Op.gte] = date;
+          }
+        }
+        if (endDate && endDate !== 'null') {
+          const date = new Date(endDate);
+          if (!isNaN(date.getTime())) {
+            where.created_at[Op.lte] = date;
+          }
+        }
       }
 
       const offset = (page - 1) * limit;
@@ -940,13 +958,7 @@ class WhatsAppAdminController {
         where,
         limit: parseInt(limit),
         offset: parseInt(offset),
-        order: [['created_at', 'DESC']],
-        include: [
-          {
-            association: 'client',
-            attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
-          }
-        ]
+        order: [['created_at', 'DESC']]
       });
 
       res.status(200).json({
@@ -1049,12 +1061,23 @@ class WhatsAppAdminController {
 
       const where = { business_id: businessId };
       
-      if (eventType) where.event_type = eventType;
+      // Only add filters if they have valid values (not null, undefined, or "null" string)
+      if (eventType && eventType !== 'null') where.event_type = eventType;
       
-      if (startDate || endDate) {
+      if ((startDate && startDate !== 'null') || (endDate && endDate !== 'null')) {
         where.created_at = {};
-        if (startDate) where.created_at[Op.gte] = new Date(startDate);
-        if (endDate) where.created_at[Op.lte] = new Date(endDate);
+        if (startDate && startDate !== 'null') {
+          const date = new Date(startDate);
+          if (!isNaN(date.getTime())) {
+            where.created_at[Op.gte] = date;
+          }
+        }
+        if (endDate && endDate !== 'null') {
+          const date = new Date(endDate);
+          if (!isNaN(date.getTime())) {
+            where.created_at[Op.lte] = date;
+          }
+        }
       }
 
       const offset = (page - 1) * limit;
