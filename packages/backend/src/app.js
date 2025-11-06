@@ -248,6 +248,8 @@ const ownerRoutes = require('./routes/owner');
 const wompiPaymentRoutes = require('./routes/wompiPayments');
 const whatsappWebhookRoutes = require('./routes/whatsappWebhookRoutes'); // WhatsApp webhooks
 const whatsappAdminRoutes = require('./routes/whatsappAdminRoutes'); // WhatsApp admin (business self-service)
+const businessWompiPaymentConfigRoutes = require('./routes/businessWompiPaymentConfigRoutes'); // Business Wompi payment config
+const businessWompiPaymentWebhookRoutes = require('./routes/businessWompiPaymentWebhookRoutes'); // Business Wompi payment webhooks
 const autoRenewalTestRoutes = require('./routes/autoRenewalTest');
 const ownerBusinessManagementRoutes = require('./routes/ownerBusinessManagement');
 const publicInvitationRoutes = require('./routes/publicInvitation');
@@ -286,6 +288,7 @@ app.use('/api/mobile', mobileRoutes); // Rutas de auto-login desde móvil
 app.use('/api/admin', adminRoutes); // Rutas de administración (seed, etc.)
 app.use('/api/business', businessRoutes);
 app.use('/api/business', businessConfigRoutes); // Rutas de configuración del negocio
+app.use('/api/business', businessWompiPaymentConfigRoutes); // Rutas de configuración de pagos Wompi del negocio
 app.use('/api/business', branchRoutes); // Rutas de sucursales
 app.use('/api/business/:businessId/clients', clientRoutes); // Rutas de clientes del negocio
 app.use('/api/business/:businessId', commissionRoutes); // Rutas de comisiones
@@ -318,6 +321,7 @@ app.use('/api/public', publicInvitationRoutes);
 app.use('/api/public/bookings', publicBookingsRoutes); // Nuevas rutas públicas para bookings
 app.use('/api/wompi', wompiPaymentRoutes);
 app.use('/api/webhooks/whatsapp', whatsappWebhookRoutes); // WhatsApp Business Platform webhooks
+app.use('/api/webhooks/wompi', businessWompiPaymentWebhookRoutes); // Business Wompi payment webhooks (turnos online)
 app.use('/api/admin/whatsapp', whatsappAdminRoutes); // WhatsApp admin endpoints (business self-service)
 app.use('/api/payments/3ds', payment3DSRoutes); // Rutas de pagos 3D Secure
 app.use('/api/test/auto-renewal', autoRenewalTestRoutes);

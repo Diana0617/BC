@@ -7,6 +7,16 @@ const Client = sequelize.define('Client', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
+  businessId: {
+    type: DataTypes.UUID,
+    allowNull: true, // Permitir NULL temporalmente para clientes existentes
+    field: 'business_id', // 🔑 CRÍTICO: Mapear a snake_case en DB
+    references: {
+      model: 'businesses',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
+  },
   email: {
     type: DataTypes.STRING,
     allowNull: false,

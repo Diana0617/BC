@@ -13,7 +13,6 @@ import {
 import { businessBranchesApi } from '@shared/api';
 
 const BranchesSection = ({ isSetupMode, onComplete, isCompleted }) => {
-  const dispatch = useDispatch();
   // Corrección: el estado en businessSlice se llama currentBusiness, no activeBusiness
   const activeBusiness = useSelector(state => state.business.currentBusiness);
   const isLoadingBusiness = useSelector(state => state.business.isLoading);
@@ -63,12 +62,12 @@ const BranchesSection = ({ isSetupMode, onComplete, isCompleted }) => {
         const defaultBranch = {
           code: generateBranchCode('Principal'),
           name: 'Sucursal Principal',
-          address: '',
-          city: '',
-          state: '',
+          address: null,
+          city: null,
+          state: null,
           country: 'Colombia',
-          phone: '',
-          email: '',
+          phone: null,
+          email: null,
           isMainBranch: true,
           isActive: true
         };

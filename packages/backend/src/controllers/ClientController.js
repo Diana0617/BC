@@ -30,6 +30,7 @@ class ClientController {
 
       const clients = await Client.findAll({
         where: {
+          businessId: businessId, // 🔒 CRÍTICO: Filtrar por businessId
           [Op.or]: [
             { firstName: { [Op.iLike]: `%${searchTerm}%` } },
             { lastName: { [Op.iLike]: `%${searchTerm}%` } },
@@ -75,8 +76,10 @@ class ClientController {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - parseInt(timeRange));
 
-      // Construir condiciones de búsqueda
-      const whereClause = {};
+      // 🔒 CRÍTICO: SIEMPRE filtrar por businessId para evitar fuga de datos
+      const whereClause = {
+        businessId: businessId // ✅ Filtro obligatorio por negocio
+      };
       
       if (status && status !== 'all') {
         if (status === 'blocked') {
@@ -252,7 +255,12 @@ class ClientController {
     try {
       const { businessId, clientId } = req.params;
 
-      const client = await Client.findByPk(clientId, {
+      // 🔒 CRÍTICO: Buscar con businessId Y clientId para evitar acceso cruzado
+      const client = await Client.findOne({
+        where: {
+          id: clientId,
+          businessId: businessId // ✅ Verificar que pertenece al negocio
+        },
         attributes: { exclude: ['password'] }
       });
 
@@ -355,15 +363,18 @@ class ClientController {
         });
       }
 
-      // Verificar si el email ya existe
+      // 🔒 CRÍTICO: Verificar email duplicado SOLO dentro del mismo negocio
       const existingClient = await Client.findOne({
-        where: { email }
+        where: { 
+          email,
+          businessId: businessId // ✅ Verificar duplicado solo en este negocio
+        }
       });
 
       if (existingClient) {
         return res.status(400).json({
           success: false,
-          error: 'Ya existe un cliente con ese email'
+          error: 'Ya existe un cliente con ese email en este negocio'
         });
       }
 
@@ -376,8 +387,9 @@ class ClientController {
         }
       }
 
-      // Crear el cliente
+      // 🔒 CRÍTICO: SIEMPRE guardar el businessId con el cliente
       const newClient = await Client.create({
+        businessId: businessId, // ✅ Asociar cliente al negocio
         firstName,
         lastName,
         email,
@@ -451,7 +463,13 @@ class ClientController {
         }
       });
 
-      const client = await Client.findByPk(clientId);
+      // 🔒 CRÍTICO: Verificar que el cliente pertenece al negocio
+      const client = await Client.findOne({
+        where: {
+          id: clientId,
+          businessId: businessId // ✅ Verificar propiedad
+        }
+      });
 
       if (!client) {
         return res.status(404).json({
@@ -485,7 +503,13 @@ class ClientController {
       const { businessId, clientId } = req.params;
       const { status, reason } = req.body;
 
-      const client = await Client.findByPk(clientId);
+      // 🔒 CRÍTICO: Verificar que el cliente pertenece al negocio
+      const client = await Client.findOne({
+        where: {
+          id: clientId,
+          businessId: businessId // ✅ Verificar propiedad
+        }
+      });
 
       if (!client) {
         return res.status(404).json({
@@ -563,8 +587,12 @@ class ClientController {
 
       console.log('📋 Obteniendo historial del cliente:', clientId);
 
-      // Verificar que el cliente existe
-      const client = await Client.findByPk(clientId, {
+      // 🔒 CRÍTICO: Verificar que el cliente pertenece al negocio
+      const client = await Client.findOne({
+        where: {
+          id: clientId,
+          businessId: businessId // ✅ Verificar propiedad
+        },
         attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'medicalInfo', 'notes']
       });
 

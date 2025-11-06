@@ -1,407 +1,237 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import {
   CreditCardIcon,
-  CogIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon
+  XCircleIcon
 } from '@heroicons/react/24/outline'
 
+import {
+  fetchWompiConfig,
+  saveWompiConfig,
+  verifyWompiCredentials,
+  toggleWompiMode,
+  toggleWompiStatus,
+  clearError,
+  selectWompiConfig,
+  selectWompiLoading,
+  selectWompiSaving,
+  selectWompiVerifying,
+  selectWompiError,
+  selectWompiVerificationResult,
+  selectWompiIsTestMode,
+  selectWompiIsActive,
+  selectWompiHasProdCredentials
+} from '@shared/store/slices/businessWompiPaymentSlice'
+
+import BusinessWompiSetupGuide from './wompi/BusinessWompiSetupGuide'
+import BusinessWompiStatusCard from './wompi/BusinessWompiStatusCard'
+import BusinessWompiModeToggle from './wompi/BusinessWompiModeToggle'
+import BusinessWompiCredentialsForm from './wompi/BusinessWompiCredentialsForm'
+
 const AppointmentPaymentsConfigSection = ({ isSetupMode, onComplete }) => {
-  const [config, setConfig] = useState({
-    wompiPublicKey: '',
-    wompiPrivateKey: '',
-    requirePaymentForBooking: false,
-    paymentPercentage: 100,
-    allowInstallments: false,
-    maxInstallments: 1,
-    enableTestMode: true,
-    currency: 'COP',
-    paymentMethods: {
-      creditCard: true,
-      debitCard: true,
-      pse: false,
-      nequi: false
-    },
-    bookingSettings: {
-      allowFreeBookings: true,
-      requirePaymentToConfirm: false,
-      paymentDeadlineHours: 24,
-      refundPolicy: 'flexible' // flexible, moderate, strict
+  const dispatch = useDispatch()
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [showErrorMessage, setShowErrorMessage] = useState(false)
+
+  const config = useSelector(selectWompiConfig)
+  const loading = useSelector(selectWompiLoading)
+  const saving = useSelector(selectWompiSaving)
+  const verifying = useSelector(selectWompiVerifying)
+  const error = useSelector(selectWompiError)
+  const verificationResult = useSelector(selectWompiVerificationResult)
+  const isTestMode = useSelector(selectWompiIsTestMode)
+  const isActive = useSelector(selectWompiIsActive)
+  const hasProdCredentials = useSelector(selectWompiHasProdCredentials)
+
+  const business = useSelector(state => state.business?.currentBusiness)
+  const businessId = business?.id
+
+  useEffect(() => {
+    if (businessId) {
+      dispatch(fetchWompiConfig(businessId))
     }
-  })
+  }, [dispatch, businessId])
 
-  const [isSaving, setIsSaving] = useState(false)
-  const [testConnection, setTestConnection] = useState(null)
+  useEffect(() => {
+    if (verificationResult && verificationResult.success) {
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 5000)
+    }
+  }, [verificationResult])
 
-  const handleConfigChange = (field, value) => {
-    setConfig(prev => ({
-      ...prev,
-      [field]: value
+  useEffect(() => {
+    if (error) {
+      setShowErrorMessage(true)
+      setTimeout(() => {
+        setShowErrorMessage(false)
+        dispatch(clearError())
+      }, 5000)
+    }
+  }, [error, dispatch])
+
+  const handleSaveCredentials = async (formData) => {
+    if (!businessId) return
+
+    const result = await dispatch(saveWompiConfig({
+      businessId,
+      configData: formData
     }))
+
+    if (saveWompiConfig.fulfilled.match(result)) {
+      dispatch(fetchWompiConfig(businessId))
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 5000)
+    }
   }
 
-  const handlePaymentMethodChange = (method, enabled) => {
-    setConfig(prev => ({
-      ...prev,
-      paymentMethods: {
-        ...prev.paymentMethods,
-        [method]: enabled
-      }
+  const handleVerifyCredentials = async () => {
+    if (!businessId) return
+
+    const result = await dispatch(verifyWompiCredentials(businessId))
+    
+    if (verifyWompiCredentials.fulfilled.match(result)) {
+      dispatch(fetchWompiConfig(businessId))
+    }
+  }
+
+  const handleToggleMode = async (newIsTestMode) => {
+    if (!businessId) return
+
+    const result = await dispatch(toggleWompiMode({
+      businessId,
+      isTestMode: newIsTestMode
     }))
+
+    if (toggleWompiMode.fulfilled.match(result)) {
+      dispatch(fetchWompiConfig(businessId))
+    }
   }
 
-  const handleBookingSettingChange = (field, value) => {
-    setConfig(prev => ({
-      ...prev,
-      bookingSettings: {
-        ...prev.bookingSettings,
-        [field]: value
-      }
+  const handleToggleStatus = async (newIsActive) => {
+    if (!businessId) return
+
+    const result = await dispatch(toggleWompiStatus({
+      businessId,
+      isActive: newIsActive
     }))
-  }
 
-  const testWompiConnection = async () => {
-    if (!config.wompiPublicKey || !config.wompiPrivateKey) {
-      setTestConnection({ success: false, message: 'Las claves de Wompi son requeridas' })
-      return
-    }
-
-    setTestConnection({ loading: true })
-
-    try {
-      // TODO: Implementar test real de conexión con Wompi
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      // Simular respuesta exitosa
-      setTestConnection({
-        success: true,
-        message: 'Conexión exitosa con Wompi'
-      })
-    } catch (error) {
-      setTestConnection({
-        success: false,
-        message: 'Error conectando con Wompi: ' + error.message
-      })
-    }
-  }
-
-  const handleSave = async () => {
-    // Validaciones básicas
-    if (!config.wompiPublicKey || !config.wompiPrivateKey) {
-      alert('Las claves de Wompi son obligatorias')
-      return
-    }
-
-    setIsSaving(true)
-
-    try {
-      // TODO: Implementar guardado real en API
-      console.log('Guardando configuración de pagos de turnos:', config)
-
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      if (isSetupMode && onComplete) {
+    if (toggleWompiStatus.fulfilled.match(result)) {
+      dispatch(fetchWompiConfig(businessId))
+      
+      if (isSetupMode && newIsActive && onComplete) {
         onComplete()
       }
-    } catch (error) {
-      console.error('Error guardando configuración:', error)
-    } finally {
-      setIsSaving(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando configuración de pagos...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">
+      <div>
+        <div className="flex items-center space-x-2 mb-2">
+          <CreditCardIcon className="h-6 w-6 text-blue-600" />
+          <h2 className="text-2xl font-bold text-gray-900">
             Pagos de Turnos Online
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Configura los pagos en línea para reservas de turnos con Wompi
-          </p>
         </div>
-        {isSetupMode && (
-          <div className="flex items-center text-sm text-blue-600">
-            <span>Paso opcional</span>
-          </div>
-        )}
+        <p className="text-gray-600">
+          Configura Wompi para recibir pagos de tus clientes cuando reserven turnos online
+        </p>
       </div>
 
-      {/* Configuración de Wompi */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-          <CreditCardIcon className="h-5 w-5 mr-2 text-blue-600" />
-          Configuración de Wompi
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {showSuccessMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start space-x-3">
+          <CheckCircleIcon className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Clave Pública de Wompi *
-            </label>
-            <input
-              type="password"
-              value={config.wompiPublicKey}
-              onChange={(e) => handleConfigChange('wompiPublicKey', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              placeholder="pub_..."
-            />
+            <h3 className="text-sm font-medium text-green-900">
+              {verificationResult?.verified 
+                ? '¡Credenciales verificadas exitosamente!' 
+                : '¡Configuración guardada!'}
+            </h3>
+            <p className="text-sm text-green-700 mt-1">
+              {verificationResult?.verified 
+                ? 'Tu conexión con Wompi está funcionando correctamente' 
+                : 'Tus credenciales han sido guardadas de forma segura'}
+            </p>
           </div>
+        </div>
+      )}
 
+      {showErrorMessage && error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+          <XCircleIcon className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Clave Privada de Wompi *
-            </label>
-            <input
-              type="password"
-              value={config.wompiPrivateKey}
-              onChange={(e) => handleConfigChange('wompiPrivateKey', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              placeholder="prv_..."
-            />
+            <h3 className="text-sm font-medium text-red-900">
+              Error
+            </h3>
+            <p className="text-sm text-red-700 mt-1">
+              {error}
+            </p>
           </div>
         </div>
+      )}
 
-        <div className="mt-4 flex items-center space-x-4">
-          <button
-            onClick={testWompiConnection}
-            disabled={!config.wompiPublicKey || !config.wompiPrivateKey}
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-          >
-            <CogIcon className="h-4 w-4 mr-2" />
-            Probar Conexión
-          </button>
+      <BusinessWompiSetupGuide />
 
-          {testConnection && (
-            <div className={`flex items-center text-sm ${
-              testConnection.success ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {testConnection.loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-                  Probando...
-                </>
-              ) : testConnection.success ? (
-                <>
-                  <CheckCircleIcon className="h-4 w-4 mr-1" />
-                  {testConnection.message}
-                </>
-              ) : (
-                <>
-                  <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
-                  {testConnection.message}
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      <BusinessWompiStatusCard config={config} />
 
-      {/* Configuración de Pagos */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-          <CreditCardIcon className="h-5 w-5 mr-2 text-blue-600" />
-          Configuración de Pagos
-        </h3>
+      {config && config.exists && (
+        <BusinessWompiModeToggle
+          isTestMode={isTestMode}
+          hasProdCredentials={hasProdCredentials}
+          onToggle={handleToggleMode}
+          disabled={saving || verifying}
+        />
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="requirePaymentForBooking"
-                checked={config.requirePaymentForBooking}
-                onChange={(e) => handleConfigChange('requirePaymentForBooking', e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="requirePaymentForBooking" className="ml-2 text-sm text-gray-700">
-                Requerir pago para confirmar reserva
-              </label>
-            </div>
+      <BusinessWompiCredentialsForm
+        config={config}
+        onSave={handleSaveCredentials}
+        onVerify={handleVerifyCredentials}
+        saving={saving}
+        verifying={verifying}
+      />
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="allowInstallments"
-                checked={config.allowInstallments}
-                onChange={(e) => handleConfigChange('allowInstallments', e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="allowInstallments" className="ml-2 text-sm text-gray-700">
-                Permitir pagos en cuotas
-              </label>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="enableTestMode"
-                checked={config.enableTestMode}
-                onChange={(e) => handleConfigChange('enableTestMode', e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="enableTestMode" className="ml-2 text-sm text-gray-700">
-                Modo de pruebas activado
-              </label>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {!config.requirePaymentForBooking && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Porcentaje de pago requerido (%)
-                </label>
-                <input
-                  type="number"
-                  value={config.paymentPercentage}
-                  onChange={(e) => handleConfigChange('paymentPercentage', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  min="0"
-                  max="100"
-                />
-              </div>
-            )}
-
-            {config.allowInstallments && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Máximo de cuotas
-                </label>
-                <input
-                  type="number"
-                  value={config.maxInstallments}
-                  onChange={(e) => handleConfigChange('maxInstallments', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  min="1"
-                  max="36"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Métodos de Pago */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Métodos de Pago Disponibles
-        </h3>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { key: 'creditCard', label: 'Tarjeta de Crédito', icon: '💳' },
-            { key: 'debitCard', label: 'Tarjeta de Débito', icon: '💳' },
-            { key: 'pse', label: 'PSE', icon: '🏦' },
-            { key: 'nequi', label: 'Nequi', icon: '📱' }
-          ].map(method => (
-            <div key={method.key} className="flex items-center">
-              <input
-                type="checkbox"
-                id={method.key}
-                checked={config.paymentMethods[method.key]}
-                onChange={(e) => handlePaymentMethodChange(method.key, e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor={method.key} className="ml-2 text-sm text-gray-700 flex items-center">
-                <span className="mr-1">{method.icon}</span>
-                {method.label}
-              </label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Configuración de Reservas */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Configuración de Reservas
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="allowFreeBookings"
-                checked={config.bookingSettings.allowFreeBookings}
-                onChange={(e) => handleBookingSettingChange('allowFreeBookings', e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="allowFreeBookings" className="ml-2 text-sm text-gray-700">
-                Permitir reservas sin pago
-              </label>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="requirePaymentToConfirm"
-                checked={config.bookingSettings.requirePaymentToConfirm}
-                onChange={(e) => handleBookingSettingChange('requirePaymentToConfirm', e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="requirePaymentToConfirm" className="ml-2 text-sm text-gray-700">
-                Requerir pago para confirmar turno
-              </label>
-            </div>
-          </div>
-
-          <div className="space-y-4">
+      {config && config.exists && config.verificationStatus === 'verified' && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Plazo para pago (horas)
-              </label>
-              <input
-                type="number"
-                value={config.bookingSettings.paymentDeadlineHours}
-                onChange={(e) => handleBookingSettingChange('paymentDeadlineHours', parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                min="1"
-                max="168"
-              />
+              <h3 className="font-semibold text-gray-900 mb-1">
+                Estado de la Configuración
+              </h3>
+              <p className="text-sm text-gray-600">
+                {isActive 
+                  ? 'Tu configuración está activa y lista para recibir pagos' 
+                  : 'Activa tu configuración para empezar a recibir pagos'}
+              </p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Política de reembolso
-              </label>
-              <select
-                value={config.bookingSettings.refundPolicy}
-                onChange={(e) => handleBookingSettingChange('refundPolicy', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="flexible">Flexible (reembolso completo)</option>
-                <option value="moderate">Moderada (reembolso parcial)</option>
-                <option value="strict">Estricta (sin reembolso)</option>
-              </select>
-            </div>
+            <button
+              onClick={() => handleToggleStatus(!isActive)}
+              disabled={saving}
+              className={`
+                px-6 py-2 rounded-lg font-medium transition-colors
+                ${isActive 
+                  ? 'bg-red-600 text-white hover:bg-red-700' 
+                  : 'bg-green-600 text-white hover:bg-green-700'}
+                ${saving ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
+            >
+              {saving ? 'Procesando...' : (isActive ? 'Desactivar' : 'Activar')}
+            </button>
           </div>
         </div>
-      </div>
-
-      {/* Botón de guardar */}
-      <div className="flex justify-end">
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-        >
-          {isSaving ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Guardando...
-            </>
-          ) : (
-            <>
-              <CheckCircleIcon className="h-4 w-4 mr-2" />
-              Guardar Configuración
-            </>
-          )}
-        </button>
-      </div>
+      )}
     </div>
   )
 }

@@ -36,16 +36,32 @@ const Branch = sequelize.define('Branch', {
   },
   address: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     validate: {
-      len: [5, 255]
+      len: {
+        args: [5, 255],
+        msg: 'La dirección debe tener entre 5 y 255 caracteres'
+      },
+      isValidOrEmpty(value) {
+        if (value && value.trim().length > 0 && value.trim().length < 5) {
+          throw new Error('La dirección debe tener al menos 5 caracteres');
+        }
+      }
     }
   },
   city: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     validate: {
-      len: [2, 100]
+      len: {
+        args: [2, 100],
+        msg: 'La ciudad debe tener entre 2 y 100 caracteres'
+      },
+      isValidOrEmpty(value) {
+        if (value && value.trim().length > 0 && value.trim().length < 2) {
+          throw new Error('La ciudad debe tener al menos 2 caracteres');
+        }
+      }
     }
   },
   state: {
@@ -69,7 +85,18 @@ const Branch = sequelize.define('Branch', {
     type: DataTypes.STRING,
     allowNull: true,
     validate: {
-      isEmail: true
+      isEmail: {
+        msg: 'Debe proporcionar un email válido'
+      },
+      isValidOrEmpty(value) {
+        if (value && value.trim().length > 0) {
+          // Solo validar si hay un valor no vacío
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+            throw new Error('Debe proporcionar un email válido');
+          }
+        }
+      }
     }
   },
   latitude: {

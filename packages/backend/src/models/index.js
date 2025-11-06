@@ -6,6 +6,9 @@ const WhatsAppMessage = require('./WhatsAppMessage');
 const WhatsAppMessageTemplate = require('./WhatsAppMessageTemplate');
 const WhatsAppWebhookEvent = require('./WhatsAppWebhookEvent');
 
+// Business Wompi Payment Configuration (para pagos de clientes → negocios)
+const BusinessWompiPaymentConfig = require('./BusinessWompiPaymentConfig');
+
 // Importar modelos en orden de dependencias (sin referencias primero)
 const SubscriptionPlan = require('./SubscriptionPlan');
 const Module = require('./Module');
@@ -1538,5 +1541,7 @@ module.exports = {
   WhatsAppToken,
   WhatsAppMessage,
   WhatsAppMessageTemplate,
-  WhatsAppWebhookEvent
+  WhatsAppWebhookEvent,
+  // Modelos de Wompi Payment Config (pagos clientes → negocios)
+  BusinessWompiPaymentConfig
 };

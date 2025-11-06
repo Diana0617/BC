@@ -106,6 +106,10 @@ import { paymentMethodsApi } from './paymentMethodsApi';
 export { default as whatsappApi } from './whatsappApi';
 import whatsappApi from './whatsappApi';
 
+// 💳 BUSINESS WOMPI PAYMENT CONFIG API
+export { default as businessWompiPaymentApi } from './businessWompiPaymentApi';
+import businessWompiPaymentApi from './businessWompiPaymentApi';
+
 // Export all OWNER APIs as a group
 export const ownerApis = {
   ownerApi,
@@ -148,5 +152,7 @@ export const businessApis = {
   // Payment Methods System API
   paymentMethodsApi,
   // WhatsApp Business Platform API
-  whatsappApi
+  whatsappApi,
+  // Business Wompi Payment Config API
+  businessWompiPaymentApi
 };
