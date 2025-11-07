@@ -43,7 +43,7 @@ import PaymentMethodsSection from './sections/PaymentMethodsSection'
 import CalendarAccessSection from './sections/CalendarAccessSection'
 import CustomerHistorySection from './sections/CustomerHistorySection'
 import WhatsAppConfigSection from './sections/WhatsAppConfigSection'
-import BusinessRuleModal from '../../../components/BusinessRuleModal'
+import BusinessRuleModal from '../../../components/BusinessRuleModalV2'
 
 // Hook personalizado para la configuración del negocio
 // import { useBusinessSetup } from './hooks/useBusinessSetup'
