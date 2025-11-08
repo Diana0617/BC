@@ -33,7 +33,7 @@ const StockInitial = () => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(false);
-  const [csvFile, setCsvFile] = useState(null);
+  const [, setCsvFile] = useState(null);
   const [csvError, setCsvError] = useState(null);
 
   // Cargar sucursales
