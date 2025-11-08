@@ -6,15 +6,23 @@ import {
   TruckIcon,
   BarChart3Icon,
   HistoryIcon,
-  PackagePlusIcon
+  PackagePlusIcon,
+  Warehouse
 } from 'lucide-react';
 import StockInitial from './stock/StockInitial';
+import BranchInventoryView from './stock/BranchInventoryView';
 
 const InventoryDashboard = () => {
   const { user } = useSelector((state) => state.auth);
-  const [activeTab, setActiveTab] = useState('stock-inicial');
+  const [activeTab, setActiveTab] = useState('inventario');
 
   const tabs = [
+    {
+      id: 'inventario',
+      name: 'Inventario',
+      icon: Warehouse,
+      description: 'Vista de inventario por sucursal'
+    },
     {
       id: 'stock-inicial',
       name: 'Stock Inicial',
@@ -55,6 +63,8 @@ const InventoryDashboard = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'inventario':
+        return <BranchInventoryView />;
       case 'stock-inicial':
         return <StockInitial />;
       case 'productos':
@@ -68,7 +78,7 @@ const InventoryDashboard = () => {
       case 'reportes':
         return <ComingSoonPlaceholder title="Reportes" />;
       default:
-        return <StockInitial />;
+        return <BranchInventoryView />;
     }
   };
 

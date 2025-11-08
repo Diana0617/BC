@@ -26,6 +26,7 @@ const PurchaseOrder = require('./PurchaseOrder');
 const SupplierInvoice = require('./SupplierInvoice');
 const SupplierEvaluation = require('./SupplierEvaluation');
 const SupplierCatalogItem = require('./SupplierCatalogItem');
+const BranchStock = require('./BranchStock');
 const Appointment = require('./Appointment');
 const PasswordResetToken = require('./PasswordResetToken');
 
@@ -656,6 +657,87 @@ Product.hasMany(InventoryMovement, {
 User.hasMany(InventoryMovement, { 
   foreignKey: 'userId', 
   as: 'inventoryMovements' 
+});
+
+// ================================
+// BRANCH STOCK RELATIONSHIPS
+// ================================
+
+// BranchStock relationships
+Business.hasMany(BranchStock, {
+  foreignKey: 'businessId',
+  as: 'branchStocks'
+});
+BranchStock.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+
+Branch.hasMany(BranchStock, {
+  foreignKey: 'branchId',
+  as: 'stocks'
+});
+BranchStock.belongsTo(Branch, {
+  foreignKey: 'branchId',
+  as: 'branch'
+});
+
+Product.hasMany(BranchStock, {
+  foreignKey: 'productId',
+  as: 'branchStocks'
+});
+BranchStock.belongsTo(Product, {
+  foreignKey: 'productId',
+  as: 'product'
+});
+
+// InventoryMovement - Branch relationships
+Branch.hasMany(InventoryMovement, {
+  foreignKey: 'branchId',
+  as: 'inventoryMovements'
+});
+InventoryMovement.belongsTo(Branch, {
+  foreignKey: 'branchId',
+  as: 'branch'
+});
+
+// InventoryMovement - Specialist relationships
+User.hasMany(InventoryMovement, {
+  foreignKey: 'specialistId',
+  as: 'specialistMovements'
+});
+InventoryMovement.belongsTo(User, {
+  foreignKey: 'specialistId',
+  as: 'specialist'
+});
+
+// InventoryMovement - Appointment relationships
+Appointment.hasMany(InventoryMovement, {
+  foreignKey: 'appointmentId',
+  as: 'productMovements'
+});
+InventoryMovement.belongsTo(Appointment, {
+  foreignKey: 'appointmentId',
+  as: 'appointment'
+});
+
+// InventoryMovement - Transfer relationships (from/to branches)
+Branch.hasMany(InventoryMovement, {
+  foreignKey: 'fromBranchId',
+  as: 'outgoingTransfers'
+});
+InventoryMovement.belongsTo(Branch, {
+  foreignKey: 'fromBranchId',
+  as: 'fromBranch'
+});
+
+Branch.hasMany(InventoryMovement, {
+  foreignKey: 'toBranchId',
+  as: 'incomingTransfers'
+});
+InventoryMovement.belongsTo(Branch, {
+  foreignKey: 'toBranchId',
+  as: 'toBranch'
 });
 
 // ================================
@@ -1481,6 +1563,7 @@ module.exports = {
   Appointment,
   Product,
   InventoryMovement,
+  BranchStock,
   // Modelos de proveedores
   Supplier,
   SupplierContact,

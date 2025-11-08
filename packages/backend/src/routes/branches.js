@@ -528,4 +528,13 @@ router.put('/:businessId/branches/:branchId/schedules/:scheduleId', BranchContro
  */
 router.delete('/:businessId/branches/:branchId/schedules/:scheduleId', BranchController.deleteSpecialistSchedule);
 
+// ==================== INVENTARIO POR SUCURSAL ====================
+
+/**
+ * Rutas de inventario por sucursal
+ * Todas las rutas de inventario están bajo /api/business/:businessId/branches/:branchId/inventory
+ */
+const branchInventoryRoutes = require('./branchInventory');
+router.use('/:businessId/branches/:branchId/inventory', branchInventoryRoutes);
+
 module.exports = router;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import {
@@ -61,10 +61,6 @@ const BusinessProfile = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
-  // Ref para evitar loops infinitos al sincronizar el business
-  const businessSyncedRef = useRef(false)
-  const configLoadedRef = useRef(false)
-
   // Estados locales
   const [activeSection, setActiveSection] = useState('subscription')
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false)
@@ -98,30 +94,40 @@ const BusinessProfile = () => {
     }
   }, [searchParams, dispatch])
 
-  // FIX: SIEMPRE sincronizar el negocio actual desde el backend cuando hay usuario autenticado
-  // Esto evita usar un business.id stale de localStorage o navegación previa que causa 403
-  // Usar ref para evitar loop infinito
+  // Cargar información del negocio si el usuario es BUSINESS
   useEffect(() => {
-    if (user?.id && user?.role === 'BUSINESS' && !businessSyncedRef.current) {
-      businessSyncedRef.current = true
+    if (user?.role === 'BUSINESS' && !business) {
       dispatch(fetchCurrentBusiness())
     }
-  }, [user?.id, user?.role, dispatch])
+  }, [user?.role, business, dispatch])
 
-  // Cargar configuración y branding SOLO cuando business.id esté sincronizado con el token
-  // Usar ref para evitar cargar múltiples veces
+  // Cargar configuración del negocio
   useEffect(() => {
-    if (business?.id && user?.businessId && business.id === user.businessId && !configLoadedRef.current) {
-      configLoadedRef.current = true
-      
-      // Solo cargar si el business.id coincide con el businessId del token
+    if (business?.id) {
       dispatch(loadBusinessConfiguration(business.id))
-      
-      if (!branding) {
-        dispatch(loadBranding(business.id))
-      }
     }
-  }, [business?.id, user?.businessId, branding, dispatch])
+  }, [business?.id, dispatch])
+
+  // Cargar branding del negocio (una sola vez cuando se carga el business)
+  useEffect(() => {
+    if (business?.id && !branding) {
+      // Evitar solicitar branding para un negocio que no es el del token actual.
+      // En algunos flujos (owner cambiando de negocio o navegación previa) el currentBusiness
+      // en Redux puede no coincidir con el negocio asociado al token. Eso genera 403
+      // porque el backend sólo permite acceder a /api/business/:id/branding cuando
+      // el businessId coincide con el del usuario en el token.
+      const tokenBusinessId = user?.business?.id
+      if (tokenBusinessId && tokenBusinessId !== business.id) {
+        // Re-sincronizar el negocio actual desde el backend antes de solicitar branding
+        // Esto evita peticiones con businessId stale que producen 403 intermitentes.
+        dispatch(fetchCurrentBusiness())
+        return
+      }
+
+      dispatch(loadBranding(business.id))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [business?.id])
 
   // Obtener TODOS los módulos disponibles y marcar cuáles están incluidos en el plan
   const allModules = business?.allModules || []
@@ -232,7 +238,7 @@ const BusinessProfile = () => {
       name: 'Inventario',
       icon: CubeIcon,
       component: InventoryConfigSection,
-      moduleRequired: 'inventory',
+      moduleRequired: 'inventario',
       setupStep: 'inventory-config',
       hasExternalLink: true,
       externalPath: '/business/inventory'
@@ -250,10 +256,26 @@ const BusinessProfile = () => {
       name: 'Facturación (Taxxa)',
       icon: CogIcon,
       component: TaxxaConfigSection,
-      moduleRequired: 'taxxa_integration', // Actualizado para coincidir con BD
+      moduleRequired: 'facturacion_electronica', // Actualizado para coincidir con BD
       setupStep: 'taxxa-config'
     },
-    
+    {
+      id: 'appointments',
+      name: 'Gestión de Turnos',
+      icon: CalendarDaysIcon,
+      component: AppointmentsConfigSection,
+      moduleRequired: 'gestion_de_turnos',
+      setupStep: 'appointments-config'
+    },
+    {
+      id: 'appointment-payments',
+      name: 'Pagos de Turnos Online',
+      icon: CreditCardIcon,
+      component: AppointmentPaymentsConfigSection,
+      moduleRequired: 'wompi_appointment_payments',
+      setupStep: 'appointment-payments-config'
+    }
+   
   ]
 
   // Módulos que NO deben mostrarse en el sidebar (no tienen configuración UI o son redundantes)
@@ -298,27 +320,7 @@ const BusinessProfile = () => {
     'customer_history',
     'historial_clientes',
     'client_history',
-    'historial_de_clientes',
-    // Múltiples sucursales (ya tiene sección en profileSections como "Sucursales")
-    'multi_branch',
-    // Inventario (ya tiene sección específica en modulesSections)
-    'inventory',
-    // WhatsApp/Recordatorios (ya tiene sección específica en modulesSections)
-    'appointment-reminders',
-    // Taxxa (ya tiene sección específica en modulesSections)
-    'taxxa_integration',
-    // Gestión de usuarios (se maneja desde Historial de Clientes)
-    'user-management',
-    // Reserva de citas (se maneja desde Calendario)
-    'appointment-booking',
-    // Pagos (se configura en Métodos de Pago)
-    'basic-payments',
-    'wompi_integration',
-    // Reportes (no tienen UI de configuración)
-    'expenses',
-    'balance',
-    'advanced-analytics'
-
+    'historial_de_clientes'
   ]
 
   // Crear un mapa de secciones con información de módulos

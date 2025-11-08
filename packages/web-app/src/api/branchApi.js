@@ -1,4 +1,4 @@
-import apiClient from './client'
+import { apiClient } from './auth'
 
 /**
  * API client para gestión de sucursales
@@ -10,7 +10,7 @@ const branchApi = {
    * @returns {Promise<Array>} Lista de sucursales
    */
   getBranches: async (businessId) => {
-    const response = await apiClient.get(`/${businessId}/branches`)
+    const response = await apiClient.get(`/api/business/${businessId}/branches`)
     return response.data
   },
 
@@ -21,7 +21,7 @@ const branchApi = {
    * @returns {Promise<Object>} Datos de la sucursal
    */
   getBranch: async (businessId, branchId) => {
-    const response = await apiClient.get(`/${businessId}/branches/${branchId}`)
+    const response = await apiClient.get(`/api/business/${businessId}/branches/${branchId}`)
     return response.data
   },
 
@@ -32,7 +32,7 @@ const branchApi = {
    * @returns {Promise<Object>} Sucursal creada
    */
   createBranch: async (businessId, branchData) => {
-    const response = await apiClient.post(`/${businessId}/branches`, branchData)
+    const response = await apiClient.post(`/api/business/${businessId}/branches`, branchData)
     return response.data
   },
 
@@ -44,7 +44,7 @@ const branchApi = {
    * @returns {Promise<Object>} Sucursal actualizada
    */
   updateBranch: async (businessId, branchId, branchData) => {
-    const response = await apiClient.put(`/${businessId}/branches/${branchId}`, branchData)
+    const response = await apiClient.put(`/api/business/${businessId}/branches/${branchId}`, branchData)
     return response.data
   },
 
@@ -62,7 +62,7 @@ const branchApi = {
    * @returns {Promise<Object>} Sucursal actualizada
    */
   updateBusinessHours: async (businessId, branchId, businessHours) => {
-    const response = await apiClient.put(`/${businessId}/branches/${branchId}`, {
+    const response = await apiClient.put(`/api/business/${businessId}/branches/${branchId}`, {
       businessHours
     })
     return response.data
@@ -75,7 +75,7 @@ const branchApi = {
    * @returns {Promise<Array>} Lista de especialistas
    */
   getBranchSpecialists: async (businessId, branchId) => {
-    const response = await apiClient.get(`/${businessId}/branches/${branchId}/specialists`)
+    const response = await apiClient.get(`/api/business/${businessId}/branches/${branchId}/specialists`)
     return response.data
   },
 
@@ -87,7 +87,7 @@ const branchApi = {
    * @returns {Promise<Object>} Resultado de la asignación
    */
   assignSpecialists: async (businessId, branchId, specialistIds) => {
-    const response = await apiClient.post(`/${businessId}/branches/${branchId}/specialists`, {
+    const response = await apiClient.post(`/api/business/${businessId}/branches/${branchId}/specialists`, {
       specialistIds
     })
     return response.data
@@ -100,7 +100,7 @@ const branchApi = {
    * @returns {Promise<Array>} Lista de horarios
    */
   getBranchSchedules: async (businessId, branchId) => {
-    const response = await apiClient.get(`/${businessId}/branches/${branchId}/schedules`)
+    const response = await apiClient.get(`/api/business/${businessId}/branches/${branchId}/schedules`)
     return response.data
   },
 
@@ -112,7 +112,7 @@ const branchApi = {
    * @returns {Promise<Object>} Horario creado
    */
   createSpecialistSchedule: async (businessId, branchId, scheduleData) => {
-    const response = await apiClient.post(`/${businessId}/branches/${branchId}/schedules`, scheduleData)
+    const response = await apiClient.post(`/api/business/${businessId}/branches/${branchId}/schedules`, scheduleData)
     return response.data
   },
 
@@ -126,7 +126,7 @@ const branchApi = {
    */
   updateSpecialistSchedule: async (businessId, branchId, scheduleId, scheduleData) => {
     const response = await apiClient.put(
-      `/${businessId}/branches/${branchId}/schedules/${scheduleId}`,
+      `/api/business/${businessId}/branches/${branchId}/schedules/${scheduleId}`,
       scheduleData
     )
     return response.data

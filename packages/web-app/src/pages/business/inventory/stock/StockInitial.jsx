@@ -8,57 +8,80 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   InfoIcon,
-  Loader2Icon
+  Loader2Icon,
+  BuildingIcon,
+  AlertTriangleIcon
 } from 'lucide-react';
 import { 
   fetchProducts, 
-  bulkInitialStock,
-  clearBulkStockResult,
   clearProductsError
 } from '@shared';
+import branchApi from '../../../../api/branchApi';
+import branchInventoryApi from '../../../../api/branchInventoryApi';
 
 const StockInitial = () => {
   const dispatch = useDispatch();
+  const { user } = useSelector(state => state.auth);
   const { 
     products: productsData, 
     loading: productsLoading, 
-    error: productsError,
-    bulkStockResult 
+    error: productsError
   } = useSelector(state => state.products);
 
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState(null);
+  const [loadingBranches, setLoadingBranches] = useState(true);
+  const [branchError, setBranchError] = useState(null);
   const [stockItems, setStockItems] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(false);
+  const [csvFile, setCsvFile] = useState(null);
+  const [csvError, setCsvError] = useState(null);
+
+  // Cargar sucursales
+  useEffect(() => {
+    const loadBranches = async () => {
+      try {
+        setLoadingBranches(true);
+        setBranchError(null);
+        const response = await branchApi.getBranches(user.businessId);
+        const branchesData = response.data || [];
+        
+        if (branchesData.length === 0) {
+          // Si no hay sucursales, mostrar error indicando que deben completar la configuración inicial
+          setBranchError('No hay sucursales configuradas. Por favor, completa la configuración inicial del negocio.');
+          setBranches([]);
+          setSelectedBranch(null);
+        } else {
+          setBranches(branchesData);
+          // Auto-seleccionar la primera sucursal (generalmente la principal)
+          setSelectedBranch(branchesData[0].id);
+        }
+      } catch (err) {
+        console.error('Error loading branches:', err);
+        setBranchError('Error al cargar las sucursales. Por favor, intenta nuevamente.');
+        setBranches([]);
+        setSelectedBranch(null);
+      } finally {
+        setLoadingBranches(false);
+      }
+    };
+
+    if (user?.businessId) {
+      loadBranches();
+    }
+  }, [user?.businessId]);
 
   useEffect(() => {
-    dispatch(fetchProducts({ 
-      isActive: true, 
-      trackInventory: true, 
-      limit: 1000 
-    }));
-  }, [dispatch]);
-
-  // Handle bulk stock result
-  useEffect(() => {
-    if (bulkStockResult) {
-      setSuccess(`Stock inicial cargado exitosamente: ${bulkStockResult.processed} productos`);
-      setStockItems([]);
-      setConfirmDialog(false);
-      
-      // Reload products to update the list
+    if (selectedBranch) {
       dispatch(fetchProducts({ 
         isActive: true, 
         trackInventory: true, 
         limit: 1000 
       }));
-      
-      // Clear result after showing
-      setTimeout(() => {
-        dispatch(clearBulkStockResult());
-      }, 100);
     }
-  }, [bulkStockResult, dispatch]);
+  }, [dispatch, selectedBranch]);
 
   // Filter products with no stock
   const productsWithoutStock = productsData.filter(p => p.currentStock === 0);
@@ -108,22 +131,144 @@ const StockInitial = () => {
     return stockItems.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
   };
 
+  const handleDownloadTemplate = () => {
+    // Crear plantilla CSV con ejemplos
+    const headers = ['SKU', 'Nombre Producto', 'Cantidad', 'Costo Unitario'];
+    const example1 = ['PROD001', 'Shampoo Keratina 500ml', '10', '25000'];
+    const example2 = ['PROD002', 'Tinte Rubio Ceniza', '5', '18000'];
+    const example3 = ['', '', '', ''];
+    
+    const csvContent = [
+      headers.join(','),
+      example1.join(','),
+      example2.join(','),
+      example3.join(',')
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'plantilla_stock_inicial.csv';
+    link.click();
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      setCsvError('El archivo debe ser un CSV (.csv)');
+      setCsvFile(null);
+      return;
+    }
+
+    setCsvFile(file);
+    setCsvError(null);
+
+    // Leer y procesar el archivo CSV
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target.result;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        // Saltar la primera línea (encabezados)
+        const dataLines = lines.slice(1);
+        
+        const items = [];
+        const errors = [];
+
+        dataLines.forEach((line, index) => {
+          const [sku, , quantityStr, costStr] = line.split(',').map(s => s.trim());
+          
+          if (!sku) return; // Saltar líneas vacías
+
+          const product = productsData.find(p => p.sku === sku);
+          
+          if (!product) {
+            errors.push(`Línea ${index + 2}: SKU "${sku}" no encontrado`);
+            return;
+          }
+
+          if (stockItems.find(item => item.productId === product.id)) {
+            errors.push(`Línea ${index + 2}: Producto "${product.name}" ya fue agregado`);
+            return;
+          }
+
+          const quantity = parseInt(quantityStr) || 0;
+          const unitCost = parseFloat(costStr) || 0;
+
+          if (quantity <= 0) {
+            errors.push(`Línea ${index + 2}: Cantidad debe ser mayor a 0`);
+            return;
+          }
+
+          items.push({
+            productId: product.id,
+            productName: product.name,
+            productSku: product.sku,
+            unit: product.unit,
+            quantity,
+            unitCost
+          });
+        });
+
+        if (errors.length > 0) {
+          setCsvError(errors.join(', '));
+        } else {
+          setStockItems([...stockItems, ...items]);
+          setCsvFile(null);
+          e.target.value = ''; // Reset input
+        }
+      } catch (error) {
+        console.error('Error processing CSV:', error);
+        setCsvError('Error al procesar el archivo CSV');
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
   const handleSubmit = async () => {
+    if (selectedBranch === null) {
+      return;
+    }
+
     try {
       setSubmitting(true);
-      
-      await dispatch(bulkInitialStock(
-        stockItems.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          unitCost: item.unitCost
-        }))
-      )).unwrap();
-      
-      // Success is handled by the useEffect watching bulkStockResult
-    } catch {
       setSuccess(null);
-      // Error is already in Redux state
+      
+      const products = stockItems.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        unitCost: item.unitCost
+      }));
+
+      const result = await branchInventoryApi.loadInitialStock(
+        user.businessId,
+        selectedBranch,
+        products
+      );
+      
+      if (result.success) {
+        const { summary } = result.data;
+        const branchName = branches.find(b => b.id === selectedBranch)?.name || 'Sucursal';
+        setSuccess(
+          `Stock inicial cargado en ${branchName}: ${summary.successful} exitosos, ${summary.failed} fallidos de ${summary.total} productos`
+        );
+        setStockItems([]);
+        setConfirmDialog(false);
+        
+        // Reload products
+        dispatch(fetchProducts({ 
+          isActive: true, 
+          trackInventory: true, 
+          limit: 1000 
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading initial stock:', error);
+      setSuccess(null);
     } finally {
       setSubmitting(false);
     }
@@ -195,6 +340,144 @@ const StockInitial = () => {
         </div>
       </div>
 
+      {/* Carga masiva por CSV */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="space-y-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start space-x-3">
+              <UploadIcon className="h-6 w-6 text-purple-500 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Carga Masiva por CSV</h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  Importa múltiples productos desde un archivo CSV
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleDownloadTemplate}
+              className="px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+            >
+              Descargar Plantilla
+            </button>
+          </div>
+
+          {csvError && (
+            <div className="rounded-md bg-red-50 p-3 border border-red-200">
+              <div className="flex">
+                <XCircleIcon className="h-5 w-5 text-red-400" />
+                <div className="ml-3">
+                  <p className="text-sm text-red-800">{csvError}</p>
+                </div>
+                <button
+                  onClick={() => setCsvError(null)}
+                  className="ml-auto text-red-500 hover:text-red-700"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h4 className="text-sm font-medium text-gray-900 mb-2">Formato del archivo CSV:</h4>
+            <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+              <li>Primera línea: Encabezados (SKU, Nombre Producto, Cantidad, Costo Unitario)</li>
+              <li>Las siguientes líneas: Datos de los productos</li>
+              <li>El SKU debe coincidir exactamente con los productos existentes</li>
+              <li>La cantidad debe ser un número entero mayor a 0</li>
+              <li>El costo unitario debe ser un número (puede tener decimales)</li>
+            </ul>
+            
+            <div className="mt-3 bg-white p-3 rounded border border-gray-300 font-mono text-xs">
+              <div className="text-gray-500">Ejemplo:</div>
+              <div className="mt-1">
+                SKU,Nombre Producto,Cantidad,Costo Unitario<br/>
+                PROD001,Shampoo Keratina 500ml,10,25000<br/>
+                PROD002,Tinte Rubio Ceniza,5,18000
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block">
+              <span className="sr-only">Seleccionar archivo CSV</span>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileChange}
+                disabled={selectedBranch === null}
+                className={`block w-full text-sm text-gray-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-lg file:border-0
+                  file:text-sm file:font-semibold
+                  ${selectedBranch === null 
+                    ? 'file:bg-gray-200 file:text-gray-400 cursor-not-allowed'
+                    : 'file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer'
+                  }
+                `}
+              />
+            </label>
+            {selectedBranch === null && (
+              <p className="mt-2 text-sm text-amber-600 flex items-center">
+                <AlertTriangleIcon className="h-4 w-4 mr-1" />
+                Debes seleccionar una sucursal antes de cargar el archivo
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Selector de Sucursal */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-start space-x-4">
+          <BuildingIcon className="h-6 w-6 text-blue-500 flex-shrink-0 mt-1" />
+          <div className="flex-1">
+            <label htmlFor="branch-select" className="block text-sm font-medium text-gray-900 mb-2">
+              Seleccionar Sucursal *
+            </label>
+            
+            {loadingBranches ? (
+              <div className="flex items-center space-x-2 text-gray-500">
+                <Loader2Icon className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Cargando sucursales...</span>
+              </div>
+            ) : branchError ? (
+              <div className="flex items-center space-x-2 text-red-600">
+                <AlertTriangleIcon className="h-5 w-5" />
+                <span className="text-sm">{branchError}</span>
+              </div>
+            ) : branches.length === 0 ? (
+              <div className="flex items-center space-x-2 text-amber-600">
+                <AlertTriangleIcon className="h-5 w-5" />
+                <span className="text-sm">No hay sucursales disponibles</span>
+              </div>
+            ) : (
+              <select
+                id="branch-select"
+                value={selectedBranch !== null ? selectedBranch : ''}
+                onChange={(e) => setSelectedBranch(e.target.value !== '' ? parseInt(e.target.value) : null)}
+                className="block w-full max-w-md rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              >
+                <option value="">-- Selecciona una sucursal --</option>
+                {branches.map(branch => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                    {branch.isMain ? ' (Principal)' : ''}
+                  </option>
+                ))}
+              </select>
+            )}
+            
+            {selectedBranch === null && !loadingBranches && branches.length > 0 && (
+              <p className="mt-2 text-sm text-amber-600 flex items-center">
+                <AlertTriangleIcon className="h-4 w-4 mr-1" />
+                Debes seleccionar una sucursal antes de agregar productos
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Lista de productos disponibles */}
         <div className="lg:col-span-1">
@@ -217,7 +500,12 @@ const StockInitial = () => {
                     <button
                       key={product.id}
                       onClick={() => handleAddProduct(product)}
-                      className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group"
+                      disabled={selectedBranch === null}
+                      className={`w-full text-left p-3 rounded-lg border transition-colors group ${
+                        selectedBranch === null 
+                          ? 'border-gray-100 bg-gray-50 cursor-not-allowed opacity-50' 
+                          : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                      }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
@@ -230,7 +518,9 @@ const StockInitial = () => {
                             {product.unit}
                           </p>
                         </div>
-                        <PlusIcon className="h-5 w-5 text-gray-400 group-hover:text-blue-500 flex-shrink-0 ml-2" />
+                        <PlusIcon className={`h-5 w-5 flex-shrink-0 ml-2 ${
+                          selectedBranch === null ? 'text-gray-300' : 'text-gray-400 group-hover:text-blue-500'
+                        }`} />
                       </div>
                     </button>
                   ))}
@@ -250,7 +540,12 @@ const StockInitial = () => {
               {stockItems.length > 0 && (
                 <button
                   onClick={() => setConfirmDialog(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  disabled={selectedBranch === null}
+                  className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    selectedBranch === null
+                      ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                      : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+                  }`}
                 >
                   <SaveIcon className="h-4 w-4 mr-2" />
                   Cargar Stock
@@ -360,54 +655,6 @@ const StockInitial = () => {
           </div>
         </div>
       </div>
-
-      {/* Resultados */}
-      {bulkStockResult && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Resultados de la Carga
-          </h3>
-          
-          {bulkStockResult.results && bulkStockResult.results.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center text-green-600 mb-3">
-                <CheckCircleIcon className="h-5 w-5 mr-2" />
-                <span className="font-medium">
-                  Productos cargados exitosamente: {bulkStockResult.processed}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {bulkStockResult.results.map((result, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                  >
-                    {result.productName}: {result.quantity} unidades
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {bulkStockResult.errors && bulkStockResult.errors.length > 0 && (
-            <div>
-              <div className="flex items-center text-red-600 mb-3">
-                <XCircleIcon className="h-5 w-5 mr-2" />
-                <span className="font-medium">
-                  Errores encontrados: {bulkStockResult.errors.length}
-                </span>
-              </div>
-              <div className="space-y-2">
-                {bulkStockResult.errors.map((err, index) => (
-                  <div key={index} className="rounded-md bg-red-50 p-3 border border-red-200">
-                    <p className="text-sm text-red-800">{err.error}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Diálogo de confirmación */}
       {confirmDialog && (

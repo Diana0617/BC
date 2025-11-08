@@ -96,6 +96,56 @@ const InventoryMovement = sequelize.define('InventoryMovement', {
   documentUrl: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  branchId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'branch_id',
+    references: {
+      model: 'branches',
+      key: 'id'
+    },
+    comment: 'Sucursal donde ocurre el movimiento'
+  },
+  specialistId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'specialist_id',
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    comment: 'Especialista que retira el producto (para procedimientos)'
+  },
+  appointmentId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'appointment_id',
+    references: {
+      model: 'appointments',
+      key: 'id'
+    },
+    comment: 'Cita asociada al movimiento'
+  },
+  fromBranchId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'from_branch_id',
+    references: {
+      model: 'branches',
+      key: 'id'
+    },
+    comment: 'Sucursal de origen en transferencias'
+  },
+  toBranchId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'to_branch_id',
+    references: {
+      model: 'branches',
+      key: 'id'
+    },
+    comment: 'Sucursal de destino en transferencias'
   }
 }, {
   tableName: 'inventory_movements',
