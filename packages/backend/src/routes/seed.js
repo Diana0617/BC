@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const seedModules = require('../../scripts/seed-modules');
 const seedPlans = require('../../scripts/seed-plans');
 const seedRuleTemplates = require('../../scripts/seed-rule-templates');
@@ -36,7 +36,7 @@ const verifySecretKey = (req, res, next) => {
  * POST /api/seed/modules
  * Ejecuta el seeding de módulos
  */
-router.post('/modules', authenticate, verifySecretKey, async (req, res) => {
+router.post('/modules', authenticateToken, verifySecretKey, async (req, res) => {
   try {
     // Solo OWNER puede ejecutar seeding
     if (req.user.role !== 'OWNER') {
@@ -69,7 +69,7 @@ router.post('/modules', authenticate, verifySecretKey, async (req, res) => {
  * POST /api/seed/plans
  * Ejecuta el seeding de planes
  */
-router.post('/plans', authenticate, verifySecretKey, async (req, res) => {
+router.post('/plans', authenticateToken, verifySecretKey, async (req, res) => {
   try {
     if (req.user.role !== 'OWNER') {
       return res.status(403).json({
@@ -101,7 +101,7 @@ router.post('/plans', authenticate, verifySecretKey, async (req, res) => {
  * POST /api/seed/rules
  * Ejecuta el seeding de plantillas de reglas
  */
-router.post('/rules', authenticate, verifySecretKey, async (req, res) => {
+router.post('/rules', authenticateToken, verifySecretKey, async (req, res) => {
   try {
     if (req.user.role !== 'OWNER') {
       return res.status(403).json({
@@ -133,7 +133,7 @@ router.post('/rules', authenticate, verifySecretKey, async (req, res) => {
  * POST /api/seed/all
  * Ejecuta todos los seedings en orden
  */
-router.post('/all', authenticate, verifySecretKey, async (req, res) => {
+router.post('/all', authenticateToken, verifySecretKey, async (req, res) => {
   try {
     if (req.user.role !== 'OWNER') {
       return res.status(403).json({
