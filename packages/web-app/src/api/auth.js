@@ -8,9 +8,14 @@ class ApiClient {
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    
+    // Check if body is FormData to avoid setting Content-Type and stringifying
+    const isFormData = options.body instanceof FormData;
+    
     const config = {
       headers: {
-        'Content-Type': 'application/json',
+        // Only set Content-Type for non-FormData requests
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...options.headers,
       },
       ...options,
@@ -37,9 +42,11 @@ class ApiClient {
   }
 
   async post(endpoint, body, options = {}) {
+    // Don't stringify FormData, let browser handle it
+    const isFormData = body instanceof FormData;
     return this.request(endpoint, {
       method: 'POST',
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
       ...options,
     });
   }

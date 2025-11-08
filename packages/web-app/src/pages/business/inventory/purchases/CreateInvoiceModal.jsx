@@ -23,6 +23,9 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
 
   // Supplier data
   const [useExistingSupplier, setUseExistingSupplier] = useState(false);
+  const [suppliers, setSuppliers] = useState([]);
+  const [selectedSupplierId, setSelectedSupplierId] = useState('');
+  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
   const [supplierData, setSupplierData] = useState({
     name: '',
     email: '',
@@ -71,6 +74,31 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
     // Load products for selection
     dispatch(fetchProducts({ isActive: true, limit: 1000 }));
   }, [dispatch]);
+
+  useEffect(() => {
+    // Load suppliers when using existing supplier
+    if (useExistingSupplier) {
+      loadSuppliers();
+    }
+  }, [useExistingSupplier]);
+
+  const loadSuppliers = async () => {
+    try {
+      setLoadingSuppliers(true);
+      const response = await supplierInvoiceApi.getSuppliers(user.businessId, {
+        status: 'ACTIVE',
+        limit: 100
+      });
+      if (response.success) {
+        setSuppliers(response.data.suppliers);
+      }
+    } catch (err) {
+      console.error('Error loading suppliers:', err);
+      setError('Error al cargar proveedores');
+    } finally {
+      setLoadingSuppliers(false);
+    }
+  };
 
   useEffect(() => {
     // Calculate due date based on payment terms
@@ -221,7 +249,12 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
   };
 
   const validateStep1 = () => {
-    if (!useExistingSupplier) {
+    if (useExistingSupplier) {
+      if (!selectedSupplierId) {
+        setError('Debe seleccionar un proveedor');
+        return false;
+      }
+    } else {
       if (!supplierData.name || !supplierData.taxId) {
         setError('El nombre y NIT del proveedor son requeridos');
         return false;
@@ -331,7 +364,9 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
         }] : []
       };
 
-      if (!useExistingSupplier) {
+      if (useExistingSupplier) {
+        payload.supplierId = selectedSupplierId;
+      } else {
         payload.supplierData = supplierData;
       }
 
@@ -415,10 +450,19 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
                         Proveedor <span className="text-red-500">*</span>
                       </label>
                       <select
+                        value={selectedSupplierId}
+                        onChange={(e) => setSelectedSupplierId(e.target.value)}
+                        disabled={loadingSuppliers}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">Seleccionar proveedor...</option>
-                        {/* TODO: Load suppliers */}
+                        <option value="">
+                          {loadingSuppliers ? 'Cargando...' : 'Seleccionar proveedor...'}
+                        </option>
+                        {suppliers.map(supplier => (
+                          <option key={supplier.id} value={supplier.id}>
+                            {supplier.name} {supplier.taxId ? `- ${supplier.taxId}` : ''}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

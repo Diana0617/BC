@@ -79,6 +79,19 @@ export const supplierInvoiceApi = {
       `/api/business/${businessId}/suppliers/${supplierId}/account-summary`
     );
     return response.data;
+  },
+
+  /**
+   * Obtener todos los proveedores del negocio
+   * @param {string} businessId - ID del negocio
+   * @param {object} params - Filtros (status, search, page, limit)
+   */
+  getSuppliers: async (businessId, params = {}) => {
+    const response = await apiClient.get(
+      `/api/business/${businessId}/suppliers`,
+      { params }
+    );
+    return response.data;
   }
 };
 

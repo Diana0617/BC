@@ -535,6 +535,75 @@ class SupplierInvoiceController {
       });
     }
   }
+
+  /**
+   * Obtener todos los proveedores del negocio
+   * GET /api/business/:businessId/suppliers
+   */
+  static async getSuppliers(req, res) {
+    try {
+      const { businessId } = req.params;
+      const { businessId: userBusinessId } = req.user;
+
+      // Validar que el usuario pertenece al negocio
+      if (businessId !== userBusinessId) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para acceder a este negocio'
+        });
+      }
+
+      const {
+        status = 'ACTIVE',
+        search,
+        page = 1,
+        limit = 100
+      } = req.query;
+
+      const where = { businessId };
+
+      // Filtro por status
+      if (status) where.status = status;
+
+      // Búsqueda por nombre o taxId
+      if (search) {
+        where[Op.or] = [
+          { name: { [Op.iLike]: `%${search}%` } },
+          { taxId: { [Op.iLike]: `%${search}%` } }
+        ];
+      }
+
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+
+      const { count, rows } = await Supplier.findAndCountAll({
+        where,
+        limit: parseInt(limit),
+        offset,
+        order: [['name', 'ASC']],
+        attributes: ['id', 'name', 'email', 'phone', 'taxId', 'status', 'paymentTerms']
+      });
+
+      res.json({
+        success: true,
+        data: {
+          suppliers: rows,
+          pagination: {
+            total: count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(count / parseInt(limit))
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error getting suppliers:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al obtener proveedores',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = SupplierInvoiceController;

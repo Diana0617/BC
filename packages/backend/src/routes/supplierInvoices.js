@@ -28,6 +28,16 @@ router.get(
 );
 
 /**
+ * GET /api/business/:businessId/suppliers
+ * Obtener todos los proveedores del negocio
+ * Query params: status, search, page, limit
+ */
+router.get(
+  '/../suppliers',
+  SupplierInvoiceController.getSuppliers
+);
+
+/**
  * POST /api/business/:businessId/supplier-invoices
  * Crear una nueva factura de proveedor
  * Body: { supplierId, supplierData, invoiceNumber, issueDate, dueDate, items, subtotal, tax, total, notes, attachments }
