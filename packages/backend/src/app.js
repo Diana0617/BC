@@ -289,6 +289,7 @@ const mobileRoutes = require('./routes/mobile.routes.js');
 app.use('/api/auth', authRoutes);
 app.use('/api/mobile', mobileRoutes); // Rutas de auto-login desde móvil
 app.use('/api/admin', adminRoutes); // Rutas de administración (seed, etc.)
+app.use('/api/seed', require('./routes/seed')); // Rutas de seeding protegidas
 app.use('/api/business', businessRoutes);
 app.use('/api/business', businessConfigRoutes); // Rutas de configuración del negocio
 app.use('/api/business', businessWompiPaymentConfigRoutes); // Rutas de configuración de pagos Wompi del negocio
