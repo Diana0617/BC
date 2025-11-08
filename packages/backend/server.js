@@ -9,8 +9,14 @@ async function startServer() {
     // Verificar conexión a la base de datos
     await sequelize.authenticate();
 
-    // Sincronizar modelos en desarrollo (cuidado en producción)
-    if (process.env.NODE_ENV === 'development') {
+    // Sincronizar modelos cuando:
+    // - Está en desarrollo (NODE_ENV=development), O
+    // - FORCE_SYNC_DB o DISABLE_SYNC están configurados (control manual en producción)
+    const shouldSync = process.env.NODE_ENV === 'development' || 
+                       process.env.FORCE_SYNC_DB || 
+                       process.env.DISABLE_SYNC;
+    
+    if (shouldSync) {
       // Importar modelos para sincronización manual
       const {
         SubscriptionPlan,
