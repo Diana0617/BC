@@ -57,7 +57,12 @@ async function startServer() {
         BusinessCommissionConfig,
         ServiceCommission,
         ConsentTemplate,
-        ConsentSignature
+        ConsentSignature,
+        // Modelos de WhatsApp
+        WhatsAppToken,
+        WhatsAppMessage,
+        WhatsAppMessageTemplate,
+        WhatsAppWebhookEvent
       } = require('./src/models');
 
       // Configuración de sincronización
@@ -159,6 +164,12 @@ async function startServer() {
         } else {
           await OwnerExpense.sync();
         }
+        
+        // 11. Tablas de WhatsApp (al final porque dependen de Business y Client)
+        await WhatsAppToken.sync(syncOptions);
+        await WhatsAppMessageTemplate.sync(syncOptions);
+        await WhatsAppMessage.sync(syncOptions);
+        await WhatsAppWebhookEvent.sync(syncOptions);
         
         console.log(`✅ Todas las tablas sincronizadas en modo: ${syncMode.toUpperCase()}`);
       }
