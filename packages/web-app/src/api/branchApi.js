@@ -10,6 +10,11 @@ const branchApi = {
    * @returns {Promise<Array>} Lista de sucursales
    */
   getBranches: async (businessId) => {
+    console.log('🏢 branchApi.getBranches - businessId:', businessId);
+    console.log('🏢 branchApi.getBranches - apiClient:', apiClient);
+    console.log('🏢 branchApi.getBranches - Token en localStorage:', localStorage.getItem('authToken'));
+    console.log('🏢 branchApi.getBranches - Token en sessionStorage:', sessionStorage.getItem('authToken'));
+    
     const response = await apiClient.get(`/api/business/${businessId}/branches`)
     return response.data
   },

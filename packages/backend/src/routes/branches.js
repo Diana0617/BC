@@ -3,6 +3,17 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const BranchController = require('../controllers/BranchController');
 
+// Log para debug
+router.use((req, res, next) => {
+  console.log('🏢 Branch Router - Petición recibida:', {
+    method: req.method,
+    path: req.path,
+    originalUrl: req.originalUrl,
+    hasAuthHeader: !!req.header('Authorization')
+  });
+  next();
+});
+
 // Middleware de autenticación para todas las rutas
 router.use(authenticateToken);
 

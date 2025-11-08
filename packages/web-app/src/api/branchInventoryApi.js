@@ -13,7 +13,7 @@ export const branchInventoryApi = {
    */
   getBranchProducts: async (businessId, branchId, params = {}) => {
     const response = await apiClient.get(
-      `/${businessId}/branches/${branchId}/inventory/products`,
+      `/api/business/${businessId}/branches/${branchId}/inventory/products`,
       { params }
     );
     return response.data;
@@ -27,7 +27,7 @@ export const branchInventoryApi = {
    */
   getBranchProductStock: async (businessId, branchId, productId) => {
     const response = await apiClient.get(
-      `/${businessId}/branches/${branchId}/inventory/products/${productId}`
+      `/api/business/${businessId}/branches/${branchId}/inventory/products/${productId}`
     );
     return response.data;
   },
@@ -40,7 +40,7 @@ export const branchInventoryApi = {
    */
   loadInitialStock: async (businessId, branchId, products) => {
     const response = await apiClient.post(
-      `/${businessId}/branches/${branchId}/inventory/initial-stock`,
+      `/api/business/${businessId}/branches/${branchId}/inventory/initial-stock`,
       { products }
     );
     return response.data;
@@ -54,7 +54,7 @@ export const branchInventoryApi = {
    */
   adjustStock: async (businessId, branchId, data) => {
     const response = await apiClient.post(
-      `/${businessId}/branches/${branchId}/inventory/adjust-stock`,
+      `/api/business/${businessId}/branches/${branchId}/inventory/adjust-stock`,
       data
     );
     return response.data;
@@ -67,7 +67,7 @@ export const branchInventoryApi = {
    */
   getLowStockProducts: async (businessId, branchId) => {
     const response = await apiClient.get(
-      `/${businessId}/branches/${branchId}/inventory/low-stock`
+      `/api/business/${businessId}/branches/${branchId}/inventory/low-stock`
     );
     return response.data;
   },
@@ -81,7 +81,7 @@ export const branchInventoryApi = {
    */
   updateStockConfig: async (businessId, branchId, productId, config) => {
     const response = await apiClient.put(
-      `/${businessId}/branches/${branchId}/inventory/products/${productId}/config`,
+      `/api/business/${businessId}/branches/${branchId}/inventory/products/${productId}/config`,
       config
     );
     return response.data;
@@ -96,7 +96,7 @@ export const branchInventoryApi = {
    */
   getProductMovements: async (businessId, branchId, productId, params = {}) => {
     const response = await apiClient.get(
-      `/${businessId}/branches/${branchId}/inventory/products/${productId}/movements`,
+      `/api/business/${businessId}/branches/${branchId}/inventory/products/${productId}/movements`,
       { params }
     );
     return response.data;

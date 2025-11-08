@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import StockInitial from './stock/StockInitial';
 import BranchInventoryView from './stock/BranchInventoryView';
+import PurchaseInvoices from './purchases/PurchaseInvoices';
 
 const InventoryDashboard = () => {
   const { user } = useSelector((state) => state.auth);
@@ -70,7 +71,7 @@ const InventoryDashboard = () => {
       case 'productos':
         return <ComingSoonPlaceholder title="Productos" />;
       case 'compras':
-        return <ComingSoonPlaceholder title="Compras" />;
+        return <PurchaseInvoices />;
       case 'ventas':
         return <ComingSoonPlaceholder title="Ventas" />;
       case 'movimientos':

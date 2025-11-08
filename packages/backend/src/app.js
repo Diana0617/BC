@@ -276,6 +276,8 @@ const specialistRoutes = require('./routes/specialistRoutes');
 const permissionRoutes = require('./routes/permissions');
 const treatmentPlanRoutes = require('./routes/treatmentPlans');
 const paymentRoutes = require('./routes/paymentRoutes');
+const supplierInvoiceRoutes = require('./routes/supplierInvoices');
+const cloudinaryUploadRoutes = require('./routes/cloudinaryUpload');
 const adminRoutes = require('./routes/admin'); // Rutas de administración
 // const specialistServicesRoutes = require('./routes/specialistServices'); // DEPRECATED: Ahora usando rutas RESTful en businessConfig.js
 
@@ -290,6 +292,7 @@ app.use('/api/business', businessRoutes);
 app.use('/api/business', businessConfigRoutes); // Rutas de configuración del negocio
 app.use('/api/business', businessWompiPaymentConfigRoutes); // Rutas de configuración de pagos Wompi del negocio
 app.use('/api/business', branchRoutes); // Rutas de sucursales
+app.use('/api/business/:businessId/supplier-invoices', supplierInvoiceRoutes); // Rutas de facturas de proveedores
 app.use('/api/business/:businessId/clients', clientRoutes); // Rutas de clientes del negocio
 app.use('/api/business/:businessId', commissionRoutes); // Rutas de comisiones
 app.use('/api/business/:businessId', consentRoutes); // Rutas de consentimientos

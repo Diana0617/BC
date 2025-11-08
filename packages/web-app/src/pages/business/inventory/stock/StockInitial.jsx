@@ -132,11 +132,11 @@ const StockInitial = () => {
   };
 
   const handleDownloadTemplate = () => {
-    // Crear plantilla CSV con ejemplos
-    const headers = ['SKU', 'Nombre Producto', 'Cantidad', 'Costo Unitario'];
-    const example1 = ['PROD001', 'Shampoo Keratina 500ml', '10', '25000'];
-    const example2 = ['PROD002', 'Tinte Rubio Ceniza', '5', '18000'];
-    const example3 = ['', '', '', ''];
+    // Crear plantilla CSV con ejemplos actualizados
+    const headers = ['SKU', 'Nombre Producto', 'Categoría', 'Precio Venta', 'Costo Unitario', 'Cantidad', 'Unidad'];
+    const example1 = ['PROD001', 'Shampoo Keratina 500ml', 'Cuidado Capilar', '45000', '25000', '10', 'unidad'];
+    const example2 = ['PROD002', 'Tinte Rubio Ceniza', 'Coloración', '35000', '18000', '5', 'unidad'];
+    const example3 = ['PROD003', 'Crema Hidratante Facial', 'Cuidado Facial', '40000', '22000', '8', 'unidad'];
     
     const csvContent = [
       headers.join(','),
@@ -179,24 +179,50 @@ const StockInitial = () => {
         const errors = [];
 
         dataLines.forEach((line, index) => {
-          const [sku, , quantityStr, costStr] = line.split(',').map(s => s.trim());
+          const parts = line.split(',').map(s => s.trim());
           
-          if (!sku) return; // Saltar líneas vacías
-
-          const product = productsData.find(p => p.sku === sku);
+          // Formato esperado: SKU,Nombre,Categoría,Precio,Costo,Cantidad,Unidad
+          const [sku, name, category, priceStr, costStr, quantityStr, unit] = parts;
           
-          if (!product) {
-            errors.push(`Línea ${index + 2}: SKU "${sku}" no encontrado`);
+          if (!sku || !name) {
+            errors.push(`Línea ${index + 2}: SKU y Nombre son obligatorios`);
             return;
           }
 
-          if (stockItems.find(item => item.productId === product.id)) {
-            errors.push(`Línea ${index + 2}: Producto "${product.name}" ya fue agregado`);
+          let product = productsData.find(p => p.sku === sku);
+          
+          // Si el producto no existe, preparar datos para crearlo
+          if (!product) {
+            const price = parseFloat(priceStr) || 0;
+            const cost = parseFloat(costStr) || 0;
+            
+            if (price <= 0) {
+              errors.push(`Línea ${index + 2}: Precio de venta debe ser mayor a 0 para productos nuevos`);
+              return;
+            }
+
+            // Marcar que este producto debe crearse
+            product = {
+              id: `temp_${sku}`, // ID temporal
+              name,
+              sku,
+              category: category || 'Sin categoría',
+              price,
+              cost,
+              unit: unit || 'unidad',
+              trackInventory: true,
+              isActive: true,
+              _isNew: true // Flag para identificar productos nuevos
+            };
+          }
+
+          if (stockItems.find(item => item.productSku === sku)) {
+            errors.push(`Línea ${index + 2}: Producto con SKU "${sku}" ya fue agregado`);
             return;
           }
 
           const quantity = parseInt(quantityStr) || 0;
-          const unitCost = parseFloat(costStr) || 0;
+          const unitCost = parseFloat(costStr) || product.cost || 0;
 
           if (quantity <= 0) {
             errors.push(`Línea ${index + 2}: Cantidad debe ser mayor a 0`);
@@ -209,7 +235,17 @@ const StockInitial = () => {
             productSku: product.sku,
             unit: product.unit,
             quantity,
-            unitCost
+            unitCost,
+            _newProduct: product._isNew ? {
+              name: product.name,
+              sku: product.sku,
+              category: product.category,
+              price: product.price,
+              cost: product.cost,
+              unit: product.unit,
+              trackInventory: true,
+              isActive: true
+            } : null
           });
         });
 
@@ -241,7 +277,8 @@ const StockInitial = () => {
       const products = stockItems.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
-        unitCost: item.unitCost
+        unitCost: item.unitCost,
+        ...(item._newProduct && { newProduct: item._newProduct })
       }));
 
       const result = await branchInventoryApi.loadInitialStock(
@@ -381,19 +418,20 @@ const StockInitial = () => {
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <h4 className="text-sm font-medium text-gray-900 mb-2">Formato del archivo CSV:</h4>
             <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-              <li>Primera línea: Encabezados (SKU, Nombre Producto, Cantidad, Costo Unitario)</li>
+              <li>Primera línea: Encabezados (SKU, Nombre Producto, Categoría, Precio Venta, Costo Unitario, Cantidad, Unidad)</li>
               <li>Las siguientes líneas: Datos de los productos</li>
-              <li>El SKU debe coincidir exactamente con los productos existentes</li>
+              <li>Si el producto NO existe, se creará automáticamente con los datos del CSV</li>
+              <li>El SKU debe ser único para cada producto</li>
               <li>La cantidad debe ser un número entero mayor a 0</li>
-              <li>El costo unitario debe ser un número (puede tener decimales)</li>
+              <li>El costo unitario y precio de venta deben ser números mayores a 0</li>
             </ul>
             
             <div className="mt-3 bg-white p-3 rounded border border-gray-300 font-mono text-xs">
               <div className="text-gray-500">Ejemplo:</div>
               <div className="mt-1">
-                SKU,Nombre Producto,Cantidad,Costo Unitario<br/>
-                PROD001,Shampoo Keratina 500ml,10,25000<br/>
-                PROD002,Tinte Rubio Ceniza,5,18000
+                SKU,Nombre Producto,Categoría,Precio Venta,Costo Unitario,Cantidad,Unidad<br/>
+                PROD001,Shampoo Keratina 500ml,Cuidado Capilar,45000,25000,10,unidad<br/>
+                PROD002,Tinte Rubio Ceniza,Coloración,35000,18000,5,unidad
               </div>
             </div>
           </div>

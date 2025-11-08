@@ -3,9 +3,10 @@ const {
   Product, 
   Branch, 
   InventoryMovement,
-  Business
+  Business,
+  sequelize
 } = require('../models');
-const { Op, sequelize } = require('sequelize');
+const { Op } = require('sequelize');
 
 /**
  * Controlador para gestión de inventario por sucursal
@@ -399,7 +400,7 @@ class BranchInventoryController {
     try {
       const { branchId } = req.params;
       const { businessId, id: userId } = req.user;
-      const { products } = req.body; // Array de { productId, quantity, unitCost }
+      const { products } = req.body; // Array de { productId, quantity, unitCost, newProduct? }
 
       if (!products || !Array.isArray(products) || products.length === 0) {
         await transaction.rollback();
@@ -424,14 +425,50 @@ class BranchInventoryController {
 
       const results = {
         success: [],
-        errors: []
+        errors: [],
+        created: []
       };
 
       for (const item of products) {
         try {
-          const { productId, quantity, unitCost } = item;
+          let { productId, quantity, unitCost, newProduct } = item;
 
-          // Verificar producto
+          // Si viene newProduct, significa que hay que crear el producto primero
+          if (newProduct && productId.startsWith('temp_')) {
+            try {
+              const createdProduct = await Product.create({
+                businessId,
+                name: newProduct.name,
+                sku: newProduct.sku,
+                category: newProduct.category || 'Sin categoría',
+                price: newProduct.price,
+                cost: newProduct.cost || unitCost,
+                unit: newProduct.unit || 'unidad',
+                trackInventory: true,
+                isActive: true,
+                currentStock: 0,
+                minStock: 0
+              }, { transaction });
+
+              productId = createdProduct.id;
+              results.created.push({
+                id: createdProduct.id,
+                name: createdProduct.name,
+                sku: createdProduct.sku
+              });
+              
+              console.log(`✅ Producto creado: ${createdProduct.name} (${createdProduct.sku})`);
+            } catch (createError) {
+              results.errors.push({
+                sku: newProduct.sku,
+                productName: newProduct.name,
+                error: `Error al crear producto: ${createError.message}`
+              });
+              continue;
+            }
+          }
+
+          // Verificar producto (ahora debería existir)
           const product = await Product.findOne({
             where: { id: productId, businessId }
           });

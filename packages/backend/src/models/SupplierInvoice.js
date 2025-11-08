@@ -70,6 +70,18 @@ const SupplierInvoice = sequelize.define('SupplierInvoice', {
     allowNull: false,
     defaultValue: 0
   },
+  taxIncluded: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Indica si el IVA está incluido en los precios de los items'
+  },
+  taxPercentage: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: false,
+    defaultValue: 0,
+    comment: 'Porcentaje de IVA aplicado (ej: 0, 5, 19)'
+  },
   total: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,

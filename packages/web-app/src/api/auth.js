@@ -16,8 +16,8 @@ class ApiClient {
       ...options,
     };
 
-    // Add auth token if available
-    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    // Add auth token if available - using correct storage keys
+    const token = localStorage.getItem('bc_auth_token') || sessionStorage.getItem('bc_auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

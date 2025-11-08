@@ -11,8 +11,15 @@ class BranchController {
     try {
       const { businessId } = req.params;
 
+      console.log('🏢 getBranches - Validación de acceso:');
+      console.log('  businessId (param):', businessId);
+      console.log('  req.user.businessId:', req.user.businessId);
+      console.log('  req.user.role:', req.user.role);
+      console.log('  ¿Coinciden?:', req.user.businessId === businessId);
+
       // Verificar que el usuario pertenece al negocio
       if (req.user.businessId !== businessId && req.user.role !== 'OWNER') {
+        console.log('❌ Acceso denegado: businessId no coincide y no es OWNER');
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para acceder a este negocio'

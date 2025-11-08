@@ -130,6 +130,11 @@ class SubscriptionStatusService {
         where: { businessId },
         include: [
           {
+            model: Business,
+            as: 'business',
+            attributes: ['id', 'name', 'status', 'trialEndDate']
+          },
+          {
             model: SubscriptionPlan,
             as: 'plan',
             include: [
@@ -157,6 +162,31 @@ class SubscriptionStatusService {
 
       if (!subscription) {
         return { status: 'NO_SUBSCRIPTION', access: false };
+      }
+
+      // VERIFICAR PRIMERO SI EL NEGOCIO ESTÁ EN TRIAL ACTIVO
+      const business = subscription.business;
+      if (business && business.status === 'TRIAL' && business.trialEndDate) {
+        const now = new Date();
+        const trialEnd = new Date(business.trialEndDate);
+        
+        if (now <= trialEnd) {
+          // Trial activo - acceso completo
+          console.log('✅ Business en TRIAL activo:', {
+            businessId,
+            trialEndDate: business.trialEndDate,
+            daysRemaining: Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24))
+          });
+          
+          return {
+            status: 'TRIAL',
+            access: true,
+            level: 'FULL',
+            subscription,
+            plan: subscription.plan,
+            daysOverdue: 0
+          };
+        }
       }
 
       const currentStatus = await this.calculateSubscriptionStatus(subscription);

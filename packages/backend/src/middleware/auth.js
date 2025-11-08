@@ -38,18 +38,24 @@ const validateBusinessId = (req, res, next) => {
 
 const authenticateToken = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const authHeader = req.header('Authorization');
+    console.log('🔐 authenticateToken - Authorization header:', authHeader ? 'Presente' : 'AUSENTE');
+    
+    const token = authHeader?.replace('Bearer ', '');
     
     if (!token) {
+      console.log('❌ authenticateToken - No token found');
       return res.status(401).json({ 
         success: false,
         error: 'Token de acceso requerido' 
       });
     }
 
+    console.log('🔑 authenticateToken - Token recibido (primeros 20 chars):', token.substring(0, 20) + '...');
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    console.log('DEBUG authenticateToken: Token decoded successfully:', { userId: decoded.userId });
+    console.log('✅ authenticateToken: Token decoded successfully:', { userId: decoded.userId, businessId: decoded.businessId });
     
     const user = await User.findOne({
       where: { 
