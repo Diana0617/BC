@@ -23,7 +23,7 @@ class AuthController {
   static async register(req, res) {
     try {
       // Debug: verificar qué datos están llegando
-      console.log('📨 Datos recibidos en registro:', req.body);
+      
       
       const {
         firstName,
@@ -37,12 +37,6 @@ class AuthController {
 
       // Validaciones básicas
       if (!firstName || !lastName || !email || !password) {
-        console.log('❌ Validación fallida:', {
-          firstName: !!firstName,
-          lastName: !!lastName,
-          email: !!email,
-          password: !!password
-        });
         return res.status(400).json({
           success: false,
           error: 'Los campos firstName, lastName, email y password son requeridos'
@@ -161,8 +155,6 @@ class AuthController {
     try {
       const { email, password } = req.body;
 
-      console.log('🔐 Login attempt:', { email, hasPassword: !!password });
-
       // Validaciones básicas
       if (!email || !password) {
         return res.status(400).json({
@@ -170,13 +162,6 @@ class AuthController {
           error: 'Email y contraseña son requeridos'
         });
       }
-
-      console.log('🔐 Login attempt:', { 
-        emailOriginal: email, 
-        emailLowerCase: email.toLowerCase(),
-        passwordLength: password?.length,
-        timestamp: new Date().toISOString()
-      });
 
       // Buscar usuario por email
       const user = await User.findOne({
@@ -215,54 +200,21 @@ class AuthController {
       });
 
       if (!user) {
-        console.log('❌ Usuario no encontrado:', { 
-          searchedEmail: email.toLowerCase(),
-          originalEmail: email 
-        });
-        
-        // Debug: Buscar sin el filtro de status
-        const userAnyStatus = await User.findOne({ 
-          where: { email: email.toLowerCase() },
-          attributes: ['id', 'email', 'status', 'role']
-        });
-        
-        if (userAnyStatus) {
-          console.log('⚠️  Usuario existe pero con status:', userAnyStatus.status);
-        } else {
-          console.log('⚠️  Usuario no existe en la BD');
-        }
-        
         return res.status(401).json({
           success: false,
           error: 'Credenciales inválidas'
         });
       }
 
-      console.log('✅ Usuario encontrado:', { 
-        id: user.id, 
-        email: user.email, 
-        role: user.role,
-        hasSpecialistProfile: !!user.specialistProfile,
-        businessId: user.businessId
-      });
-
       // Verificar contraseña
-      console.log('🔑 Verificando contraseña...');
       const isPasswordValid = await bcrypt.compare(password, user.password);
       
       if (!isPasswordValid) {
-        console.log('❌ Contraseña inválida para:', { 
-          email: user.email,
-          passwordProvided: password.substring(0, 3) + '***',
-          hashInDB: user.password.substring(0, 20) + '...'
-        });
         return res.status(401).json({
           success: false,
           error: 'Credenciales inválidas'
         });
       }
-
-      console.log('✅ Contraseña válida');
 
       // Determinar el negocio asociado al usuario
       let associatedBusiness = null;
@@ -723,8 +675,6 @@ class AuthController {
         });
       }
 
-      console.log(`📧 Email de recuperación enviado a ${user.email}`);
-
       res.json({
         success: true,
         message: 'Si el email existe en nuestro sistema, recibirás un enlace de recuperación',
@@ -905,8 +855,6 @@ class AuthController {
         // No fallar la operación por esto, solo loggear
       }
 
-      console.log(`🔐 Contraseña restablecida para usuario ${tokenRecord.user.email}`);
-
       res.json({
         success: true,
         message: 'Contraseña restablecida exitosamente',
@@ -1016,8 +964,6 @@ class AuthController {
         console.error('❌ Error enviando email de confirmación:', confirmationEmailResult.error);
         // No fallar la operación por esto, solo loggear
       }
-
-      console.log(`🔐 Contraseña cambiada para usuario ${user.email}`);
 
       res.json({
         success: true,

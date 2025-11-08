@@ -8,7 +8,6 @@ async function startServer() {
   try {
     // Verificar conexión a la base de datos
     await sequelize.authenticate();
-    console.log('✅ Conexión a la base de datos establecida correctamente');
 
     // Sincronizar modelos en desarrollo (cuidado en producción)
     if (process.env.NODE_ENV === 'development') {
@@ -83,67 +82,53 @@ async function startServer() {
         // 1. Tablas sin dependencias
         await SubscriptionPlan.sync(syncOptions);
         await Module.sync(syncOptions);
-        // console.log('✅ Tablas base sincronizadas');
         
         // 2. Business (puede depender de SubscriptionPlan si agregamos currentPlanId)
         await Business.sync(syncOptions);
-        // console.log('✅ Tabla Business sincronizada');
         
         // 3. User primero (porque BusinessRuleTemplate referencia al Owner/User)
         await User.sync(syncOptions);
-        // console.log('✅ Tabla User sincronizada');
         
         // 4. Nuevos modelos simplificados de reglas
         await RuleTemplate.sync(syncOptions);
         await BusinessRule.sync(syncOptions);
-        // console.log('✅ Nuevos modelos de reglas sincronizados');
         
         // 5. Tablas principales (ANTES DE TABLAS CON FK A ESTAS)
         await Branch.sync(syncOptions);
         await Client.sync(syncOptions);
         await Product.sync(syncOptions);
-        // console.log('✅ Tablas principales (Branch, Client, Product) sincronizadas');
         
         // 5.0.1. TABLAS DE COMISIONES Y CONSENTIMIENTOS (ANTES DE SERVICE)
         await BusinessCommissionConfig.sync(syncOptions);
         await ConsentTemplate.sync(syncOptions);
-        // console.log('✅ Tablas de comisiones y consentimientos base (FM-26) sincronizadas');
         
         // 5.0.2. SERVICE (AHORA QUE CONSENT_TEMPLATES YA EXISTE)
         await Service.sync(syncOptions);
-        // console.log('✅ Tabla Service sincronizada (con FK a ConsentTemplate)');
         
         // 5.0.3. TABLAS QUE DEPENDEN DE SERVICE
         await ServiceCommission.sync(syncOptions);
         // ConsentSignature movido a después de Appointment (tiene FK a appointments)
-        // console.log('✅ Tablas que dependen de Service (ServiceCommission) sincronizadas');
         
         // 5.1. NUEVAS TABLAS MULTI-BRANCH Y PRICING PERSONALIZADO
         await UserBranch.sync(syncOptions);
         await SpecialistService.sync(syncOptions);
-        // console.log('✅ Tablas de multi-branch y pricing personalizado sincronizadas');
         
         // 5.2. TABLA DE PERFILES DE ESPECIALISTAS
         await SpecialistProfile.sync(syncOptions);
-        // console.log('✅ Tabla specialist_profiles sincronizada');
         
         // 5.3. TABLA DE HORARIOS DE ESPECIALISTAS POR SUCURSAL (many-to-many)
         await SpecialistBranchSchedule.sync(syncOptions);
-        // console.log('✅ Tabla specialist_branch_schedules sincronizada');
         
         // 6. Modelos de especialistas (nuevos)
         await SpecialistDocument.sync(syncOptions);
         await SpecialistCommission.sync(syncOptions);
-        // console.log('✅ Tablas de especialistas sincronizadas');
         
         // 7. Modelos de pagos OWNER (nuevos)
         await OwnerPaymentConfiguration.sync(syncOptions);
-        // console.log('✅ Configuración de pagos OWNER sincronizada');
         
         // 7.1. Tablas de gastos del negocio (ANTES de FinancialMovement porque FinancialMovement tiene FK a estas)
         await BusinessExpenseCategory.sync(syncOptions);
         await BusinessExpense.sync(syncOptions);
-        // console.log('✅ Tablas de gastos del negocio sincronizadas');
         
         // 8. Tablas que dependen de múltiples entidades
         await Appointment.sync(syncOptions);
@@ -160,11 +145,10 @@ async function startServer() {
         // 9. Tablas de comisiones (al final porque dependen de otras)
         await CommissionPaymentRequest.sync(syncOptions);
         await CommissionDetail.sync(syncOptions);
-        // console.log('✅ Tablas de comisiones sincronizadas');
         
-        // 9. Tablas de pagos del OWNER (al final porque dependen de BusinessSubscription)
+        // 10. Tablas de pagos del OWNER (al final porque dependen de BusinessSubscription)
         await SubscriptionPayment.sync(syncOptions);
-  await OwnerFinancialReport.sync(syncOptions);
+        await OwnerFinancialReport.sync(syncOptions);
         // OwnerExpense puede no existir en bases de datos antiguas; crearla en desarrollo si falta
         // Evitamos usar `alter` sobre tablas complejas que puedan generar SQL inválido
         // en ciertas combinaciones de versiones de Postgres/Sequelize. Solo usamos
@@ -175,7 +159,6 @@ async function startServer() {
         } else {
           await OwnerExpense.sync();
         }
-        // console.log('✅ Tablas de pagos OWNER sincronizadas');
         
         console.log(`✅ Todas las tablas sincronizadas en modo: ${syncMode.toUpperCase()}`);
       }
@@ -183,7 +166,6 @@ async function startServer() {
 
     // Inicializar servicios
     const tokenCleanupService = require('./src/services/TokenCleanupService');
-    //console.log('🧹 Servicio de limpieza de tokens inicializado');
 
     // Inicializar Cron Jobs
     const CronJobManager = require('./src/utils/CronJobManager');
