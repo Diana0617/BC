@@ -11,24 +11,25 @@ export const cloudinaryApi = {
    * @param {File} file - Archivo a subir
    * @param {string} invoiceNumber - Número de factura (opcional, para nombrar el archivo)
    */
-  uploadInvoiceFile: async (businessId, file, invoiceNumber = null) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (invoiceNumber) {
-      formData.append('invoiceNumber', invoiceNumber);
-    }
+ uploadInvoiceFile: async (businessId, file, invoiceNumber = null) => {
+  console.log('📤 Subiendo archivo:', { file, invoiceNumber, type: file?.type, size: file?.size });
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  if (invoiceNumber) {
+    formData.append('invoiceNumber', invoiceNumber);
+  }
 
-    const response = await apiClient.post(
-      `/api/business/${businessId}/upload/invoice`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    );
-    return response.data;
-  },
+  console.log('📦 FormData creado:', formData);
+  console.log('🔍 ¿Es FormData?', formData instanceof FormData);
+
+  // NO establecer Content-Type manualmente, el navegador lo hará con el boundary correcto
+  const response = await apiClient.post(
+    `/api/business/${businessId}/upload/invoice`,
+    formData
+  );
+  return response.data;
+},
 
   /**
    * Eliminar archivo de Cloudinary

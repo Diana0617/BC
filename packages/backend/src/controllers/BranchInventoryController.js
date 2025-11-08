@@ -440,6 +440,8 @@ class BranchInventoryController {
                 businessId,
                 name: newProduct.name,
                 sku: newProduct.sku,
+                description: newProduct.description || null,
+                barcode: newProduct.barcode || null,
                 category: newProduct.category || 'Sin categoría',
                 price: newProduct.price,
                 cost: newProduct.cost || unitCost,

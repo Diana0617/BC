@@ -3,6 +3,7 @@ const {
   Supplier,
   Product,
   BranchStock,
+  SupplierCatalogItem,
   Business,
   sequelize
 } = require('../models');
@@ -377,6 +378,7 @@ class SupplierInvoiceController {
       }
 
       // Actualizar stock de cada producto en la sucursal
+           // Actualizar stock de cada producto en la sucursal
       for (const item of invoice.items) {
         if (!item.productId) continue;
 
@@ -401,11 +403,58 @@ class SupplierInvoiceController {
           currentStock: branchStock.currentStock + item.quantity
         }, { transaction });
 
+        // Obtener producto para actualizar costo y catálogo
+        const product = await Product.findByPk(item.productId, { transaction });
+        
         // Actualizar costo del producto
-        await Product.update(
+        await product.update(
           { cost: item.unitCost },
-          { where: { id: item.productId, businessId }, transaction }
+          { transaction }
         );
+
+        // 🆕 AUTO-GENERAR CATÁLOGO DEL PROVEEDOR
+        // Crear o actualizar item en el catálogo del proveedor
+        const catalogItemData = {
+          supplierId: invoice.supplierId,
+          supplierSku: product.sku || `${invoice.supplierId}-${item.productId}`,
+          name: product.name,
+          description: product.description,
+          category: product.category,
+          brand: product.brand,
+          price: item.unitCost, // Precio del proveedor
+          currency: 'COP',
+          unit: product.unit,
+          available: true,
+          images: product.images || [],
+          lastUpdate: new Date()
+        };
+
+        // Buscar si ya existe en el catálogo
+        const existingCatalogItem = await SupplierCatalogItem.findOne({
+          where: {
+            supplierId: invoice.supplierId,
+            supplierSku: catalogItemData.supplierSku
+          },
+          transaction
+        });
+
+        if (existingCatalogItem) {
+          // Actualizar precio y fecha
+          await existingCatalogItem.update({
+            price: catalogItemData.price,
+            name: catalogItemData.name,
+            description: catalogItemData.description,
+            category: catalogItemData.category,
+            brand: catalogItemData.brand,
+            unit: catalogItemData.unit,
+            images: catalogItemData.images,
+            lastUpdate: catalogItemData.lastUpdate,
+            available: true
+          }, { transaction });
+        } else {
+          // Crear nuevo item en el catálogo
+          await SupplierCatalogItem.create(catalogItemData, { transaction });
+        }
       }
 
       // Actualizar estado de la factura

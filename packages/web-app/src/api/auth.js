@@ -6,50 +6,51 @@ class ApiClient {
     this.baseURL = baseURL;
   }
 
-  async request(endpoint, options = {}) {
-    const url = `${this.baseURL}${endpoint}`;
-    
-    // Check if body is FormData to avoid setting Content-Type and stringifying
-    const isFormData = options.body instanceof FormData;
-    
-    const config = {
-      headers: {
-        // Only set Content-Type for non-FormData requests
-        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-        ...options.headers,
-      },
-      ...options,
-    };
+async request(endpoint, options = {}) {
+  const url = `${this.baseURL}${endpoint}`;
+  
+  // Check if body is FormData to avoid setting Content-Type and stringifying
+  const isFormData = options.body instanceof FormData;
+  
+  const config = {
+    headers: {
+      // Only set Content-Type for non-FormData requests
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      ...options.headers,
+    },
+    ...options,
+  };
 
-    // Add auth token if available - using correct storage keys
-    const token = localStorage.getItem('bc_auth_token') || sessionStorage.getItem('bc_auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    const response = await fetch(url, config);
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || `HTTP error! status: ${response.status}`);
-    }
-
-    return { data };
+  // Add auth token if available - using correct storage keys
+  const token = localStorage.getItem('bc_auth_token') || sessionStorage.getItem('bc_auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
 
+  const response = await fetch(url, config);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || `HTTP error! status: ${response.status}`);
+  }
+
+  return { data };
+}
   async get(endpoint, options = {}) {
     return this.request(endpoint, { method: 'GET', ...options });
   }
 
   async post(endpoint, body, options = {}) {
-    // Don't stringify FormData, let browser handle it
-    const isFormData = body instanceof FormData;
-    return this.request(endpoint, {
-      method: 'POST',
-      body: isFormData ? body : JSON.stringify(body),
-      ...options,
-    });
-  }
+  // Don't stringify FormData, let browser handle it
+  const isFormData = body instanceof FormData;
+  console.log('🚀 POST request:', { endpoint, isFormData, bodyType: body?.constructor?.name });
+  
+  return this.request(endpoint, {
+    method: 'POST',
+    body: isFormData ? body : JSON.stringify(body),
+    ...options,
+  });
+}
 
   async put(endpoint, body, options = {}) {
     return this.request(endpoint, {
