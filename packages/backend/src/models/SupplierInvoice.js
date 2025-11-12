@@ -96,11 +96,6 @@ const SupplierInvoice = sequelize.define('SupplierInvoice', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  payments: {
-    type: DataTypes.JSON,
-    allowNull: true,
-    defaultValue: []
-  },
   paidAmount: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,

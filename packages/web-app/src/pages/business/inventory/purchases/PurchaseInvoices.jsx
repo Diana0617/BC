@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import {
   FileTextIcon,
@@ -19,6 +19,7 @@ import SupplierAccountSummary from './SupplierAccountSummary';
 const PurchaseInvoices = () => {
   const { user } = useSelector((state) => state.auth);
   const [invoices, setInvoices] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -41,15 +42,36 @@ const PurchaseInvoices = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  useEffect(() => {
-    loadInvoices();
-  }, [filters]);
+  // Cargar proveedores
+  const loadSuppliers = useCallback(async () => {
+    if (!user?.businessId) return;
+    try {
+      const response = await supplierInvoiceApi.getSuppliers(user.businessId);
+      if (response.success) {
+        setSuppliers(response.data.suppliers || []);
+      }
+    } catch (err) {
+      console.error('Error loading suppliers:', err);
+    }
+  }, [user?.businessId]);
 
-  const loadInvoices = async () => {
+  // Cargar facturas
+  const loadInvoices = useCallback(async () => {
+    if (!user?.businessId) return;
+    
     try {
       setLoading(true);
       setError(null);
-      const response = await supplierInvoiceApi.getInvoices(user.businessId, filters);
+      
+      // Limpiar filtros vacíos antes de enviar
+      const cleanFilters = Object.entries(filters).reduce((acc, [key, value]) => {
+        if (value !== '' && value !== null && value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {});
+      
+      const response = await supplierInvoiceApi.getInvoices(user.businessId, cleanFilters);
       
       if (response.success) {
         setInvoices(response.data.invoices);
@@ -61,7 +83,17 @@ const PurchaseInvoices = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.businessId, filters]);
+
+  // useEffect para cargar proveedores
+  useEffect(() => {
+    loadSuppliers();
+  }, [loadSuppliers]);
+
+  // useEffect para cargar facturas cuando cambien los filtros
+  useEffect(() => {
+    loadInvoices();
+  }, [loadInvoices]);
 
   const handleCreateInvoice = () => {
     setShowCreateModal(true);
@@ -181,7 +213,25 @@ const PurchaseInvoices = () => {
           <FilterIcon className="w-5 h-5 text-gray-600" />
           <h3 className="font-semibold text-gray-900">Filtros</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Proveedor
+            </label>
+            <select
+              value={filters.supplierId}
+              onChange={(e) => setFilters({ ...filters, supplierId: e.target.value, page: 1 })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Todos</option>
+              {suppliers.map(supplier => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Estado

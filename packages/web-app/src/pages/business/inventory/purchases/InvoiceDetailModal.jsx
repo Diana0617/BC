@@ -10,12 +10,14 @@ import {
   PackageIcon
 } from 'lucide-react';
 import branchApi from '../../../../api/branchApi';
+import PayInvoiceModal from './PayInvoiceModal';
 
 const InvoiceDetailModal = ({ invoice, onClose, onApprove, onRefresh }) => {
   const { user } = useSelector((state) => state.auth);
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState('');
   const [approving, setApproving] = useState(false);
+  const [showPayModal, setShowPayModal] = useState(false);
 
   useEffect(() => {
     loadBranches();
@@ -294,6 +296,15 @@ const InvoiceDetailModal = ({ invoice, onClose, onApprove, onRefresh }) => {
           >
             Cerrar
           </button>
+          {invoice.status === 'APPROVED' && invoice.remainingAmount > 0 && (
+            <button
+              onClick={() => setShowPayModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <DollarSignIcon className="w-5 h-5" />
+              Registrar Pago
+            </button>
+          )}
           {invoice.status === 'PENDING' && (
             <button
               onClick={handleApprove}
@@ -306,6 +317,18 @@ const InvoiceDetailModal = ({ invoice, onClose, onApprove, onRefresh }) => {
           )}
         </div>
       </div>
+
+      {/* Payment Modal */}
+      {showPayModal && (
+        <PayInvoiceModal
+          invoice={invoice}
+          onClose={() => setShowPayModal(false)}
+          onPaymentSuccess={() => {
+            setShowPayModal(false);
+            onRefresh();
+          }}
+        />
+      )}
     </div>
   );
 };

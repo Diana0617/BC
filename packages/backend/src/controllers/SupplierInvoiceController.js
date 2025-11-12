@@ -5,6 +5,7 @@ const {
   BranchStock,
   SupplierCatalogItem,
   Business,
+  SupplierInvoicePayment,
   sequelize
 } = require('../models');
 const { Op } = require('sequelize');
@@ -389,17 +390,18 @@ class SupplierInvoiceController {
             productId: item.productId
           },
           defaults: {
-            quantity: 0,
+            businessId,
+            branchId,
+            productId: item.productId,
             currentStock: 0,
             minStock: 0,
-            maxStock: null
+            maxStock: 0
           },
           transaction
         });
 
         // Incrementar stock
         await branchStock.update({
-          quantity: branchStock.quantity + item.quantity,
           currentStock: branchStock.currentStock + item.quantity
         }, { transaction });
 
@@ -649,6 +651,147 @@ class SupplierInvoiceController {
       res.status(500).json({
         success: false,
         message: 'Error al obtener proveedores',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Registrar un pago de factura
+   * POST /api/business/:businessId/supplier-invoices/:invoiceId/pay
+   */
+  static async registerPayment(req, res) {
+    const transaction = await sequelize.transaction();
+
+    try {
+      const { businessId, invoiceId } = req.params;
+      const { businessId: userBusinessId, id: userId } = req.user;
+      const {
+        amount,
+        paymentDate,
+        paymentMethod,
+        reference,
+        receipt, // URL de Cloudinary del comprobante
+        notes
+      } = req.body;
+
+      // Validar permisos
+      if (businessId !== userBusinessId) {
+        await transaction.rollback();
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para acceder a este negocio'
+        });
+      }
+
+      // Validar campos requeridos
+      if (!amount || !paymentMethod) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Faltan campos requeridos: amount, paymentMethod'
+        });
+      }
+
+      // Obtener la factura
+      const invoice = await SupplierInvoice.findOne({
+        where: { id: invoiceId, businessId },
+        transaction
+      });
+
+      if (!invoice) {
+        await transaction.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Factura no encontrada'
+        });
+      }
+
+      // Validar que la factura esté aprobada
+      if (invoice.status === 'PENDING') {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'La factura debe estar aprobada antes de registrar pagos'
+        });
+      }
+
+      // Validar que la factura no esté completamente pagada
+      if (invoice.status === 'PAID') {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'La factura ya está completamente pagada'
+        });
+      }
+
+      // Validar que el monto no exceda lo pendiente
+      const amountFloat = parseFloat(amount);
+      const remainingFloat = parseFloat(invoice.remainingAmount);
+
+      if (amountFloat > remainingFloat) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: `El monto del pago ($${amountFloat}) excede el saldo pendiente ($${remainingFloat})`
+        });
+      }
+
+      // Crear el registro de pago
+      const payment = await SupplierInvoicePayment.create({
+        invoiceId,
+        businessId,
+        amount: amountFloat,
+        paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
+        paymentMethod,
+        reference,
+        receipt,
+        notes,
+        createdBy: userId
+      }, { transaction});
+
+      // Actualizar la factura
+      const newPaidAmount = parseFloat(invoice.paidAmount) + amountFloat;
+      const newRemainingAmount = parseFloat(invoice.total) - newPaidAmount;
+
+      await invoice.update({
+        paidAmount: newPaidAmount,
+        remainingAmount: newRemainingAmount,
+        status: newRemainingAmount <= 0 ? 'PAID' : invoice.status
+      }, { transaction });
+
+      await transaction.commit();
+
+      // Recargar factura con relaciones
+      const updatedInvoice = await SupplierInvoice.findByPk(invoiceId, {
+        include: [
+          {
+            model: Supplier,
+            as: 'supplier',
+            attributes: ['id', 'name', 'email', 'phone', 'taxId']
+          },
+          {
+            model: SupplierInvoicePayment,
+            as: 'payments',
+            order: [['paymentDate', 'DESC']]
+          }
+        ]
+      });
+
+      res.json({
+        success: true,
+        message: 'Pago registrado exitosamente',
+        data: {
+          payment,
+          invoice: updatedInvoice
+        }
+      });
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Error registering payment:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al registrar el pago',
         error: error.message
       });
     }

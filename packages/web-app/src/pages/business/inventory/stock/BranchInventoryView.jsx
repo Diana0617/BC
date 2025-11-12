@@ -19,6 +19,12 @@ import {
 
 const BranchInventoryView = () => {
   const { user } = useSelector((state) => state.auth);
+  const subscription = useSelector((state) => state.business?.currentBusiness?.subscription);
+
+  // Verificar si tiene el módulo MULTI_BRANCH
+  const hasMultiBranchModule = subscription?.plan?.modules?.some(
+    module => module.code === 'MULTI_BRANCH'
+  ) || false;
 
   // Estados principales
   const [branches, setBranches] = useState([]);
@@ -27,6 +33,7 @@ const BranchInventoryView = () => {
   const [loading, setLoading] = useState(false);
   const [loadingBranches, setLoadingBranches] = useState(true);
   const [error, setError] = useState(null);
+
 
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
@@ -221,6 +228,25 @@ const BranchInventoryView = () => {
   }
 
   if (branches.length === 0) {
+    // Si no tiene el módulo multi-sucursal, no mostrar advertencia
+    if (!hasMultiBranchModule) {
+      return (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+          <Package className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Inventario Centralizado
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Tu plan actual gestiona el inventario de forma centralizada.
+          </p>
+          <p className="text-sm text-gray-500">
+            Ve a la pestaña <span className="font-semibold">"Stock Inicial"</span> o <span className="font-semibold">"Compras"</span> para gestionar tu inventario.
+          </p>
+        </div>
+      );
+    }
+
+    // Si tiene el módulo pero no hay sucursales configuradas
     return (
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
         <AlertTriangle className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
@@ -228,7 +254,7 @@ const BranchInventoryView = () => {
           No hay sucursales configuradas
         </h3>
         <p className="text-gray-600">
-          Configura al menos una sucursal para gestionar el inventario.
+          Configura al menos una sucursal en la sección de Configuración para gestionar el inventario por sucursal.
         </p>
       </div>
     );

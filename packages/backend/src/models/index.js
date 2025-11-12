@@ -24,6 +24,7 @@ const Supplier = require('./Supplier');
 const SupplierContact = require('./SupplierContact');
 const PurchaseOrder = require('./PurchaseOrder');
 const SupplierInvoice = require('./SupplierInvoice');
+const SupplierInvoicePayment = require('./SupplierInvoicePayment');
 const SupplierEvaluation = require('./SupplierEvaluation');
 const SupplierCatalogItem = require('./SupplierCatalogItem');
 const BranchStock = require('./BranchStock');
@@ -808,6 +809,24 @@ SupplierInvoice.belongsTo(PurchaseOrder, {
   as: 'purchaseOrder' 
 });
 
+// SupplierInvoicePayment relationships
+SupplierInvoice.hasMany(SupplierInvoicePayment, {
+  foreignKey: 'invoiceId',
+  as: 'payments'
+});
+SupplierInvoicePayment.belongsTo(SupplierInvoice, {
+  foreignKey: 'invoiceId',
+  as: 'invoice'
+});
+SupplierInvoicePayment.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+SupplierInvoicePayment.belongsTo(User, {
+  foreignKey: 'createdBy',
+  as: 'creator'
+});
+
 // SupplierEvaluation relationships
 Supplier.hasMany(SupplierEvaluation, { 
   foreignKey: 'supplierId', 
@@ -1569,6 +1588,7 @@ module.exports = {
   SupplierContact,
   PurchaseOrder,
   SupplierInvoice,
+  SupplierInvoicePayment,
   SupplierEvaluation,
   SupplierCatalogItem,
   FinancialMovement,

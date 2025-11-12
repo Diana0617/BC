@@ -58,6 +58,16 @@ router.post(
 );
 
 /**
+ * POST /api/business/:businessId/supplier-invoices/:invoiceId/pay
+ * Registrar un pago de factura
+ * Body: { amount, paymentDate, paymentMethod, reference?, receipt?, notes? }
+ */
+router.post(
+  '/:invoiceId/pay',
+  SupplierInvoiceController.registerPayment
+);
+
+/**
  * GET /api/business/:businessId/suppliers/:supplierId/account-summary
  * Obtener resumen de cuenta de un proveedor
  */

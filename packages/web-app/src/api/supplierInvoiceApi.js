@@ -92,6 +92,26 @@ export const supplierInvoiceApi = {
       { params }
     );
     return response.data;
+  },
+
+  /**
+   * Registrar pago de factura de proveedor
+   * @param {string} businessId - ID del negocio
+   * @param {string} invoiceId - ID de la factura
+   * @param {object} paymentData - Datos del pago
+   * @param {number} paymentData.amount - Monto del pago
+   * @param {string} paymentData.paymentDate - Fecha del pago
+   * @param {string} paymentData.paymentMethod - Método de pago (CASH, TRANSFER, CHECK, etc.)
+   * @param {string} [paymentData.reference] - Número de referencia/transacción
+   * @param {string} [paymentData.receipt] - URL del comprobante (Cloudinary)
+   * @param {string} [paymentData.notes] - Notas adicionales
+   */
+  registerPayment: async (businessId, invoiceId, paymentData) => {
+    const response = await apiClient.post(
+      `/api/business/${businessId}/supplier-invoices/${invoiceId}/pay`,
+      paymentData
+    );
+    return response.data;
   }
 };
 

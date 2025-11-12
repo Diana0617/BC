@@ -37,6 +37,21 @@ async request(endpoint, options = {}) {
   return { data };
 }
   async get(endpoint, options = {}) {
+    // Si hay params, convertirlos a query string
+    if (options.params) {
+      const queryParams = new URLSearchParams();
+      Object.entries(options.params).forEach(([key, value]) => {
+        if (value !== '' && value !== null && value !== undefined) {
+          queryParams.append(key, value);
+        }
+      });
+      const queryString = queryParams.toString();
+      if (queryString) {
+        endpoint = `${endpoint}?${queryString}`;
+      }
+      // Eliminar params del options para no pasarlo a fetch
+      delete options.params;
+    }
     return this.request(endpoint, { method: 'GET', ...options });
   }
 
