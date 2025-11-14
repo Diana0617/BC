@@ -323,9 +323,10 @@ const InvoiceDetailModal = ({ invoice, onClose, onApprove, onRefresh }) => {
         <PayInvoiceModal
           invoice={invoice}
           onClose={() => setShowPayModal(false)}
-          onPaymentSuccess={() => {
+          onSuccess={() => {
             setShowPayModal(false);
             onRefresh();
+            onClose(); // Cerrar también el modal de detalle
           }}
         />
       )}

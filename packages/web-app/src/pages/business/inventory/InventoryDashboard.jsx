@@ -15,6 +15,7 @@ import {
 import StockInitial from './stock/StockInitial';
 import BranchInventoryView from './stock/BranchInventoryView';
 import PurchaseInvoices from './purchases/PurchaseInvoices';
+import ProductManagement from './products/ProductManagement';
 
 const InventoryDashboard = () => {
   const navigate = useNavigate();
@@ -49,7 +50,7 @@ const InventoryDashboard = () => {
       name: 'Productos',
       icon: PackageIcon,
       description: 'Gestión de productos',
-      component: <ComingSoonPlaceholder title="Productos" />
+      component: <ProductManagement />
     },
     {
       id: 'ventas',

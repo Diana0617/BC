@@ -65,6 +65,7 @@ function AppLayout() {
         if (typeof arg === 'object') {
           try {
             return JSON.stringify(arg)
+          // eslint-disable-next-line no-unused-vars
           } catch (_error) {
             return '[object]'
           }

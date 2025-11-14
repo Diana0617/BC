@@ -27,7 +27,7 @@ const Branch = sequelize.define('Branch', {
     allowNull: false,
     validate: {
       len: [2, 20],
-      is: /^[A-Z0-9_-]+$/i // Solo letras mayúsculas, números, guiones y underscores
+      is: /^[A-Z0-9_-]+$/i 
     }
   },
   description: {

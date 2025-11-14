@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router({ mergeParams: true });
+const multer = require('multer');
 const { authenticateToken } = require('../middleware/auth');
 const { requireFullAccess } = require('../middleware/subscription');
 const SupplierInvoiceController = require('../controllers/SupplierInvoiceController');
+
+// Configurar multer para manejar archivos en memoria
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Todas las rutas requieren autenticación y acceso completo
 router.use(authenticateToken);
@@ -60,10 +64,11 @@ router.post(
 /**
  * POST /api/business/:businessId/supplier-invoices/:invoiceId/pay
  * Registrar un pago de factura
- * Body: { amount, paymentDate, paymentMethod, reference?, receipt?, notes? }
+ * Body (multipart/form-data): { amount, paymentDate, paymentMethod, reference?, receipt (file)?, notes? }
  */
 router.post(
   '/:invoiceId/pay',
+  upload.single('receipt'),
   SupplierInvoiceController.registerPayment
 );
 

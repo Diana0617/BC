@@ -10,6 +10,7 @@ const SupplierInvoicePayment = sequelize.define('SupplierInvoicePayment', {
   invoiceId: {
     type: DataTypes.UUID,
     allowNull: false,
+    field: 'invoice_id',
     references: {
       model: 'supplier_invoices',
       key: 'id'
@@ -19,6 +20,7 @@ const SupplierInvoicePayment = sequelize.define('SupplierInvoicePayment', {
   businessId: {
     type: DataTypes.UUID,
     allowNull: false,
+    field: 'business_id',
     references: {
       model: 'businesses',
       key: 'id'
@@ -34,24 +36,26 @@ const SupplierInvoicePayment = sequelize.define('SupplierInvoicePayment', {
   paymentDate: {
     type: DataTypes.DATE,
     allowNull: false,
+    field: 'payment_date',
     defaultValue: DataTypes.NOW
   },
   paymentMethod: {
     type: DataTypes.ENUM(
-      'CASH',           // Efectivo
-      'TRANSFER',       // Transferencia bancaria
-      'CHECK',          // Cheque
-      'CREDIT_CARD',    // Tarjeta de crédito
-      'DEBIT_CARD',     // Tarjeta de débito
-      'OTHER'           // Otro
+      'CASH',          
+      'TRANSFER',       
+      'CHECK',          
+      'CREDIT_CARD',   
+      'DEBIT_CARD',    
+      'OTHER'        
     ),
     allowNull: false,
+    field: 'payment_method',
     defaultValue: 'TRANSFER'
   },
   reference: {
     type: DataTypes.STRING,
     allowNull: true,
-    comment: 'Número de referencia, cheque, o transacción'
+   
   },
   receipt: {
     type: DataTypes.STRING,
@@ -65,6 +69,7 @@ const SupplierInvoicePayment = sequelize.define('SupplierInvoicePayment', {
   createdBy: {
     type: DataTypes.UUID,
     allowNull: false,
+    field: 'created_by',
     references: {
       model: 'users',
       key: 'id'
@@ -73,6 +78,7 @@ const SupplierInvoicePayment = sequelize.define('SupplierInvoicePayment', {
 }, {
   tableName: 'supplier_invoice_payments',
   timestamps: true,
+  underscored: true,
   indexes: [
     {
       fields: ['invoiceId']

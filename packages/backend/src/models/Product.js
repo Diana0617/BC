@@ -150,14 +150,12 @@ const Product = sequelize.define('Product', {
     allowNull: false,
     defaultValue: 'BOTH',
     field: 'product_type',
-    comment: 'FOR_SALE: Solo venta, FOR_PROCEDURES: Solo procedimientos, BOTH: Ambos usos'
   },
   requiresSpecialistTracking: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: false,
     field: 'requires_specialist_tracking',
-    comment: 'Indica si se debe rastrear qué especialista retira el producto'
   }
 }, {
   tableName: 'products',

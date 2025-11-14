@@ -8,6 +8,7 @@ const {
   SupplierInvoicePayment,
   sequelize
 } = require('../models');
+const { uploadDocument } = require('../config/cloudinary');
 const { Op } = require('sequelize');
 
 /**
@@ -671,9 +672,24 @@ class SupplierInvoiceController {
         paymentDate,
         paymentMethod,
         reference,
-        receipt, // URL de Cloudinary del comprobante
         notes
       } = req.body;
+
+      // Subir comprobante a Cloudinary si existe
+      let receiptUrl = null;
+      if (req.file) {
+        try {
+          const result = await uploadDocument(req.file.path, 'beauty-control', 'supplier-payments');
+          receiptUrl = result.url;
+        } catch (uploadError) {
+          console.error('Error uploading receipt:', uploadError);
+          await transaction.rollback();
+          return res.status(500).json({
+            success: false,
+            message: 'Error al subir el comprobante de pago'
+          });
+        }
+      }
 
       // Validar permisos
       if (businessId !== userBusinessId) {
@@ -745,7 +761,7 @@ class SupplierInvoiceController {
         paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
         paymentMethod,
         reference,
-        receipt,
+        receipt: receiptUrl,
         notes,
         createdBy: userId
       }, { transaction});

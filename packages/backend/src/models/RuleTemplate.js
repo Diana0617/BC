@@ -20,12 +20,10 @@ const RuleTemplate = sequelize.define('RuleTemplate', {
       notEmpty: true,
       len: [3, 100]
     },
-    comment: 'Identificador único de la regla (ej: PAYMENT_POLICY_STANDARD)'
   },
   type: {
     type: DataTypes.ENUM('BOOLEAN', 'STRING', 'NUMBER', 'JSON', 'CONFIGURATION'),
     allowNull: false,
-    comment: 'Tipo de dato que almacena esta regla'
   },
   defaultValue: {
     type: DataTypes.JSONB,
@@ -46,14 +44,14 @@ const RuleTemplate = sequelize.define('RuleTemplate', {
       'NOTIFICATION_POLICY',
       'REFUND_POLICY',
       'SERVICE_POLICY',
-      'APPOINTMENT',        // 👈 Nueva: Validaciones de completar citas
-      'PAYMENT',            // 👈 Nueva: Validaciones de pago
-      'TIME',               // 👈 Nueva: Validaciones de duración
+      'APPOINTMENT',        
+      'PAYMENT',            
+      'TIME',               
       'GENERAL'
     ),
     allowNull: false,
     defaultValue: 'GENERAL',
-    comment: 'Categoría funcional de la regla'
+   
   },
   allowCustomization: {
     type: DataTypes.BOOLEAN,
