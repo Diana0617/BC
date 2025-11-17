@@ -1,13 +1,28 @@
 import React from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { logout } from '@shared/store/slices/authSlice.js'
+import { useNavigate } from 'react-router-dom'
+import { logout, clearSubscriptionWarning } from '@shared/store/slices/authSlice.js'
+import SubscriptionWarningBanner from '../../components/SubscriptionWarningBanner.jsx'
 
 const DashboardPage = () => {
   const dispatch = useDispatch()
-  const { user } = useSelector(state => state.auth)
+  const navigate = useNavigate()
+  const { user, subscriptionWarning } = useSelector(state => state.auth)
 
   const handleLogout = () => {
     dispatch(logout())
+  }
+
+  const handleDismissWarning = () => {
+    dispatch(clearSubscriptionWarning())
+  }
+
+  const handleRenewSubscription = () => {
+    // TODO: Navegar a la página de renovación de suscripción
+    // Por ahora, podemos redirigir a una página de planes o mostrar modal
+    console.log('Renovar suscripción');
+    // navigate('/subscription/renew');
+    alert('Funcionalidad de renovación de suscripción próximamente. Contacte al administrador.');
   }
 
   return (
@@ -31,6 +46,17 @@ const DashboardPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Subscription Warning Banner */}
+      {subscriptionWarning && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <SubscriptionWarningBanner 
+            warning={subscriptionWarning} 
+            onDismiss={handleDismissWarning}
+            onRenew={handleRenewSubscription}
+          />
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

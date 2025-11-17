@@ -631,4 +631,198 @@ router.post('/confirm-payment/:transactionId', WompiPaymentController.confirmPay
 // Endpoint público para buscar transacción por referencia (sin autenticación)
 router.get('/transaction-by-reference/:reference', WompiPaymentController.getTransactionByReference);
 
+/**
+ * @swagger
+ * /api/wompi/renew-subscription:
+ *   post:
+ *     tags:
+ *       - Wompi Payments
+ *     summary: Renovar suscripción expirada (pago simulado 3DS)
+ *     description: Permite a un negocio con suscripción expirada renovarla usando pago simulado
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - businessId
+ *               - planId
+ *               - amount
+ *             properties:
+ *               businessId:
+ *                 type: string
+ *                 format: uuid
+ *               planId:
+ *                 type: string
+ *                 format: uuid
+ *               amount:
+ *                 type: number
+ *               billingCycle:
+ *                 type: string
+ *                 enum: [MONTHLY, YEARLY]
+ *     responses:
+ *       200:
+ *         description: Renovación procesada exitosamente
+ *       403:
+ *         description: No autorizado
+ */
+router.post('/renew-subscription', authenticateToken, async (req, res) => {
+  try {
+    const { businessId, planId, amount, billingCycle } = req.body;
+    
+    console.log('🔍 Validación de renovación:', {
+      'req.user.businessId': req.user.businessId,
+      'body.businessId': businessId,
+      'req.user.role': req.user.role,
+      'iguales': req.user.businessId === businessId,
+      'esOwner': req.user.role === 'OWNER'
+    });
+    
+    // Verificar que el usuario pertenece al negocio
+    if (req.user.businessId !== businessId && req.user.role !== 'OWNER') {
+      console.log('❌ Validación falló - rechazando renovación');
+      return res.status(403).json({
+        success: false,
+        error: 'No autorizado para renovar esta suscripción'
+      });
+    }
+
+    console.log('🔄 Procesando renovación para:', {
+      businessId,
+      planId,
+      amount,
+      billingCycle,
+      userId: req.user.id
+    });
+
+    // Buscar el business y el plan
+    const { Business, SubscriptionPlan, BusinessSubscription, SubscriptionPayment } = require('../models');
+    const DataRetentionService = require('../services/DataRetentionService');
+
+    const business = await Business.findByPk(businessId);
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        error: 'Negocio no encontrado'
+      });
+    }
+
+    const plan = await SubscriptionPlan.findByPk(planId);
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        error: 'Plan no encontrado'
+      });
+    }
+
+    // Simular transacción aprobada (como en 3DS testing)
+    const transactionId = `sim-${Date.now()}`;
+    const reference = `RENEWAL-${businessId}-${Date.now()}`;
+
+    // Buscar suscripción existente para este negocio y plan
+    let subscription = await BusinessSubscription.findOne({
+      where: {
+        businessId: businessId,
+        subscriptionPlanId: plan.id
+      }
+    });
+
+    if (subscription) {
+      // Actualizar suscripción existente
+      const newEndDate = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // 30 días
+      await subscription.update({
+        status: 'ACTIVE',
+        startDate: new Date(),
+        endDate: newEndDate,
+        autoRenewal: true,
+        billingCycle: billingCycle || 'MONTHLY',
+        amount: parseFloat(amount),
+        currency: 'COP',
+        paymentStatus: 'PAID',
+        lastPaymentDate: new Date(),
+        nextPaymentDate: newEndDate // Próximo pago en 30 días
+      });
+      console.log('📝 Suscripción existente actualizada:', subscription.id);
+    } else {
+      // Crear nueva suscripción
+      const newEndDate = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // 30 días
+      subscription = await BusinessSubscription.create({
+        businessId: businessId,
+        subscriptionPlanId: plan.id,
+        status: 'ACTIVE',
+        startDate: new Date(),
+        endDate: newEndDate,
+        autoRenewal: true,
+        billingCycle: billingCycle || 'MONTHLY',
+        amount: parseFloat(amount),
+        currency: 'COP',
+        paymentStatus: 'PAID',
+        lastPaymentDate: new Date(),
+        nextPaymentDate: newEndDate // Próximo pago en 30 días
+      });
+      console.log('🆕 Nueva suscripción creada:', subscription.id);
+    }
+
+    // Crear SubscriptionPayment
+    const payment = await SubscriptionPayment.create({
+      subscriptionId: subscription.id,
+      businessId: businessId,
+      amount: parseFloat(amount),
+      currency: 'COP',
+      status: 'APPROVED',
+      paymentMethod: 'WOMPI_CARD',
+      wompiTransactionId: transactionId,
+      wompiReference: reference,
+      paidAt: new Date(),
+      dueDate: new Date(), // Fecha de vencimiento = hoy (pago inmediato)
+      netAmount: parseFloat(amount), // Sin comisiones en simulación
+      commissionFee: 0,
+      description: `Renovación suscripción - Plan ${plan.name}`
+    });
+
+    // IMPORTANTE: Limpiar fecha de retención de datos (renovación)
+    await DataRetentionService.clearRetentionDate(businessId);
+    
+    // Actualizar status del business a ACTIVE
+    await business.update({ 
+      status: 'ACTIVE',
+      currentPlanId: plan.id
+    });
+
+    console.log('✅ Suscripción renovada exitosamente:', subscription.id);
+    console.log('🔓 Retención de datos limpiada - Datos restaurados');
+
+    console.log('✅ Suscripción renovada exitosamente:', subscription.id);
+    console.log('🔓 Retención de datos limpiada - Datos restaurados');
+
+    res.json({
+      success: true,
+      data: {
+        transactionId: transactionId,
+        reference: reference,
+        status: 'APPROVED',
+        subscription: {
+          id: subscription.id,
+          planId: plan.id,
+          planName: plan.name,
+          status: subscription.status,
+          startDate: subscription.startDate,
+          endDate: subscription.endDate
+        },
+        message: 'Renovación procesada exitosamente'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en renovación:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Error procesando renovación'
+    });
+  }
+});
+
 module.exports = router;

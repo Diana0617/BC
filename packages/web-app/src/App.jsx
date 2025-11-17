@@ -47,6 +47,7 @@ import InventoryDashboard from './pages/business/inventory/InventoryDashboard.js
 import LandingPage from './pages/public/LandingPage'
 import OnlineBookingPage from './pages/public/OnlineBookingPage'
 import BookingSuccess from './pages/public/BookingSuccess'
+import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 
 // Test Components (temporal)
 import ReduxPlansTest from './components/test/ReduxPlansTest'
@@ -388,6 +389,7 @@ function AppLayout() {
         <Routes>
           {/* Public routes - No authentication required */}
           {!isAuthenticated && <Route path="/" element={<LandingPage />} />}
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/book/:businessCode" element={<OnlineBookingPage />} />
           <Route path="/booking/success" element={<BookingSuccess />} />
           

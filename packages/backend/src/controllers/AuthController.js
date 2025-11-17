@@ -8,6 +8,7 @@ const SubscriptionPlan = require('../models/SubscriptionPlan');
 const PasswordResetToken = require('../models/PasswordResetToken');
 const SpecialistProfile = require('../models/SpecialistProfile');
 const emailService = require('../services/EmailService');
+const DataRetentionService = require('../services/DataRetentionService');
 
 /**
  * Controlador de Autenticación para Beauty Control
@@ -232,25 +233,59 @@ class AuthController {
       }
 
       // Verificar si el negocio está activo o en período de prueba válido
+      let subscriptionWarning = null;
       if (associatedBusiness) {
-        // Si el negocio no está en estado activo o trial, denegar acceso
+        // Permitir login pero agregar advertencia si está inactivo o trial expirado
         if (!['ACTIVE', 'TRIAL'].includes(associatedBusiness.status)) {
-          return res.status(403).json({
-            success: false,
-            error: 'El negocio asociado está inactivo'
-          });
+          subscriptionWarning = {
+            type: 'INACTIVE',
+            message: 'El negocio está inactivo. Contacte al administrador.',
+            severity: 'error'
+          };
         }
-        
         // Si está en TRIAL, verificar que no haya expirado
-        if (associatedBusiness.status === 'TRIAL' && associatedBusiness.trialEndDate) {
+        else if (associatedBusiness.status === 'TRIAL' && associatedBusiness.trialEndDate) {
           const now = new Date();
           const trialEnd = new Date(associatedBusiness.trialEndDate);
           
           if (now > trialEnd) {
-            return res.status(403).json({
-              success: false,
-              error: 'El período de prueba ha expirado. Contacte al administrador para renovar su suscripción.'
-            });
+            // Trial expirado - establecer fecha de retención si no existe
+            if (!associatedBusiness.dataRetentionUntil) {
+              await DataRetentionService.setDataRetentionDate(
+                associatedBusiness.id, 
+                trialEnd
+              );
+            }
+
+            // Verificar estado de retención
+            const retentionStatus = await DataRetentionService.checkRetentionStatus(
+              associatedBusiness.id
+            );
+
+            subscriptionWarning = {
+              type: 'TRIAL_EXPIRED',
+              message: retentionStatus.inRetention 
+                ? `El período de prueba ha expirado. Tus datos se conservarán por ${retentionStatus.daysLeft} día${retentionStatus.daysLeft !== 1 ? 's' : ''} más. Por favor, renueva tu suscripción.`
+                : 'El período de prueba ha expirado. Por favor, renueve su suscripción para continuar usando todas las funciones.',
+              severity: 'warning',
+              trialEndDate: trialEnd,
+              dataRetention: retentionStatus.inRetention ? {
+                daysLeft: retentionStatus.daysLeft,
+                retentionUntil: retentionStatus.retentionDate
+              } : null
+            };
+          } else {
+            // Trial activo - mostrar días restantes
+            const daysLeft = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+            if (daysLeft <= 7) {
+              subscriptionWarning = {
+                type: 'TRIAL_ENDING',
+                message: `Su período de prueba termina en ${daysLeft} día${daysLeft !== 1 ? 's' : ''}. Por favor, renueve su suscripción.`,
+                severity: 'info',
+                daysLeft,
+                trialEndDate: trialEnd
+              };
+            }
           }
         }
       }
@@ -313,7 +348,8 @@ class AuthController {
         message: 'Login exitoso',
         data: {
           user: userResponse,
-          tokens
+          tokens,
+          subscriptionWarning
         }
       });
 
@@ -761,36 +797,21 @@ class AuthController {
    */
   static async resetPassword(req, res) {
     try {
-      const { token, newPassword, confirmPassword } = req.body;
+      const { token, password } = req.body;
 
       // Validaciones básicas
-      if (!token || !newPassword || !confirmPassword) {
+      if (!token || !password) {
         return res.status(400).json({
           success: false,
-          error: 'Token, nueva contraseña y confirmación son requeridos'
+          error: 'Token y contraseña son requeridos'
         });
       }
 
-      if (newPassword !== confirmPassword) {
+      // Validar fortaleza de contraseña (mínimo 6 caracteres para simplificar)
+      if (password.length < 6) {
         return res.status(400).json({
           success: false,
-          error: 'Las contraseñas no coinciden'
-        });
-      }
-
-      // Validar fortaleza de contraseña
-      if (newPassword.length < 8) {
-        return res.status(400).json({
-          success: false,
-          error: 'La contraseña debe tener al menos 8 caracteres'
-        });
-      }
-
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
-      if (!passwordRegex.test(newPassword)) {
-        return res.status(400).json({
-          success: false,
-          error: 'La contraseña debe contener al menos: 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial'
+          error: 'La contraseña debe tener al menos 6 caracteres'
         });
       }
 
@@ -819,18 +840,9 @@ class AuthController {
         });
       }
 
-      // Verificar que la nueva contraseña no sea igual a la actual
-      const isSamePassword = await bcrypt.compare(newPassword, tokenRecord.user.password);
-      if (isSamePassword) {
-        return res.status(400).json({
-          success: false,
-          error: 'La nueva contraseña debe ser diferente a la actual'
-        });
-      }
-
       // Hashear nueva contraseña
       const saltRounds = 12;
-      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
 
       // Actualizar contraseña del usuario
       await tokenRecord.user.update({
@@ -845,30 +857,78 @@ class AuthController {
       await PasswordResetToken.invalidateUserTokens(tokenRecord.userId);
 
       // Enviar email de confirmación
-      const confirmationEmailResult = await emailService.sendPasswordChangedConfirmation(
-        tokenRecord.user.email,
-        tokenRecord.user.firstName
-      );
-
-      if (!confirmationEmailResult.success) {
-        console.error('❌ Error enviando email de confirmación:', confirmationEmailResult.error);
-        // No fallar la operación por esto, solo loggear
+      try {
+        await emailService.sendPasswordChangedConfirmation(
+          tokenRecord.user.email,
+          tokenRecord.user.firstName
+        );
+      } catch (emailError) {
+        console.error('Error sending confirmation email:', emailError);
+        // No fallar si el email no se puede enviar
       }
 
       res.json({
         success: true,
-        message: 'Contraseña restablecida exitosamente',
-        data: {
-          userId: tokenRecord.user.id,
-          emailSent: confirmationEmailResult.success
-        }
+        message: 'Contraseña restablecida exitosamente'
       });
-
     } catch (error) {
-      console.error('Error restableciendo contraseña:', error);
+      console.error('Error in resetPassword:', error);
       res.status(500).json({
         success: false,
-        error: 'Error interno del servidor'
+        error: 'Error al restablecer contraseña'
+      });
+    }
+  }
+
+  /**
+   * Validar token de recuperación
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   */
+  static async validateResetToken(req, res) {
+    try {
+      const { token } = req.params;
+
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          error: 'Token requerido'
+        });
+      }
+
+      // Buscar token válido
+      const tokenRecord = await PasswordResetToken.scope('valid').findOne({
+        where: { token },
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['id', 'email', 'status']
+        }]
+      });
+
+      if (!tokenRecord) {
+        return res.status(400).json({
+          success: false,
+          error: 'Token inválido o expirado'
+        });
+      }
+
+      if (tokenRecord.user.status !== 'ACTIVE') {
+        return res.status(400).json({
+          success: false,
+          error: 'Usuario inactivo'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Token válido'
+      });
+    } catch (error) {
+      console.error('Error in validateResetToken:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al validar token'
       });
     }
   }

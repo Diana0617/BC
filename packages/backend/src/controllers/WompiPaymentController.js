@@ -565,6 +565,7 @@ class WompiPaymentController {
   static async createSubscriptionFromPayment(transactionData) {
     const { Business, SubscriptionPlan, BusinessSubscription, SubscriptionPayment } = require('../models');
     const { Op } = require('sequelize');
+    const DataRetentionService = require('../services/DataRetentionService');
     
     try {
       console.log('🔧 Creando suscripción desde pago:', transactionData.reference);
@@ -621,7 +622,17 @@ class WompiPaymentController {
         description: `Pago Wompi automático - ${transactionData.id}`
       });
 
+      // IMPORTANTE: Limpiar fecha de retención de datos (renovación)
+      await DataRetentionService.clearRetentionDate(businessId);
+      
+      // Actualizar status del business a ACTIVE
+      await business.update({ 
+        status: 'ACTIVE',
+        currentPlanId: defaultPlan.id
+      });
+
       console.log('✅ Suscripción creada automáticamente:', subscription.id);
+      console.log('🔓 Retención de datos limpiada - Datos restaurados');
       
       return {
         subscription: subscription,

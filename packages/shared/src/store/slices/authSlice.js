@@ -30,8 +30,8 @@ export const loginUser = createAsyncThunk(
     try {
       const response = await authAPI.login(credentials);
       
-      // Extract user and token from the new response structure
-      const { user, tokens } = response.data.data;
+      // Extract user, tokens, and subscription warning from the response
+      const { user, tokens, subscriptionWarning } = response.data.data;
       const token = tokens.accessToken;
       const refreshToken = tokens.refreshToken;
 
@@ -60,7 +60,13 @@ export const loginUser = createAsyncThunk(
         console.warn('Error storing auth tokens:', storageError);
       }
 
-      return { token, user, refreshToken, expiresIn: tokens.expiresIn };
+      return { 
+        token, 
+        user, 
+        refreshToken, 
+        expiresIn: tokens.expiresIn,
+        subscriptionWarning 
+      };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
     }
@@ -199,6 +205,7 @@ const initialState = {
   token: null,
   refreshToken: null,
   user: null,
+  subscriptionWarning: null,
   
   // Loading states
   isLoading: false,
@@ -268,6 +275,11 @@ const authSlice = createSlice({
       state.forgotPasswordSuccess = false;
       state.resetPasswordSuccess = false;
       state.changePasswordSuccess = false;
+    },
+    
+    // Clear subscription warning
+    clearSubscriptionWarning: (state) => {
+      state.subscriptionWarning = null;
     },
     
     // Logout user
@@ -353,6 +365,7 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
         state.user = action.payload.user;
+        state.subscriptionWarning = action.payload.subscriptionWarning || null;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoggingIn = false;
@@ -504,6 +517,7 @@ const authSlice = createSlice({
 export const { 
   clearErrors, 
   clearSuccess, 
+  clearSubscriptionWarning,
   logout, 
   updateUserData,
   setCredentials

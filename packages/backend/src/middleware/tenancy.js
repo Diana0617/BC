@@ -23,19 +23,23 @@ const tenancyMiddleware = async (req, res, next) => {
       });
     }
 
-    // Validar que el negocio existe y está activo
+    // Validar que el negocio existe (permitir acceso incluso con trial expirado)
     const business = await Business.findOne({
       where: { 
-        id: businessId, 
-        status: ['ACTIVE', 'TRIAL']
+        id: businessId
       }
     });
 
     if (!business) {
       return res.status(403).json({ 
         success: false,
-        error: 'Negocio no encontrado o inactivo' 
+        error: 'Negocio no encontrado' 
       });
+    }
+
+    // Advertir si el negocio está inactivo (pero permitir acceso de solo lectura)
+    if (business.status === 'INACTIVE' || business.status === 'SUSPENDED') {
+      console.warn(`⚠️ Acceso a negocio ${businessId} con status: ${business.status}`);
     }
 
     // Agregar filtro de tenancy a todas las queries

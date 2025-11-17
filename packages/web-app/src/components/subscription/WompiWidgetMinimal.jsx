@@ -6,9 +6,16 @@ const WompiWidgetMinimal = ({
   amount = 1200000,
   businessData = null,
   selectedPlan = null,
+  billingCycle = 'MONTHLY',
+  isRenewal = false,
   onSuccess, 
-  onError 
+  onError,
+  onPaymentSuccess, // Alias para compatibilidad
+  onPaymentError    // Alias para compatibilidad
 }) => {
+  // Normalizar callbacks para compatibilidad
+  const handleSuccess = onSuccess || onPaymentSuccess;
+  const handleError = onError || onPaymentError;
   // Hook para manejar pagos 3DS v2 (incluye configuración Wompi)
   const {
     // Estado 3DS autenticado
@@ -51,11 +58,27 @@ const WompiWidgetMinimal = ({
   const [showCardForm, setShowCardForm] = useState(false)
   const [isTokenizing, setIsTokenizing] = useState(false)
 
+  // Calcular el monto según el plan y ciclo de facturación
+  const calculateAmount = () => {
+    if (!selectedPlan) return amount;
+    
+    if (billingCycle === 'YEARLY' && selectedPlan.yearlyPrice) {
+      return selectedPlan.yearlyPrice;
+    }
+    
+    return selectedPlan.price || amount;
+  };
+
+  const finalAmount = calculateAmount();
+
   // DEBUG: Log inicial del componente
   useEffect(() => {
     console.log('🎬 WompiWidgetMinimal montado - Props:', {
       planName,
       amount,
+      billingCycle,
+      isRenewal,
+      finalAmount,
       businessData: businessData ? {
         businessId: businessData.businessId,
         businessCode: businessData.businessCode,
@@ -174,7 +197,7 @@ const WompiWidgetMinimal = ({
     } catch (err) {
       console.error('❌ Error en pago:', err)
       setError('Error: ' + err.message)
-      if (onError) onError(err)
+      if (handleError) handleError(err)
     }
   }
 
@@ -211,9 +234,9 @@ const WompiWidgetMinimal = ({
       const paymentData = {
           businessId: businessData.businessId,
           subscriptionId: selectedPlan.id,
-          amount: amount,
+          amount: finalAmount,
           currency: 'COP',
-          description: `Pago de suscripción - ${planName}`,
+          description: `Pago de suscripción - ${planName} - ${billingCycle === 'YEARLY' ? 'Anual' : 'Mensual'}`,
         customerEmail: businessData.email || 'test@beautycontrol.com',
         paymentMethod: {
           type: 'CARD',
@@ -237,8 +260,8 @@ const WompiWidgetMinimal = ({
       if (status === 'APPROVED') {
         // Pago aprobado directamente (sin challenge)
         console.log('✅ Pago 3DS aprobado directamente')
-        if (onSuccess) {
-          onSuccess({
+        if (handleSuccess) {
+          handleSuccess({
             id: transactionId,
             reference: result.reference,
             status: 'APPROVED',
@@ -253,8 +276,8 @@ const WompiWidgetMinimal = ({
         // Iniciar polling del estado
         await pollTransactionStatus(transactionId, {
           onComplete: (finalResult) => {
-            if (finalResult.status === 'APPROVED' && onSuccess) {
-              onSuccess({
+            if (finalResult.status === 'APPROVED' && handleSuccess) {
+              handleSuccess({
                 id: transactionId,
                 status: 'APPROVED',
                 method: '3DS_CHALLENGE'
@@ -263,7 +286,7 @@ const WompiWidgetMinimal = ({
           },
           onError: (pollError) => {
             console.error('❌ Error en polling 3DS:', pollError)
-            if (onError) onError(pollError)
+            if (handleError) handleError(pollError)
           }
         })
       } else {
@@ -308,9 +331,9 @@ const WompiWidgetMinimal = ({
         businessCode: businessData.businessCode,
         subscriptionPlanId: selectedPlan.id,
         customerEmail: businessData.email,
-        amount: Math.round(amount * 100), // Convertir a centavos
+        amount: Math.round(finalAmount * 100), // Convertir a centavos
         currency: 'COP',
-        description: `Registro suscripción - ${planName}`,
+        description: `${isRenewal ? 'Renovación' : 'Registro'} suscripción - ${planName} - ${billingCycle === 'YEARLY' ? 'Anual' : 'Mensual'}`,
         cardToken: cardToken, // Token de la tarjeta
         acceptanceToken: acceptanceToken, // Token de aceptación
         browserInfo: browserInfo,
@@ -342,13 +365,13 @@ const WompiWidgetMinimal = ({
           
           // Manejar resultado del polling
           if (pollingResult && pollingResult.transaction.status === 'APPROVED') {
-            console.log('✅ Pago 3DS público aprobado - ejecutando onSuccess')
+            console.log('✅ Pago 3DS público aprobado - ejecutando handleSuccess')
             console.log('🔍 DEBUG pollingResult completo:', pollingResult)
             console.log('🔍 DEBUG business_creation:', pollingResult.business_creation)
             console.log('🔍 DEBUG business_creation.completed:', pollingResult.business_creation?.completed)
             
-            if (onSuccess) {
-              onSuccess({
+            if (handleSuccess) {
+              handleSuccess({
                 id: pollingResult.transaction.id,
                 reference: pollingResult.transaction.reference,
                 status: 'APPROVED',
@@ -383,7 +406,7 @@ const WompiWidgetMinimal = ({
     try {
       // Paso 2: Generar referencia única
       const reference = `BC_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      const amountInCents = Math.round(amount * 100)
+      const amountInCents = Math.round(finalAmount * 100)
 
       console.log('🎯 Datos del pago:', {
         reference,
@@ -809,7 +832,12 @@ const WompiWidgetMinimal = ({
         <div>
           <strong>Pago:</strong>
           <div className="text-sm text-gray-600 mb-2">
-            Plan: {planName} - Monto: ${amount.toLocaleString('es-CO')} COP
+            Plan: {planName} - Monto: ${finalAmount.toLocaleString('es-CO')} COP
+            {billingCycle === 'YEARLY' && (
+              <span className="text-xs text-green-600 ml-2">
+                (~${(finalAmount / 12).toLocaleString('es-CO')}/mes)
+              </span>
+            )}
           </div>
           
           {(loading || processing3DS) && (

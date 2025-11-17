@@ -103,7 +103,10 @@ const authenticateToken = async (req, res, next) => {
       }
       
       // Si está en TRIAL, verificar que no haya expirado
-      if (business.status === 'TRIAL' && business.trialEndDate) {
+      // EXCEPCIÓN: Permitir acceso al endpoint de renovación de suscripción
+      const isRenewalEndpoint = req.path === '/renew-subscription' && req.method === 'POST';
+      
+      if (business.status === 'TRIAL' && business.trialEndDate && !isRenewalEndpoint) {
         const now = new Date();
         const trialEnd = new Date(business.trialEndDate);
         

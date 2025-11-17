@@ -2,6 +2,8 @@ const Product = require('../models/Product');
 const InventoryMovement = require('../models/InventoryMovement');
 const { sequelize } = require('../config/database');
 const { Op } = require('sequelize');
+const { uploadResponsiveImage } = require('../config/cloudinary');
+const { v2: cloudinary } = require('cloudinary');
 
 class ProductController {
   /**
@@ -439,6 +441,224 @@ class ProductController {
       res.status(500).json({
         success: false,
         error: 'Error al cargar stock inicial'
+      });
+    }
+  }
+
+  /**
+   * Subir imagen de producto
+   */
+  async uploadProductImage(req, res) {
+    try {
+      const { businessId } = req.user;
+      const { id } = req.params;
+
+      const product = await Product.findOne({
+        where: { id, businessId }
+      });
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          error: 'Producto no encontrado'
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: 'No se proporcionó ninguna imagen'
+        });
+      }
+
+      // Subir imagen a Cloudinary con versiones responsivas
+      const imageData = await uploadResponsiveImage(
+        req.file.path,
+        'beauty-control',
+        'products'
+      );
+
+      // Agregar nueva imagen al array de imágenes
+      const currentImages = product.images || [];
+      currentImages.push(imageData);
+
+      await product.update({ images: currentImages });
+
+      res.json({
+        success: true,
+        data: imageData,
+        message: 'Imagen subida exitosamente'
+      });
+    } catch (error) {
+      console.error('Error uploading product image:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al subir la imagen'
+      });
+    }
+  }
+
+  /**
+   * Eliminar imagen de producto
+   */
+  async deleteProductImage(req, res) {
+    try {
+      const { businessId } = req.user;
+      const { id, imageIndex } = req.params;
+
+      const product = await Product.findOne({
+        where: { id, businessId }
+      });
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          error: 'Producto no encontrado'
+        });
+      }
+
+      const currentImages = product.images || [];
+      const index = parseInt(imageIndex);
+
+      if (index < 0 || index >= currentImages.length) {
+        return res.status(400).json({
+          success: false,
+          error: 'Índice de imagen inválido'
+        });
+      }
+
+      const imageToDelete = currentImages[index];
+
+      // Eliminar de Cloudinary
+      try {
+        if (imageToDelete.main?.public_id) {
+          await cloudinary.uploader.destroy(imageToDelete.main.public_id);
+        }
+        if (imageToDelete.thumbnail?.public_id) {
+          await cloudinary.uploader.destroy(imageToDelete.thumbnail.public_id);
+        }
+      } catch (cloudinaryError) {
+        console.error('Error deleting from Cloudinary:', cloudinaryError);
+        // Continuar aunque falle Cloudinary
+      }
+
+      // Eliminar del array
+      currentImages.splice(index, 1);
+      await product.update({ images: currentImages });
+
+      res.json({
+        success: true,
+        message: 'Imagen eliminada exitosamente'
+      });
+    } catch (error) {
+      console.error('Error deleting product image:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al eliminar la imagen'
+      });
+    }
+  }
+
+  /**
+   * Obtener movimientos de inventario de un producto
+   */
+  async getProductMovements(req, res) {
+    try {
+      const { businessId } = req.user;
+      const { id } = req.params;
+      const { 
+        startDate, 
+        endDate, 
+        movementType,
+        page = 1, 
+        limit = 50 
+      } = req.query;
+
+      const product = await Product.findOne({
+        where: { id, businessId }
+      });
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          error: 'Producto no encontrado'
+        });
+      }
+
+      const where = { 
+        businessId,
+        productId: id 
+      };
+
+      // Filtro por tipo de movimiento
+      if (movementType) {
+        where.movementType = movementType;
+      }
+
+      // Filtro por rango de fechas
+      if (startDate || endDate) {
+        where.createdAt = {};
+        if (startDate) where.createdAt[Op.gte] = new Date(startDate);
+        if (endDate) where.createdAt[Op.lte] = new Date(endDate);
+      }
+
+      const offset = (page - 1) * limit;
+
+      const movements = await InventoryMovement.findAndCountAll({
+        where,
+        limit: parseInt(limit),
+        offset,
+        order: [['createdAt', 'DESC']],
+        include: [
+          {
+            association: 'user',
+            attributes: ['id', 'firstName', 'lastName', 'email']
+          },
+          {
+            association: 'appointment',
+            attributes: ['id', 'appointmentDate'],
+            required: false
+          },
+          {
+            association: 'sale',
+            attributes: ['id', 'saleDate', 'total'],
+            required: false
+          }
+        ]
+      });
+
+      // Calcular resumen por tipo
+      const summary = await InventoryMovement.findAll({
+        where: { businessId, productId: id },
+        attributes: [
+          'movementType',
+          [sequelize.fn('SUM', sequelize.col('quantity')), 'totalQuantity'],
+          [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+        ],
+        group: ['movementType']
+      });
+
+      res.json({
+        success: true,
+        data: {
+          product: {
+            id: product.id,
+            name: product.name,
+            sku: product.sku,
+            currentStock: product.currentStock
+          },
+          movements: movements.rows,
+          total: movements.count,
+          page: parseInt(page),
+          totalPages: Math.ceil(movements.count / limit),
+          summary
+        }
+      });
+    } catch (error) {
+      console.error('Error getting product movements:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al obtener movimientos'
       });
     }
   }

@@ -4,6 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { requireBasicAccess, requireFullAccess } = require('../middleware/subscription');
 const { businessAndOwner } = require('../middleware/roleCheck');
 const productController = require('../controllers/productController');
+const { uploadImageMiddleware } = require('../config/cloudinary');
 
 // Todas las rutas de productos requieren autenticación
 router.use(authenticateToken);
@@ -19,19 +20,21 @@ router.get('/:id', requireBasicAccess, productController.getProductById);
 router.put('/:id', requireFullAccess, businessAndOwner, productController.updateProduct);
 router.delete('/:id', requireFullAccess, businessAndOwner, productController.deleteProduct);
 
-// Movimientos de inventario (implementaremos después)
-router.get('/:id/movements', requireBasicAccess, (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de movimientos de inventario pendiente de implementación'
-  });
-});
+// Rutas de imágenes de productos
+router.post('/:id/images', 
+  requireFullAccess, 
+  businessAndOwner, 
+  uploadImageMiddleware.single('image'), 
+  productController.uploadProductImage
+);
 
-router.post('/:id/movements', requireFullAccess, (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de crear movimiento de inventario pendiente de implementación'
-  });
-});
+router.delete('/:id/images/:imageIndex', 
+  requireFullAccess, 
+  businessAndOwner, 
+  productController.deleteProductImage
+);
+
+// Movimientos de inventario
+router.get('/:id/movements', requireBasicAccess, productController.getProductMovements);
 
 module.exports = router;

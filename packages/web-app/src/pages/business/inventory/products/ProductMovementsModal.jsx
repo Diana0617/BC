@@ -6,96 +6,101 @@ import {
   TrendingDownIcon,
   PackageIcon,
   ShoppingCartIcon,
+  ScissorsIcon,
   UserIcon,
-  CalendarIcon
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from 'lucide-react';
+import productApi from '../../../../api/productApi';
 
 const ProductMovementsModal = ({ product, onClose }) => {
-  // eslint-disable-next-line no-unused-vars
   const { user } = useSelector((state) => state.auth);
-  const [movements, setMovements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [movements, setMovements] = useState([]);
+  // eslint-disable-next-line no-unused-vars
+  const [summary, setSummary] = useState([]);
   const [filter, setFilter] = useState('all'); // all, entries, exits
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
 
   useEffect(() => {
     loadMovements();
-  }, [filter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, pagination.page]);
 
   const loadMovements = async () => {
     try {
       setLoading(true);
-      // TODO: Implementar endpoint para obtener movimientos de inventario
-      // Por ahora, datos de ejemplo
-      const mockMovements = [
-        {
-          id: 1,
-          type: 'ENTRY',
-          subtype: 'PURCHASE',
-          quantity: 50,
-          date: new Date(),
-          reference: 'Factura #0001',
-          user: 'Admin'
-        },
-        {
-          id: 2,
-          type: 'EXIT',
-          subtype: 'SALE',
-          quantity: 5,
-          date: new Date(Date.now() - 86400000),
-          reference: 'Venta #001',
-          user: 'Cajero 1'
-        },
-        {
-          id: 3,
-          type: 'EXIT',
-          subtype: 'PROCEDURE',
-          quantity: 2,
-          date: new Date(Date.now() - 172800000),
-          reference: 'Cita #123',
-          user: 'Especialista María'
-        }
-      ];
       
-      const filtered = filter === 'all' 
-        ? mockMovements
-        : mockMovements.filter(m => filter === 'entries' ? m.type === 'ENTRY' : m.type === 'EXIT');
+      const params = {
+        page: pagination.page,
+        limit: 20
+      };
+
+      // Filtrar por tipo si no es "all"
+      if (filter === 'entries') {
+        params.movementType = 'INITIAL_STOCK,PURCHASE,ADJUSTMENT_IN,TRANSFER_IN';
+      } else if (filter === 'exits') {
+        params.movementType = 'SALE,PROCEDURE,ADJUSTMENT_OUT,TRANSFER_OUT';
+      }
+
+      const response = await productApi.getProductMovements(
+        user.businessId, 
+        product.id,
+        params
+      );
       
-      setMovements(filtered);
-    } catch (err) {
-      console.error('Error loading movements:', err);
+      if (response.success) {
+        setMovements(response.data.movements || []);
+        setSummary(response.data.summary || []);
+        setPagination({
+          page: response.data.page,
+          totalPages: response.data.totalPages
+        });
+      }
+    } catch (error) {
+      console.error('Error loading movements:', error);
+      setMovements([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const getMovementIcon = (type, subtype) => {
-    if (type === 'ENTRY') {
+  const getMovementIcon = (movementType) => {
+    if (['INITIAL_STOCK', 'PURCHASE', 'ADJUSTMENT_IN', 'TRANSFER_IN'].includes(movementType)) {
       return <TrendingUpIcon className="h-5 w-5 text-green-600" />;
-    } else if (subtype === 'SALE') {
+    } else if (movementType === 'SALE') {
       return <ShoppingCartIcon className="h-5 w-5 text-blue-600" />;
+    } else if (movementType === 'PROCEDURE') {
+      return <ScissorsIcon className="h-5 w-5 text-purple-600" />;
     } else {
-      return <UserIcon className="h-5 w-5 text-purple-600" />;
+      return <TrendingDownIcon className="h-5 w-5 text-red-600" />;
     }
   };
 
-  const getMovementBadge = (type) => {
-    if (type === 'ENTRY') {
+  const getMovementBadge = (movementType) => {
+    const isEntry = ['INITIAL_STOCK', 'PURCHASE', 'ADJUSTMENT_IN', 'TRANSFER_IN'].includes(movementType);
+    
+    if (isEntry) {
       return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Entrada</span>;
     } else {
       return <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">Salida</span>;
     }
   };
 
-  const getSubtypeLabel = (subtype) => {
+  const getMovementTypeLabel = (movementType) => {
     const labels = {
+      INITIAL_STOCK: 'Stock Inicial',
       PURCHASE: 'Compra',
       SALE: 'Venta',
       PROCEDURE: 'Uso en procedimiento',
-      ADJUSTMENT: 'Ajuste de inventario',
-      RETURN: 'Devolución',
-      TRANSFER: 'Transferencia'
+      ADJUSTMENT_IN: 'Ajuste (Entrada)',
+      ADJUSTMENT_OUT: 'Ajuste (Salida)',
+      TRANSFER_IN: 'Transferencia (Entrada)',
+      TRANSFER_OUT: 'Transferencia (Salida)',
+      RETURN: 'Devolución'
     };
-    return labels[subtype] || subtype;
+    return labels[movementType] || movementType;
   };
 
   const formatDate = (date) => {
@@ -190,39 +195,54 @@ const ProductMovementsModal = ({ product, onClose }) => {
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
                       <div className="mt-1">
-                        {getMovementIcon(movement.type, movement.subtype)}
+                        {getMovementIcon(movement.movementType)}
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          {getMovementBadge(movement.type)}
+                          {getMovementBadge(movement.movementType)}
                           <span className="text-sm text-gray-600">
-                            {getSubtypeLabel(movement.subtype)}
+                            {getMovementTypeLabel(movement.movementType)}
                           </span>
                         </div>
                         <div className="text-sm text-gray-500 flex items-center gap-4 mt-2">
                           <span className="flex items-center gap-1">
                             <CalendarIcon className="h-4 w-4" />
-                            {formatDate(movement.date)}
+                            {formatDate(movement.createdAt)}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <UserIcon className="h-4 w-4" />
-                            {movement.user}
-                          </span>
+                          {movement.user && (
+                            <span className="flex items-center gap-1">
+                              <UserIcon className="h-4 w-4" />
+                              {movement.user.firstName} {movement.user.lastName}
+                            </span>
+                          )}
                         </div>
-                        {movement.reference && (
+                        {movement.reason && (
                           <div className="text-sm text-gray-600 mt-1">
-                            Ref: {movement.reference}
+                            {movement.reason}
+                          </div>
+                        )}
+                        {movement.notes && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {movement.notes}
                           </div>
                         )}
                       </div>
                     </div>
                     <div className="text-right">
                       <div className={`text-lg font-semibold ${
-                        movement.type === 'ENTRY' ? 'text-green-600' : 'text-red-600'
+                        ['INITIAL_STOCK', 'PURCHASE', 'ADJUSTMENT_IN', 'TRANSFER_IN'].includes(movement.movementType)
+                          ? 'text-green-600'
+                          : 'text-red-600'
                       }`}>
-                        {movement.type === 'ENTRY' ? '+' : '-'}{movement.quantity}
+                        {['INITIAL_STOCK', 'PURCHASE', 'ADJUSTMENT_IN', 'TRANSFER_IN'].includes(movement.movementType) ? '+' : '-'}
+                        {movement.quantity}
                       </div>
                       <div className="text-xs text-gray-500">unidades</div>
+                      {movement.unitCost && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          ${movement.unitCost.toLocaleString('es-CO')} c/u
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -231,11 +251,36 @@ const ProductMovementsModal = ({ product, onClose }) => {
           )}
         </div>
 
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="px-6 py-3 border-t border-gray-200 flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Página {pagination.page} de {pagination.totalPages}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                disabled={pagination.page === 1}
+                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeftIcon className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                disabled={pagination.page === pagination.totalPages}
+                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRightIcon className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+        <div className="px-6 py-4 border-t border-gray-200 flex justify-end bg-gray-50">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
           >
             Cerrar
           </button>

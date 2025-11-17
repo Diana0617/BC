@@ -25,7 +25,11 @@ import {
   loadBranding
 } from '@shared/store/slices/businessConfigurationSlice'
 import { fetchCurrentBusiness } from '@shared/store/slices/businessSlice'
-import { logout } from '@shared/store/slices/authSlice'
+import { logout, clearSubscriptionWarning } from '@shared/store/slices/authSlice'
+
+// Componentes
+import SubscriptionWarningBanner from '../../../components/SubscriptionWarningBanner'
+import RenewSubscriptionModal from '../../../components/subscription/RenewSubscriptionModal'
 
 // Componentes de secciones
 import SubscriptionSection from './sections/SubscriptionSection'
@@ -57,6 +61,22 @@ const BusinessProfile = () => {
     navigate('/', { replace: true })
   }
 
+  const handleDismissWarning = () => {
+    dispatch(clearSubscriptionWarning())
+  }
+
+  const [showRenewModal, setShowRenewModal] = useState(false)
+
+  const handleRenewSubscription = () => {
+    setShowRenewModal(true)
+  }
+
+  const handleRenewSuccess = (transaction) => {
+    console.log('✅ Renovación exitosa:', transaction)
+    dispatch(clearSubscriptionWarning())
+    // El modal se encarga del reload
+  }
+
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -71,7 +91,7 @@ const BusinessProfile = () => {
   const [activeInitialConfigTab, setActiveInitialConfigTab] = useState('basic-info')
 
   // Estados de Redux
-  const { user } = useSelector(state => state.auth)
+  const { user, subscriptionWarning } = useSelector(state => state.auth)
   const business = useSelector(state => state.business?.currentBusiness)
   const {
     loading,
@@ -692,6 +712,18 @@ const BusinessProfile = () => {
         </div>
       </div>
 
+      {/* Subscription Warning Banner */}
+      {subscriptionWarning && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <SubscriptionWarningBanner 
+            warning={subscriptionWarning} 
+            onDismiss={handleDismissWarning}
+            onRenew={handleRenewSubscription}
+          />
+        </div>
+      )}
+
+      {/* Contenido principal */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar de navegación */}
@@ -761,7 +793,7 @@ const BusinessProfile = () => {
             )}
           </div>
 
-          {/* Contenido principal */}
+          {/* Contenido de la sección activa */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow p-6">
               {renderActiveSection()}
@@ -777,6 +809,14 @@ const BusinessProfile = () => {
         businessId={business?.id}
         business={business}
       />
+
+      {/* Modal de renovación de suscripción */}
+      {showRenewModal && (
+        <RenewSubscriptionModal
+          onClose={() => setShowRenewModal(false)}
+          onSuccess={handleRenewSuccess}
+        />
+      )}
     </div>
   )
 }

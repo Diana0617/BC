@@ -483,6 +483,9 @@ router.get('/reset-password/:token', AuthController.verifyResetToken);
 // Restablecer contraseña con token
 router.post('/reset-password', AuthController.resetPassword);
 
+// Validar token de recuperación
+router.get('/validate-reset-token/:token', AuthController.validateResetToken);
+
 /**
  * @swagger
  * /api/auth/change-password:

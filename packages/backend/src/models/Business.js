@@ -106,6 +106,11 @@ const Business = sequelize.define('Business', {
     type: DataTypes.DATE,
     allowNull: true
   },
+  dataRetentionUntil: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Fecha hasta la cual se mantendrán los datos del negocio después de la expiración de suscripción (30 días después del último vencimiento)'
+  },
   currentPlanId: {
     type: DataTypes.UUID,
     allowNull: true,
