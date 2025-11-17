@@ -48,9 +48,8 @@ const RenewSubscriptionModal = ({ onClose, onSuccess }) => {
       if (onSuccess) {
         onSuccess(paymentData);
       }
-      onClose();
-      // Recargar la página para actualizar el estado de la suscripción
-      window.location.reload();
+      // Redirigir al dashboard con recarga completa
+      window.location.href = '/business/dashboard';
     }, 2500);
   };
 

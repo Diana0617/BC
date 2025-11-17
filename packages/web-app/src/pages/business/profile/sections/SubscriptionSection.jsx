@@ -6,6 +6,7 @@ import { fetchPublicPlans } from '@shared/store/slices/plansSlice'
 import { fetchCurrentBusiness } from '@shared/store/slices/businessSlice'
 import { setCurrentBusiness } from '@shared/store/slices/businessSlice'
 import SubscriptionStatusBadge from '../../../../components/subscription/SubscriptionStatusBadge'
+import RenewSubscriptionModal from '../../../../components/subscription/RenewSubscriptionModal'
 import { 
   CreditCardIcon, 
   CheckCircleIcon, 
@@ -30,6 +31,7 @@ const SubscriptionSection = ({ isSetupMode }) => {
   const availablePlans = useSelector(state => state.plans?.plans || [])
   // Estado para modal y selección
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
+  const [showRenewModal, setShowRenewModal] = useState(false)
   // Cargar los planes disponibles al abrir el modal
   useEffect(() => {
     if (showChangePlanModal) {
@@ -181,6 +183,31 @@ const SubscriptionSection = ({ isSetupMode }) => {
           showDetails={true}
         />
       </div>
+
+      {/* Alerta para suscripciones suspendidas o vencidas */}
+      {(effectiveSubscription?.status === 'SUSPENDED' || effectiveSubscription?.status === 'OVERDUE') && (
+        <div className="bg-red-50 border-l-4 border-red-600 rounded-lg p-4">
+          <div className="flex items-start">
+            <ExclamationTriangleIcon className="h-6 w-6 text-red-600 mr-3 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-red-900 mb-1">
+                Suscripción {effectiveSubscription?.status === 'SUSPENDED' ? 'Suspendida' : 'Vencida'}
+              </h3>
+              <p className="text-red-800 mb-3">
+                Tu suscripción ha sido {effectiveSubscription?.status === 'SUSPENDED' ? 'suspendida' : 'vencida'}. 
+                Renueva ahora para recuperar el acceso completo a todas las funcionalidades.
+              </p>
+              <button 
+                className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors font-semibold inline-flex items-center"
+                onClick={() => setShowRenewModal(true)}
+              >
+                <CreditCardIcon className="h-5 w-5 mr-2" />
+                Renovar Ahora
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Plan actual */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
@@ -503,6 +530,16 @@ const SubscriptionSection = ({ isSetupMode }) => {
       {/* Acciones */}
       {!isSetupMode && (
         <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-200">
+          {/* Botón de renovación para suscripciones suspendidas o vencidas */}
+          {(effectiveSubscription?.status === 'SUSPENDED' || effectiveSubscription?.status === 'OVERDUE') && (
+            <button 
+              className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-semibold"
+              onClick={() => setShowRenewModal(true)}
+            >
+              <ExclamationTriangleIcon className="h-5 w-5 inline mr-2" />
+              Renovar Suscripción
+            </button>
+          )}
           <button className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
             <CurrencyDollarIcon className="h-5 w-5 inline mr-2" />
             Historial de Pagos
@@ -712,6 +749,15 @@ const SubscriptionSection = ({ isSetupMode }) => {
             </p>
           </div>
         </div>
+      )}
+
+      {/* Modal de renovación */}
+      {showRenewModal && (
+        <RenewSubscriptionModal
+          isOpen={showRenewModal}
+          onClose={() => setShowRenewModal(false)}
+          businessId={business?.id}
+        />
       )}
     </div>
   )

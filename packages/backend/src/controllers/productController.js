@@ -32,37 +32,73 @@ class ProductController {
       // Búsqueda por nombre, SKU o barcode
       if (search) {
         where[Op.or] = [
-          { name: { [Op.iLike]: `%${search}%` } },
-          { sku: { [Op.iLike]: `%${search}%` } },
-          { barcode: { [Op.iLike]: `%${search}%` } }
+          { name: { [Op.like]: `%${search}%` } },
+          { sku: { [Op.like]: `%${search}%` } },
+          { barcode: { [Op.like]: `%${search}%` } }
         ];
       }
 
       const offset = (page - 1) * limit;
 
-      let products = await Product.findAndCountAll({
+      const products = await Product.findAndCountAll({
         where,
         limit: parseInt(limit),
         offset,
         order: [['name', 'ASC']]
       });
 
-      // Filtro de stock bajo (después del query porque es una comparación de campos)
+      // Filtro de stock bajo
       if (lowStock === 'true') {
         products.rows = products.rows.filter(p => 
           p.trackInventory && p.currentStock <= p.minStock
         );
-        products.count = products.rows.length;
+      }
+
+      // Agregar stock por sucursal
+      try {
+        const BranchStock = require('../models/BranchStock');
+        // Usar raw:true para obtener resultados planos y nombres de columnas explícitos
+        const branchSums = await BranchStock.findAll({
+          attributes: [
+            [sequelize.col('product_id'), 'productId'],
+            [sequelize.fn('SUM', sequelize.col('current_stock')), 'totalStock']
+          ],
+          where: { business_id: businessId },
+          group: [sequelize.col('product_id')],
+          raw: true
+        });
+
+        const stockMap = {};
+        branchSums.forEach(bs => {
+          const pid = bs.productId || bs.product_id;
+          const total = parseInt(bs.totalStock || 0, 10);
+          stockMap[pid] = total;
+        });
+
+        // Log de depuración para verificar agregación en runtime
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('Branch stock sums for business', businessId, stockMap);
+        }
+
+        // Asignar currentStock calculado a los productos devueltos
+        products.rows = products.rows.map(p => {
+          const pid = p.id;
+          const aggregated = stockMap[pid];
+          if (typeof aggregated !== 'undefined') {
+            p.currentStock = aggregated;
+          }
+          return p;
+        });
+      } catch (e) {
+        console.warn('No se pudo agregar branch stock sums:', e.message || e);
       }
 
       res.json({
         success: true,
-        data: {
-          products: products.rows,
-          total: products.count,
-          page: parseInt(page),
-          totalPages: Math.ceil(products.count / limit)
-        }
+        data: products.rows,
+        total: products.count,
+        page: parseInt(page),
+        totalPages: Math.ceil(products.count / limit)
       });
     } catch (error) {
       console.error('Error getting products:', error);
@@ -90,6 +126,25 @@ class ProductController {
           success: false,
           error: 'Producto no encontrado'
         });
+      }
+
+      // Agregar stock por sucursal
+      try {
+        const BranchStock = require('../models/BranchStock');
+        const sums = await BranchStock.findAll({
+          attributes: [[sequelize.fn('SUM', sequelize.col('current_stock')), 'totalStock']],
+          where: { business_id: businessId, product_id: id },
+          raw: true
+        });
+        const total = sums && sums[0] && (sums[0].totalStock || 0);
+        if (typeof total !== 'undefined') {
+          product.currentStock = parseInt(total, 10) || 0;
+        }
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('Branch stock sum for product', id, 'business', businessId, '=>', product.currentStock);
+        }
+      } catch (e) {
+        console.warn('No se pudo agregar branch stock al producto:', e.message || e);
       }
 
       res.json({
@@ -433,7 +488,7 @@ class ProductController {
           results,
           errors
         },
-        message: `Stock inicial cargado: ${results.length} productos, ${errors.length} errores`
+        message: `Stock inicial cargado: ${results.length} exitosos, ${errors.length} errores`
       });
     } catch (error) {
       await transaction.rollback();

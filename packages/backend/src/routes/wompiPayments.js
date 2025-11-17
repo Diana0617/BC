@@ -722,12 +722,30 @@ router.post('/renew-subscription', authenticateToken, async (req, res) => {
     const transactionId = `sim-${Date.now()}`;
     const reference = `RENEWAL-${businessId}-${Date.now()}`;
 
-    // Buscar suscripción existente para este negocio y plan
+    // Cancelar todas las suscripciones anteriores del negocio (excepto la que vamos a renovar)
+    await BusinessSubscription.update(
+      { 
+        status: 'CANCELED',
+        canceledAt: new Date(),
+        cancelReason: 'Renovación con nuevo plan'
+      },
+      {
+        where: {
+          businessId: businessId,
+          subscriptionPlanId: { [require('sequelize').Op.ne]: plan.id }, // No cancelar el plan que estamos renovando
+          status: { [require('sequelize').Op.notIn]: ['CANCELED'] } // No re-cancelar las ya canceladas
+        }
+      }
+    );
+    console.log('🗑️ Suscripciones de otros planes canceladas');
+
+    // Buscar suscripción existente para este negocio y plan (sin importar status)
     let subscription = await BusinessSubscription.findOne({
       where: {
         businessId: businessId,
         subscriptionPlanId: plan.id
-      }
+      },
+      order: [['updatedAt', 'DESC']] // La más reciente
     });
 
     if (subscription) {
@@ -743,9 +761,11 @@ router.post('/renew-subscription', authenticateToken, async (req, res) => {
         currency: 'COP',
         paymentStatus: 'PAID',
         lastPaymentDate: new Date(),
-        nextPaymentDate: newEndDate // Próximo pago en 30 días
+        nextPaymentDate: newEndDate,
+        canceledAt: null,
+        cancelReason: null
       });
-      console.log('📝 Suscripción existente actualizada:', subscription.id);
+      console.log('📝 Suscripción existente reactivada:', subscription.id);
     } else {
       // Crear nueva suscripción
       const newEndDate = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // 30 días

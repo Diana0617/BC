@@ -126,8 +126,15 @@ class SubscriptionStatusService {
    */
   static async checkBusinessSubscription(businessId) {
     try {
-      const subscription = await BusinessSubscription.findOne({
-        where: { businessId },
+      console.log('🔍 Verificando suscripción para businessId:', businessId);
+      
+      // Primero intentar encontrar una suscripción ACTIVE
+      let subscription = await BusinessSubscription.findOne({
+        where: { 
+          businessId,
+          status: 'ACTIVE'
+        },
+        order: [['updatedAt', 'DESC']],
         include: [
           {
             model: Business,
@@ -143,10 +150,10 @@ class SubscriptionStatusService {
                 as: 'modules',
                 through: {
                   model: PlanModule,
-                  where: { isIncluded: true }, // Solo módulos incluidos en el plan
+                  where: { isIncluded: true },
                   attributes: ['isIncluded', 'limitQuantity', 'additionalPrice']
                 },
-                where: { status: 'ACTIVE' }, // Solo módulos activos
+                where: { status: 'ACTIVE' },
                 attributes: ['id', 'name', 'displayName', 'description', 'icon', 'category', 'version', 'requiresConfiguration']
               }
             ]
@@ -160,9 +167,56 @@ class SubscriptionStatusService {
         ]
       });
 
+      // Si no hay ACTIVE, buscar cualquier suscripción por updatedAt
       if (!subscription) {
+        subscription = await BusinessSubscription.findOne({
+          where: { businessId },
+          order: [['updatedAt', 'DESC']],
+          include: [
+            {
+              model: Business,
+              as: 'business',
+              attributes: ['id', 'name', 'status', 'trialEndDate']
+            },
+            {
+              model: SubscriptionPlan,
+              as: 'plan',
+              include: [
+                {
+                  model: Module,
+                  as: 'modules',
+                  through: {
+                    model: PlanModule,
+                    where: { isIncluded: true },
+                    attributes: ['isIncluded', 'limitQuantity', 'additionalPrice']
+                  },
+                  where: { status: 'ACTIVE' },
+                  attributes: ['id', 'name', 'displayName', 'description', 'icon', 'category', 'version', 'requiresConfiguration']
+                }
+              ]
+            },
+            {
+              model: SubscriptionPayment,
+              as: 'payments',
+              limit: 5,
+              order: [['createdAt', 'DESC']]
+            }
+          ]
+        });
+      }
+
+      if (!subscription) {
+        console.log('❌ No se encontró suscripción para:', businessId);
         return { status: 'NO_SUBSCRIPTION', access: false };
       }
+
+      console.log('📋 Suscripción encontrada:', {
+        id: subscription.id,
+        status: subscription.status,
+        nextPaymentDate: subscription.nextPaymentDate,
+        endDate: subscription.endDate,
+        businessStatus: subscription.business?.status
+      });
 
       // VERIFICAR PRIMERO SI EL NEGOCIO ESTÁ EN TRIAL ACTIVO
       const business = subscription.business;
@@ -190,6 +244,12 @@ class SubscriptionStatusService {
       }
 
       const currentStatus = await this.calculateSubscriptionStatus(subscription);
+      
+      console.log('📊 Estado calculado:', {
+        currentStatus,
+        previousStatus: subscription.status,
+        willUpdate: currentStatus !== subscription.status
+      });
       
       // Actualizar si ha cambiado
       if (currentStatus !== subscription.status) {

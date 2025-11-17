@@ -230,6 +230,51 @@ const WompiWidgetMinimal = ({
     console.log('🔐 3DS v2 AUTENTICADO para owner')
     
     try {
+      // Si es renovación, usar endpoint directo de renovación
+      if (isRenewal) {
+        console.log('🔄 Procesando RENOVACIÓN de suscripción con 3DS')
+        
+        // Obtener token de autenticación
+        const token = localStorage.getItem('token')
+        if (!token) {
+          throw new Error('No hay token de autenticación')
+        }
+
+        // Llamar al endpoint de renovación
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+        const response = await fetch(`${API_BASE_URL}/api/wompi/renew-subscription`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            businessId: businessData.businessId,
+            planId: selectedPlan.id,
+            amount: finalAmount,
+            billingCycle: billingCycle
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || `HTTP ${response.status}`)
+        }
+
+        const result = await response.json()
+        console.log('✅ Renovación completada:', result)
+
+        if (handleSuccess) {
+          handleSuccess({
+            success: true,
+            transaction: result.data,
+            method: 'RENEWAL_3DS'
+          })
+        }
+        return
+      }
+
+      // Flujo normal de pago para suscripciones nuevas
       // Crear transacción 3DS v2 usando el hook
       const paymentData = {
           businessId: businessData.businessId,

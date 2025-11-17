@@ -31,6 +31,8 @@ import {
   Info as InfoIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import { StorageHelper } from '@bc/shared/src/utils/storage.js';
+import { STORAGE_KEYS } from '@bc/shared/src/constants/api.js';
 
 const StockInitial = () => {
   const [products, setProducts] = useState([]);
@@ -49,7 +51,21 @@ const StockInitial = () => {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/products', {
+      // Determinar businessId desde storage
+      let businessId;
+      try {
+        const userRaw = StorageHelper.getItem(STORAGE_KEYS.USER_DATA);
+        const user = userRaw ? JSON.parse(userRaw) : null;
+        businessId = user?.businessId || user?.business?.id;
+      } catch (e) {
+        businessId = null;
+      }
+
+      const endpoint = businessId ? 
+        `/api/business/${businessId}/products` : 
+        '/api/products';
+
+      const response = await axios.get(endpoint, {
         params: {
           isActive: true,
           trackInventory: true,
@@ -122,7 +138,21 @@ const StockInitial = () => {
       setSubmitting(true);
       setError(null);
       
-      const response = await axios.post('/api/products/bulk-initial-stock', {
+      // Determinar businessId desde storage para la ruta correcta
+      let businessId;
+      try {
+        const userRaw = StorageHelper.getItem(STORAGE_KEYS.USER_DATA);
+        const user = userRaw ? JSON.parse(userRaw) : null;
+        businessId = user?.businessId || user?.business?.id;
+      } catch (e) {
+        businessId = null;
+      }
+
+      const endpoint = businessId ? 
+        `/api/business/${businessId}/products/bulk-initial-stock` : 
+        '/api/products/bulk-initial-stock';
+
+      const response = await axios.post(endpoint, {
         products: stockItems.map(item => ({
           productId: item.productId,
           quantity: item.quantity,

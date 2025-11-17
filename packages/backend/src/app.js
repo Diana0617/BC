@@ -313,7 +313,7 @@ app.use('/api/calendar', calendarRoutes); // Rutas de calendario y disponibilida
 app.use('/api/services', serviceRoutes);
 app.use('/api/specialists', specialistRoutes); // Rutas de especialistas
 // app.use('/api/specialists', specialistServicesRoutes); // DEPRECATED: Ahora usando /api/business/:businessId/specialists/:specialistId/services
-app.use('/api/products', productRoutes);
+app.use('/api/business/:businessId/products', productRoutes); // Rutas de productos del negocio
 app.use('/api/financial', financialRoutes);
 app.use('/api/owner', ownerRoutes);
 app.use('/api/owner/business', ownerBusinessManagementRoutes);
