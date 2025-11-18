@@ -2,7 +2,8 @@
   "expo": {
     "name": "Business Control",
     "slug": "business-control-mobile",
-    "version": "1.0.1",
+    "owner": "codediana",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -16,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.businesscontrol.mobile",
-      "buildNumber": "1.0.1",
+      "buildNumber": "1.0.2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -28,7 +29,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.businesscontrol.mobile",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -42,7 +43,7 @@
     "extra": {
       "environment": "dev",
       "eas": {
-        "projectId": "f02c9edb-1999-4ca0-af17-56c670f7f6e5"
+        "projectId": "4d8814dd-52e9-4686-b94f-c9a0e63ea86d"
       }
     },
     "plugins": [
