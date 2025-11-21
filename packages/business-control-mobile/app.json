@@ -16,7 +16,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.businesscontrol.mobile",
+      "bundleIdentifier": "com.controldenegocios.app",
       "buildNumber": "1.0.2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -28,7 +28,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.businesscontrol.mobile",
+      "package": "com.controldenegocios.app",
       "versionCode": 3,
       "permissions": [
         "android.permission.CAMERA",

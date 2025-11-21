@@ -104,7 +104,7 @@ export default function LoginScreen({ navigation }) {
             contentContainerStyle={{ paddingBottom: 40 }}
           >
             <View style={{ paddingHorizontal: 24 }}>
-              {/* Business Control Logo */}
+              {/* Control de Negocios Logo */}
               <View style={{ alignItems: 'center', marginTop: 32, marginBottom: 32 }}>
                 <LinearGradient
                   colors={['#ec4899', '#8b5cf6']}

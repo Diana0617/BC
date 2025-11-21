@@ -175,7 +175,7 @@ class WhatsAppHelper {
     message += `⏰ *Recuerda llegar 10 minutos antes*\n\n`;
     message += `Si necesitas reagendar o cancelar, contáctanos lo antes posible.\n\n`;
     message += `¡Te esperamos! 💖\n\n`;
-    message += `_Mensaje enviado desde Business Control_`;
+    message += `_Mensaje enviado desde Control de Negocios_`;
 
     return message;
   }
