@@ -27,7 +27,7 @@
       "env": {
         "EXPO_PUBLIC_ENVIRONMENT": "staging",
         "EXPO_PUBLIC_API_URL": "https://bc-16wt.onrender.com",
-        "EXPO_PUBLIC_WEB_URL": "https://bc-nine-alpha.vercel.app/subscribe"
+        "EXPO_PUBLIC_WEB_URL": "https://www.controldenegocios.com/subscribe"
       }
     },
     "production": {
@@ -37,7 +37,7 @@
       "env": {
         "EXPO_PUBLIC_ENVIRONMENT": "prod",
         "EXPO_PUBLIC_API_URL": "https://bc-16wt.onrender.com",
-        "EXPO_PUBLIC_WEB_URL": "https://bc-nine-alpha.vercel.app/subscribe"
+        "EXPO_PUBLIC_WEB_URL": "https://www.controldenegocios.com/subscribe"
       }
     }
   },

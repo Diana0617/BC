@@ -45,7 +45,7 @@ Uncaught Error: useLocation() may be used only in the context of a <Router> comp
 
 ### Testing:
 1. **Clear browser cache** (Ctrl+Shift+Delete)
-2. Abre en **modo incógnito**: `https://bc-webapp-henna.vercel.app/`
+2. Abre en **modo incógnito**: `https://www.controldenegocios.com/`
 3. Login con `Owner@Owner.com`
 4. **Debe navegar correctamente** a `/owner/dashboard`
 5. Abre DevTools Console - **NO debe haber errores**

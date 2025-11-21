@@ -95,7 +95,7 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken, bil
         {invitationToken && (
           <div className="mt-6 p-3 sm:p-4 bg-yellow-100 border border-yellow-300 rounded-lg max-w-md mx-auto shadow-lg">
             <p className="text-yellow-900 font-medium text-sm sm:text-base">
-              🎉 ¡Has sido invitado por Business Control!
+              🎉 ¡Has sido invitado por Control de Negocios!
             </p>
             <p className="text-yellow-700 text-xs sm:text-sm mt-1">
               Disfruta de condiciones especiales en tu suscripción

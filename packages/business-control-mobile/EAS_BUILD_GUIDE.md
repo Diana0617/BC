@@ -228,7 +228,7 @@ eas credentials
 
 ### Producción
 - API: `https://bc-16wt.onrender.com`
-- Web: `https://bc-webapp-henna.vercel.app`
+- Web: `https://www.controldenegocios.com`
 
 ---
 

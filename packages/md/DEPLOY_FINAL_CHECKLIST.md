@@ -98,7 +98,7 @@ O simplemente:
 Una vez que Vercel termine:
 
 ### Test 1: Verificar que el error desapareció
-1. Abre la web app: `https://bc-webapp-henna.vercel.app/`
+1. Abre la web app: `https://www.controldenegocios.com/`
 2. Abre DevTools (F12) → Console
 3. **NO** debería aparecer el error de `useLocation()`
 4. La página debería cargar normalmente
@@ -165,7 +165,7 @@ curl https://bc-16wt.onrender.com/api/health
 
 ### Frontend Status
 ```bash
-curl -I https://bc-webapp-henna.vercel.app/
+curl -I https://www.controldenegocios.com/
 # Debería responder: 200 OK
 ```
 

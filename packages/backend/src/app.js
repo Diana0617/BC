@@ -64,8 +64,8 @@ app.use(helmet({
 // CORS configurado - Always allow production URLs
 const allowedOrigins = [
   // Production URLs
-  'https://bc-nine-alpha.vercel.app',
-  'https://bc-webapp-henna.vercel.app',
+  'https://www.controldenegocios.com',
+  'https://controldenegocios.com',
   process.env.WEB_URL,
   process.env.APP_URL,
   process.env.FRONTEND_URL,
@@ -90,10 +90,10 @@ app.use(cors({
       return callback(null, true);
     }
     
-    // Check regex patterns for Vercel preview deployments
+    // Check regex patterns for Vercel preview deployments and custom domain
     const vercelPatterns = [
+      /^https:\/\/.*\.controldenegocios\.com$/,
       /^https:\/\/bc-[a-z0-9]+-[a-z0-9]+-diana0617s-projects\.vercel\.app$/,
-      /^https:\/\/bc-nine-alpha-[a-z0-9]+\.vercel\.app$/,
       /^https:\/\/.*-diana0617s-projects\.vercel\.app$/
     ];
     
@@ -147,7 +147,7 @@ app.use('/api-docs', ...swaggerMiddleware, swaggerUi.serve, swaggerUi.setup(spec
 if (process.env.NODE_ENV === 'development') {
   app.use('/api-docs-dev', swaggerUi.serve, swaggerUi.setup(specs, {
     ...swaggerConfig,
-    customSiteTitle: "Beauty Control API Docs - DESARROLLO (Sin restricciones)"
+    customSiteTitle: "Control de Negocios API Docs - DESARROLLO (Sin restricciones)"
   }));
 }
 
@@ -199,7 +199,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     success: true,
-    message: 'Beauty Control API está funcionando',
+    message: 'Control de Negocios API está funcionando',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV
   });

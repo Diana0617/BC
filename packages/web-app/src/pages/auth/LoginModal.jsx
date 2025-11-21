@@ -77,7 +77,7 @@ const LoginModal = ({ isOpen, onClose }) => {
             <img src={logo} alt="Logo" className="h-10 w-auto sm:h-12" />
           </div>
           <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-2 bg-red-400 bg-clip-text text-transparent">
-            Business Control
+            Control de Negocios
           </h1>
           <p className="text-gray-600 text-base sm:text-lg text-center">
             Gestiona tu negocio de manera inteligente

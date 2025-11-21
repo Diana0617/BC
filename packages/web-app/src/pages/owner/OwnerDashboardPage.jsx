@@ -55,7 +55,7 @@ const OwnerDashboardPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-cyan-900">Dashboard Administrativo</h1>
           <p className="text-cyan-700 mt-1">
-            Resumen general de la plataforma <span className="font-bold text-plancyan-dark">Business Control</span>
+            Resumen general de la plataforma <span className="font-bold text-plancyan-dark">Control de Negocios</span>
           </p>
         </div>
         

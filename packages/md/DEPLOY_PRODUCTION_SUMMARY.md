@@ -3,7 +3,7 @@
 **Fecha**: 21 de Octubre 2025  
 **Branch**: main  
 **Backend**: Render (https://bc-16wt.onrender.com)  
-**Frontend**: Vercel (https://bc-webapp-henna.vercel.app)
+**Frontend**: Vercel (https://www.controldenegocios.com)
 
 ---
 
@@ -69,7 +69,7 @@ blocked by CORS: No 'Access-Control-Allow-Origin' header
 ```javascript
 // packages/backend/src/app.js
 origin: [
-  'https://bc-webapp-henna.vercel.app', // URL principal
+  'https://www.controldenegocios.com', // URL principal
   'https://bc-webapp.vercel.app',
   // Regex específico para preview deployments
   /^https:\/\/bc-webapp-[a-z0-9]+-diana0617s-projects\.vercel\.app$/,
@@ -198,7 +198,7 @@ Ctrl+Shift+Delete → All time → Clear
 Ctrl+Shift+N
 
 # Paso 3: Abrir App
-https://bc-webapp-henna.vercel.app/
+https://www.controldenegocios.com/
 
 # Paso 4: DevTools
 F12 → Console tab

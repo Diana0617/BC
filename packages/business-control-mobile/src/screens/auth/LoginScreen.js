@@ -131,7 +131,7 @@ export default function LoginScreen({ navigation }) {
                   marginBottom: 8,
                   textAlign: 'center'
                 }}>
-                  Business Control
+                  Control de Negocios
                 </Text>
                 <Text style={{ 
                   fontSize: 18, 
@@ -171,7 +171,7 @@ export default function LoginScreen({ navigation }) {
                   marginBottom: 8,
                   fontWeight: '500'
                 }}>
-                  Accede a tu cuenta de Business Control
+                  Accede a tu cuenta de Control de Negocios
                 </Text>
                 <Text style={{ 
                   fontSize: 12, 

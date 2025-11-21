@@ -140,7 +140,7 @@ const OwnerLayout = () => {
                 <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center shadow-lg transition hover:scale-105">
                   <span className="text-cyan-700 font-bold text-xl">BC</span>
                 </div>
-                <span className="ml-2 text-lg font-bold text-white group-hover:text-yellow-300 transition">Business Control</span>
+                <span className="ml-2 text-lg font-bold text-white group-hover:text-yellow-300 transition">Control de Negocios</span>
               </Link>
               <span className="ml-4 text-base font-semibold text-cyan-200 hidden sm:inline">Panel Owner</span>
             </div>
@@ -187,7 +187,7 @@ const SidebarContent = ({ navigation }) => (
         <div className="h-8 w-8 bg-white rounded-lg flex items-center justify-center shadow-lg transition hover:scale-105">
           <span className="text-cyan-700 font-bold text-lg">BC</span>
         </div>
-        <span className={`ml-2 font-semibold transition ${typeof isMobile !== 'undefined' && isMobile ? 'text-gray-100 group-hover:text-yellow-300' : 'text-white group-hover:text-yellow-300'}`}>Business Control</span>
+        <span className={`ml-2 font-semibold transition ${typeof isMobile !== 'undefined' && isMobile ? 'text-gray-100 group-hover:text-yellow-300' : 'text-white group-hover:text-yellow-300'}`}>Control de Negocios</span>
       </Link>
       <span className={`ml-2 text-xs hidden sm:inline ${typeof isMobile !== 'undefined' && isMobile ? 'text-gray-300' : 'text-cyan-200'}`}>Panel Owner</span>
     </div>
@@ -221,7 +221,7 @@ const SidebarContent = ({ navigation }) => (
     <div className="flex-shrink-0 flex border-t border-cyan-800 p-4">
       <div className="w-full">
         <div className="text-xs text-cyan-200 text-center">
-          Business Control v2.0
+          Control de Negocios v2.0
           <br />
           Sistema de Administración
         </div>

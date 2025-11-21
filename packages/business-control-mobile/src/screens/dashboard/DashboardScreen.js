@@ -65,7 +65,7 @@ export default function DashboardScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       {/* Header con branding */}
       <BrandedHeader 
-        title={branding?.businessName || 'Beauty Control'}
+        title={branding?.businessName || 'Control de Negocios'}
         subtitle={`Bienvenido, ${user?.firstName || 'Usuario'}`}
       />
 

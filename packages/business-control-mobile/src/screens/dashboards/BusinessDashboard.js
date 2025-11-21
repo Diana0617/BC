@@ -180,7 +180,7 @@ export default function BusinessDashboard({ navigation }) {
     <SafeAreaView style={styles.container}>
       {/* Header con branding */}
       <BrandedHeader 
-        title={branding?.businessName || user?.business?.name || 'Beauty Control'}
+        title={branding?.businessName || user?.business?.name || 'Control de Negocios'}
         subtitle={`¡Hola, ${user?.firstName || 'Propietario'}!`}
         rightComponent={
           <TouchableOpacity onPress={handleLogout} style={styles.logoutIconButton}>

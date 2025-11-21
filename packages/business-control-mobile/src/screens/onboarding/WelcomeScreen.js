@@ -42,7 +42,7 @@ function WelcomeScreen({ navigation }) {
             <View style={styles.logoCircle}>
               <Ionicons name="cut" size={40} color="#ec4899" />
             </View>
-            <Text style={styles.logoText}>Business Control</Text>
+            <Text style={styles.logoText}>Control de Negocios</Text>
             <Text style={styles.tagline}>Tu salón en la palma de tu mano</Text>
           </View>
         </View>
@@ -108,7 +108,7 @@ function WelcomeScreen({ navigation }) {
 
             {/* Features destacados */}
             <View style={styles.featuresContainer}>
-              <Text style={styles.featuresTitle}>¿Por qué Business Control?</Text>
+              <Text style={styles.featuresTitle}>¿Por qué Control de Negocios?</Text>
               <View style={styles.featuresGrid}>
                 <View style={styles.featureItem}>
                   <Ionicons name="calendar" size={24} color="#ec4899" />

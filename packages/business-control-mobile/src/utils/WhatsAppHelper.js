@@ -40,7 +40,7 @@ class WhatsAppHelper {
     if (receiptData.receipt) {
       const { receipt, appointment, business } = receiptData;
       
-      const businessName = business?.name || 'Business Control';
+      const businessName = business?.name || 'Control de Negocios';
       const receiptNumber = receipt?.receiptNumber || 'N/A';
       const specialistName = receipt?.specialistName || appointment?.specialist?.name || 'N/A';
       const serviceName = receipt?.serviceName || appointment?.service?.name || 'Servicio';
@@ -127,7 +127,7 @@ class WhatsAppHelper {
     }
     
     message += `¡Esperamos verte pronto! 💖\n\n`;
-    message += `_Mensaje enviado desde Business Control_`;
+    message += `_Mensaje enviado desde Control de Negocios_`;
 
     return message;
   }

@@ -275,7 +275,7 @@ const SubscriptionPage = () => {
                 <img src={logo} alt="Logo" className="h-10 w-auto sm:h-8" />
               </div>
               <h1 className="text-lg sm:text-2xl font-bold text-white tracking-wide text-center sm:text-left">
-                Business Control
+                Control de Negocios
               </h1>
               <span className="ml-0 sm:ml-2 mt-2 sm:mt-0 px-2 py-1 text-xs bg-yellow-400 text-gray-900 rounded-full font-semibold shadow text-center sm:text-left">
                 Business
@@ -430,7 +430,7 @@ const SubscriptionPage = () => {
         <footer className="bg-gradient-to-br from-gray-800 via-gray-900 to-gray-950 border-t mt-10 sm:mt-16">
           <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-6 sm:py-8">
             <div className="text-center">
-              <p className="text-xs sm:text-base text-gray-200 font-semibold">Business Control © 2025. Sistema de gestión para tu negocio.</p>
+              <p className="text-xs sm:text-base text-gray-200 font-semibold">Control de Negocios © 2025. Sistema de gestión para tu negocio.</p>
               <div className="mt-2">
                 <a href="/terms" className="text-red-400 hover:text-red-300 mr-4 font-semibold text-xs sm:text-base">
                   Términos y Condiciones
