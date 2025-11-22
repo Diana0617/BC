@@ -508,6 +508,8 @@ class ProductController {
       const { businessId } = req.user;
       const { id } = req.params;
 
+      console.log('📸 Uploading product image:', { businessId, productId: id, hasFile: !!req.file });
+
       const product = await Product.findOne({
         where: { id, businessId }
       });
@@ -533,11 +535,18 @@ class ProductController {
         'products'
       );
 
+      console.log('✅ Image uploaded to Cloudinary:', imageData);
+
       // Agregar nueva imagen al array de imágenes
       const currentImages = product.images || [];
       currentImages.push(imageData);
 
-      await product.update({ images: currentImages });
+      // Marcar el campo como cambiado para que Sequelize detecte el cambio en JSONB
+      product.changed('images', true);
+      product.images = currentImages;
+      await product.save();
+
+      console.log('✅ Product updated with new image, total images:', currentImages.length);
 
       res.json({
         success: true,

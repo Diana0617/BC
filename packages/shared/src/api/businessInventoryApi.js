@@ -447,14 +447,10 @@ export const uploadProductImage = async (productId, imageFile, description = '')
     formData.append('image', imageFile);
     if (description) formData.append('description', description);
 
+    // NO establecer Content-Type manualmente - axios lo hace automáticamente con el boundary correcto
     const response = await apiClient.post(
       `/business/config/inventory/products/${productId}/images`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
+      formData
     );
     return response.data;
   } catch (error) {

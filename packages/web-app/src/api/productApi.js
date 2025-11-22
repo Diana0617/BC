@@ -76,14 +76,10 @@ export const productApi = {
    * @param {FormData} formData - FormData con la imagen
    */
   uploadProductImage: async (businessId, productId, formData) => {
+    // NO establecer Content-Type manualmente - axios lo hace automáticamente con el boundary correcto
     const response = await apiClient.post(
       `/api/business/${businessId}/products/${productId}/images`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
+      formData
     );
     return response.data;
   },

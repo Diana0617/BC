@@ -10,12 +10,14 @@ import {
   PackagePlusIcon,
   Warehouse,
   ArrowLeftIcon,
-  HomeIcon
+  HomeIcon,
+  BookOpenIcon
 } from 'lucide-react';
 import StockInitial from './stock/StockInitial';
 import BranchInventoryView from './stock/BranchInventoryView';
 import PurchaseInvoices from './purchases/PurchaseInvoices';
 import ProductManagement from './products/ProductManagement';
+import SupplierCatalog from './catalog/SupplierCatalog';
 
 const InventoryDashboard = () => {
   const navigate = useNavigate();
@@ -51,6 +53,13 @@ const InventoryDashboard = () => {
       icon: PackageIcon,
       description: 'Gestión de productos',
       component: <ProductManagement />
+    },
+    {
+      id: 'catalogo',
+      name: 'Catálogo',
+      icon: BookOpenIcon,
+      description: 'Catálogo de productos de proveedores',
+      component: <SupplierCatalog />
     },
     {
       id: 'ventas',

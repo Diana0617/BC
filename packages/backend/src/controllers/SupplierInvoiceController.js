@@ -10,6 +10,7 @@ const {
 } = require('../models');
 const { uploadDocument } = require('../config/cloudinary');
 const { Op } = require('sequelize');
+const SupplierCatalogService = require('../services/SupplierCatalogService');
 
 /**
  * Controlador para gestión de facturas de proveedores

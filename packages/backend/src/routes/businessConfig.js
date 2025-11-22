@@ -2838,7 +2838,10 @@ router.get('/:businessId/config/inventory/abc-analysis', BusinessInventoryContro
  *       500:
  *         description: Error interno del servidor
  */
-router.post('/:businessId/config/inventory/products/:id/images', BusinessInventoryController.uploadProductImage);
+router.post('/:businessId/config/inventory/products/:id/images', 
+  uploadImageMiddleware.single('image'),
+  BusinessInventoryController.uploadProductImage
+);
 
 /**
  * @swagger

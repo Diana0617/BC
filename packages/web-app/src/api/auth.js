@@ -12,6 +12,14 @@ async request(endpoint, options = {}) {
   // Check if body is FormData to avoid setting Content-Type and stringifying
   const isFormData = options.body instanceof FormData;
   
+  console.log('🔍 Request details:', { 
+    url, 
+    method: options.method,
+    isFormData,
+    hasBody: !!options.body,
+    bodyType: options.body?.constructor?.name 
+  });
+  
   const config = {
     headers: {
       // Only set Content-Type for non-FormData requests
@@ -27,14 +35,28 @@ async request(endpoint, options = {}) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, config);
-  const data = await response.json();
+  console.log('📤 Sending request with config:', {
+    url,
+    method: config.method,
+    headers: config.headers,
+    hasBody: !!config.body
+  });
 
-  if (!response.ok) {
-    throw new Error(data.message || `HTTP error! status: ${response.status}`);
+  try {
+    const response = await fetch(url, config);
+    console.log('📥 Response received:', { status: response.status, ok: response.ok });
+    
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return { data };
+  } catch (error) {
+    console.error('❌ Request failed:', error);
+    throw error;
   }
-
-  return { data };
 }
   async get(endpoint, options = {}) {
     // Si hay params, convertirlos a query string
