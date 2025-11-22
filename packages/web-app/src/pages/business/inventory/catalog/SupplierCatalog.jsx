@@ -3,10 +3,10 @@ import { useSelector } from 'react-redux';
 import {
   BookOpenIcon,
   FunnelIcon,
-  DownloadIcon,
-  SearchIcon,
+  ArrowDownTrayIcon,
+  MagnifyingGlassIcon,
   XMarkIcon,
-  ImageIcon
+  PhotoIcon
 } from '@heroicons/react/24/outline';
 import supplierCatalogApi from '@shared/api/supplierCatalogApi';
 
@@ -130,7 +130,7 @@ const SupplierCatalog = () => {
               disabled={downloading || catalogItems.length === 0}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <DownloadIcon className="h-4 w-4" />
+              <ArrowDownTrayIcon className="h-4 w-4" />
               {downloading ? 'Generando...' : 'Descargar PDF'}
             </button>
           </div>
@@ -259,7 +259,7 @@ const SupplierCatalog = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <ImageIcon className="h-16 w-16 text-gray-300" />
+                    <PhotoIcon className="h-16 w-16 text-gray-300" />
                   )}
                 </div>
 

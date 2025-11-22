@@ -7,9 +7,17 @@ const SupplierCatalogItem = sequelize.define('SupplierCatalogItem', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  supplierId: {
+  businessId: {
     type: DataTypes.UUID,
     allowNull: false,
+    references: {
+      model: 'businesses',
+      key: 'id'
+    }
+  },
+  supplierId: {
+    type: DataTypes.UUID,
+    allowNull: true, // Ahora es opcional para items propios del negocio
     references: {
       model: 'suppliers',
       key: 'id'
@@ -117,8 +125,12 @@ const SupplierCatalogItem = sequelize.define('SupplierCatalogItem', {
       fields: ['price']
     },
     {
+      fields: ['businessId']
+    },
+    {
       unique: true,
-      fields: ['supplierId', 'supplierSku']
+      fields: ['businessId', 'supplierSku'],
+      name: 'unique_business_sku'
     }
   ]
 });

@@ -358,13 +358,29 @@ const StockInitial = () => {
       );
 
       if (result.success) {
-        const { summary } = result.data;
+        const { summary, errors: failedItems } = result.data;
         const branchName =
           branches.find((b) => b.id === selectedBranch)?.name || "Sucursal";
-        setSuccess(
-          `Stock inicial cargado en ${branchName}: ${summary.successful} exitosos, ${summary.failed} fallidos de ${summary.total} productos`
-        );
-        setStockItems([]);
+        
+        let message = `Stock inicial cargado en ${branchName}: ${summary.successful} exitosos, ${summary.failed} fallidos de ${summary.total} productos`;
+        
+        // Si hay errores, mostrar detalles
+        if (failedItems && failedItems.length > 0) {
+          const errorDetails = failedItems.map(err => {
+            const item = stockItems.find(s => s.productId === err.productId);
+            return `• ${item?.productName || 'Producto'}: ${err.error}`;
+          }).join('\n');
+          message += `\n\nErrores:\n${errorDetails}`;
+        }
+        
+        setSuccess(message);
+        
+        // Limpiar solo los items que se cargaron exitosamente
+        if (summary.successful > 0) {
+          const successfulIds = result.data.results.map(r => r.productId);
+          setStockItems(prev => prev.filter(item => !successfulIds.includes(item.productId)));
+        }
+        
         setConfirmDialog(false);
 
         // Reload products
@@ -423,13 +439,13 @@ const StockInitial = () => {
       {success && (
         <div className="rounded-md bg-green-50 p-4 border border-green-200">
           <div className="flex">
-            <CheckCircleIcon className="h-5 w-5 text-green-400" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-green-800">{success}</h3>
+            <CheckCircleIcon className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+            <div className="ml-3 flex-1">
+              <h3 className="text-sm font-medium text-green-800 whitespace-pre-line">{success}</h3>
             </div>
             <button
               onClick={() => setSuccess(null)}
-              className="ml-auto text-green-500 hover:text-green-700"
+              className="ml-auto text-green-500 hover:text-green-700 flex-shrink-0"
             >
               ×
             </button>

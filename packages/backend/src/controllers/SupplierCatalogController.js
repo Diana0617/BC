@@ -9,7 +9,7 @@ class SupplierCatalogController {
    */
   async getCatalog(req, res) {
     try {
-      const { businessId } = req.user;
+      const { businessId } = req.params;
       const filters = req.query;
 
       console.log('📋 Getting supplier catalog for business:', businessId, 'with filters:', filters);
@@ -32,7 +32,7 @@ class SupplierCatalogController {
    */
   async getCategories(req, res) {
     try {
-      const { businessId } = req.user;
+      const { businessId } = req.params;
 
       const categories = await SupplierCatalogService.getCategories(businessId);
 
@@ -55,7 +55,7 @@ class SupplierCatalogController {
    */
   async getSuppliers(req, res) {
     try {
-      const { businessId } = req.user;
+      const { businessId } = req.params;
 
       const suppliers = await Supplier.findAll({
         where: { businessId },
@@ -82,7 +82,7 @@ class SupplierCatalogController {
    */
   async uploadImage(req, res) {
     try {
-      const { businessId } = req.user;
+      const { businessId } = req.params;
       const { id } = req.params;
 
       console.log('📸 Uploading catalog item image:', { businessId, itemId: id, hasFile: !!req.file });
@@ -152,7 +152,7 @@ class SupplierCatalogController {
    */
   async generatePDF(req, res) {
     try {
-      const { businessId } = req.user;
+      const { businessId } = req.params;
       const filters = req.query;
 
       console.log('📄 Generating catalog PDF for business:', businessId);

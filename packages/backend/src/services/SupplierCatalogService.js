@@ -1,6 +1,7 @@
 const SupplierCatalogItem = require('../models/SupplierCatalogItem');
 const SupplierInvoice = require('../models/SupplierInvoice');
 const Supplier = require('../models/Supplier');
+const Product = require('../models/Product');
 const { Op } = require('sequelize');
 
 class SupplierCatalogService {
@@ -70,6 +71,71 @@ class SupplierCatalogService {
   }
 
   /**
+   * Agregar producto de stock inicial al catálogo
+   * Se ejecuta cuando se carga stock inicial de un producto
+   */
+  static async addFromInitialStock(businessId, productId, quantity, unitCost) {
+    try {
+      const product = await Product.findOne({
+        where: { id: productId, businessId }
+      });
+
+      if (!product) {
+        throw new Error('Producto no encontrado');
+      }
+
+      // Buscar si ya existe en el catálogo
+      const existingItem = await SupplierCatalogItem.findOne({
+        where: {
+          businessId,
+          supplierSku: product.sku || `STOCK-${productId.substring(0, 8)}`
+        }
+      });
+
+      const catalogData = {
+        businessId,
+        supplierId: null, // Sin proveedor (stock propio)
+        supplierSku: product.sku || `STOCK-${productId.substring(0, 8)}`,
+        name: product.name,
+        description: product.description || 'Producto de inventario inicial',
+        category: product.category || 'Sin categoría',
+        brand: product.brand || null,
+        price: unitCost || product.cost || product.price || 0,
+        currency: 'COP',
+        unit: product.unit || 'unidad',
+        available: true,
+        lastUpdate: new Date(),
+        images: product.images || [],
+        specifications: {
+          source: 'initial_stock',
+          initialQuantity: quantity
+        }
+      };
+
+      if (existingItem) {
+        // Actualizar item existente
+        await existingItem.update(catalogData);
+        return {
+          success: true,
+          item: existingItem,
+          updated: true
+        };
+      } else {
+        // Crear nuevo item en el catálogo
+        const newItem = await SupplierCatalogItem.create(catalogData);
+        return {
+          success: true,
+          item: newItem,
+          updated: false
+        };
+      }
+    } catch (error) {
+      console.error('Error adding product from initial stock to catalog:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Obtener catálogo con filtros
    */
   static async getCatalog(businessId, filters = {}) {
@@ -80,30 +146,32 @@ class SupplierCatalogService {
         available, 
         search,
         minPrice,
-        maxPrice,
-        page = 1, 
-        limit = 50 
+        maxPrice
       } = filters;
 
-      const where = {};
+      // Validar y parsear page y limit
+      const page = parseInt(filters.page) || 1;
+      const limit = parseInt(filters.limit) || 50;
+
+      console.log('🔍 Catalog Service - Input:', { businessId, filters, parsedPage: page, parsedLimit: limit });
+
+      const where = { businessId }; // Siempre filtrar por businessId
 
       // Filtrar por proveedor
       if (supplierId) {
         where.supplierId = supplierId;
-      } else {
-        // Solo traer items de proveedores del negocio
-        const suppliers = await Supplier.findAll({
-          where: { businessId },
-          attributes: ['id']
-        });
-        where.supplierId = {
-          [Op.in]: suppliers.map(s => s.id)
-        };
+      } else if (supplierId !== undefined) {
+        // Si supplierId es explícitamente null, mostrar solo items sin proveedor
+        // Si no se especifica, mostrar todos (con y sin proveedor)
       }
 
       // Filtros adicionales
       if (category) where.category = category;
-      if (available !== undefined) where.available = available === 'true';
+      if (available !== undefined && available !== null && available !== '') {
+        where.available = available === 'true' || available === true;
+      }
+      
+      console.log('🔍 Catalog Service - Where clause:', JSON.stringify(where, null, 2));
       
       // Búsqueda por nombre o SKU
       if (search) {
@@ -115,8 +183,18 @@ class SupplierCatalogService {
       }
 
       // Filtro por rango de precio
-      if (minPrice) where.price = { ...where.price, [Op.gte]: minPrice };
-      if (maxPrice) where.price = { ...where.price, [Op.lte]: maxPrice };
+      if (minPrice !== undefined && minPrice !== null && minPrice !== '') {
+        const minPriceNum = parseFloat(minPrice);
+        if (!isNaN(minPriceNum)) {
+          where.price = { ...where.price, [Op.gte]: minPriceNum };
+        }
+      }
+      if (maxPrice !== undefined && maxPrice !== null && maxPrice !== '') {
+        const maxPriceNum = parseFloat(maxPrice);
+        if (!isNaN(maxPriceNum)) {
+          where.price = { ...where.price, [Op.lte]: maxPriceNum };
+        }
+      }
 
       const offset = (page - 1) * limit;
 
@@ -150,17 +228,8 @@ class SupplierCatalogService {
    */
   static async getCategories(businessId) {
     try {
-      const suppliers = await Supplier.findAll({
-        where: { businessId },
-        attributes: ['id']
-      });
-
       const categories = await SupplierCatalogItem.findAll({
-        where: {
-          supplierId: {
-            [Op.in]: suppliers.map(s => s.id)
-          }
-        },
+        where: { businessId },
         attributes: ['category'],
         group: ['category'],
         raw: true

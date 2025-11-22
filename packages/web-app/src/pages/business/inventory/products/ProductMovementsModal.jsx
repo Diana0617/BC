@@ -38,11 +38,13 @@ const ProductMovementsModal = ({ product, onClose }) => {
       };
 
       // Filtrar por tipo si no es "all"
+      // Los valores deben coincidir con el ENUM de InventoryMovement
       if (filter === 'entries') {
-        params.movementType = 'INITIAL_STOCK,PURCHASE,ADJUSTMENT_IN,TRANSFER_IN';
+        params.movementType = 'INITIAL_STOCK,PURCHASE';
       } else if (filter === 'exits') {
-        params.movementType = 'SALE,PROCEDURE,ADJUSTMENT_OUT,TRANSFER_OUT';
+        params.movementType = 'SALE';
       }
+      // ADJUSTMENT y TRANSFER pueden ser entrada o salida según quantity (positivo/negativo)
 
       const response = await productApi.getProductMovements(
         user.businessId, 
@@ -66,20 +68,20 @@ const ProductMovementsModal = ({ product, onClose }) => {
     }
   };
 
-  const getMovementIcon = (movementType) => {
-    if (['INITIAL_STOCK', 'PURCHASE', 'ADJUSTMENT_IN', 'TRANSFER_IN'].includes(movementType)) {
+  const getMovementIcon = (movement) => {
+    const isEntry = movement.quantity > 0 || ['INITIAL_STOCK', 'PURCHASE'].includes(movement.movementType);
+    
+    if (isEntry) {
       return <TrendingUpIcon className="h-5 w-5 text-green-600" />;
-    } else if (movementType === 'SALE') {
+    } else if (movement.movementType === 'SALE') {
       return <ShoppingCartIcon className="h-5 w-5 text-blue-600" />;
-    } else if (movementType === 'PROCEDURE') {
-      return <ScissorsIcon className="h-5 w-5 text-purple-600" />;
     } else {
       return <TrendingDownIcon className="h-5 w-5 text-red-600" />;
     }
   };
 
-  const getMovementBadge = (movementType) => {
-    const isEntry = ['INITIAL_STOCK', 'PURCHASE', 'ADJUSTMENT_IN', 'TRANSFER_IN'].includes(movementType);
+  const getMovementBadge = (movement) => {
+    const isEntry = movement.quantity > 0 || ['INITIAL_STOCK', 'PURCHASE'].includes(movement.movementType);
     
     if (isEntry) {
       return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Entrada</span>;
@@ -88,17 +90,17 @@ const ProductMovementsModal = ({ product, onClose }) => {
     }
   };
 
-  const getMovementTypeLabel = (movementType) => {
+  const getMovementTypeLabel = (movement) => {
+    const { movementType, quantity } = movement;
     const labels = {
       INITIAL_STOCK: 'Stock Inicial',
       PURCHASE: 'Compra',
       SALE: 'Venta',
-      PROCEDURE: 'Uso en procedimiento',
-      ADJUSTMENT_IN: 'Ajuste (Entrada)',
-      ADJUSTMENT_OUT: 'Ajuste (Salida)',
-      TRANSFER_IN: 'Transferencia (Entrada)',
-      TRANSFER_OUT: 'Transferencia (Salida)',
-      RETURN: 'Devolución'
+      ADJUSTMENT: quantity > 0 ? 'Ajuste (Entrada)' : 'Ajuste (Salida)',
+      TRANSFER: quantity > 0 ? 'Transferencia (Entrada)' : 'Transferencia (Salida)',
+      RETURN: 'Devolución',
+      DAMAGE: 'Daño',
+      EXPIRED: 'Vencido'
     };
     return labels[movementType] || movementType;
   };
@@ -195,13 +197,13 @@ const ProductMovementsModal = ({ product, onClose }) => {
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
                       <div className="mt-1">
-                        {getMovementIcon(movement.movementType)}
+                        {getMovementIcon(movement)}
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          {getMovementBadge(movement.movementType)}
+                          {getMovementBadge(movement)}
                           <span className="text-sm text-gray-600">
-                            {getMovementTypeLabel(movement.movementType)}
+                            {getMovementTypeLabel(movement)}
                           </span>
                         </div>
                         <div className="text-sm text-gray-500 flex items-center gap-4 mt-2">

@@ -4,6 +4,7 @@ const { sequelize } = require('../config/database');
 const { Op } = require('sequelize');
 const { uploadResponsiveImage } = require('../config/cloudinary');
 const { v2: cloudinary } = require('cloudinary');
+const SupplierCatalogService = require('../services/SupplierCatalogService');
 
 class ProductController {
   /**
@@ -463,6 +464,19 @@ class ProductController {
             notes: 'Stock inicial - carga masiva'
           }, { transaction });
 
+          // Agregar producto al catálogo
+          try {
+            await SupplierCatalogService.addFromInitialStock(
+              businessId,
+              product.id,
+              quantity,
+              unitCost || product.cost
+            );
+          } catch (catalogError) {
+            console.error('Error adding to catalog:', catalogError);
+            // No fallar si hay error en el catálogo
+          }
+
           results.push({
             productId: product.id,
             productName: product.name,
@@ -483,8 +497,11 @@ class ProductController {
       res.json({
         success: true,
         data: {
-          processed: results.length,
-          errors: errors.length,
+          summary: {
+            successful: results.length,
+            failed: errors.length,
+            total: products.length
+          },
           results,
           errors
         },
@@ -654,9 +671,12 @@ class ProductController {
         productId: id 
       };
 
-      // Filtro por tipo de movimiento
+      // Filtro por tipo de movimiento (soporta múltiples valores separados por coma)
       if (movementType) {
-        where.movementType = movementType;
+        const types = movementType.includes(',') 
+          ? movementType.split(',').map(t => t.trim())
+          : [movementType];
+        where.movementType = types.length > 1 ? { [Op.in]: types } : types[0];
       }
 
       // Filtro por rango de fechas
@@ -680,12 +700,7 @@ class ProductController {
           },
           {
             association: 'appointment',
-            attributes: ['id', 'appointmentDate'],
-            required: false
-          },
-          {
-            association: 'sale',
-            attributes: ['id', 'saleDate', 'total'],
+            attributes: ['id', 'startTime', 'appointmentNumber'],
             required: false
           }
         ]

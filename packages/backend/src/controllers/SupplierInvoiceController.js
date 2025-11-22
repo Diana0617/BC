@@ -249,7 +249,8 @@ class SupplierInvoiceController {
             cost: item.unitCost,
             unit: item.productData.unit || 'unidad',
             trackInventory: true,
-            isActive: true
+            isActive: true,
+            images: item.productData.images || [] // Incluir imágenes si se proporcionan
           }, { transaction });
 
           finalProductId = newProduct.id;
@@ -419,6 +420,7 @@ class SupplierInvoiceController {
         // 🆕 AUTO-GENERAR CATÁLOGO DEL PROVEEDOR
         // Crear o actualizar item en el catálogo del proveedor
         const catalogItemData = {
+          businessId,
           supplierId: invoice.supplierId,
           supplierSku: product.sku || `${invoice.supplierId}-${item.productId}`,
           name: product.name,
@@ -436,7 +438,7 @@ class SupplierInvoiceController {
         // Buscar si ya existe en el catálogo
         const existingCatalogItem = await SupplierCatalogItem.findOne({
           where: {
-            supplierId: invoice.supplierId,
+            businessId,
             supplierSku: catalogItemData.supplierSku
           },
           transaction

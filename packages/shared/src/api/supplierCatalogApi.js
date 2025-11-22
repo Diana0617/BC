@@ -1,4 +1,4 @@
-import { apiClient } from './auth';
+import { apiClient } from './client';
 
 /**
  * API para gestión de catálogo de proveedores

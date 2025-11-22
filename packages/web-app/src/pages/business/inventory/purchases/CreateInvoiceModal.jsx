@@ -63,7 +63,9 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
       category: '',
       brand: '',
       unit: 'unidad'
-    }
+    },
+    images: [], // Array de URLs de imágenes para productos nuevos
+    uploadingImage: false
   }]);
 
   // File upload
@@ -181,8 +183,77 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
         category: '',
         brand: '',
         unit: 'unidad'
-      }
+      },
+      images: [],
+      uploadingImage: false
     }]);
+  };
+
+  const handleProductImageUpload = async (index, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setError('Solo se permiten imágenes (JPG, PNG, WEBP)');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('La imagen no debe superar los 5MB');
+      return;
+    }
+
+    try {
+      const newItems = [...items];
+      newItems[index].uploadingImage = true;
+      setItems(newItems);
+      setError(null);
+
+      const response = await cloudinaryApi.uploadProductImage(
+        user.businessId,
+        file,
+        `invoice-product-${Date.now()}`
+      );
+
+      if (response.success) {
+        const updatedItems = [...items];
+        updatedItems[index].images = [
+          ...updatedItems[index].images,
+          {
+            url: response.data.url,
+            publicId: response.data.publicId
+          }
+        ];
+        updatedItems[index].uploadingImage = false;
+        setItems(updatedItems);
+      }
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      setError('Error al subir la imagen');
+      const newItems = [...items];
+      newItems[index].uploadingImage = false;
+      setItems(newItems);
+    }
+  };
+
+  const handleRemoveProductImage = async (itemIndex, imageIndex) => {
+    const item = items[itemIndex];
+    const image = item.images[imageIndex];
+
+    if (image?.publicId) {
+      try {
+        await cloudinaryApi.deleteFile(user.businessId, image.publicId);
+      } catch (err) {
+        console.error('Error deleting image:', err);
+      }
+    }
+
+    const newItems = [...items];
+    newItems[itemIndex].images = newItems[itemIndex].images.filter((_, i) => i !== imageIndex);
+    setItems(newItems);
   };
 
   const removeItem = (index) => {
@@ -331,7 +402,8 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
             category: item.productData.category,
             brand: item.productData.brand,
             unit: item.productData.unit,
-            price: parseFloat(item.unitCost) * 1.3 // 30% markup
+            price: parseFloat(item.unitCost) * 1.3, // 30% markup
+            images: item.images || [] // Incluir imágenes del producto
           };
           itemData.productName = item.productData.name;
           itemData.sku = item.productData.sku;
@@ -769,6 +841,51 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                             placeholder="Marca"
                           />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-2">
+                            Imágenes del Producto
+                          </label>
+                          <div className="space-y-2">
+                            {/* Preview de imágenes */}
+                            {item.images && item.images.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {item.images.map((img, imgIndex) => (
+                                  <div key={imgIndex} className="relative group">
+                                    <img
+                                      src={img.url}
+                                      alt="Producto"
+                                      className="w-16 h-16 object-cover rounded border border-gray-300"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveProductImage(index, imgIndex)}
+                                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <XIcon className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {/* Botón para subir imagen */}
+                            <div>
+                              <label className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer">
+                                <UploadIcon className="w-4 h-4 mr-2" />
+                                {item.uploadingImage ? 'Subiendo...' : 'Agregar Imagen'}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handleProductImageUpload(index, e)}
+                                  disabled={item.uploadingImage}
+                                  className="hidden"
+                                />
+                              </label>
+                              <p className="mt-1 text-xs text-gray-500">
+                                JPG, PNG o WEBP (máx. 5MB)
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ) : (
