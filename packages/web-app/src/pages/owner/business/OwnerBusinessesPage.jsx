@@ -402,43 +402,49 @@ const OwnerBusinessesPage = () => {
                       {business.createdAt ? new Date(business.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {business.subscriptions?.[0] ? (
-                        <div className="space-y-2">
-                          {/* Plan name */}
-                          <div className="text-sm font-medium text-gray-900">
-                            {business.subscriptions[0].plan?.name || 'Plan'}
+                      {(() => {
+                        // Buscar la suscripción activa o la más reciente
+                        const activeSub = business.subscriptions?.find(sub => sub.status === 'ACTIVE');
+                        const currentSub = activeSub || business.subscriptions?.[0];
+                        
+                        return currentSub ? (
+                          <div className="space-y-2">
+                            {/* Plan name */}
+                            <div className="text-sm font-medium text-gray-900">
+                              {currentSub.plan?.name || 'Plan'}
+                            </div>
+                            
+                            {/* Status badge with trial/payment distinction */}
+                            <SubscriptionStatusBadge 
+                              subscription={currentSub} 
+                              compact={false}
+                              showDetails={false}
+                            />
+                            
+                            {/* Dates */}
+                            <div className="text-xs text-gray-500 space-y-0.5">
+                              {currentSub.status === 'TRIAL' ? (
+                                <>
+                                  <div>Trial termina: {currentSub.trialEndDate ? new Date(currentSub.trialEndDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</div>
+                                  <div className="text-blue-600 font-medium">
+                                    Primer cobro: {currentSub.trialEndDate ? new Date(currentSub.trialEndDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div>Inicio: {currentSub.startDate ? new Date(currentSub.startDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</div>
+                                  <div>Vence: {currentSub.endDate ? new Date(currentSub.endDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</div>
+                                </>
+                              )}
+                            </div>
                           </div>
-                          
-                          {/* Status badge with trial/payment distinction */}
-                          <SubscriptionStatusBadge 
-                            subscription={business.subscriptions[0]} 
-                            compact={false}
-                            showDetails={false}
-                          />
-                          
-                          {/* Dates */}
-                          <div className="text-xs text-gray-500 space-y-0.5">
-                            {business.subscriptions[0].status === 'TRIAL' ? (
-                              <>
-                                <div>Trial termina: {business.subscriptions[0].trialEndDate ? new Date(business.subscriptions[0].trialEndDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</div>
-                                <div className="text-blue-600 font-medium">
-                                  Primer cobro: {business.subscriptions[0].trialEndDate ? new Date(business.subscriptions[0].trialEndDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div>Inicio: {business.subscriptions[0].startDate ? new Date(business.subscriptions[0].startDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</div>
-                                <div>Vence: {business.subscriptions[0].endDate ? new Date(business.subscriptions[0].endDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          <XCircleIcon className="w-4 h-4" />
-                          Sin suscripción
-                        </span>
-                      )}
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            <XCircleIcon className="w-4 h-4" />
+                            Sin suscripción
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
