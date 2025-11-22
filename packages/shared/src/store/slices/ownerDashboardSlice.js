@@ -254,7 +254,22 @@ const ownerDashboardSlice = createSlice({
       })
       .addCase(fetchMainMetrics.fulfilled, (state, action) => {
         state.loading.mainMetrics = false;
-        state.mainMetrics = action.payload;
+        
+        // Transformar la estructura del backend al formato esperado por el frontend
+        const { revenue, subscriptions, businesses } = action.payload;
+        state.mainMetrics = {
+          totalRevenue: revenue?.total || 0,
+          totalSubscriptions: subscriptions?.active || 0,
+          totalBusinesses: businesses?.total || 0,
+          revenueTrend: revenue?.trend || 0,
+          growthRate: businesses?.growthRate || 0,
+          revenueThisMonth: revenue?.thisMonth || 0,
+          newBusinessesThisMonth: businesses?.newThisMonth || 0,
+          subscriptionsByStatus: subscriptions?.byStatus || {},
+          averageRevenue: revenue?.average || 0,
+          subscriptionTrend: subscriptions?.trend || 0
+        };
+        
         state.ui.lastRefresh = new Date().toISOString();
       })
       .addCase(fetchMainMetrics.rejected, (state, action) => {

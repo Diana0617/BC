@@ -19,8 +19,20 @@ class PaginationService {
    * @returns {Object} Resultado paginado
    */
   static async paginate(model, options = {}) {
-    const { req, where = {}, include = [], order = [['createdAt', 'DESC']], attributes } = options;
-    const { page, limit, offset } = this.getPaginationParams(req || {});
+    const { req, page: directPage, limit: directLimit, where = {}, include = [], order = [['createdAt', 'DESC']], attributes } = options;
+    
+    // Si se pasa page y limit directamente, usarlos; si no, obtenerlos de req
+    let page, limit, offset;
+    if (directPage && directLimit) {
+      page = Math.max(1, parseInt(directPage) || 1);
+      limit = Math.min(parseInt(directLimit) || 10, 100);
+      offset = (page - 1) * limit;
+    } else {
+      const params = this.getPaginationParams(req || {});
+      page = params.page;
+      limit = params.limit;
+      offset = params.offset;
+    }
     
     const searchQuery = {
       where,

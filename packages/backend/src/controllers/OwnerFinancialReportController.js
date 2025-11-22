@@ -207,12 +207,12 @@ class OwnerFinancialReportController {
       const paymentStats = await SubscriptionPayment.findOne({
         attributes: [
           [literal('COUNT(*)'), 'totalPayments'],
-          [literal('COUNT(CASE WHEN status = \'COMPLETED\' THEN 1 END)'), 'completedPayments'],
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."amount" ELSE 0 END)'), 'totalRevenue'],
+          [literal('COUNT(CASE WHEN status = \'APPROVED\' THEN 1 END)'), 'completedPayments'],
+          [literal('SUM(CASE WHEN status = \'APPROVED\' THEN "SubscriptionPayment"."amount" ELSE 0 END)'), 'totalRevenue'],
           // Use quoted model attribute names to match the actual column created by the model (camelCase)
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."netAmount" ELSE 0 END)'), 'netRevenue'],
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."commissionFee" ELSE 0 END)'), 'totalCommissions'],
-          [literal('AVG(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."amount" END)'), 'avgPaymentAmount']
+          [literal('SUM(CASE WHEN status = \'APPROVED\' THEN "SubscriptionPayment"."netAmount" ELSE 0 END)'), 'netRevenue'],
+          [literal('SUM(CASE WHEN status = \'APPROVED\' THEN "SubscriptionPayment"."commissionFee" ELSE 0 END)'), 'totalCommissions'],
+          [literal('AVG(CASE WHEN status = \'APPROVED\' THEN "SubscriptionPayment"."amount" END)'), 'avgPaymentAmount']
         ],
         where: {
           paidAt: {
@@ -257,7 +257,7 @@ class OwnerFinancialReportController {
                 as: 'payments',
                 attributes: [],
                 where: {
-                  status: 'COMPLETED',
+                  status: 'APPROVED',
                   paidAt: {
                     [Op.between]: [startDate, endDate]
                   }
@@ -354,14 +354,14 @@ class OwnerFinancialReportController {
       const paymentData = await SubscriptionPayment.findOne({
         attributes: [
           [literal('COUNT(*)'), 'totalPayments'],
-          [literal('COUNT(CASE WHEN status = \'COMPLETED\' THEN 1 END)'), 'completedPayments'],
+          [literal('COUNT(CASE WHEN status = \'APPROVED\' THEN 1 END)'), 'completedPayments'],
           [literal('COUNT(CASE WHEN status = \'PENDING\' THEN 1 END)'), 'pendingPayments'],
           [literal('COUNT(CASE WHEN status = \'FAILED\' THEN 1 END)'), 'failedPayments'],
           [literal('COUNT(CASE WHEN status IN (\'REFUNDED\', \'PARTIALLY_REFUNDED\') THEN 1 END)'), 'refundedPayments'],
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."amount" ELSE 0 END)'), 'totalRevenue'],
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."netAmount" ELSE 0 END)'), 'netRevenue'],
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "SubscriptionPayment"."commissionFee" ELSE 0 END)'), 'totalCommissions'],
-          [literal('AVG(CASE WHEN status = \'COMPLETED\' THEN ("SubscriptionPayment"."commissionFee" / NULLIF("SubscriptionPayment"."amount",0)) * 100 END)'), 'avgCommissionRate']
+          [literal('SUM(CASE WHEN status = \'APPROVED\' THEN "SubscriptionPayment"."amount" ELSE 0 END)'), 'totalRevenue'],
+          [literal('SUM(CASE WHEN status = \'APPROVED\' THEN "SubscriptionPayment"."netAmount" ELSE 0 END)'), 'netRevenue'],
+          [literal('SUM(CASE WHEN status = \'APPROVED\' THEN "SubscriptionPayment"."commissionFee" ELSE 0 END)'), 'totalCommissions'],
+          [literal('AVG(CASE WHEN status = \'APPROVED\' THEN ("SubscriptionPayment"."commissionFee" / NULLIF("SubscriptionPayment"."amount",0)) * 100 END)'), 'avgCommissionRate']
         ],
         where: {
           createdAt: {

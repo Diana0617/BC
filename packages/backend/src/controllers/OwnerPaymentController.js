@@ -23,10 +23,12 @@ class OwnerPaymentController {
         startDate, 
         endDate, 
         businessId,
-        hasReceipt,
-        page = 1, 
-        limit = 20 
+        hasReceipt
       } = req.query;
+
+      // Parse pagination with defaults
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
 
       // Construir filtros
       const where = {};
@@ -55,8 +57,8 @@ class OwnerPaymentController {
       const includeWhere = businessId ? { id: businessId } : {};
 
       const result = await PaginationService.paginate(SubscriptionPayment, {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page,
+        limit,
         where,
         include: [
           {
@@ -98,7 +100,7 @@ class OwnerPaymentController {
           [literal('COUNT(CASE WHEN status = \'PENDING\' THEN 1 END)'), 'pending'],
           [literal('COUNT(CASE WHEN status = \'FAILED\' THEN 1 END)'), 'failed'],
           [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN amount ELSE 0 END)'), 'totalRevenue'],
-          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN net_amount ELSE 0 END)'), 'netRevenue']
+          [literal('SUM(CASE WHEN status = \'COMPLETED\' THEN "netAmount" ELSE 0 END)'), 'netRevenue']
         ],
         where,
         include: businessId ? [{

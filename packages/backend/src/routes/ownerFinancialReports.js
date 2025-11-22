@@ -241,83 +241,8 @@ router.get('/', OwnerFinancialReportController.getAllReports);
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.get('/executive-summary', OwnerFinancialReportController.getExecutiveSummary);
-
-/**
- * @swagger
- * /api/owner/financial-reports/{id}:
- *   get:
- *     tags:
- *       - Owner Financial Reports
- *     summary: Obtener reporte específico por ID
- *     description: Recupera un reporte financiero específico con todos sus detalles, métricas y datos históricos
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: ID único del reporte financiero
- *         example: "123e4567-e89b-12d3-a456-426614174000"
- *     responses:
- *       200:
- *         description: Reporte encontrado exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   $ref: '#/components/schemas/OwnerFinancialReport'
- *             example:
- *               success: true
- *               data:
- *                 id: "123e4567-e89b-12d3-a456-426614174000"
- *                 reportType: "MONTHLY"
- *                 reportPeriod: "2024-01"
- *                 startDate: "2024-01-01T00:00:00Z"
- *                 endDate: "2024-01-31T23:59:59Z"
- *                 status: "COMPLETED"
- *                 totalRevenue: 2500000
- *                 subscriptionRevenue: 2100000
- *                 netRevenue: 2375000
- *                 totalPayments: 125
- *                 completedPayments: 118
- *                 failedPayments: 7
- *                 newSubscriptions: 5
- *                 renewedSubscriptions: 23
- *                 canceledSubscriptions: 2
- *                 activeSubscriptions: 30
- *                 churnRate: 6.67
- *                 retentionRate: 93.33
- *                 revenueByPlan:
- *                   "Plan Básico": 600000
- *                   "Plan Pro": 1200000
- *                   "Plan Premium": 700000
- *                 generatedAt: "2024-02-01T09:00:00Z"
- *                 generatedBy: "AUTOMATIC"
- *       404:
- *         description: Reporte no encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *             example:
- *               success: false
- *               message: "Reporte financiero no encontrado"
- *               error: "FINANCIAL_REPORT_NOT_FOUND"
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
- *       403:
- *         $ref: '#/components/responses/ForbiddenError'
- *       500:
- *         $ref: '#/components/responses/InternalServerError'
- */
-router.get('/:id', OwnerFinancialReportController.getReportById);
+// Alias for backwards compatibility
+router.get('/summary', OwnerFinancialReportController.getExecutiveSummary);
 
 /**
  * @swagger
@@ -550,5 +475,38 @@ router.post('/generate', OwnerFinancialReportController.generateReport);
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.delete('/:id', OwnerFinancialReportController.deleteReport);
+
+/**
+ * @swagger
+ * /api/owner/financial-reports/{id}:
+ *   get:
+ *     tags:
+ *       - Owner Financial Reports
+ *     summary: Obtener reporte específico por ID
+ *     description: Recupera un reporte financiero específico con todos sus detalles, métricas y datos históricos
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID único del reporte financiero
+ *         example: "123e4567-e89b-12d3-a456-426614174000"
+ *     responses:
+ *       200:
+ *         description: Reporte encontrado exitosamente
+ *       404:
+ *         description: Reporte no encontrado
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+// IMPORTANT: /:id must be last to avoid matching specific routes like /summary or /generate
+router.get('/:id', OwnerFinancialReportController.getReportById);
 
 module.exports = router;

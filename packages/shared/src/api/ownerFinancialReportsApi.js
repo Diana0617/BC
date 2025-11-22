@@ -249,26 +249,42 @@ export const ownerFinancialReportsApi = {
       if (params.endDate) queryParams.append('endDate', params.endDate);
       if (params.businessId) queryParams.append('businessId', params.businessId);
       if (params.currency) queryParams.append('currency', params.currency);
+      if (params.period) queryParams.append('period', params.period);
       
       const response = await api.get(`${FINANCIAL_REPORTS_ENDPOINTS.FINANCIAL_SUMMARY}?${queryParams}`);
       
+      // Debug: ver estructura real
+      console.log('🔍 Financial Summary Response:', response);
+      console.log('🔍 Response.data:', response.data);
+      
+      // El backend puede devolver response.data directamente o response.data.data
+      const actualData = response.data?.data || response.data;
+      console.log('🔍 Actual Data:', actualData);
+      
+      const { payments = {}, subscriptions = {}, topPlans = [] } = actualData || {};
+      
       return {
-        totalRevenue: response.data.totalRevenue || 0,
-        netRevenue: response.data.netRevenue || 0,
-        totalExpenses: response.data.totalExpenses || 0,
-        grossProfit: response.data.grossProfit || 0,
-        profitMargin: response.data.profitMargin || 0,
-        totalCommissions: response.data.totalCommissions || 0,
-        totalRefunds: response.data.totalRefunds || 0,
-        totalDisputes: response.data.totalDisputes || 0,
-        activeSubscriptions: response.data.activeSubscriptions || 0,
-        totalBusinesses: response.data.totalBusinesses || 0,
-        averageRevenuePerBusiness: response.data.averageRevenuePerBusiness || 0,
-        revenueGrowth: response.data.revenueGrowth || 0,
-        monthlyRecurringRevenue: response.data.monthlyRecurringRevenue || 0,
-        keyMetrics: response.data.keyMetrics || {},
-        trends: response.data.trends || {},
-        alerts: response.data.alerts || []
+        totalRevenue: payments.totalRevenue || 0,
+        netRevenue: payments.netRevenue || 0,
+        totalExpenses: 0, // No viene del backend aún
+        grossProfit: (payments.totalRevenue || 0) - (payments.totalCommissions || 0),
+        profitMargin: 0, // Calcular si es necesario
+        totalCommissions: payments.totalCommissions || 0,
+        totalRefunds: 0, // No viene del backend aún
+        totalDisputes: 0, // No viene del backend aún
+        activeSubscriptions: subscriptions.active || 0,
+        totalBusinesses: 0, // No viene del backend aún
+        averageRevenuePerBusiness: payments.avgPaymentAmount || 0,
+        revenueGrowth: 0, // No viene del backend aún
+        monthlyRecurringRevenue: payments.totalRevenue || 0,
+        // Incluir datos adicionales del backend
+        period: actualData.period,
+        payments: payments,
+        subscriptions: subscriptions,
+        topPlans: topPlans,
+        keyMetrics: {},
+        trends: {},
+        alerts: []
       };
     } catch (error) {
       console.error('Error fetching financial summary:', error);
