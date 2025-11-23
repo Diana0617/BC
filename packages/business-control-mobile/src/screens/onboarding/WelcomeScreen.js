@@ -17,16 +17,34 @@ import ENV from '../../config/env';
 const { width, height } = Dimensions.get('window');
 
 function WelcomeScreen({ navigation }) {
-  const handleHaveApp = () => {
+  const handleLogin = () => {
     navigation.navigate('Login');
   };
 
-  const handleDontHaveApp = async () => {
+  const handleSignUp = async () => {
     const subscribeUrl = ENV.subscribeUrl; // URL específica para registro/suscripción
     try {
       await Linking.openURL(subscribeUrl);
     } catch (error) {
       console.error('Error al abrir la URL:', error);
+    }
+  };
+
+  const handleTerms = async () => {
+    const termsUrl = 'https://controldenegocios.com/terminos';
+    try {
+      await Linking.openURL(termsUrl);
+    } catch (error) {
+      console.error('Error al abrir términos:', error);
+    }
+  };
+
+  const handlePrivacy = async () => {
+    const privacyUrl = 'https://controldenegocios.com/privacidad';
+    try {
+      await Linking.openURL(privacyUrl);
+    } catch (error) {
+      console.error('Error al abrir privacidad:', error);
     }
   };
 
@@ -67,17 +85,17 @@ function WelcomeScreen({ navigation }) {
             <View style={styles.optionsContainer}>
               <TouchableOpacity
                 style={[styles.optionButton, styles.primaryButton]}
-                onPress={handleHaveApp}
+                onPress={handleLogin}
                 activeOpacity={0.8}
               >
                 <View style={styles.optionContent}>
                   <View style={styles.optionIconContainer}>
-                    <Ionicons name="person-circle" size={32} color="#ffffff" />
+                    <Ionicons name="log-in" size={32} color="#ffffff" />
                   </View>
                   <View style={styles.optionTextContainer}>
-                    <Text style={styles.optionTitle}>Ya tengo la aplicación</Text>
+                    <Text style={styles.optionTitle}>Iniciar Sesión</Text>
                     <Text style={styles.optionSubtitle}>
-                      Inicia sesión con tu cuenta existente
+                      Accede con tu cuenta existente
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={24} color="#ffffff" />
@@ -86,19 +104,19 @@ function WelcomeScreen({ navigation }) {
 
               <TouchableOpacity
                 style={[styles.optionButton, styles.secondaryButton]}
-                onPress={handleDontHaveApp}
+                onPress={handleSignUp}
                 activeOpacity={0.8}
               >
                 <View style={styles.optionContent}>
                   <View style={[styles.optionIconContainer, styles.secondaryIconContainer]}>
-                    <Ionicons name="add-circle" size={32} color="#ec4899" />
+                    <Ionicons name="storefront" size={32} color="#ec4899" />
                   </View>
                   <View style={styles.optionTextContainer}>
                     <Text style={[styles.optionTitle, styles.secondaryOptionTitle]}>
-                      No tengo la aplicación
+                      Crear Cuenta
                     </Text>
                     <Text style={[styles.optionSubtitle, styles.secondaryOptionSubtitle]}>
-                      Suscríbete y obtén tu dominio personalizado
+                      Registra tu negocio y comienza a gestionar
                     </Text>
                   </View>
                   <Ionicons name="open-outline" size={24} color="#ec4899" />
@@ -108,24 +126,40 @@ function WelcomeScreen({ navigation }) {
 
             {/* Features destacados */}
             <View style={styles.featuresContainer}>
-              <Text style={styles.featuresTitle}>¿Por qué Control de Negocios?</Text>
+              <Text style={styles.featuresTitle}>¿Qué puedes hacer?</Text>
               <View style={styles.featuresGrid}>
                 <View style={styles.featureItem}>
                   <Ionicons name="calendar" size={24} color="#ec4899" />
-                  <Text style={styles.featureText}>Gestión de citas</Text>
+                  <Text style={styles.featureText}>Agenda digital</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Ionicons name="people" size={24} color="#ec4899" />
-                  <Text style={styles.featureText}>Control de clientes</Text>
+                  <Text style={styles.featureText}>Base de clientes</Text>
                 </View>
                 <View style={styles.featureItem}>
-                  <Ionicons name="cash" size={24} color="#ec4899" />
-                  <Text style={styles.featureText}>Facturación</Text>
+                  <Ionicons name="receipt" size={24} color="#ec4899" />
+                  <Text style={styles.featureText}>Ventas y pagos</Text>
                 </View>
                 <View style={styles.featureItem}>
-                  <Ionicons name="analytics" size={24} color="#ec4899" />
-                  <Text style={styles.featureText}>Reportes</Text>
+                  <Ionicons name="bar-chart" size={24} color="#ec4899" />
+                  <Text style={styles.featureText}>Estadísticas</Text>
                 </View>
+              </View>
+            </View>
+
+            {/* Enlaces legales - REQUERIDO POR APP STORES */}
+            <View style={styles.legalContainer}>
+              <Text style={styles.legalText}>
+                Al continuar, aceptas nuestros{' '}
+              </Text>
+              <View style={styles.legalLinks}>
+                <TouchableOpacity onPress={handleTerms}>
+                  <Text style={styles.legalLink}>Términos de Servicio</Text>
+                </TouchableOpacity>
+                <Text style={styles.legalText}> y </Text>
+                <TouchableOpacity onPress={handlePrivacy}>
+                  <Text style={styles.legalLink}>Política de Privacidad</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -313,6 +347,28 @@ const styles = StyleSheet.create({
     color: '#374151',
     marginTop: 8,
     textAlign: 'center',
+  },
+  legalContainer: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  legalText: {
+    fontSize: 12,
+    color: '#9ca3af',
+    textAlign: 'center',
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  legalLink: {
+    fontSize: 12,
+    color: '#ec4899',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
 

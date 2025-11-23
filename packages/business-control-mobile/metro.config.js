@@ -51,4 +51,18 @@ config.resolver.extraNodeModules = {
   'react-redux': path.join(projectRoot, 'node_modules/react-redux')
 };
 
+// Configurar servidor Metro para usar IP de red local
+config.server = {
+  ...config.server,
+  enhanceMiddleware: (middleware) => {
+    return (req, res, next) => {
+      if (req.url === '/') {
+        const hostname = process.env.REACT_NATIVE_PACKAGER_HOSTNAME || '192.168.0.213';
+        console.log('📱 Metro Bundler activo en:', hostname + ':8081');
+      }
+      return middleware(req, res, next);
+    };
+  },
+};
+
 module.exports = config;

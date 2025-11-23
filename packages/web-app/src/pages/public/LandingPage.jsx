@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import LoginModal from '../auth/LoginModal';
 import {
   CheckCircleIcon,
@@ -435,10 +435,13 @@ const LandingPage = () => {
               La plataforma completa para gestionar tu negocio
             </p>
             <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-gray-400 text-sm sm:text-base">
-              <a href="#" className="hover:text-white transition-colors duration-200">Términos</a>
-              <a href="#" className="hover:text-white transition-colors duration-200">Privacidad</a>
+              <Link to="/terminos" className="hover:text-white transition-colors duration-200">Términos de Servicio</Link>
+              <Link to="/privacidad" className="hover:text-white transition-colors duration-200">Política de Privacidad</Link>
               <a href="#" className="hover:text-white transition-colors duration-200">Soporte</a>
               <a href="https://wa.me/573005555555" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors duration-200">Contacto</a>
+            </div>
+            <div className="mt-6 text-gray-500 text-xs sm:text-sm">
+              © 2025 Control de Negocios. Todos los derechos reservados.
             </div>
           </div>
         </div>

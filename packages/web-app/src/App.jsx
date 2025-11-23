@@ -47,6 +47,8 @@ import InventoryDashboard from './pages/business/inventory/InventoryDashboard.js
 import LandingPage from './pages/public/LandingPage'
 import OnlineBookingPage from './pages/public/OnlineBookingPage'
 import BookingSuccess from './pages/public/BookingSuccess'
+import TermsOfService from './pages/public/TermsOfService'
+import PrivacyPolicy from './pages/public/PrivacyPolicy'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 
 // Test Components (temporal)
@@ -392,6 +394,8 @@ function AppLayout() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/book/:businessCode" element={<OnlineBookingPage />} />
           <Route path="/booking/success" element={<BookingSuccess />} />
+          <Route path="/terminos" element={<TermsOfService />} />
+          <Route path="/privacidad" element={<PrivacyPolicy />} />
           
           {/* Subscription routes (Public) */}
           <Route path="/subscribe" element={<SubscriptionPage />} />

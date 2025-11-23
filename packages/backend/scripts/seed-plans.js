@@ -10,34 +10,39 @@ const { SubscriptionPlan, Module, PlanModule, sequelize } = require('../src/mode
 
 const basePlans = [
   // =====================
-  // PLAN BÁSICO - Solo lo esencial
+  // PLAN BÁSICO - GRATUITO PARA SIEMPRE (App Store Compliant)
   // =====================
   {
     planData: {
       name: 'Básico',
-      description: 'Plan ideal para salones pequeños que están comenzando. Incluye funcionalidades esenciales para gestionar citas y clientes.',
-      price: 39900,
+      description: '¡Gratis para siempre! Plan ideal para emprendedores y salones pequeños que están comenzando. Incluye funcionalidades esenciales para gestionar citas y clientes.',
+      price: 0, // GRATUITO
       currency: 'COP',
       duration: 1,
       durationType: 'MONTHS',
-      maxUsers: 3,
-      maxClients: 100,
-      maxAppointments: 200,
-      storageLimit: 1073741824, // 1GB
+      maxUsers: 2,
+      maxClients: 50,
+      maxAppointments: 100,
+      storageLimit: 524288000, // 500MB
       status: 'ACTIVE',
       isPopular: false,
-      trialDays: 15,
+      trialDays: 0, // No necesita trial, es gratis
       features: {
-        appointments: 'Gestión básica de citas',
-        clients: 'Base de datos de hasta 100 clientes',
-        payments: 'Pagos en efectivo',
-        support: 'Soporte por email'
+        appointments: 'Gestión básica de citas (hasta 100/mes)',
+        clients: 'Base de datos de hasta 50 clientes',
+        payments: 'Pagos en efectivo únicamente',
+        support: 'Soporte por email',
+        trial_upgrade: 'Prueba GRATIS 15 días del Plan Estándar'
       },
       limitations: {
         single_branch: 'Solo 1 sucursal',
         no_integrations: 'Sin integraciones de pago online',
         no_analytics: 'Sin reportes avanzados',
-        no_inventory: 'Sin gestión de inventario'
+        no_inventory: 'Sin gestión de inventario',
+        no_reminders: 'Sin recordatorios automáticos',
+        limited_users: 'Máximo 2 usuarios',
+        limited_clients: 'Máximo 50 clientes',
+        limited_appointments: 'Máximo 100 citas/mes'
       }
     },
     modules: [
@@ -53,30 +58,31 @@ const basePlans = [
   },
 
   // =====================
-  // PLAN ESTÁNDAR - Salón en crecimiento
+  // PLAN ESTÁNDAR - Salón en crecimiento (MÁS POPULAR)
   // =====================
   {
     planData: {
       name: 'Estándar',
-      description: 'Plan perfecto para salones en crecimiento. Incluye recordatorios automáticos, inventario y control de gastos.',
+      description: 'Plan perfecto para salones en crecimiento. Incluye recordatorios automáticos, inventario y control de gastos. ¡Prueba GRATIS 15 días!',
       price: 79900,
       currency: 'COP',
       duration: 1,
       durationType: 'MONTHS',
-      maxUsers: 8,
-      maxClients: 500,
-      maxAppointments: 1000,
-      storageLimit: 5368709120, // 5GB
+      maxUsers: 5,
+      maxClients: 300,
+      maxAppointments: 500,
+      storageLimit: 3221225472, // 3GB
       status: 'ACTIVE',
-      isPopular: true,
+      isPopular: true, // MÁS POPULAR
       trialDays: 15,
       features: {
         appointments: 'Gestión de citas con recordatorios automáticos',
-        clients: 'Base de datos de hasta 500 clientes con historial',
+        clients: 'Base de datos de hasta 300 clientes con historial',
         inventory: 'Gestión de inventario básico',
         expenses: 'Control de gastos del negocio',
-        payments: 'Pagos en efectivo',
-        support: 'Soporte prioritario'
+        payments: 'Pagos en efectivo únicamente',
+        support: 'Soporte prioritario',
+        trial: '15 días de prueba GRATIS'
       },
       limitations: {
         single_branch: 'Solo 1 sucursal',
@@ -103,35 +109,37 @@ const basePlans = [
   },
 
   // =====================
-  // PLAN PROFESIONAL - Con pagos online
+  // PLAN PROFESIONAL - Más capacidad y reportes avanzados
   // =====================
   {
     planData: {
       name: 'Profesional',
-      description: 'Plan profesional con pagos online a través de Wompi. Ideal para salones que quieren modernizar sus cobros.',
+      description: 'Plan profesional con mayor capacidad y reportes avanzados. Ideal para salones establecidos que necesitan más usuarios y almacenamiento. ¡Prueba GRATIS 15 días!',
       price: 119900,
       currency: 'COP',
       duration: 1,
       durationType: 'MONTHS',
-      maxUsers: 12,
+      maxUsers: 10,
       maxClients: 1000,
       maxAppointments: 2000,
       storageLimit: 10737418240, // 10GB
       status: 'ACTIVE',
-      isPopular: true,
-      trialDays: 30,
+      isPopular: false,
+      trialDays: 15,
       features: {
         appointments: 'Gestión completa de citas con recordatorios',
         clients: 'Base de datos de hasta 1000 clientes con historial completo',
         inventory: 'Gestión de inventario con control de stock',
         expenses: 'Control completo de gastos',
         balance: 'Balance general financiero',
-        payments: 'Pagos en efectivo + Wompi (tarjetas y PSE)',
-        support: 'Soporte prioritario 24/7'
+        payments: 'Pagos en efectivo únicamente',
+        analytics: 'Reportes y análisis avanzados',
+        support: 'Soporte prioritario',
+        trial: '15 días de prueba GRATIS'
       },
       limitations: {
         single_branch: 'Solo 1 sucursal',
-        basic_analytics: 'Análisis básico'
+        no_online_payments: 'Sin pagos online (disponible en Premium)'
       }
     },
     modules: [
@@ -145,23 +153,23 @@ const basePlans = [
       // INVENTORY
       { moduleName: 'inventory', isIncluded: true },
       { moduleName: 'stock-control', isIncluded: true },
-      // PAYMENTS
+      // PAYMENTS (SIN WOMPI - solo pagos básicos)
       { moduleName: 'basic-payments', isIncluded: true },
-      { moduleName: 'wompi_integration', isIncluded: true },
-      // REPORTS
+      // REPORTS & ANALYTICS
       { moduleName: 'expenses', isIncluded: true },
       { moduleName: 'balance', isIncluded: true },
-      { moduleName: 'client_history', isIncluded: true }
+      { moduleName: 'client_history', isIncluded: true },
+      { moduleName: 'advanced-analytics', isIncluded: true }
     ]
   },
 
   // =====================
-  // PLAN PREMIUM - Todo incluido + facturación
+  // PLAN PREMIUM - Todo incluido + Pagos Online + Facturación
   // =====================
   {
     planData: {
       name: 'Premium',
-      description: 'Plan completo con facturación electrónica Taxxa, análisis avanzado y todas las integraciones de pago.',
+      description: 'Plan completo con pagos online (Wompi), facturación electrónica (Taxxa) y análisis avanzado. Incluye configuración asistida de integraciones. ¡Prueba GRATIS 30 días!',
       price: 169900,
       currency: 'COP',
       duration: 1,
@@ -171,20 +179,22 @@ const basePlans = [
       maxAppointments: null, // Sin límite
       storageLimit: 21474836480, // 20GB
       status: 'ACTIVE',
-      isPopular: true,
-      trialDays: 30,
+      isPopular: false,
+      trialDays: 30, // Trial más largo para probar integraciones
       features: {
         appointments: 'Gestión completa de citas con recordatorios',
-        clients: 'Base de datos ilimitada con historial completo',
+        clients: 'Base de datos de hasta 5000 clientes con historial completo',
         inventory: 'Gestión completa de inventario y proveedores',
         expenses: 'Control completo de gastos y balance',
-        payments: 'Todas las opciones de pago (efectivo + Wompi)',
+        payments: 'Todas las opciones de pago: Efectivo + Wompi (tarjetas, PSE)',
         invoicing: 'Facturación electrónica con Taxxa',
         analytics: 'Análisis avanzado con reportes personalizados',
-        support: 'Soporte VIP 24/7'
+        onboarding: 'Configuración asistida de Wompi y Taxxa',
+        support: 'Soporte VIP 24/7',
+        trial: '30 días de prueba GRATIS'
       },
       limitations: {
-        single_branch: 'Solo 1 sucursal (multi-sucursal disponible en Enterprise)'
+        single_branch: 'Solo 1 sucursal (multi-sucursal en Enterprise)'
       }
     },
     modules: [
