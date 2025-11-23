@@ -655,9 +655,15 @@ class ProductController {
         limit = 50 
       } = req.query;
 
+      console.log('🔍 getProductMovements - req.user:', req.user);
+      console.log('🔍 getProductMovements - businessId:', businessId);
+      console.log('🔍 getProductMovements - productId:', id);
+
       const product = await Product.findOne({
         where: { id, businessId }
       });
+
+      console.log('🔍 getProductMovements - product found:', product ? 'YES' : 'NO');
 
       if (!product) {
         return res.status(404).json({
@@ -705,6 +711,9 @@ class ProductController {
           }
         ]
       });
+
+      console.log('🔍 getProductMovements - movements found:', movements.count);
+      console.log('🔍 getProductMovements - where filter:', JSON.stringify(where));
 
       // Calcular resumen por tipo
       const summary = await InventoryMovement.findAll({

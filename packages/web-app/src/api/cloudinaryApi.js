@@ -32,6 +32,28 @@ export const cloudinaryApi = {
 },
 
   /**
+   * Subir imagen de producto
+   * @param {string} businessId - ID del negocio
+   * @param {File} file - Imagen a subir
+   * @param {string} productName - Nombre del producto (opcional, para nombrar el archivo)
+   */
+  uploadProductImage: async (businessId, file, productName = null) => {
+    console.log('📤 Subiendo imagen de producto:', { file, productName, type: file?.type, size: file?.size });
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    if (productName) {
+      formData.append('productName', productName);
+    }
+
+    const response = await apiClient.post(
+      `/api/business/${businessId}/upload/product-image`,
+      formData
+    );
+    return response.data;
+  },
+
+  /**
    * Eliminar archivo de Cloudinary
    * @param {string} businessId - ID del negocio
    * @param {string} publicId - Public ID del archivo en Cloudinary

@@ -215,17 +215,15 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
       const response = await cloudinaryApi.uploadProductImage(
         user.businessId,
         file,
-        `invoice-product-${Date.now()}`
+        items[index].productData.name || `product-${Date.now()}`
       );
 
       if (response.success) {
         const updatedItems = [...items];
+        // Guardar en el formato esperado por el catálogo: { main: {...}, thumbnail: {...} }
         updatedItems[index].images = [
           ...updatedItems[index].images,
-          {
-            url: response.data.url,
-            publicId: response.data.publicId
-          }
+          response.data // Ya viene con main y thumbnail
         ];
         updatedItems[index].uploadingImage = false;
         setItems(updatedItems);
@@ -243,12 +241,20 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
     const item = items[itemIndex];
     const image = item.images[imageIndex];
 
-    if (image?.publicId) {
-      try {
-        await cloudinaryApi.deleteFile(user.businessId, image.publicId);
-      } catch (err) {
-        console.error('Error deleting image:', err);
+    // Eliminar ambas versiones (main y thumbnail) si existen
+    try {
+      if (image?.main?.public_id) {
+        await cloudinaryApi.deleteFile(user.businessId, image.main.public_id);
       }
+      if (image?.thumbnail?.public_id) {
+        await cloudinaryApi.deleteFile(user.businessId, image.thumbnail.public_id);
+      }
+      // Soporte para formato antiguo (si existe)
+      if (image?.publicId) {
+        await cloudinaryApi.deleteFile(user.businessId, image.publicId);
+      }
+    } catch (err) {
+      console.error('Error deleting image:', err);
     }
 
     const newItems = [...items];
@@ -853,7 +859,7 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
                                 {item.images.map((img, imgIndex) => (
                                   <div key={imgIndex} className="relative group">
                                     <img
-                                      src={img.url}
+                                      src={img.thumbnail?.url || img.main?.url || img.url}
                                       alt="Producto"
                                       className="w-16 h-16 object-cover rounded border border-gray-300"
                                     />

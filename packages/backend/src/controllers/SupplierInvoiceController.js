@@ -6,6 +6,7 @@ const {
   SupplierCatalogItem,
   Business,
   SupplierInvoicePayment,
+  InventoryMovement,
   sequelize
 } = require('../models');
 const { uploadDocument } = require('../config/cloudinary');
@@ -254,6 +255,24 @@ class SupplierInvoiceController {
           }, { transaction });
 
           finalProductId = newProduct.id;
+
+          // 🔥 Agregar al catálogo de proveedores
+          console.log(`📋 Agregando producto ${newProduct.name} al catálogo del proveedor ${finalSupplierId}`);
+          await SupplierCatalogItem.create({
+            businessId,
+            supplierId: finalSupplierId,
+            productId: finalProductId,
+            supplierSku: item.productData.sku,
+            supplierProductName: item.productData.name,
+            supplierPrice: item.unitCost,
+            minimumOrderQuantity: 1,
+            leadTimeDays: 7,
+            isAvailable: true,
+            lastPurchaseDate: new Date(issueDate),
+            lastPurchasePrice: item.unitCost,
+            notes: `Agregado automáticamente desde factura ${invoiceNumber}`
+          }, { transaction });
+          console.log(`✅ Producto agregado al catálogo del proveedor`);
         }
 
         // Validar que el producto existe y pertenece al negocio
@@ -303,6 +322,57 @@ class SupplierInvoiceController {
         remainingAmount: total
       }, { transaction });
 
+      // 🔥 CREAR MOVIMIENTOS DE INVENTARIO Y ACTUALIZAR STOCK
+      console.log(`📦 Creando movimientos de inventario para factura ${invoiceNumber}`);
+      
+      for (const item of processedItems) {
+        if (!item.productId) {
+          console.warn(`⚠️ Item sin productId, saltando: ${item.productName}`);
+          continue;
+        }
+
+        // Obtener producto actual para registrar stock previo
+        const product = await Product.findByPk(item.productId, { transaction });
+        
+        if (!product) {
+          console.warn(`⚠️ Producto no encontrado: ${item.productId}`);
+          continue;
+        }
+
+        const previousStock = product.currentStock || 0;
+        const newStock = previousStock + item.quantity;
+
+        // Crear movimiento de inventario
+        await InventoryMovement.create({
+          businessId,
+          productId: item.productId,
+          userId,
+          movementType: 'PURCHASE',
+          quantity: item.quantity, // Cantidad positiva para entrada
+          unitCost: item.unitCost,
+          totalCost: item.total,
+          previousStock,
+          newStock,
+          reason: `Entrada por factura ${invoiceNumber}`,
+          notes: `Factura de proveedor: ${supplier.name}`,
+          referenceId: invoice.id,
+          referenceType: 'SUPPLIER_INVOICE',
+          supplierInfo: {
+            supplierId: finalSupplierId,
+            supplierName: supplier.name,
+            invoiceNumber: invoiceNumber
+          }
+        }, { transaction });
+
+        // Actualizar stock del producto
+        await product.update({
+          currentStock: newStock,
+          cost: item.unitCost // Actualizar costo con el último costo de compra
+        }, { transaction });
+
+        console.log(`✅ Stock actualizado: ${product.name} | ${previousStock} → ${newStock} (+${item.quantity})`);
+      }
+
       await transaction.commit();
 
       // Recargar con relaciones
@@ -318,7 +388,7 @@ class SupplierInvoiceController {
 
       res.status(201).json({
         success: true,
-        message: 'Factura creada exitosamente',
+        message: 'Factura creada exitosamente y stock actualizado',
         data: createdInvoice
       });
     } catch (error) {
@@ -811,6 +881,172 @@ class SupplierInvoiceController {
       res.status(500).json({
         success: false,
         message: 'Error al registrar el pago',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Subir imagen de producto temporal (para facturas)
+   * POST /api/business/:businessId/upload/product-image
+   */
+  static async uploadProductImage(req, res) {
+    try {
+      const { businessId } = req.params;
+      const { businessId: userBusinessId } = req.user;
+
+      if (businessId !== userBusinessId) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para subir archivos a este negocio'
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No se proporcionó ningún archivo'
+        });
+      }
+
+      const { productName } = req.body;
+      const cloudinary = require('cloudinary').v2;
+      
+      // Subir imagen principal (main)
+      const uploadMainImage = () => new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: `beauty-control/products/main`,
+            transformation: [
+              { width: 800, height: 800, crop: 'limit', quality: 'auto:good' }
+            ],
+            format: 'auto'
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+
+      // Subir thumbnail
+      const uploadThumbnail = () => new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: `beauty-control/products/thumbs`,
+            transformation: [
+              { width: 400, height: 300, crop: 'fill', quality: 'auto:good', gravity: 'auto' }
+            ],
+            format: 'auto'
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+
+      // Subir ambas versiones en paralelo
+      const [mainResult, thumbResult] = await Promise.all([
+        uploadMainImage(),
+        uploadThumbnail()
+      ]);
+
+      // Devolver en el formato esperado por el catálogo de productos
+      res.json({
+        success: true,
+        data: {
+          main: {
+            url: mainResult.secure_url,
+            width: mainResult.width,
+            height: mainResult.height,
+            public_id: mainResult.public_id
+          },
+          thumbnail: {
+            url: thumbResult.secure_url,
+            width: thumbResult.width,
+            height: thumbResult.height,
+            public_id: thumbResult.public_id
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error uploading product image:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al subir la imagen del producto',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Subir archivo de factura (PDF o imagen)
+   * POST /api/business/:businessId/upload/invoice
+   */
+  static async uploadInvoiceFile(req, res) {
+    try {
+      const { businessId } = req.params;
+      const { businessId: userBusinessId } = req.user;
+
+      if (businessId !== userBusinessId) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para subir archivos a este negocio'
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No se proporcionó ningún archivo'
+        });
+      }
+
+      const { invoiceNumber } = req.body;
+      const cloudinary = require('cloudinary').v2;
+      
+      // Subir directamente desde buffer usando upload_stream
+      return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: `beauty-control/businesses/${businessId}/supplier-invoices`,
+            resource_type: 'auto', // Permite PDFs e imágenes
+            format: 'auto'
+          },
+          (error, result) => {
+            if (error) {
+              console.error('Error uploading invoice file:', error);
+              return res.status(500).json({
+                success: false,
+                message: 'Error al subir el archivo de la factura',
+                error: error.message
+              });
+            }
+
+            res.json({
+              success: true,
+              data: {
+                url: result.secure_url,
+                publicId: result.public_id,
+                fileName: req.file.originalname,
+                fileType: req.file.mimetype,
+                format: result.format
+              }
+            });
+          }
+        );
+
+        // Escribir el buffer al stream
+        uploadStream.end(req.file.buffer);
+      });
+    } catch (error) {
+      console.error('Error uploading invoice file:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al subir el archivo de la factura',
         error: error.message
       });
     }

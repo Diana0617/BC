@@ -48,11 +48,35 @@ const invoiceFileFilter = (req, file, cb) => {
   }
 };
 
+// Filtro solo para imágenes
+const imageFilter = (req, file, cb) => {
+  const allowedMimes = [
+    'image/jpeg',
+    'image/jpg', 
+    'image/png',
+    'image/webp'
+  ];
+  
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Solo se permiten imágenes (JPG, PNG, WEBP)'), false);
+  }
+};
+
 const uploadInvoiceMiddleware = multer({
   storage: storage,
   fileFilter: invoiceFileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB
+  }
+});
+
+const uploadProductImageMiddleware = multer({
+  storage: multer.memoryStorage(), // Para product images usamos memoria
+  fileFilter: imageFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
   }
 });
 
@@ -68,6 +92,16 @@ router.post(
   '/invoice',
   uploadInvoiceMiddleware.single('file'),
   CloudinaryController.uploadInvoiceFile
+);
+
+/**
+ * POST /api/business/:businessId/upload/product-image
+ * Subir imagen de producto (para facturas de proveedor)
+ */
+router.post(
+  '/product-image',
+  uploadProductImageMiddleware.single('file'),
+  CloudinaryController.uploadProductImage
 );
 
 /**

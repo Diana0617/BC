@@ -32,6 +32,12 @@ const ProductMovementsModal = ({ product, onClose }) => {
     try {
       setLoading(true);
       
+      console.log('🔍 Product object:', product);
+      console.log('🔍 Product ID:', product.id);
+      console.log('🔍 Product SKU:', product.sku);
+      console.log('🔍 User object:', user);
+      console.log('🔍 User businessId:', user.businessId);
+      
       const params = {
         page: pagination.page,
         limit: 20

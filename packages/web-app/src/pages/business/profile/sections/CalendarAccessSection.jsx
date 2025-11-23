@@ -66,6 +66,9 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   // Estados para datos del modal
   const [specialists, setSpecialists] = useState([])
   const [services, setServices] = useState([])
+  
+  // Estado para código QR
+  const [qrCodeUrl, setQrCodeUrl] = useState('')
 
   // Estado para edición de horarios
   const [editingSchedule, setEditingSchedule] = useState(null)
@@ -304,6 +307,31 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
     }
   }, [currentBusiness, loadServices])
 
+  // Generar código QR cuando cambia el negocio
+  useEffect(() => {
+    console.log('🔍 Verificando currentBusiness para QR:', currentBusiness)
+    
+    // Priorizar subdomain sobre id para URLs amigables
+    const businessIdentifier = currentBusiness?.subdomain || 
+                               currentBusiness?.slug ||
+                               currentBusiness?.id
+    
+    console.log('📋 Identificador del negocio:', businessIdentifier)
+    console.log('🏷️ Subdomain:', currentBusiness?.subdomain)
+    
+    if (businessIdentifier) {
+      const bookingUrl = `https://controldenegocios.com/book/${businessIdentifier}`
+      console.log('🔗 URL de reservas:', bookingUrl)
+      
+      // Generar QR usando API de QR Code Generator
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(bookingUrl)}`
+      console.log('📱 URL del QR:', qrUrl)
+      setQrCodeUrl(qrUrl)
+    } else {
+      console.warn('⚠️ No se encontró identificador del negocio')
+    }
+  }, [currentBusiness])
+
   // Navegación del mes
   const navigateMonth = (direction) => {
     setCurrentMonth(prev => {
@@ -404,6 +432,50 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
     })
     
     setWeekSchedule(newSchedule)
+  }
+
+  // Copiar enlace al portapapeles
+  const handleCopyLink = async () => {
+    // Priorizar subdomain sobre id para URLs amigables
+    const businessIdentifier = currentBusiness?.subdomain || 
+                               currentBusiness?.slug ||
+                               currentBusiness?.id
+    const bookingUrl = `https://controldenegocios.com/book/${businessIdentifier || 'TU_CODIGO'}`
+    
+    console.log('📋 Copiando enlace:', bookingUrl)
+    
+    try {
+      await navigator.clipboard.writeText(bookingUrl)
+      toast.success('✅ Enlace copiado al portapapeles')
+    } catch (error) {
+      console.error('Error copiando enlace:', error)
+      toast.error('Error al copiar el enlace')
+    }
+  }
+
+  // Descargar código QR
+  const handleDownloadQR = async () => {
+    if (!qrCodeUrl) {
+      toast.error('Error generando código QR')
+      return
+    }
+    
+    try {
+      const response = await fetch(qrCodeUrl)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `qr-${currentBusiness?.code || 'negocio'}.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      toast.success('✅ Código QR descargado')
+    } catch (error) {
+      console.error('Error descargando QR:', error)
+      toast.error('Error al descargar el código QR')
+    }
   }
 
   // Renderizado de tabs
@@ -783,10 +855,13 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 </p>
                 <div className="bg-gray-50 rounded p-3 overflow-x-auto">
                   <code className="text-xs text-gray-800 break-all">
-                    https://app.beautycontrol.com/book/{currentBusiness?.code || 'TU_CODIGO'}
+                    https://controldenegocios.com/book/{currentBusiness?.subdomain || currentBusiness?.slug || currentBusiness?.id || 'TU_CODIGO'}
                   </code>
                 </div>
-                <button className="mt-3 w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                <button 
+                  onClick={handleCopyLink}
+                  className="mt-3 w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
                   Copiar enlace
                 </button>
               </div>
@@ -800,10 +875,29 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 <p className="text-sm text-gray-600 mb-3">
                   Imprime o muestra este código QR en tu local para que los clientes puedan escanearlo.
                 </p>
-                <div className="bg-gray-50 rounded p-4 flex items-center justify-center h-24">
-                  <div className="text-xs text-gray-500">Código QR aquí</div>
+                <div className="bg-white border border-gray-200 rounded p-4 flex items-center justify-center min-h-[180px]">
+                  {qrCodeUrl ? (
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="Código QR para reservas" 
+                      className="w-40 h-40 object-contain"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'block'
+                      }}
+                    />
+                  ) : (
+                    <div className="text-sm text-gray-500">Generando código QR...</div>
+                  )}
+                  <div style={{ display: 'none' }} className="text-sm text-red-500">
+                    Error al generar QR
+                  </div>
                 </div>
-                <button className="mt-3 w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                <button 
+                  onClick={handleDownloadQR}
+                  disabled={!qrCodeUrl}
+                  className="mt-3 w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
                   Descargar QR
                 </button>
               </div>

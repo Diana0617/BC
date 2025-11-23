@@ -178,6 +178,99 @@ class CloudinaryController {
       });
     }
   }
+
+  /**
+   * Subir imagen de producto (para facturas de proveedor)
+   * POST /api/business/:businessId/upload/product-image
+   */
+  static async uploadProductImage(req, res) {
+    try {
+      const { businessId } = req.params;
+      const { businessId: userBusinessId } = req.user;
+
+      if (businessId !== userBusinessId) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para subir archivos a este negocio'
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No se proporcionó ningún archivo'
+        });
+      }
+
+      const { productName } = req.body;
+      
+      // Subir imagen principal (main)
+      const uploadMainImage = () => new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: `beauty-control/products/main`,
+            transformation: [
+              { width: 800, height: 800, crop: 'limit', quality: 'auto:good', fetch_format: 'auto' }
+            ]
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+
+      // Subir thumbnail
+      const uploadThumbnail = () => new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: `beauty-control/products/thumbs`,
+            transformation: [
+              { width: 400, height: 300, crop: 'fill', quality: 'auto:good', gravity: 'auto', fetch_format: 'auto' }
+            ]
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+
+      // Subir ambas versiones en paralelo
+      const [mainResult, thumbResult] = await Promise.all([
+        uploadMainImage(),
+        uploadThumbnail()
+      ]);
+
+      // Devolver en el formato esperado por el catálogo de productos
+      res.json({
+        success: true,
+        data: {
+          main: {
+            url: mainResult.secure_url,
+            width: mainResult.width,
+            height: mainResult.height,
+            public_id: mainResult.public_id
+          },
+          thumbnail: {
+            url: thumbResult.secure_url,
+            width: thumbResult.width,
+            height: thumbResult.height,
+            public_id: thumbResult.public_id
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error uploading product image:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al subir la imagen del producto',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = CloudinaryController;
