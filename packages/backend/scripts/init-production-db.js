@@ -2,13 +2,24 @@
 
 /**
  * Script para inicializar la base de datos de producción
- * Uso: node scripts/init-production-db.js
+ * Uso: DATABASE_URL=<tu-url-neon> node scripts/init-production-db.js
+ * O configura DATABASE_URL en tu .env
  */
 
 require('dotenv').config();
 
-// Forzar conexión a producción
-process.env.DATABASE_URL = 'postgresql://neondb_owner:npg_sVkni1pYdKP4@ep-divine-bread-adt4an18-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
+// Verificar que DATABASE_URL esté configurada
+if (!process.env.DATABASE_URL) {
+  console.error('❌ ERROR: DATABASE_URL no está configurada');
+  console.error('\n💡 Opciones:');
+  console.error('   1. Configura DATABASE_URL en tu archivo .env');
+  console.error('   2. Pasa la variable al ejecutar:');
+  console.error('      DATABASE_URL=postgresql://... node scripts/init-production-db.js\n');
+  process.exit(1);
+}
+
+console.log('🔗 Usando DATABASE_URL configurada');
+console.log(`📍 Host: ${new URL(process.env.DATABASE_URL).host}\n`);
 
 const { sequelize } = require('../src/models');
 const { seedModules } = require('./seed-modules');

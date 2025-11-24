@@ -4,17 +4,30 @@
  * 
  * IMPORTANTE: Este script NO elimina la base de datos completa
  * (no tenemos permisos en Neon), solo elimina todas las tablas.
+ * 
+ * Uso: DATABASE_URL=<tu-url-neon> node scripts/reset-neon-database.js
+ * O configura DATABASE_URL en tu .env
  */
 
 require('dotenv').config();
 const { Client } = require('pg');
 
-// URL de conexión de Neon
-const NEON_DATABASE_URL = 'postgresql://neondb_owner:npg_sVkni1pYdKP4@ep-divine-bread-adt4an18-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
+// Verificar que DATABASE_URL esté configurada
+if (!process.env.DATABASE_URL) {
+  console.error('❌ ERROR: DATABASE_URL no está configurada');
+  console.error('\n💡 Opciones:');
+  console.error('   1. Configura DATABASE_URL en tu archivo .env');
+  console.error('   2. Pasa la variable al ejecutar:');
+  console.error('      DATABASE_URL=postgresql://... node scripts/reset-neon-database.js\n');
+  process.exit(1);
+}
+
+console.log('🔗 Usando DATABASE_URL configurada');
+console.log(`📍 Host: ${new URL(process.env.DATABASE_URL).host}\n`);
 
 async function resetNeonDatabase() {
   const client = new Client({
-    connectionString: NEON_DATABASE_URL,
+    connectionString: process.env.DATABASE_URL,
     ssl: {
       rejectUnauthorized: false // Necesario para Neon
     }
@@ -126,23 +139,16 @@ async function resetNeonDatabase() {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('✨ Base de datos de Neon reseteada exitosamente\n');
     console.log('📋 Próximos pasos:');
-    console.log('   1. Asegúrate de que el .env tenga la URL de Neon:');
-    console.log('      DATABASE_URL=' + NEON_DATABASE_URL);
-    console.log('');
+    console.log('   1. Asegúrate de que el .env tenga DATABASE_URL configurada\n');
     console.log('   2. Ejecuta en el backend:');
-    console.log('      FORCE_SYNC_DB=true npm start');
-    console.log('');
-    console.log('   3. Espera a que se creen todas las tablas (verás logs de Sequelize)');
-    console.log('');
-    console.log('   4. Ctrl+C para detener el servidor');
-    console.log('');
+    console.log('      FORCE_SYNC_DB=true npm start\n');
+    console.log('   3. Espera a que se creen todas las tablas (verás logs de Sequelize)\n');
+    console.log('   4. Ctrl+C para detener el servidor\n');
     console.log('   5. Ejecuta los seeders (si existen):');
     console.log('      node scripts/seed-modules.js');
-    console.log('      node scripts/seed-rule-templates.js');
-    console.log('');
+    console.log('      node scripts/seed-rule-templates.js\n');
     console.log('   6. Cambia en .env:');
-    console.log('      DISABLE_SYNC=true');
-    console.log('');
+    console.log('      DISABLE_SYNC=true\n');
     console.log('   7. Ejecuta normalmente:');
     console.log('      npm start');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
@@ -155,7 +161,9 @@ async function resetNeonDatabase() {
 }
 
 // Ejecutar el script
-console.log('⚠️  ADVERTENCIA: Este script eliminará TODAS las tablas de la base de datos de Neon');
+console.log('⚠️  ADVERTENCIA: Este script eliminará TODAS las tablas de la base de datos');
+console.log(`📍 Base de datos: ${new URL(process.env.DATABASE_URL).pathname.slice(1)}`);
+console.log(`🏠 Host: ${new URL(process.env.DATABASE_URL).host}`);
 console.log('⚠️  ¿Estás seguro de que quieres continuar?\n');
 console.log('Ejecutando en 3 segundos...\n');
 
