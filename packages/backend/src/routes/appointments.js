@@ -367,7 +367,7 @@ router.post('/:id/consent', async (req, res) => {
     await appointment.update({
       hasConsent: true,
       consentSignedAt: new Date(),
-      consentSignatureId: consentSignature.id
+      // consentSignatureId eliminado del modelo
     });
 
     return res.json({

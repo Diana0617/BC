@@ -380,11 +380,8 @@ Appointment.belongsTo(User, {
   foreignKey: 'canceledBy', 
   as: 'canceledByUser' 
 });
-Appointment.belongsTo(ConsentSignature, {
-  foreignKey: 'consentSignatureId',
-  as: 'consentSignature',
-  constraints: false // Desactiva FK para evitar dependencia circular
-});
+// Appointment.belongsTo(ConsentSignature) removido para evitar dependencia circular
+// Usar ConsentSignature.belongsTo(Appointment) en su lugar
 
 Business.hasMany(Appointment, { 
   foreignKey: 'businessId', 
@@ -491,11 +488,8 @@ ConsentSignature.belongsTo(Service, {
   as: 'service'
 });
 
-// ConsentSignature - Appointment (uno a muchos)
-ConsentSignature.hasMany(Appointment, {
-  foreignKey: 'consentSignatureId',
-  as: 'appointments'
-});
+// ConsentSignature.hasMany(Appointment) removido para evitar dependencia circular
+// Usar Appointment.hasMany(ConsentSignature) en su lugar
 
 // ==================== ASOCIACIONES DE TRATAMIENTOS MULTI-SESIÓN ====================
 

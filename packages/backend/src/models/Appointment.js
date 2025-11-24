@@ -147,12 +147,8 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  consentSignatureId: {
-    type: DataTypes.UUID,
-    allowNull: true,
-    // FK será agregada manualmente después para evitar dependencia circular
-    comment: 'Firma de consentimiento asociada a esta cita'
-  },
+  // consentSignatureId removido para evitar dependencia circular
+  // Usar ConsentSignature.appointmentId en su lugar para la relación
   evidence: {
     type: DataTypes.JSONB,
     allowNull: true,
