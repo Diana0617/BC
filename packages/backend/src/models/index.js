@@ -576,7 +576,8 @@ Appointment.hasMany(ConsentSignature, {
 });
 ConsentSignature.belongsTo(Appointment, {
   foreignKey: 'appointmentId',
-  as: 'appointment'
+  as: 'appointment',
+  constraints: false // Desactiva FK para evitar dependencia circular
 });
 
 // User - ConsentSignature (quien revocó)

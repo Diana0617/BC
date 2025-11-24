@@ -40,10 +40,7 @@ const ConsentSignature = sequelize.define('ConsentSignature', {
   appointmentId: {
     type: DataTypes.UUID,
     allowNull: true,
-    references: {
-      model: 'appointments',
-      key: 'id'
-    },
+    // FK será agregada manualmente después para evitar dependencia circular
     onDelete: 'SET NULL',
     comment: 'Cita asociada a esta firma (opcional)'
   },
