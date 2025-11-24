@@ -147,9 +147,9 @@ async function startServer() {
         await BusinessExpense.sync(syncOptions);
         
         // 8. Tablas que dependen de múltiples entidades
-        // IMPORTANTE: ConsentSignature DEBE ir ANTES de Appointment para evitar error de dependencia circular
-        await ConsentSignature.sync(syncOptions);
+        // IMPORTANTE: Appointment ANTES de ConsentSignature (ConsentSignature tiene FK a appointments)
         await Appointment.sync(syncOptions);
+        await ConsentSignature.sync(syncOptions);
         await PlanModule.sync(syncOptions);
         await BusinessSubscription.sync(syncOptions);
         await BusinessClient.sync(syncOptions);
