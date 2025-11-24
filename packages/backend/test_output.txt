@@ -1,0 +1,109 @@
+
+> beauty-control-backend@1.0.0 test
+> jest tests/integration/tenant-isolation.test.js
+
+  console.log
+    ✅ Servicio de email configurado correctamente
+
+      at EmailService.log [as verifyConnection] (src/services/EmailService.js:33:15)
+
+FAIL tests/integration/tenant-isolation.test.js (7.759 s)
+  ● Tenant Isolation Verification › User A should see Product A
+
+    SequelizeValidationError: Validation error: Validation len on lastName failed
+
+    [0m [90m 32 |[39m
+     [90m 33 |[39m     [90m// Create User A (Owner of Business A)[39m
+    [31m[1m>[22m[39m[90m 34 |[39m     userA [33m=[39m [36mawait[39m [33mUser[39m[33m.[39mcreate({
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 35 |[39m       id[33m:[39m uuidv4()[33m,[39m
+     [90m 36 |[39m       email[33m:[39m [32m'userA@test.com'[39m[33m,[39m
+     [90m 37 |[39m       password[33m:[39m [32m'password123'[39m[33m,[39m[0m
+
+      at InstanceValidator._validate (node_modules/sequelize/src/instance-validator.js:78:13)
+      at InstanceValidator._validateAndRunHooks (node_modules/sequelize/src/instance-validator.js:111:7)
+      at InstanceValidator.validate (node_modules/sequelize/src/instance-validator.js:93:12)
+      at model.save (node_modules/sequelize/src/model.js:4077:7)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Object.<anonymous> (tests/integration/tenant-isolation.test.js:34:13)
+
+  ● Tenant Isolation Verification › User B should see Product B
+
+    SequelizeValidationError: Validation error: Validation len on lastName failed
+
+    [0m [90m 32 |[39m
+     [90m 33 |[39m     [90m// Create User A (Owner of Business A)[39m
+    [31m[1m>[22m[39m[90m 34 |[39m     userA [33m=[39m [36mawait[39m [33mUser[39m[33m.[39mcreate({
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 35 |[39m       id[33m:[39m uuidv4()[33m,[39m
+     [90m 36 |[39m       email[33m:[39m [32m'userA@test.com'[39m[33m,[39m
+     [90m 37 |[39m       password[33m:[39m [32m'password123'[39m[33m,[39m[0m
+
+      at InstanceValidator._validate (node_modules/sequelize/src/instance-validator.js:78:13)
+      at InstanceValidator._validateAndRunHooks (node_modules/sequelize/src/instance-validator.js:111:7)
+      at InstanceValidator.validate (node_modules/sequelize/src/instance-validator.js:93:12)
+      at model.save (node_modules/sequelize/src/model.js:4077:7)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Object.<anonymous> (tests/integration/tenant-isolation.test.js:34:13)
+
+  ● Tenant Isolation Verification › User A should NOT be able to access Product B by ID
+
+    SequelizeValidationError: Validation error: Validation len on lastName failed
+
+    [0m [90m 32 |[39m
+     [90m 33 |[39m     [90m// Create User A (Owner of Business A)[39m
+    [31m[1m>[22m[39m[90m 34 |[39m     userA [33m=[39m [36mawait[39m [33mUser[39m[33m.[39mcreate({
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 35 |[39m       id[33m:[39m uuidv4()[33m,[39m
+     [90m 36 |[39m       email[33m:[39m [32m'userA@test.com'[39m[33m,[39m
+     [90m 37 |[39m       password[33m:[39m [32m'password123'[39m[33m,[39m[0m
+
+      at InstanceValidator._validate (node_modules/sequelize/src/instance-validator.js:78:13)
+      at InstanceValidator._validateAndRunHooks (node_modules/sequelize/src/instance-validator.js:111:7)
+      at InstanceValidator.validate (node_modules/sequelize/src/instance-validator.js:93:12)
+      at model.save (node_modules/sequelize/src/model.js:4077:7)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Object.<anonymous> (tests/integration/tenant-isolation.test.js:34:13)
+
+  ● Tenant Isolation Verification › User B should NOT be able to access Product A by ID
+
+    SequelizeValidationError: Validation error: Validation len on lastName failed
+
+    [0m [90m 32 |[39m
+     [90m 33 |[39m     [90m// Create User A (Owner of Business A)[39m
+    [31m[1m>[22m[39m[90m 34 |[39m     userA [33m=[39m [36mawait[39m [33mUser[39m[33m.[39mcreate({
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 35 |[39m       id[33m:[39m uuidv4()[33m,[39m
+     [90m 36 |[39m       email[33m:[39m [32m'userA@test.com'[39m[33m,[39m
+     [90m 37 |[39m       password[33m:[39m [32m'password123'[39m[33m,[39m[0m
+
+      at InstanceValidator._validate (node_modules/sequelize/src/instance-validator.js:78:13)
+      at InstanceValidator._validateAndRunHooks (node_modules/sequelize/src/instance-validator.js:111:7)
+      at InstanceValidator.validate (node_modules/sequelize/src/instance-validator.js:93:12)
+      at model.save (node_modules/sequelize/src/model.js:4077:7)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Object.<anonymous> (tests/integration/tenant-isolation.test.js:34:13)
+
+
+  ● Test suite failed to run
+
+    TypeError: Cannot read properties of undefined (reading 'id')
+
+    [0m [90m 80 |[39m   afterAll([36masync[39m () [33m=>[39m {
+     [90m 81 |[39m     [90m// Cleanup[39m
+    [31m[1m>[22m[39m[90m 82 |[39m     [36mawait[39m [33mProduct[39m[33m.[39mdestroy({ where[33m:[39m { id[33m:[39m [productA[33m.[39mid[33m,[39m productB[33m.[39mid] } })[33m;[39m
+     [90m    |[39m                                                    [31m[1m^[22m[39m
+     [90m 83 |[39m     [36mawait[39m [33mUser[39m[33m.[39mdestroy({ where[33m:[39m { id[33m:[39m [userA[33m.[39mid[33m,[39m userB[33m.[39mid] } })[33m;[39m
+     [90m 84 |[39m     [36mawait[39m [33mBusiness[39m[33m.[39mdestroy({ where[33m:[39m { id[33m:[39m [businessA[33m.[39mid[33m,[39m businessB[33m.[39mid] } })[33m;[39m
+     [90m 85 |[39m     [36mawait[39m sequelize[33m.[39mclose()[33m;[39m[0m
+
+      at Object.id (tests/integration/tenant-isolation.test.js:82:52)
+
+Test Suites: 1 failed, 1 total
+Tests:       4 failed, 4 total
+Snapshots:   0 total
+Time:        7.89 s, estimated 18 s
+Ran all test suites matching /tests\\integration\\tenant-isolation.test.js/i.
+Jest did not exit one second after the test run has completed.
+
+'This usually means that there are asynchronous operations that weren't stopped in your tests. Consider running Jest with `--detectOpenHandles` to troubleshoot this issue.

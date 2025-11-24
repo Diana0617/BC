@@ -1,0 +1,67 @@
+
+> beauty-control-backend@1.0.0 test
+> jest tests/integration/tenant-isolation.test.js
+
+  console.log
+    SIMPLE TEST LOG
+
+      at Object.log (src/middleware/auth.js:402:11)
+
+  console.log
+    ✅ Servicio de email configurado correctamente
+
+      at EmailService.log [as verifyConnection] (src/services/EmailService.js:33:15)
+
+::ffff:127.0.0.1 - - [24/Nov/2025:22:31:35 +0000] "GET /api/products HTTP/1.1" 404 46 "-" "-"
+::ffff:127.0.0.1 - - [24/Nov/2025:22:31:35 +0000] "GET /api/products HTTP/1.1" 404 46 "-" "-"
+::ffff:127.0.0.1 - - [24/Nov/2025:22:31:36 +0000] "GET /api/products/88924bcf-49ac-4665-ba73-c97f32f1520c HTTP/1.1" 404 46 "-" "-"
+::ffff:127.0.0.1 - - [24/Nov/2025:22:31:36 +0000] "GET /api/products/8e54eb71-e4e0-4f9b-a3af-56154b199caa HTTP/1.1" 404 46 "-" "-"
+FAIL tests/integration/tenant-isolation.test.js (43.845 s)
+  Tenant Isolation Verification
+    × User A should see Product A (148 ms)
+    × User B should see Product B (62 ms)
+    √ User A should NOT be able to access Product B by ID (57 ms)
+    √ User B should NOT be able to access Product A by ID (16 ms)
+
+  ● Tenant Isolation Verification › User A should see Product A
+
+    expect(received).toEqual(expected) // deep equality
+
+    Expected: 200
+    Received: 404
+
+    [0m [90m 91 |[39m       [33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer ${tokenA}`[39m)[33m;[39m
+     [90m 92 |[39m
+    [31m[1m>[22m[39m[90m 93 |[39m     expect(res[33m.[39mstatusCode)[33m.[39mtoEqual([35m200[39m)[33m;[39m
+     [90m    |[39m                            [31m[1m^[22m[39m
+     [90m 94 |[39m     [36mconst[39m productIds [33m=[39m res[33m.[39mbody[33m.[39mdata[33m.[39mmap(p [33m=>[39m p[33m.[39mid)[33m;[39m
+     [90m 95 |[39m     expect(productIds)[33m.[39mtoContain(productA[33m.[39mid)[33m;[39m
+     [90m 96 |[39m     expect(productIds)[33m.[39mnot[33m.[39mtoContain(productB[33m.[39mid)[33m;[39m[0m
+
+      at Object.toEqual (tests/integration/tenant-isolation.test.js:93:28)
+
+  ● Tenant Isolation Verification › User B should see Product B
+
+    expect(received).toEqual(expected) // deep equality
+
+    Expected: 200
+    Received: 404
+
+    [0m [90m 102 |[39m       [33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer ${tokenB}`[39m)[33m;[39m
+     [90m 103 |[39m
+    [31m[1m>[22m[39m[90m 104 |[39m     expect(res[33m.[39mstatusCode)[33m.[39mtoEqual([35m200[39m)[33m;[39m
+     [90m     |[39m                            [31m[1m^[22m[39m
+     [90m 105 |[39m     [36mconst[39m productIds [33m=[39m res[33m.[39mbody[33m.[39mdata[33m.[39mmap(p [33m=>[39m p[33m.[39mid)[33m;[39m
+     [90m 106 |[39m     expect(productIds)[33m.[39mtoContain(productB[33m.[39mid)[33m;[39m
+     [90m 107 |[39m     expect(productIds)[33m.[39mnot[33m.[39mtoContain(productA[33m.[39mid)[33m;[39m[0m
+
+      at Object.toEqual (tests/integration/tenant-isolation.test.js:104:28)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 2 passed, 4 total
+Snapshots:   0 total
+Time:        43.98 s
+Ran all test suites matching /tests\\integration\\tenant-isolation.test.js/i.
+Jest did not exit one second after the test run has completed.
+
+'This usually means that there are asynchronous operations that weren't stopped in your tests. Consider running Jest with `--detectOpenHandles` to troubleshoot this issue.
