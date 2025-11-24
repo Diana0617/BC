@@ -204,6 +204,33 @@ class BusinessConfigController {
     }
   }
 
+  async toggleSpecialistStatus(req, res) {
+    try {
+      const { businessId, profileId } = req.params;
+      const { isActive } = req.body;
+      
+      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para cambiar el estado de especialistas'
+        });
+      }
+
+      const result = await BusinessConfigService.toggleSpecialistStatus(profileId, isActive);
+
+      res.json({
+        success: true,
+        data: result,
+        message: isActive ? 'Especialista activado exitosamente' : 'Especialista desactivado exitosamente'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
   // ==================== HORARIOS ====================
 
   /**

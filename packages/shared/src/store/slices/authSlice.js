@@ -68,7 +68,13 @@ export const loginUser = createAsyncThunk(
         subscriptionWarning 
       };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message);
+      // El backend envía el mensaje de error en 'error', no en 'message'
+      return rejectWithValue(
+        error.response?.data?.error || 
+        error.response?.data?.message || 
+        error.message || 
+        'Error al iniciar sesión'
+      );
     }
   }
 );

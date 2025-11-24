@@ -162,7 +162,7 @@ const WompiWidgetMinimal = ({
       
       // Verificar si usar 3DS v2 o método simple
       // 3DS v2 puede usarse en dos casos:
-      // 1. Owner autenticado: businessId + token
+      // 1. Business autenticado: businessId + token
       // 2. Registro público: businessCode + plan (sin token)
       const hasAuthenticatedData = businessData?.businessId && localStorage.getItem('token')
       const hasRegistrationData = businessData?.businessCode && selectedPlan?.id
@@ -204,18 +204,20 @@ const WompiWidgetMinimal = ({
   // Método 3DS v2 usando el hook (autenticado o público)
   const handle3DSPayment = async () => {
     const hasToken = !!localStorage.getItem('token')
+    // isAuthenticated: tiene token Y businessId (business existente)
+    // isRegistration: tiene businessCode (registro público, puede o no tener token ya)
     const isAuthenticated = hasToken && businessData?.businessId
-    const isRegistration = !hasToken && businessData?.businessCode
+    const isRegistration = businessData?.businessCode && !businessData?.businessId
     
     console.log('🎯 INICIANDO MÉTODO 3DS V2:', {
-      type: isAuthenticated ? 'AUTHENTICATED' : 'PUBLIC_REGISTRATION',
+      type: isAuthenticated ? 'AUTHENTICATED' : isRegistration ? 'PUBLIC_REGISTRATION' : 'UNKNOWN',
       hasToken,
       businessId: businessData?.businessId,
       businessCode: businessData?.businessCode
     })
     
     if (isAuthenticated) {
-      // Flujo para owners autenticados
+      // Flujo para usuarios business autenticados
       await handle3DSAuthenticatedPayment()
     } else if (isRegistration) {
       // Flujo para registro público
@@ -225,9 +227,9 @@ const WompiWidgetMinimal = ({
     }
   }
 
-  // Método 3DS v2 para owners autenticados
+  // Método 3DS v2 para usuarios business autenticados
   const handle3DSAuthenticatedPayment = async () => {
-    console.log('🔐 3DS v2 AUTENTICADO para owner')
+    console.log('🔐 3DS v2 AUTENTICADO para business')
     
     try {
       // Si es renovación, usar endpoint directo de renovación

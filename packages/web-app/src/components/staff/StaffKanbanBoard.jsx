@@ -19,7 +19,14 @@ import PermissionsEditorModal from '../permissions/PermissionsEditorModal.jsx';
  * StaffKanbanBoard - Tablero tipo Kanban para gestión visual del equipo
  * Compatible con WebView móvil - Sin drag & drop
  */
-const StaffKanbanBoard = ({ specialists = [], onEdit, loading = false, businessId }) => {
+const StaffKanbanBoard = ({ 
+  specialists = [], 
+  onEdit, 
+  onDelete, 
+  onToggleStatus, 
+  loading = false, 
+  businessId 
+}) => {
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
@@ -256,13 +263,14 @@ const StaffKanbanBoard = ({ specialists = [], onEdit, loading = false, businessI
                         </p>
 
                         {/* Botones de acción */}
-                        <div className="mt-2 flex gap-1">
+                        <div className="mt-2 grid grid-cols-2 gap-1">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               onEdit && onEdit(staff);
                             }}
-                            className="flex-1 flex items-center justify-center gap-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 py-1 rounded transition-colors"
+                            className="flex items-center justify-center gap-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 py-1 rounded transition-colors"
+                            title="Editar información"
                           >
                             <PencilIcon className="h-3 w-3" />
                             Editar
@@ -273,11 +281,45 @@ const StaffKanbanBoard = ({ specialists = [], onEdit, loading = false, businessI
                               setPermissionsStaff(staff);
                               setShowPermissionsModal(true);
                             }}
-                            className="flex-1 flex items-center justify-center gap-1 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50 py-1 rounded transition-colors"
+                            className="flex items-center justify-center gap-1 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50 py-1 rounded transition-colors"
+                            title="Gestionar permisos"
                           >
                             <ShieldCheckIcon className="h-3 w-3" />
                             Permisos
                           </button>
+                          {onToggleStatus && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleStatus(staff.id);
+                              }}
+                              className={`flex items-center justify-center gap-1 text-xs py-1 rounded transition-colors ${
+                                staff.isActive
+                                  ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50'
+                                  : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                              }`}
+                              title={staff.isActive ? 'Desactivar' : 'Activar'}
+                            >
+                              {staff.isActive ? (
+                                <><XCircleIcon className="h-3 w-3" />Desactivar</>
+                              ) : (
+                                <><CheckCircleIcon className="h-3 w-3" />Activar</>
+                              )}
+                            </button>
+                          )}
+                          {onDelete && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(staff.id);
+                              }}
+                              className="flex items-center justify-center gap-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 py-1 rounded transition-colors"
+                              title="Eliminar miembro"
+                            >
+                              <XCircleIcon className="h-3 w-3" />
+                              Eliminar
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -416,13 +458,13 @@ const StaffKanbanBoard = ({ specialists = [], onEdit, loading = false, businessI
 
               {/* Acciones */}
               <div className="pt-4 border-t border-gray-200 flex flex-col gap-2">
-                <div className="flex gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => {
                       closeDetailModal();
                       onEdit && onEdit(selectedStaff);
                     }}
-                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <PencilIcon className="h-4 w-4" />
                     Editar
@@ -433,11 +475,42 @@ const StaffKanbanBoard = ({ specialists = [], onEdit, loading = false, businessI
                       setPermissionsStaff(selectedStaff);
                       setShowPermissionsModal(true);
                     }}
-                    className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <ShieldCheckIcon className="h-4 w-4" />
                     Permisos
                   </button>
+                  {onToggleStatus && (
+                    <button
+                      onClick={() => {
+                        closeDetailModal();
+                        onToggleStatus(selectedStaff.id);
+                      }}
+                      className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                        selectedStaff.isActive
+                          ? 'bg-orange-600 text-white hover:bg-orange-700'
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
+                    >
+                      {selectedStaff.isActive ? (
+                        <><XCircleIcon className="h-4 w-4" />Desactivar</>
+                      ) : (
+                        <><CheckCircleIcon className="h-4 w-4" />Activar</>
+                      )}
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={() => {
+                        closeDetailModal();
+                        onDelete(selectedStaff.id);
+                      }}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <XCircleIcon className="h-4 w-4" />
+                      Eliminar
+                    </button>
+                  )}
                 </div>
                 <button
                   onClick={closeDetailModal}

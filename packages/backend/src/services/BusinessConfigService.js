@@ -394,29 +394,34 @@ class BusinessConfigService {
         email: userData.email.toLowerCase(), // Normalizar email a minúsculas
         password: hashedPassword, // Usar la contraseña hasheada
         phone: userData.phone || null,
-        role: userData.role || 'SPECIALIST',
+        role: userData.role || 'SPECIALIST', // Respetar el rol enviado
         businessId: businessId,
         status: 'ACTIVE'
       }, { transaction });
 
-      // Crear el perfil de especialista con todos los campos del formulario
-      const profile = await SpecialistProfile.create({
-        userId: user.id,
-        businessId: businessId,
-        specialization: profileData.specialization || null,
-        biography: profileData.bio || null,
-        experience: profileData.yearsOfExperience ? parseInt(profileData.yearsOfExperience) : null,
-        certifications: Array.isArray(profileData.certifications) 
-          ? profileData.certifications 
-          : (profileData.certifications ? [profileData.certifications] : []),
-        isActive: profileData.isActive !== undefined ? profileData.isActive : true,
-        commissionRate: profileData.commissionPercentage 
-          ? parseFloat(profileData.commissionPercentage) 
-          : (profileData.hourlyRate ? null : 50.00),
-        commissionType: profileData.hourlyRate ? 'FIXED_AMOUNT' : 'PERCENTAGE',
-        fixedCommissionAmount: profileData.hourlyRate ? parseFloat(profileData.hourlyRate) : null,
-        status: 'ACTIVE'
-      }, { transaction });
+      // Solo crear perfil de especialista si NO es RECEPTIONIST puro
+      let profile = null;
+      
+      if (userData.role !== 'RECEPTIONIST') {
+        // Crear el perfil de especialista con todos los campos del formulario
+        profile = await SpecialistProfile.create({
+          userId: user.id,
+          businessId: businessId,
+          specialization: profileData.specialization || null,
+          biography: profileData.biography || profileData.bio || null,
+          experience: profileData.experience ? parseInt(profileData.experience) : 
+                     (profileData.yearsOfExperience ? parseInt(profileData.yearsOfExperience) : null),
+          certifications: Array.isArray(profileData.certifications) 
+            ? profileData.certifications 
+            : (profileData.certifications ? [profileData.certifications] : []),
+          isActive: profileData.isActive !== undefined ? profileData.isActive : true,
+          commissionRate: profileData.commissionRate ? parseFloat(profileData.commissionRate) :
+                         (profileData.commissionPercentage ? parseFloat(profileData.commissionPercentage) : 50.00),
+          commissionType: profileData.hourlyRate ? 'FIXED_AMOUNT' : 'PERCENTAGE',
+          fixedCommissionAmount: profileData.hourlyRate ? parseFloat(profileData.hourlyRate) : null,
+          status: 'ACTIVE'
+        }, { transaction });
+      }
 
       // Asignar sucursal principal a través de UserBranch
       await UserBranch.create({
@@ -441,8 +446,8 @@ class BusinessConfigService {
       }
 
       // ==================== ASIGNAR SERVICIOS AL ESPECIALISTA ====================
-      // Si se enviaron serviceIds, crear las relaciones en specialist_services
-      if (profileData.serviceIds && Array.isArray(profileData.serviceIds) && profileData.serviceIds.length > 0) {
+      // Solo asignar servicios si se creó un perfil de especialista
+      if (profile && profileData.serviceIds && Array.isArray(profileData.serviceIds) && profileData.serviceIds.length > 0) {
         const SpecialistService = require('../models/SpecialistService');
         
         const serviceAssignments = profileData.serviceIds.map(serviceId => ({
@@ -459,7 +464,47 @@ class BusinessConfigService {
 
       await transaction.commit();
 
-      // Cargar el perfil completo con relaciones
+      // Si es RECEPTIONIST (sin perfil), retornar datos del usuario solamente
+      if (!profile) {
+        // Cargar el usuario completo con sus sucursales (sin transaction ya que está commiteada)
+        await user.reload({
+          include: [{
+            model: Branch,
+            as: 'branches',
+            through: { attributes: ['isDefault'] },
+            attributes: ['id', 'name', 'address', 'city', 'isMain']
+          }]
+        });
+
+        const branches = user.branches || [];
+        const defaultBranch = branches.find(b => b.UserBranch?.isDefault);
+
+        return {
+          id: user.id,
+          userId: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          isActive: true,
+          status: 'ACTIVE',
+          branchId: defaultBranch?.id || null,
+          branches: branches.map(b => ({
+            id: b.id,
+            name: b.name,
+            address: b.address,
+            city: b.city,
+            isMain: b.isMain,
+            isDefault: b.UserBranch?.isDefault || false
+          })),
+          additionalBranches: branches.filter(b => !b.UserBranch?.isDefault).map(b => b.id),
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        };
+      }
+
+      // Si tiene perfil de especialista, cargar el perfil completo con relaciones (sin transaction ya que está commiteada)
       await profile.reload({ 
         include: [
           { 
@@ -473,8 +518,11 @@ class BusinessConfigService {
               attributes: ['id', 'name', 'address', 'city', 'isMain']
             }]
           }
-        ] 
+        ]
       });
+
+      const branches = profile.user?.branches || [];
+      const defaultBranch = branches.find(b => b.UserBranch?.isDefault);
       
       // Retornar en formato aplanado que espera el frontend
       return {
@@ -498,8 +546,16 @@ class BusinessConfigService {
         commissionType: profile.commissionType,
         hourlyRate: profile.fixedCommissionAmount,
         status: profile.status,
-        branchId: profileData.branchId,
-        branches: profile.user?.branches || [],
+        branchId: defaultBranch?.id || null,
+        branches: branches.map(b => ({
+          id: b.id,
+          name: b.name,
+          address: b.address,
+          city: b.city,
+          isMain: b.isMain,
+          isDefault: b.UserBranch?.isDefault || false
+        })),
+        additionalBranches: branches.filter(b => !b.UserBranch?.isDefault).map(b => b.id),
         createdAt: profile.createdAt,
         updatedAt: profile.updatedAt
       };
@@ -575,17 +631,156 @@ class BusinessConfigService {
 
   async deleteSpecialist(profileId) {
     try {
+      // Primero intentar encontrar el perfil de especialista
       const profile = await SpecialistProfile.findByPk(profileId);
-      if (!profile) {
-        throw new Error('Perfil de especialista no encontrado');
-      }
-
-      // Soft delete - solo desactivar el perfil
-      await profile.update({ isActive: false, status: 'INACTIVE' });
       
-      return { deleted: false, deactivated: true, message: 'Especialista desactivado correctamente' };
+      if (profile) {
+        // Si tiene perfil, desactivar el perfil y el usuario
+        await profile.update({ isActive: false, status: 'INACTIVE' });
+        
+        // También desactivar el usuario asociado
+        const user = await User.findByPk(profile.userId);
+        if (user) {
+          await user.update({ status: 'INACTIVE' });
+        }
+        
+        return { deleted: false, deactivated: true, message: 'Miembro del equipo desactivado correctamente' };
+      } else {
+        // Si no tiene perfil (RECEPTIONIST), buscar por userId
+        // El profileId en este caso es el userId
+        const user = await User.findByPk(profileId);
+        if (!user) {
+          throw new Error('Usuario no encontrado');
+        }
+        
+        // Soft delete - solo desactivar el usuario
+        await user.update({ status: 'INACTIVE' });
+        
+        return { deleted: false, deactivated: true, message: 'Recepcionista desactivado correctamente' };
+      }
     } catch (error) {
-      throw new Error(`Error al eliminar especialista: ${error.message}`);
+      throw new Error(`Error al eliminar miembro del equipo: ${error.message}`);
+    }
+  }
+
+  async toggleSpecialistStatus(profileId, isActive) {
+    try {
+      // Primero intentar encontrar el perfil de especialista
+      const profile = await SpecialistProfile.findByPk(profileId, {
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'role', 'status']
+        }]
+      });
+
+      if (profile) {
+        // Si tiene perfil, actualizar el perfil y el usuario
+        await profile.update({ 
+          isActive: isActive,
+          status: isActive ? 'ACTIVE' : 'INACTIVE'
+        });
+
+        // También actualizar el estado del usuario
+        if (profile.user) {
+          await profile.user.update({
+            status: isActive ? 'ACTIVE' : 'INACTIVE'
+          });
+        }
+
+        // Recargar el perfil con todos los datos
+        await profile.reload({
+          include: [{
+            model: User,
+            as: 'user',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'role'],
+            include: [{
+              model: Branch,
+              as: 'branches',
+              through: { attributes: ['isDefault'] },
+              attributes: ['id', 'name', 'address', 'city', 'isMain']
+            }]
+          }]
+        });
+
+        // Retornar el perfil actualizado en formato aplanado
+        const branches = profile.user?.branches || [];
+        const defaultBranch = branches.find(b => b.UserBranch?.isDefault);
+
+        return {
+          id: profile.id,
+          userId: profile.userId,
+          firstName: profile.user?.firstName || '',
+          lastName: profile.user?.lastName || '',
+          email: profile.user?.email || '',
+          phone: profile.user?.phone || '',
+          role: profile.user?.role || 'SPECIALIST',
+          specialization: profile.specialization,
+          biography: profile.biography,
+          isActive: profile.isActive,
+          status: profile.status,
+          branchId: defaultBranch?.id || null,
+          branches: branches.map(b => ({
+            id: b.id,
+            name: b.name,
+            isDefault: b.UserBranch?.isDefault || false
+          })),
+          additionalBranches: branches.filter(b => !b.UserBranch?.isDefault).map(b => b.id)
+        };
+      } else {
+        // Si no tiene perfil (RECEPTIONIST), buscar por userId
+        const user = await User.findByPk(profileId, {
+          include: [{
+            model: Branch,
+            as: 'branches',
+            through: { attributes: ['isDefault'] },
+            attributes: ['id', 'name', 'address', 'city', 'isMain']
+          }]
+        });
+
+        if (!user) {
+          throw new Error('Usuario no encontrado');
+        }
+
+        // Actualizar estado del usuario
+        await user.update({
+          status: isActive ? 'ACTIVE' : 'INACTIVE'
+        });
+
+        // Recargar con relaciones
+        await user.reload({
+          include: [{
+            model: Branch,
+            as: 'branches',
+            through: { attributes: ['isDefault'] },
+            attributes: ['id', 'name', 'address', 'city', 'isMain']
+          }]
+        });
+
+        const branches = user.branches || [];
+        const defaultBranch = branches.find(b => b.UserBranch?.isDefault);
+
+        return {
+          id: user.id,
+          userId: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          isActive: isActive,
+          status: user.status,
+          branchId: defaultBranch?.id || null,
+          branches: branches.map(b => ({
+            id: b.id,
+            name: b.name,
+            isDefault: b.UserBranch?.isDefault || false
+          })),
+          additionalBranches: branches.filter(b => !b.UserBranch?.isDefault).map(b => b.id)
+        };
+      }
+    } catch (error) {
+      throw new Error(`Error al cambiar estado del especialista: ${error.message}`);
     }
   }
 }

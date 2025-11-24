@@ -111,7 +111,9 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        throw new Error(data?.message || `HTTP Error: ${response.status}`);
+        // El backend envía errores en 'error' o 'message'
+        const errorMessage = data?.error || data?.message || `HTTP Error: ${response.status}`;
+        throw new Error(errorMessage);
       }
 
       return {

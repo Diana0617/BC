@@ -15,6 +15,7 @@ import {
  */
 const SimpleRichTextEditor = forwardRef(({ value, onChange, placeholder, className = '' }, ref) => {
   const editorRef = useRef(null);
+  const fileInputRef = useRef(null);
   const isUpdating = useRef(false);
 
   // Exponer método insertContent para el padre
@@ -83,9 +84,15 @@ const SimpleRichTextEditor = forwardRef(({ value, onChange, placeholder, classNa
 
   // Ejecutar comandos de formato
   const execCommand = useCallback((command, value = null) => {
-    document.execCommand(command, false, value);
-    editorRef.current?.focus();
-    handleInput(); // Notificar cambio
+    // Asegurar que el editor tenga el foco primero
+    if (editorRef.current) {
+      editorRef.current.focus();
+      // Pequeño delay para asegurar que el foco se estableció
+      setTimeout(() => {
+        document.execCommand(command, false, value);
+        handleInput(); // Notificar cambio
+      }, 0);
+    }
   }, [handleInput]);
 
   // Toolbar buttons
@@ -93,23 +100,84 @@ const SimpleRichTextEditor = forwardRef(({ value, onChange, placeholder, classNa
     { command: 'bold', icon: BoldIcon, title: 'Negrita (Ctrl+B)' },
     { command: 'italic', icon: ItalicIcon, title: 'Cursiva (Ctrl+I)' },
     { command: 'underline', icon: UnderlineIcon, title: 'Subrayado (Ctrl+U)' },
-    { command: 'insertUnorderedList', icon: ListBulletIcon, title: 'Lista con viñetas' },
-    { command: 'insertOrderedList', icon: NumberedListIcon, title: 'Lista numerada' },
   ];
 
-  const handleLink = useCallback(() => {
-    const url = prompt('Ingresa la URL:');
-    if (url) {
-      execCommand('createLink', url);
+  const handleListStyle = useCallback((listType, styleType) => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+      setTimeout(() => {
+        // Primero crear la lista
+        const command = listType === 'ul' ? 'insertUnorderedList' : 'insertOrderedList';
+        document.execCommand(command, false, null);
+        
+        // Luego aplicar el estilo
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+          let listElement = selection.anchorNode;
+          while (listElement && listElement.nodeName !== 'UL' && listElement.nodeName !== 'OL') {
+            listElement = listElement.parentElement;
+          }
+          if (listElement) {
+            // Remover clases previas
+            listElement.className = listElement.className.replace(/list-\w+/g, '').trim();
+            // Agregar nueva clase
+            listElement.classList.add(styleType);
+          }
+        }
+        handleInput();
+      }, 0);
     }
-  }, [execCommand]);
+  }, [handleInput]);
 
-  const handleImage = useCallback(() => {
-    const url = prompt('Ingresa la URL de la imagen:');
-    if (url) {
-      execCommand('insertImage', url);
+  const handleLink = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+      const url = prompt('Ingresa la URL:');
+      if (url) {
+        setTimeout(() => {
+          document.execCommand('createLink', false, url);
+          handleInput();
+        }, 0);
+      }
     }
-  }, [execCommand]);
+  }, [handleInput]);
+
+  const handleImageFile = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar que sea una imagen
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen válido');
+      return;
+    }
+
+    // Limitar tamaño a 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      alert('La imagen es muy grande. Máximo 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (editorRef.current && event.target?.result) {
+        editorRef.current.focus();
+        setTimeout(() => {
+          const img = `<img src="${event.target.result}" style="max-width: 300px; height: auto;" />`;
+          document.execCommand('insertHTML', false, img);
+          handleInput();
+        }, 0);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
+    e.target.value = '';
+  }, [handleInput]);
+
+  const handleImageButtonClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
 
   // Manejar paste para limpiar formato
   const handlePaste = useCallback((e) => {
@@ -211,6 +279,9 @@ const SimpleRichTextEditor = forwardRef(({ value, onChange, placeholder, classNa
           <button
             key={command}
             type="button"
+            onMouseDown={(e) => {
+              e.preventDefault(); // Evitar que el editor pierda el foco
+            }}
             onClick={() => execCommand(command)}
             className="p-1.5 hover:bg-gray-200 rounded transition-colors"
             title={title}
@@ -221,9 +292,73 @@ const SimpleRichTextEditor = forwardRef(({ value, onChange, placeholder, classNa
 
         <div className="w-px bg-gray-300 mx-1"></div>
 
+        {/* Lista con viñetas - Dropdown */}
+        <div className="relative inline-block">
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => execCommand('insertUnorderedList')}
+            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+            title="Lista con viñetas"
+          >
+            <ListBulletIcon className="h-4 w-4 text-gray-700" />
+          </button>
+        </div>
+
+        {/* Estilo de viñetas */}
+        <select
+          onChange={(e) => {
+            handleListStyle('ul', e.target.value);
+            e.target.value = ''; // Reset
+          }}
+          onMouseDown={(e) => e.preventDefault()}
+          className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100"
+          defaultValue=""
+          title="Tipo de viñeta"
+        >
+          <option value="">Viñeta</option>
+          <option value="list-disc">● Círculo lleno</option>
+          <option value="list-circle">○ Círculo vacío</option>
+          <option value="list-square">■ Cuadrado</option>
+          <option value="list-none">Sin viñeta</option>
+        </select>
+
+        {/* Lista numerada */}
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => execCommand('insertOrderedList')}
+          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+          title="Lista numerada"
+        >
+          <NumberedListIcon className="h-4 w-4 text-gray-700" />
+        </button>
+
+        {/* Estilo de numeración */}
+        <select
+          onChange={(e) => {
+            handleListStyle('ol', e.target.value);
+            e.target.value = ''; // Reset
+          }}
+          onMouseDown={(e) => e.preventDefault()}
+          className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100"
+          defaultValue=""
+          title="Tipo de numeración"
+        >
+          <option value="">Número</option>
+          <option value="list-decimal">1. Números (1, 2, 3)</option>
+          <option value="list-alpha">a. Letras (a, b, c)</option>
+          <option value="list-upper-alpha">A. Letras mayúsculas (A, B, C)</option>
+          <option value="list-roman">i. Romanos (i, ii, iii)</option>
+          <option value="list-upper-roman">I. Romanos mayúsculas (I, II, III)</option>
+        </select>
+
+        <div className="w-px bg-gray-300 mx-1"></div>
+
         {/* Alignment buttons */}
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => execCommand('justifyLeft')}
           className="p-1.5 hover:bg-gray-200 rounded transition-colors"
           title="Alinear a la izquierda"
@@ -232,6 +367,7 @@ const SimpleRichTextEditor = forwardRef(({ value, onChange, placeholder, classNa
         </button>
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => execCommand('justifyCenter')}
           className="p-1.5 hover:bg-gray-200 rounded transition-colors"
           title="Centrar"
@@ -240,6 +376,7 @@ const SimpleRichTextEditor = forwardRef(({ value, onChange, placeholder, classNa
         </button>
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => execCommand('justifyRight')}
           className="p-1.5 hover:bg-gray-200 rounded transition-colors"
           title="Alinear a la derecha"
@@ -248,6 +385,7 @@ const SimpleRichTextEditor = forwardRef(({ value, onChange, placeholder, classNa
         </button>
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => execCommand('justifyFull')}
           className="p-1.5 hover:bg-gray-200 rounded transition-colors"
           title="Justificar"
@@ -260,6 +398,7 @@ const SimpleRichTextEditor = forwardRef(({ value, onChange, placeholder, classNa
         {/* Link button */}
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={handleLink}
           className="p-1.5 hover:bg-gray-200 rounded transition-colors"
           title="Insertar enlace"
@@ -268,11 +407,19 @@ const SimpleRichTextEditor = forwardRef(({ value, onChange, placeholder, classNa
         </button>
 
         {/* Image button */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageFile}
+          className="hidden"
+        />
         <button
           type="button"
-          onClick={handleImage}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={handleImageButtonClick}
           className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-          title="Insertar imagen"
+          title="Insertar imagen desde archivo"
         >
           <PhotoIcon className="h-4 w-4 text-gray-700" />
         </button>
@@ -282,6 +429,7 @@ const SimpleRichTextEditor = forwardRef(({ value, onChange, placeholder, classNa
         {/* Clear formatting button */}
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => execCommand('removeFormat')}
           className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100"
           title="Limpiar formato"
@@ -336,6 +484,53 @@ const SimpleRichTextEditor = forwardRef(({ value, onChange, placeholder, classNa
         [contenteditable] ol {
           padding-left: 1.5em;
           margin: 0.5em 0;
+        }
+        /* Estilos para diferentes tipos de listas */
+        [contenteditable] ul {
+          list-style-type: disc; /* Viñetas circulares por defecto */
+        }
+        [contenteditable] ul ul {
+          list-style-type: circle; /* Círculos vacíos para segundo nivel */
+        }
+        [contenteditable] ul ul ul {
+          list-style-type: square; /* Cuadrados para tercer nivel */
+        }
+        [contenteditable] ol {
+          list-style-type: decimal; /* Números por defecto (1, 2, 3...) */
+        }
+        [contenteditable] ol ol {
+          list-style-type: lower-alpha; /* Letras minúsculas para segundo nivel (a, b, c...) */
+        }
+        [contenteditable] ol ol ol {
+          list-style-type: lower-roman; /* Números romanos para tercer nivel (i, ii, iii...) */
+        }
+        /* Clases personalizadas para cambiar estilos de lista */
+        [contenteditable] ul.list-circle {
+          list-style-type: circle;
+        }
+        [contenteditable] ul.list-square {
+          list-style-type: square;
+        }
+        [contenteditable] ul.list-disc {
+          list-style-type: disc;
+        }
+        [contenteditable] ul.list-none {
+          list-style-type: none;
+        }
+        [contenteditable] ol.list-decimal {
+          list-style-type: decimal;
+        }
+        [contenteditable] ol.list-alpha {
+          list-style-type: lower-alpha;
+        }
+        [contenteditable] ol.list-roman {
+          list-style-type: lower-roman;
+        }
+        [contenteditable] ol.list-upper-alpha {
+          list-style-type: upper-alpha;
+        }
+        [contenteditable] ol.list-upper-roman {
+          list-style-type: upper-roman;
         }
         [contenteditable] a {
           color: #3b82f6;

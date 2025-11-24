@@ -292,3 +292,56 @@ export {
   selectPaymentMethodsUpdating,
   selectPaymentMethodsDeleting
 } from './paymentMethodsSlice';
+
+// 💰 CASH REGISTER SYSTEM EXPORTS
+export { default as cashRegisterSlice } from './cashRegisterSlice';
+export {
+  // Thunks
+  checkShouldUseCashRegister,
+  getActiveShift,
+  openShift,
+  getShiftSummary,
+  generateClosingPDF,
+  closeShift,
+  getShiftsHistory,
+  getLastClosedShift,
+  // Actions
+  clearError as clearCashRegisterError,
+  clearActiveShift,
+  clearHistory as clearShiftsHistory,
+  resetCashRegister,
+  // Selectors
+  selectShouldUseCashRegister,
+  selectActiveShift,
+  selectShiftSummary,
+  selectLastClosedShift,
+  selectShiftsHistory,
+  selectHistoryPagination,
+  selectCashRegisterLoading,
+  selectCashRegisterError
+} from './cashRegisterSlice';
+
+// 📄 RECEIPT SYSTEM EXPORTS
+export { default as receiptSlice } from './receiptSlice';
+export {
+  // Thunks
+  generateReceiptPDF,
+  getReceiptData,
+  markReceiptSent,
+  // Actions
+  clearGeneratedPDF,
+  clearCurrentReceiptData,
+  clearError as clearReceiptError,
+  addReceipt,
+  resetReceipts,
+  // Selectors
+  selectGeneratedPDF,
+  selectGeneratedPDFFilename,
+  selectCurrentReceiptData,
+  selectReceiptByAppointmentId,
+  selectAllReceipts,
+  selectReceiptLoading,
+  selectReceiptError,
+  selectReceiptSentStatus
+} from './receiptSlice';
+

@@ -21,8 +21,22 @@ config.resolver.nodeModulesPaths = [
 // Custom resolver para manejar @shared
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (moduleName.startsWith('@shared/')) {
+    const fs = require('fs');
     const modulePath = moduleName.replace('@shared/', '');
-    const fullPath = path.join(sharedPath, modulePath + '.js');
+    
+    // Intentar primero con .js
+    let fullPath = path.join(sharedPath, modulePath + '.js');
+    
+    // Si no existe, intentar con index.js (para carpetas)
+    if (!fs.existsSync(fullPath)) {
+      fullPath = path.join(sharedPath, modulePath, 'index.js');
+    }
+    
+    // Si tampoco existe index.js, intentar sin extensión (dejará que Metro lo resuelva)
+    if (!fs.existsSync(fullPath)) {
+      fullPath = path.join(sharedPath, modulePath);
+    }
+    
     return {
       filePath: fullPath,
       type: 'sourceFile',
@@ -30,8 +44,22 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   }
   
   if (moduleName.startsWith('@bc/shared/')) {
+    const fs = require('fs');
     const modulePath = moduleName.replace('@bc/shared/', '');
-    const fullPath = path.join(sharedPath, modulePath + '.js');
+    
+    // Intentar primero con .js
+    let fullPath = path.join(sharedPath, modulePath + '.js');
+    
+    // Si no existe, intentar con index.js (para carpetas)
+    if (!fs.existsSync(fullPath)) {
+      fullPath = path.join(sharedPath, modulePath, 'index.js');
+    }
+    
+    // Si tampoco existe index.js, intentar sin extensión
+    if (!fs.existsSync(fullPath)) {
+      fullPath = path.join(sharedPath, modulePath);
+    }
+    
     return {
       filePath: fullPath,
       type: 'sourceFile',

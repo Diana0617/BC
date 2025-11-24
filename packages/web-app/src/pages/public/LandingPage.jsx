@@ -397,6 +397,289 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Plan Comparison Table */}
+      <section className="py-16 sm:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              Compara todos nuestros planes
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Encuentra el plan perfecto según las necesidades de tu negocio
+            </p>
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b-2 border-gray-200">
+                  <th className="text-left py-6 px-4 text-gray-900 font-semibold text-lg w-1/6">
+                    Características
+                  </th>
+                  {plans.map((plan, idx) => (
+                    <th 
+                      key={plan.id} 
+                      className={`py-6 px-4 text-center ${
+                        plan.isPopular ? 'bg-yellow-50 border-l-4 border-r-4 border-t-4 border-yellow-400' : ''
+                      }`}
+                    >
+                      <div className="space-y-2">
+                        {plan.isPopular && (
+                          <div className="inline-flex items-center px-3 py-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full">
+                            <StarIcon className="h-3 w-3 mr-1" />
+                            MÁS POPULAR
+                          </div>
+                        )}
+                        {plan.price === 0 && (
+                          <div className="inline-flex items-center px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+                            ¡GRATIS!
+                          </div>
+                        )}
+                        <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                        <div className="text-3xl font-bold text-gray-900">
+                          {plan.price === 0 ? (
+                            <span className="text-green-600">$0</span>
+                          ) : (
+                            <span>${Math.floor(plan.price / 1000)}k</span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {plan.price === 0 ? 'Para siempre' : 'por mes'}
+                        </div>
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {/* Límites */}
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <td className="py-4 px-4 font-semibold text-gray-900">Usuarios</td>
+                  {plans.map(plan => (
+                    <td key={plan.id} className={`py-4 px-4 text-center ${plan.isPopular ? 'bg-yellow-50' : ''}`}>
+                      <span className="font-semibold text-gray-900">{plan.maxUsers || '∞'}</span>
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-gray-200">
+                  <td className="py-4 px-4 font-semibold text-gray-900">Clientes</td>
+                  {plans.map(plan => (
+                    <td key={plan.id} className={`py-4 px-4 text-center ${plan.isPopular ? 'bg-yellow-50' : ''}`}>
+                      <span className="font-semibold text-gray-900">{plan.maxClients || '∞'}</span>
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <td className="py-4 px-4 font-semibold text-gray-900">Citas/mes</td>
+                  {plans.map(plan => (
+                    <td key={plan.id} className={`py-4 px-4 text-center ${plan.isPopular ? 'bg-yellow-50' : ''}`}>
+                      <span className="font-semibold text-gray-900">{plan.maxAppointments || '∞'}</span>
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-gray-200">
+                  <td className="py-4 px-4 font-semibold text-gray-900">Almacenamiento</td>
+                  {plans.map(plan => (
+                    <td key={plan.id} className={`py-4 px-4 text-center ${plan.isPopular ? 'bg-yellow-50' : ''}`}>
+                      <span className="font-semibold text-gray-900">
+                        {plan.storageGB ? `${plan.storageGB}GB` : '∞'}
+                      </span>
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* Módulos Principales */}
+                <tr className="border-b-2 border-gray-300 bg-gray-100">
+                  <td colSpan={plans.length + 1} className="py-3 px-4 font-bold text-gray-900 text-sm uppercase">
+                    Funcionalidades
+                  </td>
+                </tr>
+                
+                {[
+                  { key: 'authentication', label: 'Autenticación y Seguridad' },
+                  { key: 'dashboard', label: 'Dashboard' },
+                  { key: 'user-management', label: 'Gestión de Usuarios' },
+                  { key: 'multi_branch', label: 'Multi-sucursal' },
+                  { key: 'appointment-booking', label: 'Reserva de Citas' },
+                  { key: 'appointment-reminders', label: 'Recordatorios de Citas' },
+                  { key: 'inventory', label: 'Inventario' },
+                  { key: 'stock-control', label: 'Control de Stock' },
+                  { key: 'basic-payments', label: 'Pagos Básicos' },
+                  { key: 'wompi_integration', label: 'Integración Wompi' },
+                  { key: 'taxxa_integration', label: 'Integración Taxxa' },
+                  { key: 'expenses', label: 'Gestión de Gastos' },
+                  { key: 'balance', label: 'Balance y Reportes' },
+                  { key: 'client_history', label: 'Historial de Clientes' },
+                  { key: 'advanced-analytics', label: 'Analítica Avanzada' }
+                ].map((module, idx) => (
+                  <tr key={module.key} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-gray-50' : ''}`}>
+                    <td className="py-4 px-4 text-gray-700">{module.label}</td>
+                    {plans.map(plan => {
+                      const hasModule = plan.modules?.some(m => m.name === module.key);
+                      return (
+                        <td key={plan.id} className={`py-4 px-4 text-center ${plan.isPopular ? 'bg-yellow-50' : ''}`}>
+                          {hasModule ? (
+                            <CheckCircleIcon className="h-6 w-6 text-green-500 mx-auto" />
+                          ) : (
+                            <span className="text-gray-300 text-2xl">—</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+                
+                {/* CTA Row */}
+                <tr className="border-t-2 border-gray-300">
+                  <td className="py-6 px-4"></td>
+                  {plans.map(plan => (
+                    <td key={plan.id} className={`py-6 px-4 text-center ${plan.isPopular ? 'bg-yellow-50' : ''}`}>
+                      <a
+                        href="/subscribe"
+                        className={`inline-block px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                          plan.price === 0 
+                            ? 'bg-green-500 hover:bg-green-600 text-white'
+                            : plan.isPopular 
+                            ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900'
+                            : 'bg-gray-700 hover:bg-gray-800 text-white'
+                        }`}
+                      >
+                        {plan.price === 0 ? 'Empezar Gratis' : 'Elegir Plan'}
+                      </a>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden space-y-6">
+            {plans.map((plan, planIdx) => (
+              <div key={plan.id} className={`border-2 rounded-xl overflow-hidden ${
+                plan.isPopular ? 'border-yellow-400 shadow-lg' : 'border-gray-200'
+              }`}>
+                {/* Plan Header */}
+                <div className={`p-6 ${plan.isPopular ? 'bg-yellow-50' : 'bg-gray-50'}`}>
+                  <div className="text-center space-y-2">
+                    {plan.isPopular && (
+                      <div className="inline-flex items-center px-3 py-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full mb-2">
+                        <StarIcon className="h-3 w-3 mr-1" />
+                        MÁS POPULAR
+                      </div>
+                    )}
+                    {plan.price === 0 && (
+                      <div className="inline-flex items-center px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full mb-2">
+                        ¡GRATIS!
+                      </div>
+                    )}
+                    <h3 className="text-2xl font-bold text-gray-900">{plan.name}</h3>
+                    <div className="text-4xl font-bold text-gray-900">
+                      {plan.price === 0 ? (
+                        <span className="text-green-600">$0</span>
+                      ) : (
+                        <span>${Math.floor(plan.price / 1000)}k</span>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {plan.price === 0 ? 'Para siempre' : 'por mes'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Plan Details */}
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200">
+                    <div>
+                      <div className="text-sm text-gray-600">Usuarios</div>
+                      <div className="text-lg font-semibold text-gray-900">{plan.maxUsers || '∞'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Clientes</div>
+                      <div className="text-lg font-semibold text-gray-900">{plan.maxClients || '∞'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Citas/mes</div>
+                      <div className="text-lg font-semibold text-gray-900">{plan.maxAppointments || '∞'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Almacenamiento</div>
+                      <div className="text-lg font-semibold text-gray-900">
+                        {plan.storageGB ? `${plan.storageGB}GB` : '∞'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-3">Funcionalidades incluidas:</h4>
+                    <div className="space-y-2">
+                      {[
+                        { key: 'authentication', label: 'Autenticación' },
+                        { key: 'dashboard', label: 'Dashboard' },
+                        { key: 'user-management', label: 'Gestión de Usuarios' },
+                        { key: 'multi_branch', label: 'Multi-sucursal' },
+                        { key: 'appointment-booking', label: 'Reserva de Citas' },
+                        { key: 'appointment-reminders', label: 'Recordatorios' },
+                        { key: 'inventory', label: 'Inventario' },
+                        { key: 'stock-control', label: 'Control de Stock' },
+                        { key: 'basic-payments', label: 'Pagos Básicos' },
+                        { key: 'wompi_integration', label: 'Wompi' },
+                        { key: 'taxxa_integration', label: 'Taxxa' },
+                        { key: 'expenses', label: 'Gastos' },
+                        { key: 'balance', label: 'Balance' },
+                        { key: 'client_history', label: 'Historial' },
+                        { key: 'advanced-analytics', label: 'Analítica Avanzada' }
+                      ].map(module => {
+                        const hasModule = plan.modules?.some(m => m.name === module.key);
+                        return (
+                          <div key={module.key} className="flex items-center justify-between">
+                            <span className="text-sm text-gray-700">{module.label}</span>
+                            {hasModule ? (
+                              <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <span className="text-gray-300">—</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <a
+                    href="/subscribe"
+                    className={`block w-full text-center px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                      plan.price === 0 
+                        ? 'bg-green-500 hover:bg-green-600 text-white'
+                        : plan.isPopular 
+                        ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900'
+                        : 'bg-gray-700 hover:bg-gray-800 text-white'
+                    }`}
+                  >
+                    {plan.price === 0 ? 'Empezar Gratis' : 'Elegir Plan'}
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <p className="text-gray-600 mb-4">
+              ¿Tienes dudas sobre qué plan elegir?
+            </p>
+            <a 
+              href="https://wa.me/573005555555" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-6 py-3 border-2 border-gray-700 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-semibold"
+            >
+              Habla con nosotros
+              <ArrowRightIcon className="ml-2 h-4 w-4" />
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-16 sm:py-20 bg-cyan-400">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">

@@ -29,6 +29,7 @@ const SupplierEvaluation = require('./SupplierEvaluation');
 const SupplierCatalogItem = require('./SupplierCatalogItem');
 const BranchStock = require('./BranchStock');
 const Appointment = require('./Appointment');
+const AppointmentPayment = require('./AppointmentPayment');
 const PasswordResetToken = require('./PasswordResetToken');
 
 // Modelos de configuración del negocio
@@ -96,6 +97,9 @@ const UserBusinessPermission = require('./UserBusinessPermission');
 // Modelos de tratamientos multi-sesión
 const TreatmentPlan = require('./TreatmentPlan');
 const TreatmentSession = require('./TreatmentSession');
+
+// Modelos de gestión de caja
+const CashRegisterShift = require('./CashRegisterShift');
 
 // Definir asociaciones
 // User - Business
@@ -980,6 +984,36 @@ Business.hasMany(Voucher, {
   as: 'vouchers'
 });
 
+// CashRegisterShift - Business
+CashRegisterShift.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+Business.hasMany(CashRegisterShift, {
+  foreignKey: 'businessId',
+  as: 'cashRegisterShifts'
+});
+
+// CashRegisterShift - User
+CashRegisterShift.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+User.hasMany(CashRegisterShift, {
+  foreignKey: 'userId',
+  as: 'cashRegisterShifts'
+});
+
+// CashRegisterShift - Branch
+CashRegisterShift.belongsTo(Branch, {
+  foreignKey: 'branchId',
+  as: 'branch'
+});
+Branch.hasMany(CashRegisterShift, {
+  foreignKey: 'branchId',
+  as: 'cashRegisterShifts'
+});
+
 // Voucher - Customer (User)
 Voucher.belongsTo(User, {
   foreignKey: 'customerId',
@@ -1580,6 +1614,7 @@ module.exports = {
   BusinessClient,
   Service,
   Appointment,
+  AppointmentPayment,
   Product,
   InventoryMovement,
   BranchStock,
@@ -1646,5 +1681,7 @@ module.exports = {
   WhatsAppMessageTemplate,
   WhatsAppWebhookEvent,
   // Modelos de Wompi Payment Config (pagos clientes → negocios)
-  BusinessWompiPaymentConfig
+  BusinessWompiPaymentConfig,
+  // Modelos de gestión de caja
+  CashRegisterShift
 };

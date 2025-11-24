@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { businessSpecialistsApi, businessBranchesApi, specialistServicesApi, businessServicesApi } from '@shared/api';
 import StaffKanbanBoard from '../../../../components/staff/StaffKanbanBoard.jsx';
+import PhoneInput from '../../../../components/PhoneInput';
 
 const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
   // Corrección: el estado en businessSlice se llama currentBusiness, not activeBusiness
@@ -316,36 +317,36 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
     }
   };
 
-  const handleEdit = (specialist) => {
-    setEditingSpecialist(specialist);
-    setFormData({
-      firstName: specialist.firstName,
-      lastName: specialist.lastName,
-      email: specialist.email,
-      phone: specialist.phone || '',
-      password: '',
-      role: specialist.role,
-      specialization: specialist.specialization || '',
-      experience: specialist.experience || '',
-      certifications: Array.isArray(specialist.certifications) 
-        ? specialist.certifications.join(', ') 
-        : (specialist.certifications || ''),
-      biography: specialist.biography || '',
-      commissionRate: specialist.commissionRate || '',
-      branchId: specialist.branchId || '',
-      additionalBranches: specialist.additionalBranches || [],
-      isActive: specialist.isActive
-    });
-    setShowPasswordField(false);
-    setIsAddingSpecialist(true);
-    setCurrentStep(1);
-    setCurrentTab('info'); // Resetear a tab de info
+  // const handleEdit = (specialist) => {
+  //   setEditingSpecialist(specialist);
+  //   setFormData({
+  //     firstName: specialist.firstName,
+  //     lastName: specialist.lastName,
+  //     email: specialist.email,
+  //     phone: specialist.phone || '',
+  //     password: '',
+  //     role: specialist.role,
+  //     specialization: specialist.specialization || '',
+  //     experience: specialist.experience || '',
+  //     certifications: Array.isArray(specialist.certifications) 
+  //       ? specialist.certifications.join(', ') 
+  //       : (specialist.certifications || ''),
+  //     biography: specialist.biography || '',
+  //     commissionRate: specialist.commissionRate || '',
+  //     branchId: specialist.branchId || '',
+  //     additionalBranches: specialist.additionalBranches || [],
+  //     isActive: specialist.isActive
+  //   });
+  //   setShowPasswordField(false);
+  //   setIsAddingSpecialist(true);
+  //   setCurrentStep(1);
+  //   setCurrentTab('info'); // Resetear a tab de info
     
-    // Cargar servicios del especialista si tiene ID
-    if (specialist.id) {
-      loadSpecialistServices(specialist.id);
-    }
-  };
+  //   // Cargar servicios del especialista si tiene ID
+  //   if (specialist.id) {
+  //     loadSpecialistServices(specialist.id);
+  //   }
+  // };
 
   const handleDelete = async (specialistId) => {
     if (!confirm('¿Estás seguro de eliminar este especialista? Esta acción no se puede deshacer.')) return;
@@ -557,17 +558,11 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Teléfono
           </label>
-          <div className="relative">
-            <PhoneIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="+57 300 123 4567"
-            />
-          </div>
+          <PhoneInput
+            value={formData.phone}
+            onChange={(value) => setFormData(prev => ({ ...prev, phone: value || '' }))}
+            placeholder="+57 300 123 4567"
+          />
         </div>
         
         {(showPasswordField || !editingSpecialist) && (
@@ -1111,140 +1106,12 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
         </div>
       )}
 
-      {/* Lista de especialistas */}
-      {specialists.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {specialists.map((specialist) => (
-            <div 
-              key={specialist.id} 
-              className={`bg-white border rounded-lg p-4 hover:shadow-md transition-shadow ${
-                !specialist.isActive ? 'opacity-60' : ''
-              }`}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-900">
-                      {specialist.firstName} {specialist.lastName}
-                    </h3>
-                    {specialist.isActive ? (
-                      <CheckCircleIcon className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <XCircleIcon className="h-4 w-4 text-red-500" />
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    {specialist.role === 'RECEPTIONIST_SPECIALIST' ? 'Recep.-Especialista' : 'Especialista'}
-                  </p>
-                </div>
-                
-                <div className="flex space-x-1">
-                  <button
-                    onClick={() => handleEdit(specialist)}
-                    className="p-1 text-gray-400 hover:text-blue-600"
-                    title="Editar"
-                  >
-                    <PencilIcon className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(specialist.id)}
-                    className="p-1 text-gray-400 hover:text-red-600"
-                    title="Eliminar"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-              
-              {specialist.specialization && (
-                <div className="flex items-start gap-2 mb-2">
-                  <StarIcon className="h-4 w-4 text-gray-400 mt-0.5" />
-                  <p className="text-sm text-gray-600">{specialist.specialization}</p>
-                </div>
-              )}
-              
-              <div className="space-y-1 text-sm">
-                {specialist.email && (
-                  <div className="flex items-center gap-2">
-                    <EnvelopeIcon className="h-3.5 w-3.5 text-gray-400" />
-                    <p className="text-gray-600 truncate">{specialist.email}</p>
-                  </div>
-                )}
-                
-                {specialist.phone && (
-                  <div className="flex items-center gap-2">
-                    <PhoneIcon className="h-3.5 w-3.5 text-gray-400" />
-                    <p className="text-gray-600">{specialist.phone}</p>
-                  </div>
-                )}
-
-                {/* Mostrar sucursales asignadas */}
-                {specialist.branches && specialist.branches.length > 0 && (
-                  <div className="flex items-start gap-2">
-                    <BuildingOfficeIcon className="h-3.5 w-3.5 text-gray-400 mt-0.5" />
-                    <div className="flex-1">
-                      {specialist.branches.length === 1 ? (
-                        <p className="text-gray-600 text-xs">
-                          {specialist.branches[0].name}
-                        </p>
-                      ) : (
-                        <div className="space-y-0.5">
-                          {specialist.branches.map((branch) => (
-                            <p key={branch.id} className="text-gray-600 text-xs">
-                              {branch.name}
-                              {branch.isDefault && <span className="ml-1 text-blue-600">(Principal)</span>}
-                            </p>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
-                {specialist.yearsOfExperience && (
-                  <div className="flex items-center gap-2">
-                    <AcademicCapIcon className="h-3.5 w-3.5 text-gray-400" />
-                    <p className="text-gray-600 text-xs">
-                      {specialist.yearsOfExperience} años de experiencia
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-3 pt-3 border-t flex items-center justify-between">
-                {specialist.commissionPercentage ? (
-                  <span className="text-xs text-gray-500">
-                    Comisión: {specialist.commissionPercentage}%
-                  </span>
-                ) : specialist.hourlyRate ? (
-                  <span className="text-xs text-gray-500">
-                    Tarifa: ${parseFloat(specialist.hourlyRate).toLocaleString('es-CO')}
-                  </span>
-                ) : (
-                  <span className="text-xs text-gray-400">
-                    Sin comisión configurada
-                  </span>
-                )}
-                <button
-                  onClick={() => toggleStatus(specialist.id)}
-                  className={`text-sm font-medium ${
-                    specialist.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'
-                  }`}
-                >
-                  {specialist.isActive ? 'Desactivar' : 'Activar'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Formulario Multi-Step */}
       {isAddingSpecialist && (
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="bg-gray-50 rounded-lg p-6">
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {editingSpecialist ? 'Editar Especialista' : 'Nuevo Especialista'}
+              {editingSpecialist ? 'Editar miembro del equipo' : 'Nuevo miembro del equipo'}
             </h3>
             
             {/* Tabs - Solo mostrar si estamos editando un especialista existente */}
@@ -1372,7 +1239,7 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
                   disabled={loading || !validateStep(1) || !validateStep(2)}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Guardando...' : editingSpecialist ? 'Actualizar Especialista' : 'Crear Especialista'}
+                  {loading ? 'Guardando...' : editingSpecialist ? 'Actualizar Miembro del equipo' : 'Crear Miembro del equipo'}
                 </button>
               )}
               
@@ -1407,6 +1274,8 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
           <StaffKanbanBoard
             specialists={specialists}
             businessId={activeBusiness?.id}
+            onDelete={handleDelete}
+            onToggleStatus={toggleStatus}
             onEdit={(staff) => {
               setEditingSpecialist(staff);
               setIsAddingSpecialist(true);

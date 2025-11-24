@@ -8,7 +8,7 @@ const RoleDefaultPermission = sequelize.define('RoleDefaultPermission', {
     primaryKey: true
   },
   role: {
-    type: DataTypes.ENUM('BUSINESS', 'SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'),
+    type: DataTypes.ENUM('OWNER', 'BUSINESS', 'SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'),
     allowNull: false,
     comment: 'Rol al que aplica este permiso por defecto'
   },
@@ -34,7 +34,7 @@ const RoleDefaultPermission = sequelize.define('RoleDefaultPermission', {
   underscored: true,
   indexes: [
     {
-      fields: ['role', 'permissionId'],
+      fields: ['role', 'permission_id'],
       unique: true
     }
   ]

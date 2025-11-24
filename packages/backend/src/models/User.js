@@ -41,7 +41,10 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: true,
     validate: {
-      len: [10, 15]
+      len: {
+        args: [10, 15],
+        msg: 'El teléfono debe tener entre 10 y 15 caracteres'
+      }
     }
   },
   role: {

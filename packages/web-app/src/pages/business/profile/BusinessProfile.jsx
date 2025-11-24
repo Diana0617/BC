@@ -191,11 +191,11 @@ const BusinessProfile = () => {
           setupStep: 'branding'
         },
         {
-          id: 'business-rules',
-          name: 'Reglas de Negocio',
-          icon: ShieldCheckIcon,
-          component: null,
-          isModalTrigger: true
+          id: 'staff',
+          name: 'Equipo de Trabajo',
+          icon: UsersIcon,
+          component: StaffManagementSection,
+          setupStep: 'specialists'
         },
         {
           id: 'services',
@@ -205,12 +205,14 @@ const BusinessProfile = () => {
           setupStep: 'services'
         },
         {
-          id: 'staff',
-          name: 'Equipo de Trabajo',
-          icon: UsersIcon,
-          component: StaffManagementSection,
-          setupStep: 'specialists'
+          id: 'business-rules',
+          name: 'Reglas de Negocio',
+          icon: ShieldCheckIcon,
+          component: null,
+          isModalTrigger: true
         },
+        
+        
         {
           id: 'payment-methods',
           name: 'Métodos de Pago',
@@ -377,14 +379,26 @@ const BusinessProfile = () => {
     ...genericModulesSections     // Solo módulos nuevos sin sección específica
   ]
 
-  // Ya no necesitamos mapear nuevamente, la disponibilidad ya está incluida
-  const sectionsWithAvailability = allSections.map(section => ({
-    ...section,
-    // Para secciones que siempre están visibles o no requieren módulo
-    isAvailable: section.alwaysVisible || 
-                 !section.moduleRequired || 
-                 section.isAvailable === true
-  }))
+  // Mapear disponibilidad verificando contra availableModules
+  const sectionsWithAvailability = allSections.map(section => {
+    // Si la sección siempre es visible, está disponible
+    if (section.alwaysVisible) {
+      return { ...section, isAvailable: true }
+    }
+    
+    // Si no requiere módulo, está disponible
+    if (!section.moduleRequired) {
+      return { ...section, isAvailable: true }
+    }
+    
+    // Si requiere módulo, verificar que esté en availableModules
+    const isModuleAvailable = availableModules.includes(section.moduleRequired)
+    
+    return {
+      ...section,
+      isAvailable: isModuleAvailable
+    }
+  })
 
   console.log('📋 Sections with availability:', sectionsWithAvailability)
 

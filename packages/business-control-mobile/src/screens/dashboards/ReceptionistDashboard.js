@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
 import { Calendar } from 'react-native-calendars';
 
 // Redux
@@ -27,7 +28,13 @@ import {
   selectReceptionistDashboardError,
   selectReceptionistActionLoading,
   selectReceptionistViewMode,
-  selectReceptionistSelectedAppointment
+  selectReceptionistSelectedAppointment,
+  // Cash Register
+  checkShouldUseCashRegister,
+  getActiveShift,
+  selectShouldUseCashRegister,
+  selectActiveShift,
+  selectCashRegisterLoading
 } from '@shared/store/reactNativeStore';
 import {
   fetchReceptionistAppointments,
@@ -195,7 +202,10 @@ const AppointmentCard = ({ appointment, onPress, onActionPress }) => {
 // COMPONENTE PRINCIPAL
 // =====================================================
 
-const ReceptionistDashboard = ({ navigation }) => {
+const ReceptionistDashboard = () => {
+  // Navigation
+  const navigation = useNavigation();
+  
   // Redux
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -210,11 +220,19 @@ const ReceptionistDashboard = ({ navigation }) => {
   const actionLoading = useSelector(selectReceptionistActionLoading);
   const viewMode = useSelector(selectReceptionistViewMode);
   const selectedAppointment = useSelector(selectReceptionistSelectedAppointment);
+  
+  // Cash Register
+  const shouldUseCashRegister = useSelector(selectShouldUseCashRegister);
+  const activeShift = useSelector(selectActiveShift);
+  const cashRegisterLoading = useSelector(selectCashRegisterLoading);
 
   console.log('👩‍💼 Receptionist Dashboard - User:', user);
   console.log('👩‍💼 Receptionist Dashboard - BusinessId:', businessId);
   console.log('👩‍💼 Receptionist Dashboard - Appointments:', appointments.length);
   console.log('👩‍💼 Receptionist Dashboard - Stats:', stats);
+  console.log('💰 Cash Register - shouldUseCashRegister:', shouldUseCashRegister);
+  console.log('💰 Cash Register - activeShift:', activeShift);
+  console.log('💰 Cash Register - loading:', cashRegisterLoading);
 
   // Estados locales
   const [refreshing, setRefreshing] = useState(false);
@@ -358,6 +376,9 @@ const ReceptionistDashboard = ({ navigation }) => {
   useEffect(() => {
     if (user && businessId) {
       loadDashboardData();
+      // Verificar acceso a caja registradora
+      dispatch(checkShouldUseCashRegister({ businessId }));
+      dispatch(getActiveShift({ businessId }));
     }
   }, [user, businessId, filters.date, filters.period, filters.branchId, filters.specialistId, filters.status]);
 
@@ -419,6 +440,14 @@ const ReceptionistDashboard = ({ navigation }) => {
       ]
     );
   }, [dispatch]);
+
+  const handleCashRegister = useCallback(() => {
+    if (activeShift) {
+      navigation.navigate('ActiveShift', { businessId });
+    } else {
+      navigation.navigate('OpenShift', { businessId });
+    }
+  }, [activeShift, businessId, navigation]);
 
   const handleAppointmentPress = useCallback((appointment) => {
     dispatch(setReceptionistSelectedAppointment(appointment));
@@ -590,9 +619,25 @@ const ReceptionistDashboard = ({ navigation }) => {
               </Text>
             </View>
           </View>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-            <Ionicons name="log-out-outline" size={24} color="#ef4444" />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            {shouldUseCashRegister && (
+              <TouchableOpacity 
+                onPress={handleCashRegister} 
+                style={[styles.actionButton, activeShift && styles.actionButtonActive]}
+                disabled={cashRegisterLoading?.checkingAccess || cashRegisterLoading?.fetchingActiveShift}
+              >
+                <Ionicons 
+                  name={activeShift ? "cash" : "cash-outline"} 
+                  size={22} 
+                  color={activeShift ? "#ffffff" : "#10b981"} 
+                />
+                {activeShift && <View style={styles.activeDot} />}
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={handleLogout} style={styles.actionButton}>
+              <Ionicons name="log-out-outline" size={22} color="#ef4444" />
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
 
@@ -964,10 +1009,38 @@ const styles = StyleSheet.create({
     color: '#c7d2fe',
   },
   
-  logoutButton: {
-    padding: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  
+  actionButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 12,
+    marginLeft: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    position: 'relative',
+  },
+  
+  actionButtonActive: {
+    backgroundColor: '#10b981',
+  },
+  
+  activeDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ef4444',
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
 
   // Stats

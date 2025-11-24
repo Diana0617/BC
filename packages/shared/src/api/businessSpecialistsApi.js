@@ -70,7 +70,7 @@ class BusinessSpecialistsAPI {
       const response = await apiClient.post(`/api/business/${businessId}/config/specialists`, {
         userData: {
           ...userData,
-          role: 'SPECIALIST',
+          // NO sobrescribir el rol, usar el que viene en userData
           businessId
         },
         profileData: {

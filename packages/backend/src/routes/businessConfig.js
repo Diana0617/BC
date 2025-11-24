@@ -333,6 +333,40 @@ router.put('/:businessId/config/specialists/:profileId', BusinessConfigControlle
 
 /**
  * @swagger
+ * /api/business/{businessId}/config/specialists/{profileId}/status:
+ *   patch:
+ *     summary: Activar/Desactivar especialista
+ *     tags: [Business Config]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: profileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Estado actualizado exitosamente
+ */
+router.patch('/:businessId/config/specialists/:profileId/status', BusinessConfigController.toggleSpecialistStatus);
+
+/**
+ * @swagger
  * /api/business/{businessId}/config/specialists/{profileId}:
  *   delete:
  *     summary: Eliminar especialista

@@ -281,6 +281,7 @@ const supplierRoutes = require('./routes/suppliers');
 const supplierCatalogRoutes = require('./routes/supplierCatalog');
 const cloudinaryUploadRoutes = require('./routes/cloudinaryUpload');
 const adminRoutes = require('./routes/admin'); // Rutas de administración
+const cashRegisterRoutes = require('./routes/cashRegister'); // Rutas de gestión de caja
 // const specialistServicesRoutes = require('./routes/specialistServices'); // DEPRECATED: Ahora usando rutas RESTful en businessConfig.js
 
 // Rutas de sesiones móviles
@@ -304,6 +305,7 @@ app.use('/api/business/:businessId', commissionRoutes); // Rutas de comisiones
 app.use('/api/business/:businessId', consentRoutes); // Rutas de consentimientos
 app.use('/api/permissions', permissionRoutes); // Rutas de permisos
 app.use('/api/treatment-plans', treatmentPlanRoutes); // Rutas de tratamientos multi-sesión
+app.use('/api/cash-register', cashRegisterRoutes); // Rutas de gestión de caja
 app.use('/api', paymentRoutes); // Rutas de pagos y métodos de pago
 app.use('/api', businessRulesRoutes); // Nuevas rutas simplificadas de reglas
 app.use('/api/rule-templates', ruleTemplateRoutes); // Rutas de plantillas de reglas (legacy)

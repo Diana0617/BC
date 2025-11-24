@@ -80,14 +80,14 @@ const UserBusinessPermission = sequelize.define('UserBusinessPermission', {
   underscored: true,
   indexes: [
     {
-      fields: ['userId', 'businessId', 'permissionId'],
+      fields: ['user_id', 'business_id', 'permission_id'],
       unique: true
     },
     {
-      fields: ['userId', 'businessId']
+      fields: ['user_id', 'business_id']
     },
     {
-      fields: ['permissionId']
+      fields: ['permission_id']
     }
   ]
 });

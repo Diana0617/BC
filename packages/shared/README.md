@@ -12,6 +12,9 @@ Este paquete contiene toda la lógica compartida entre la aplicación web y la a
 - **`store/index.js`** - Configuración principal del store
 - **`store/slices/authSlice.js`** - Manejo de autenticación (login, register, recuperación de contraseña)
 - **`store/slices/userSlice.js`** - Manejo de usuarios (CRUD, filtros, paginación)
+- **`store/slices/cashRegisterSlice.js`** - ✨ **NUEVO** - Gestión de turnos de caja
+- **`store/slices/receiptSlice.js`** - ✨ **NUEVO** - Gestión de recibos en PDF
+- Y muchos más... (ver `store/slices/index.js`)
 
 ### 🎯 Selectors
 - **`store/selectors/authSelectors.js`** - Selectores para estado de autenticación
@@ -177,6 +180,27 @@ REACT_APP_API_URL=http://localhost:3001  # URL del backend
 Este paquete está diseñado para funcionar tanto en:
 - ⚛️ **React Web App** (con localStorage)
 - 📱 **React Native App** (adaptar storage para AsyncStorage)
+
+## 📚 Documentación Adicional
+
+### Sistemas Implementados
+
+- **[Sistema de Caja y Recibos](./CASH_REGISTER_REDUX.md)** - Redux slices para gestión de turnos de caja y recibos PDF
+- **[Sistema de Planes de Tratamiento](./TREATMENT_PLANS_REDUX.md)** - Redux para planes y sesiones
+- **[Sistema de Vouchers](./VOUCHER_REDUX_IMPLEMENTATION.md)** - Redux para gestión de vouchers
+- **[Sistema de Calendario](./CALENDAR_SYSTEM_REDUX.md)** - Redux para calendario y citas
+- **[Sistema de Comisiones](./COMMISSION_REDUX.md)** - Redux para comisiones y consentimientos
+- Y más en la carpeta raíz...
+
+### Slices Disponibles
+
+Para ver todos los slices disponibles y sus exports, consulta:
+```javascript
+import * as allSlices from '@shared/store/slices';
+console.log(Object.keys(allSlices));
+```
+
+O revisa el archivo: `src/store/slices/index.js`
 
 ## 🎯 Próximos Pasos
 

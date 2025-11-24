@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { EyeIcon, EyeSlashIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
+import { CountryDropdown, RegionDropdown } from 'react-country-region-selector'
+import PhoneInput from 'react-phone-number-input'
+import 'react-phone-number-input/style.css'
+import './PhoneInput.css'
 
 const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitationToken, onComplete, onBack }) => {
   const [formData, setFormData] = useState({
@@ -10,8 +14,8 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
     businessPhone: '',
     businessEmail: '',
     address: '',
-    city: '',
-    country: 'Colombia',
+    city: '', // Region/State from country-region-selector
+    country: '',
     
     // Owner/Admin user information
     firstName: '',
@@ -198,7 +202,10 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
       newErrors.address = 'La dirección es requerida'
     }
     if (!formData.city.trim()) {
-      newErrors.city = 'La ciudad es requerida'
+      newErrors.city = 'La ciudad/región es requerida'
+    }
+    if (!formData.country.trim()) {
+      newErrors.country = 'El país es requerido'
     }
 
     // User validation
@@ -385,13 +392,13 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Teléfono del Negocio *
                   </label>
-                  <input
-                    type="tel"
-                    name="businessPhone"
+                  <PhoneInput
+                    international
+                    defaultCountry="CO"
                     value={formData.businessPhone}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${
-                      errors.businessPhone ? 'border-red-500' : 'border-gray-300'
+                    onChange={(value) => setFormData(prev => ({ ...prev, businessPhone: value || '' }))}
+                    className={`phone-input-custom ${
+                      errors.businessPhone ? 'border-red-500' : ''
                     }`}
                     placeholder="+57 300 123 4567"
                   />
@@ -421,45 +428,52 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ciudad *
+                    País *
                   </label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
+                  <CountryDropdown
+                    value={formData.country}
+                    onChange={(val) => setFormData(prev => ({ ...prev, country: val, city: '' }))}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${
-                      errors.city ? 'border-red-500' : 'border-gray-300'
+                      errors.country ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Bogotá"
+                    priorityOptions={['CO', 'US', 'MX', 'ES']}
+                    defaultOptionLabel="Selecciona un país"
                   />
-                  {errors.city && (
-                    <p className="text-red-500 text-sm mt-1">{errors.city}</p>
+                  {errors.country && (
+                    <p className="text-red-500 text-sm mt-1">{errors.country}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    País
+                    Ciudad/Región *
                   </label>
-                  <select
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                  >
-                    <option value="Colombia">Colombia</option>
-                    {/* TODO: Agregar más países cuando se expanda */}
-                  </select>
+                  <RegionDropdown
+                    country={formData.country}
+                    value={formData.city}
+                    onChange={(val) => setFormData(prev => ({ ...prev, city: val }))}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${
+                      errors.city ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    blankOptionLabel="Selecciona una ciudad"
+                    defaultOptionLabel="Selecciona una ciudad"
+                    disabled={!formData.country}
+                  />
+                  {errors.city && (
+                    <p className="text-red-500 text-sm mt-1">{errors.city}</p>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* User Information */}
             <div className="bg-white rounded-2xl sm:rounded-3xl shadow-plan-lg border-2 border-yellow-400 p-4 sm:p-8">
-              <h3 className="text-lg font-bold text-yellow-600 mb-6">
+              <h3 className="text-lg font-bold text-yellow-600 mb-3">
                 Tu Información Personal
               </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Estos serán tus datos para iniciar sesión en la plataforma. Recuerda bien tu email y contraseña.
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -522,13 +536,13 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tu Teléfono *
                   </label>
-                  <input
-                    type="tel"
-                    name="phone"
+                  <PhoneInput
+                    international
+                    defaultCountry="CO"
                     value={formData.phone}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${
-                      errors.phone ? 'border-red-500' : 'border-gray-300'
+                    onChange={(value) => setFormData(prev => ({ ...prev, phone: value || '' }))}
+                    className={`phone-input-custom ${
+                      errors.phone ? 'border-red-500' : ''
                     }`}
                     placeholder="+57 300 123 4567"
                   />
@@ -620,7 +634,7 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
                   <div className="ml-3">
                     <label className="text-sm text-gray-700">
                       Acepto los{' '}
-                      <a href="/terms" target="_blank" className="text-pink-600 hover:text-pink-500">
+                      <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-500 underline">
                         términos y condiciones
                       </a>{' '}
                       de uso del servicio *
@@ -642,7 +656,7 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
                   <div className="ml-3">
                     <label className="text-sm text-gray-700">
                       Acepto la{' '}
-                      <a href="/privacy" target="_blank" className="text-pink-600 hover:text-pink-500">
+                      <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-500 underline">
                         política de privacidad
                       </a>{' '}
                       y el tratamiento de mis datos *

@@ -68,7 +68,9 @@ async function startServer() {
         WhatsAppToken,
         WhatsAppMessage,
         WhatsAppMessageTemplate,
-        WhatsAppWebhookEvent
+        WhatsAppWebhookEvent,
+        // Modelos de gestión de caja
+        CashRegisterShift
       } = require('./src/models');
 
       // Configuración de sincronización
@@ -176,6 +178,9 @@ async function startServer() {
         await WhatsAppMessageTemplate.sync(syncOptions);
         await WhatsAppMessage.sync(syncOptions);
         await WhatsAppWebhookEvent.sync(syncOptions);
+        
+        // 12. Tablas de gestión de caja (al final porque depende de User, Business, Branch)
+        await CashRegisterShift.sync(syncOptions);
         
         console.log(`✅ Todas las tablas sincronizadas en modo: ${syncMode.toUpperCase()}`);
       }

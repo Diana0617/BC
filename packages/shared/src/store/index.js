@@ -60,6 +60,9 @@ import whatsappWebhookEventsReducer from './slices/whatsappWebhookEventsSlice';
 import businessWompiPaymentReducer from './slices/businessWompiPaymentSlice';
 // 📦 PRODUCTS & INVENTORY SYSTEM REDUCERS
 import productsReducer from './slices/productsSlice';
+// 💰 CASH REGISTER & RECEIPTS SYSTEM REDUCERS
+import cashRegisterReducer from './slices/cashRegisterSlice';
+import receiptReducer from './slices/receiptSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -125,7 +128,10 @@ export const createStore = (preloadedState = {}) => {
       // 💳 BUSINESS WOMPI PAYMENT CONFIG REDUCERS
       businessWompiPayment: businessWompiPaymentReducer,
       // 📦 PRODUCTS & INVENTORY SYSTEM REDUCERS
-      products: productsReducer
+      products: productsReducer,
+      // 💰 CASH REGISTER & RECEIPTS SYSTEM REDUCERS
+      cashRegister: cashRegisterReducer,
+      receipt: receiptReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>

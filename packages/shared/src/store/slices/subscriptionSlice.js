@@ -1,11 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { getApiUrl } from '../../constants/api'
 
 // AsyncThunk para crear suscripción y business completo
 export const createSubscription = createAsyncThunk(
   'subscription/createSubscription',
   async (subscriptionData, { rejectWithValue }) => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const API_BASE_URL = getApiUrl()
       
       // Usar el endpoint correcto para crear suscripciones
       const subscriptionPayload = {
@@ -79,7 +80,7 @@ export const initiateWompiPayment = createAsyncThunk(
   'subscription/initiateWompiPayment',
   async (paymentData, { rejectWithValue }) => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const API_BASE_URL = getApiUrl()
       const response = await fetch(`${API_BASE_URL}/api/wompi/initiate-subscription-payment`, {
         method: 'POST',
         headers: {
@@ -119,7 +120,7 @@ export const getWompiConfig = createAsyncThunk(
       }
 
       console.log('🌐 Obteniendo configuración Wompi desde API...')
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const API_BASE_URL = getApiUrl()
       const response = await fetch(`${API_BASE_URL}/api/wompi/config`, {
         method: 'GET',
         headers: {
@@ -149,7 +150,7 @@ export const create3DSPayment = createAsyncThunk(
   'subscription/create3DSPayment',
   async (paymentData, { rejectWithValue }) => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const API_BASE_URL = getApiUrl()
       const token = localStorage.getItem('token')
       
       if (!token) {
@@ -190,7 +191,7 @@ export const check3DSTransactionStatus = createAsyncThunk(
   'subscription/check3DSTransactionStatus',
   async (transactionId, { rejectWithValue }) => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const API_BASE_URL = getApiUrl()
       const token = localStorage.getItem('token')
       
       if (!token) {
@@ -226,7 +227,7 @@ export const get3DSPaymentStats = createAsyncThunk(
   'subscription/get3DSPaymentStats',
   async (params = {}, { rejectWithValue }) => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const API_BASE_URL = getApiUrl()
       const token = localStorage.getItem('token')
       
       if (!token) {
@@ -265,7 +266,7 @@ export const createPublic3DSPayment = createAsyncThunk(
   'subscription/createPublic3DSPayment',
   async (paymentData, { rejectWithValue }) => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const API_BASE_URL = getApiUrl()
 
       const response = await fetch(`${API_BASE_URL}/api/subscriptions/3ds/create`, {
         method: 'POST',
@@ -299,7 +300,7 @@ export const checkPublic3DSTransactionStatus = createAsyncThunk(
   'subscription/checkPublic3DSTransactionStatus',
   async (transactionId, { rejectWithValue }) => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const API_BASE_URL = getApiUrl()
 
       const response = await fetch(`${API_BASE_URL}/api/subscriptions/3ds/status/${transactionId}`, {
         method: 'GET',

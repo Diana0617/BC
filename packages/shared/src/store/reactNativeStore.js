@@ -15,6 +15,10 @@ import specialistDashboardReducer from './slices/specialistDashboardSlice.js';
 import receptionistDashboardReducer from './slices/receptionistDashboardSlice.js';
 // Import permissions system slice (FM-28)
 import permissionsReducer from './slices/permissionsSlice.js';
+// Import cash register system slice
+import cashRegisterReducer from './slices/cashRegisterSlice.js';
+// Import receipt system slice
+import receiptReducer from './slices/receiptSlice.js';
 
 // Re-export permissions thunks for React Native
 export { 
@@ -24,6 +28,37 @@ export {
   revokeUserPermission,
   resetToDefaults
 } from './slices/permissionsSlice.js';
+
+// Re-export cash register thunks and selectors for React Native
+export {
+  checkShouldUseCashRegister,
+  getActiveShift,
+  openShift,
+  getShiftSummary,
+  generateClosingPDF,
+  closeShift,
+  getShiftsHistory,
+  getLastClosedShift,
+  selectShouldUseCashRegister,
+  selectActiveShift,
+  selectShiftSummary,
+  selectLastClosedShift,
+  selectShiftsHistory,
+  selectHistoryPagination,
+  selectCashRegisterLoading,
+  selectCashRegisterError
+} from './slices/cashRegisterSlice.js';
+
+// Re-export receipt thunks and selectors for React Native
+export {
+  generateReceipt,
+  getReceiptPDF,
+  sendReceiptWhatsApp,
+  selectCurrentReceipt,
+  selectReceiptPDF,
+  selectReceiptLoading,
+  selectReceiptError
+} from './slices/receiptSlice.js';
 
 // Temporal async thunk for login (React Native specific)
 export const loginUserRN = createAsyncThunk(
@@ -274,7 +309,11 @@ export const createReactNativeStore = () => {
       // Receptionist dashboard reducer
       receptionistDashboard: receptionistDashboardReducer,
       // Permissions system reducer (FM-28)
-      permissions: permissionsReducer
+      permissions: permissionsReducer,
+      // Cash register system reducer
+      cashRegister: cashRegisterReducer,
+      // Receipt system reducer
+      receipt: receiptReducer
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({

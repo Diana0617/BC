@@ -13,10 +13,12 @@ import {
   completeStep,
   saveBasicInfo
 } from '../../../../../../shared/src/store/slices/businessConfigurationSlice'
+import PhoneInput from '../../../../components/PhoneInput'
 
 const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const dispatch = useDispatch()
   const { basicInfo, loading, saving, saveError } = useSelector(state => state.businessConfiguration)
+  const business = useSelector(state => state.business?.currentBusiness)
   
   const [formData, setFormData] = useState({
     name: '',
@@ -33,11 +35,28 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const [isEditing, setIsEditing] = useState(isSetupMode)
 
   // Cargar datos del store al montar el componente
+  // Priorizar basicInfo, pero si no existe, usar directamente del business
   useEffect(() => {
-    if (basicInfo && Object.keys(basicInfo).length > 0) {
-      setFormData(basicInfo)
+    const dataToLoad = basicInfo && Object.keys(basicInfo).length > 0 
+      ? basicInfo 
+      : business 
+        ? {
+            name: business.name || '',
+            businessCode: business.subdomain || business.businessCode || '',
+            type: business.type || '',
+            phone: business.phone || '',
+            email: business.email || '',
+            address: business.address || '',
+            city: business.city || '',
+            country: business.country || 'Colombia',
+            description: business.description || ''
+          }
+        : null
+
+    if (dataToLoad) {
+      setFormData(dataToLoad)
     }
-  }, [basicInfo])
+  }, [basicInfo, business])
 
   // Generar código automáticamente basado en el nombre
   // Compatible con backend: solo letras minúsculas y números (sin guiones ni espacios)
@@ -240,14 +259,12 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
             <PhoneIcon className="h-4 w-4 inline mr-1" />
             Teléfono *
           </label>
-          <input
-            type="tel"
-            name="phone"
+          <PhoneInput
             value={formData.phone}
-            onChange={handleInputChange}
+            onChange={(value) => setFormData(prev => ({ ...prev, phone: value || '' }))}
             disabled={!isEditing}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
             placeholder="+57 300 123 4567"
+            required
           />
         </div>
 

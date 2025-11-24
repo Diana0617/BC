@@ -10,7 +10,7 @@ const LoginModal = ({ isOpen, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { loading, error } = useSelector(state => state.auth)
+  const { isLoggingIn, loginError } = useSelector(state => state.auth)
 
   const [credentials, setCredentials] = useState({
     email: '',
@@ -48,6 +48,8 @@ const LoginModal = ({ isOpen, onClose }) => {
         onClose()
       }
     } catch (error) {
+      // El error ya está siendo manejado por el slice de Redux
+      // y se mostrará en el estado 'error' del componente
       console.error('Login failed:', error)
     }
   }
@@ -131,17 +133,17 @@ const LoginModal = ({ isOpen, onClose }) => {
                     </button>
                   </div>
                 </div>
-                {error && (
+                {loginError && (
                   <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm border border-red-200">
-                    {error}
+                    {loginError}
                   </div>
                 )}
                 <button 
                   type="submit" 
                   className="w-full bg-red-400 text-white font-semibold py-4 rounded-xl transition-all duration-200 text-base shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
-                  disabled={loading}
+                  disabled={isLoggingIn}
                 >
-                  {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                  {isLoggingIn ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                 </button>
               </form>
               <div className="text-center">

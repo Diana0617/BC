@@ -18,6 +18,11 @@ import ReceptionistSpecialistDashboard from '../screens/dashboards/ReceptionistS
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 
+// Cash Register Screens
+import OpenShiftScreen from '../screens/cashRegister/OpenShiftScreen';
+import ActiveShiftScreen from '../screens/cashRegister/ActiveShiftScreen';
+import CloseShiftScreen from '../screens/cashRegister/CloseShiftScreen';
+
 // Iconos
 import { Ionicons } from '@expo/vector-icons';
 
@@ -80,6 +85,10 @@ function AuthenticatedStack() {
       <Stack.Screen name="DashboardReceptionist" component={ReceptionistDashboard} />
       <Stack.Screen name="DashboardReceptionistSpecialist" component={ReceptionistSpecialistDashboard} />
       <Stack.Screen name="SpecialistCalendar" component={SpecialistCalendarFixed} />
+      {/* Cash Register Screens */}
+      <Stack.Screen name="OpenShift" component={OpenShiftScreen} />
+      <Stack.Screen name="ActiveShift" component={ActiveShiftScreen} />
+      <Stack.Screen name="CloseShift" component={CloseShiftScreen} />
       {/* Otras pantallas principales */}
       <Stack.Screen name="Tabs" component={MainTabs} />
       <Stack.Screen name="Profile" component={ProfileScreen} />

@@ -137,7 +137,7 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
     if (!confirm(`¿Desasignar la regla "${rule.key}"?`)) return;
     
     try {
-      await dispatch(removeRuleAssignment({ businessRuleId: rule.business_rule_id })).unwrap();
+      await dispatch(removeRuleAssignment(rule.key)).unwrap();
       dispatch(getBusinessAssignedRules());
       showToast('success', `✅ Regla "${rule.key}" desasignada`);
     } catch (error) {

@@ -110,16 +110,25 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken, bil
           <div
             key={plan.id}
             className={`relative bg-white rounded-2xl sm:rounded-3xl shadow-plan-lg border-2 ${
-              plan.popular 
+              plan.isPopular 
                 ? 'border-yellow-400 ring-2 sm:ring-4 ring-yellow-400 scale-100 sm:scale-105 z-10' 
-                : idx === 0 ? 'border-cyan-400' : idx === 1 ? 'border-yellow-400' : 'border-red-400'
+                : plan.price === 0 ? 'border-green-400' : idx === 0 ? 'border-cyan-400' : idx === 1 ? 'border-yellow-400' : 'border-red-400'
             } p-4 sm:p-8 flex flex-col h-full transition-all duration-300 hover:shadow-3xl hover:-translate-y-2`}
           >
+            {/* Free badge para plan Básico */}
+            {plan.price === 0 && (
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-max">
+                <span className="bg-gradient-to-r from-green-400 to-emerald-500 text-white px-2 sm:px-4 py-1 rounded-full text-xs sm:text-sm font-bold shadow-lg">
+                  ¡GRATIS PARA SIEMPRE!
+                </span>
+              </div>
+            )}
+            
             {/* Popular badge */}
-            {plan.popular && (
+            {plan.isPopular && plan.price > 0 && (
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-max">
                 <span className="bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 px-2 sm:px-4 py-1 rounded-full text-xs sm:text-sm font-bold shadow-lg">
-                  MÁS POPULAR
+                  ⭐ MÁS POPULAR
                 </span>
               </div>
             )}
@@ -133,52 +142,67 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken, bil
                 {plan.description}
               </p>
 
-              {/* Billing Cycle Selector dentro de la card */}
-              <div className="mb-4">
-                <div className="inline-flex rounded-lg border-2 border-gray-300 bg-gray-50 p-1">
-                  <button
-                    type="button"
-                    onClick={() => handleCycleChange(plan.id, 'MONTHLY')}
-                    className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-semibold transition-all ${
-                      getCycleForPlan(plan.id) === 'MONTHLY'
-                        ? 'bg-white text-gray-900 shadow-md'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Mensual
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleCycleChange(plan.id, 'ANNUAL')}
-                    className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-semibold transition-all ${
-                      getCycleForPlan(plan.id) === 'ANNUAL'
-                        ? 'bg-white text-gray-900 shadow-md'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Anual
-                    <span className="ml-1 text-green-600 text-xs font-bold">-15%</span>
-                  </button>
+              {/* Billing Cycle Selector dentro de la card - Solo para planes de pago */}
+              {plan.price > 0 && (
+                <div className="mb-4">
+                  <div className="inline-flex rounded-lg border-2 border-gray-300 bg-gray-50 p-1">
+                    <button
+                      type="button"
+                      onClick={() => handleCycleChange(plan.id, 'MONTHLY')}
+                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-semibold transition-all ${
+                        getCycleForPlan(plan.id) === 'MONTHLY'
+                          ? 'bg-white text-gray-900 shadow-md'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Mensual
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCycleChange(plan.id, 'ANNUAL')}
+                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-semibold transition-all ${
+                        getCycleForPlan(plan.id) === 'ANNUAL'
+                          ? 'bg-white text-gray-900 shadow-md'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Anual
+                      <span className="ml-1 text-green-600 text-xs font-bold">-15%</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Price */}
               <div className="mb-2 sm:mb-4">
-                <span className="text-xl sm:text-3xl font-bold text-gray-900">
-                  {formatPrice(getPriceForCycle(plan, getCycleForPlan(plan.id)), plan.currency)}
-                </span>
-                <span className="text-gray-600 ml-1 sm:ml-2 text-xs sm:text-base">
-                  /mes
-                </span>
-                {getCycleForPlan(plan.id) === 'ANNUAL' && (
-                  <div className="mt-1">
-                    <span className="text-xs text-gray-500 line-through">
-                      {formatPrice(plan.price, plan.currency)}
+                {plan.price === 0 ? (
+                  <div>
+                    <span className="text-2xl sm:text-4xl font-bold text-green-600">
+                      GRATIS
                     </span>
-                    <span className="ml-2 text-xs text-green-600 font-semibold">
-                      ¡Ahorras {formatPrice(plan.price * 12 * 0.15, plan.currency)} al año!
-                    </span>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-2">
+                      ¡Para siempre! Sin tarjeta requerida
+                    </p>
                   </div>
+                ) : (
+                  <>
+                    <span className="text-xl sm:text-3xl font-bold text-gray-900">
+                      {formatPrice(getPriceForCycle(plan, getCycleForPlan(plan.id)), plan.currency)}
+                    </span>
+                    <span className="text-gray-600 ml-1 sm:ml-2 text-xs sm:text-base">
+                      /mes
+                    </span>
+                    {getCycleForPlan(plan.id) === 'ANNUAL' && (
+                      <div className="mt-1">
+                        <span className="text-xs text-gray-500 line-through">
+                          {formatPrice(plan.price, plan.currency)}
+                        </span>
+                        <span className="ml-2 text-xs text-green-600 font-semibold">
+                          ¡Ahorras {formatPrice(plan.price * 12 * 0.15, plan.currency)} al año!
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -284,19 +308,26 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken, bil
                   onPlanSelect(plan, selectedCycle)
                 }}
                 className={`w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200 transform hover:-translate-y-1 shadow-lg hover:shadow-xl inline-flex items-center justify-center ${
-                  idx === 0 ? 'bg-cyan-400 hover:bg-cyan-500 text-white' :
-                  idx === 1 ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900' :
-                  'bg-red-400 hover:bg-red-500 text-white'
+                  plan.price === 0 ? 'bg-green-500 hover:bg-green-600 text-white' :
+                  plan.isPopular ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900' :
+                  'bg-indigo-500 hover:bg-indigo-600 text-white'
                 }`}
               >
-                {plan.popular ? 'Comenzar Ahora' : 'Seleccionar Plan'}
-                <span className="ml-2 text-xs">
-                  ({getCycleForPlan(plan.id) === 'MONTHLY' ? 'Mensual' : 'Anual'})
-                </span>
+                {plan.price === 0 ? 'Empezar Gratis' : plan.isPopular ? 'Comenzar Ahora' : 'Seleccionar Plan'}
+                {plan.price > 0 && (
+                  <span className="ml-2 text-xs">
+                    ({getCycleForPlan(plan.id) === 'MONTHLY' ? 'Mensual' : 'Anual'})
+                  </span>
+                )}
               </button>
               {/* Free trial note */}
               <p className="text-center text-gray-500 text-xs mt-2 sm:mt-3">
-                {plan.trialDays || 14} días de prueba gratuita
+                {plan.price === 0 
+                  ? '¡Sin compromisos! Actualiza cuando quieras'
+                  : plan.trialDays > 0 
+                    ? `${plan.trialDays} días de prueba gratuita`
+                    : 'Sin período de prueba'
+                }
               </p>
             </div>
           </div>
@@ -306,11 +337,14 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken, bil
       {/* Additional info */}
       <div className="text-center mt-8 sm:mt-12 space-y-2 sm:space-y-4 px-2 sm:px-0">
         <p className="text-gray-700 text-sm sm:text-base font-semibold">
-          Todos los planes incluyen prueba gratuita
+          ¡Empieza gratis, actualiza cuando estés listo!
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-8 text-xs sm:text-sm text-gray-700 font-medium">
           <span className="flex items-center">
-            ✓ Sin compromisos a largo plazo
+            ✓ Plan Básico GRATIS para siempre
+          </span>
+          <span className="flex items-center">
+            ✓ Sin compromisos ni permanencia
           </span>
           <span className="flex items-center">
             ✓ Cancela cuando quieras

@@ -112,7 +112,6 @@ async function resetDatabase() {
     await ConsentTemplate.sync({ force: true });
     await Service.sync({ force: true }); // Ahora que ConsentTemplate existe
     await ServiceCommission.sync({ force: true });
-    // ConsentSignature va después de Appointment
     
     console.log('   Sincronizando tablas multi-branch...');
     await UserBranch.sync({ force: true });
@@ -132,8 +131,79 @@ async function resetDatabase() {
     await BusinessExpense.sync({ force: true });
     
     console.log('   Sincronizando tablas con dependencias múltiples...');
+    // Crear ConsentSignature primero SIN la FK a Appointment
+    await sequelize.query(`
+      CREATE TABLE IF NOT EXISTS "consent_signatures" (
+        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        "businessId" UUID NOT NULL,
+        "consentTemplateId" UUID NOT NULL,
+        "customerId" UUID NOT NULL,
+        "appointmentId" UUID,
+        "serviceId" UUID,
+        "templateVersion" VARCHAR(20) NOT NULL,
+        "templateContent" TEXT NOT NULL,
+        "signatureData" TEXT,
+        "signatureType" VARCHAR(20) NOT NULL DEFAULT 'DIGITAL',
+        "signedAt" TIMESTAMP WITH TIME ZONE NOT NULL,
+        "signedBy" VARCHAR(255) NOT NULL,
+        "editableFieldsData" JSONB DEFAULT '{}',
+        "pdfUrl" VARCHAR(255),
+        "pdfGeneratedAt" TIMESTAMP WITH TIME ZONE,
+        "ipAddress" VARCHAR(45),
+        "userAgent" TEXT,
+        "location" JSONB,
+        "device" JSONB DEFAULT '{}',
+        "status" VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+        "revokedAt" TIMESTAMP WITH TIME ZONE,
+        "revokedReason" TEXT,
+        "revokedBy" UUID,
+        "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+      );
+    `);
+    
+    // Ahora crear Appointment
     await Appointment.sync({ force: true });
-    await ConsentSignature.sync({ force: true }); // AHORA sí, después de Appointment
+    
+    // Agregar las FKs después
+    await sequelize.query(`
+      ALTER TABLE "consent_signatures" 
+      ADD CONSTRAINT "fk_consent_appointment" 
+      FOREIGN KEY ("appointmentId") 
+      REFERENCES "appointments"("id") 
+      ON DELETE SET NULL;
+      
+      ALTER TABLE "consent_signatures"
+      ADD CONSTRAINT "fk_consent_business"
+      FOREIGN KEY ("businessId")
+      REFERENCES "businesses"("id")
+      ON DELETE CASCADE;
+      
+      ALTER TABLE "consent_signatures"
+      ADD CONSTRAINT "fk_consent_template"
+      FOREIGN KEY ("consentTemplateId")
+      REFERENCES "consent_templates"("id")
+      ON DELETE RESTRICT;
+      
+      ALTER TABLE "consent_signatures"
+      ADD CONSTRAINT "fk_consent_customer"
+      FOREIGN KEY ("customerId")
+      REFERENCES "clients"("id")
+      ON DELETE CASCADE;
+      
+      ALTER TABLE "consent_signatures"
+      ADD CONSTRAINT "fk_consent_service"
+      FOREIGN KEY ("serviceId")
+      REFERENCES "services"("id")
+      ON DELETE SET NULL;
+      
+      ALTER TABLE "consent_signatures"
+      ADD CONSTRAINT "fk_consent_revoked_by"
+      FOREIGN KEY ("revokedBy")
+      REFERENCES "users"("id")
+      ON DELETE SET NULL;
+    `);
+    
     await PlanModule.sync({ force: true });
     await BusinessSubscription.sync({ force: true });
     await BusinessClient.sync({ force: true });
