@@ -92,6 +92,9 @@ async function startServer() {
       
       // Solo sincronizar si no está deshabilitado
       if (!disableSync) {
+        console.log('🔍 Iniciando sincronización de modelos...');
+        console.log('📋 Constraints en Appointment-ConsentSignature: DESACTIVADOS');
+        
         // 1. Tablas sin dependencias
         await SubscriptionPlan.sync(syncOptions);
         await Module.sync(syncOptions);
