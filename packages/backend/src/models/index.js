@@ -382,7 +382,8 @@ Appointment.belongsTo(User, {
 });
 Appointment.belongsTo(ConsentSignature, {
   foreignKey: 'consentSignatureId',
-  as: 'consentSignature'
+  as: 'consentSignature',
+  constraints: false // Desactiva FK para evitar dependencia circular
 });
 
 Business.hasMany(Appointment, { 
