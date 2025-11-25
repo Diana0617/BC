@@ -65,15 +65,16 @@ const config = {
 
 const env = process.env.NODE_ENV || 'development';
 
-// Si hay DATABASE_URL en producción, úsala directamente
-const sequelize = process.env.DATABASE_URL
+// Solo usar DATABASE_URL en producción
+// En desarrollo, siempre usar la configuración local (DB_HOST, DB_NAME, etc.)
+const sequelize = process.env.DATABASE_URL && process.env.NODE_ENV === 'production'
   ? new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',
       dialectOptions: {
-        ssl: process.env.NODE_ENV === 'production' ? {
+        ssl: {
           require: true,
           rejectUnauthorized: false
-        } : false
+        }
       },
       pool: {
         max: 10,
@@ -81,7 +82,7 @@ const sequelize = process.env.DATABASE_URL
         acquire: 30000,
         idle: 10000
       },
-      logging: process.env.NODE_ENV === 'development' ? console.log : false
+      logging: false
     })
   : new Sequelize(
       config[env].database,
