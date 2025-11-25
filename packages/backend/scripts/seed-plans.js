@@ -78,7 +78,7 @@ const basePlans = [
       storageLimit: 3221225472, // 3GB
       status: 'ACTIVE',
       isPopular: true, // MÁS POPULAR
-      trialDays: 15,
+      trialDays: 7,
       features: {
         appointments: 'Gestión de citas con recordatorios automáticos',
         clients: 'Base de datos de hasta 300 clientes con historial',
@@ -129,7 +129,7 @@ const basePlans = [
       storageLimit: 10737418240, // 10GB
       status: 'ACTIVE',
       isPopular: false,
-      trialDays: 15,
+      trialDays: 7,
       features: {
         appointments: 'Gestión completa de citas con recordatorios',
         clients: 'Base de datos de hasta 1000 clientes con historial completo',
@@ -184,7 +184,7 @@ const basePlans = [
       storageLimit: 21474836480, // 20GB
       status: 'ACTIVE',
       isPopular: false,
-      trialDays: 30, // Trial más largo para probar integraciones
+      trialDays: 7, // Trial más largo para probar integraciones
       features: {
         appointments: 'Gestión completa de citas con recordatorios',
         clients: 'Base de datos de hasta 5000 clientes con historial completo',
@@ -241,7 +241,7 @@ const basePlans = [
       storageLimit: 107374182400, // 100GB
       status: 'ACTIVE',
       isPopular: false,
-      trialDays: 30,
+      trialDays: 7,
       features: {
         everything_premium: 'Todas las funciones del plan Premium',
         multi_branch: 'Gestión de múltiples sucursales',
