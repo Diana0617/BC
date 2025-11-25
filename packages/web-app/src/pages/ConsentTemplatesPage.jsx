@@ -64,6 +64,11 @@ const ConsentTemplatesPage = () => {
   };
 
   const handleCreate = () => {
+    console.log('📋 Business object:', business);
+    console.log('📋 Business name:', business?.name);
+    console.log('📋 Business phone:', business?.phone);
+    console.log('📋 Business address:', business?.address);
+    console.log('📋 Business email:', business?.email);
     setSelectedTemplate(null);
     setIsEditorOpen(true);
   };
@@ -397,12 +402,14 @@ const ConsentTemplatesPage = () => {
         onSave={handleSave}
         template={selectedTemplate}
         businessId={businessId}
-        businessName={business?.name}
-        businessPhone={business?.phone}
-        businessAddress={business?.address}
-        businessEmail={business?.email}
+        businessName={business?.name || ''}
+        businessPhone={business?.phone || ''}
+        businessAddress={business?.address || ''}
+        businessEmail={business?.email || ''}
         branches={branches}
-        branding={branding}
+        branding={{
+          logo: business?.logo || business?.settings?.branding?.logo || branding?.logo
+        }}
       />
 
       {/* Preview Modal */}

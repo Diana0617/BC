@@ -142,22 +142,28 @@ const ConsentTemplateEditor = ({
   const handleInsertPlaceholder = useCallback((placeholderValue, isImage = false, isBranch = false, branchData = null) => {
     if (editorRef.current) {
       const data = initialDataRef.current;
+      console.log('🔍 Insertando placeholder:', placeholderValue, 'con datos:', data);
       
-      if (isImage && placeholderValue === '{{negocio_logo}}' && data.logoUrl) {
-        // Insertar logo como imagen editable sin wrapper que restrinja movimiento
-        const imageHtml = `<img 
-          src="${data.logoUrl}" 
-          alt="Logo del negocio" 
-          style="max-width: 250px; width: 250px; height: auto; cursor: pointer; border: 2px dashed #cbd5e1; display: inline-block; margin: 10px;" 
-          onclick="
-            const newWidth = prompt('Ancho de la imagen (ej: 150px, 200px, 300px):', this.style.width);
-            if (newWidth) { 
-              this.style.width = newWidth; 
-              this.style.maxWidth = newWidth; 
-            }
-          "
-        /> `;
-        editorRef.current.insertContent(imageHtml);
+      if (isImage && placeholderValue === '{{negocio_logo}}') {
+        if (data.logoUrl) {
+          // Insertar logo como imagen editable sin wrapper que restrinja movimiento
+          const imageHtml = `<img 
+            src="${data.logoUrl}" 
+            alt="Logo del negocio" 
+            style="max-width: 250px; width: 250px; height: auto; cursor: pointer; border: 2px dashed #cbd5e1; display: inline-block; margin: 10px;" 
+            onclick="
+              const newWidth = prompt('Ancho de la imagen (ej: 150px, 200px, 300px):', this.style.width);
+              if (newWidth) { 
+                this.style.width = newWidth; 
+                this.style.maxWidth = newWidth; 
+              }
+            "
+          /> `;
+          editorRef.current.insertContent(imageHtml);
+        } else {
+          // Si no hay logo, insertar el placeholder como texto
+          editorRef.current.insertContent(` ${placeholderValue} `);
+        }
       } else if (isBranch && branchData) {
         // Insertar información completa de la sucursal como HTML
         const branchHtml = `
@@ -170,18 +176,13 @@ const ConsentTemplateEditor = ({
         `;
         editorRef.current.insertContent(branchHtml);
       } else {
-        // Mapear placeholders a valores reales
+        // Mapear placeholders a valores reales del negocio
         const valueMap = {
-          '{{negocio_nombre}}': data.businessName || '{{negocio_nombre}}',
-          '{{negocio_direccion}}': data.businessAddress || '{{negocio_direccion}}',
-          '{{negocio_telefono}}': data.businessPhone || '{{negocio_telefono}}',
-          '{{negocio_email}}': data.businessEmail || '{{negocio_email}}',
-          // Placeholders del cliente - se mantienen como plantilla para reemplazar después
-          '{{cliente_nombre}}': '{{cliente_nombre}}',
-          '{{cliente_email}}': '{{cliente_email}}',
-          '{{cliente_telefono}}': '{{cliente_telefono}}',
-          '{{cliente_documento}}': '{{cliente_documento}}',
-          '{{cliente_fecha_nacimiento}}': '{{cliente_fecha_nacimiento}}',
+          '{{negocio_nombre}}': data.businessName,
+          '{{negocio_direccion}}': data.businessAddress,
+          '{{negocio_telefono}}': data.businessPhone,
+          '{{negocio_email}}': data.businessEmail,
+          // Estos se mantienen como placeholders para reemplazarse al firmar
           '{{servicio_nombre}}': '{{servicio_nombre}}',
           '{{fecha_firma}}': '{{fecha_firma}}',
           '{{fecha_cita}}': '{{fecha_cita}}'
@@ -234,13 +235,13 @@ const ConsentTemplateEditor = ({
     console.log('🏷️ Generando placeholders con data:', data);
     
     const result = [
-      // Logo del negocio (solo si está disponible)
-      ...(data.logoUrl ? [{
+      // Logo del negocio (siempre disponible)
+      {
         label: '🖼️ Logo del Negocio',
         value: '{{negocio_logo}}',
         description: 'Inserta el logo de tu negocio',
         isImage: true
-      }] : []),
+      },
       { 
         label: 'Nombre del Negocio', 
         value: '{{negocio_nombre}}',
@@ -269,36 +270,11 @@ const ConsentTemplateEditor = ({
         isBranch: true,
         branchData: branch
       })) : []),
-    { 
-      label: 'Nombre del Cliente', 
-      value: '{{cliente_nombre}}',
-      description: 'Nombre completo del cliente'
-    },
-    { 
-      label: 'Email del Cliente', 
-      value: '{{cliente_email}}',
-      description: 'Email del cliente'
-    },
-    { 
-      label: 'Teléfono del Cliente', 
-      value: '{{cliente_telefono}}',
-      description: 'Teléfono del cliente'
-    },
-    { 
-      label: 'Documento del Cliente', 
-      value: '{{cliente_documento}}',
-      description: 'Número de identificación'
-    },
-    { 
-      label: 'Fecha de Nacimiento', 
-      value: '{{cliente_fecha_nacimiento}}',
-      description: 'Fecha de nacimiento del cliente'
-    },
-    { 
-      label: 'Nombre del Servicio', 
-      value: '{{servicio_nombre}}',
-      description: 'Nombre del procedimiento/servicio'
-    },
+      { 
+        label: 'Nombre del Servicio', 
+        value: '{{servicio_nombre}}',
+        description: 'Nombre del procedimiento/servicio'
+      },
       { 
         label: 'Fecha de Firma', 
         value: '{{fecha_firma}}',
