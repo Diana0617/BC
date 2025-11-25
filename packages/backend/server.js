@@ -70,7 +70,16 @@ async function startServer() {
         WhatsAppMessageTemplate,
         WhatsAppWebhookEvent,
         // Modelos de gestión de caja
-        CashRegisterShift
+        CashRegisterShift,
+        // Modelos de proveedores
+        Supplier,
+        SupplierContact,
+        PurchaseOrder,
+        SupplierInvoice,
+        SupplierInvoicePayment,
+        SupplierEvaluation,
+        SupplierCatalogItem,
+        BranchStock
       } = require('./src/models');
 
       // Configuración de sincronización
@@ -184,6 +193,16 @@ async function startServer() {
         
         // 12. Tablas de gestión de caja (al final porque depende de User, Business, Branch)
         await CashRegisterShift.sync(syncOptions);
+        
+        // 13. Tablas de proveedores e inventario (después de Business, Product y Branch)
+        await Supplier.sync(syncOptions);
+        await SupplierContact.sync(syncOptions);
+        await PurchaseOrder.sync(syncOptions);
+        await SupplierInvoice.sync(syncOptions);
+        await SupplierInvoicePayment.sync(syncOptions);
+        await SupplierEvaluation.sync(syncOptions);
+        await SupplierCatalogItem.sync(syncOptions);
+        await BranchStock.sync(syncOptions);
         
         console.log(`✅ Todas las tablas sincronizadas en modo: ${syncMode.toUpperCase()}`);
       }
