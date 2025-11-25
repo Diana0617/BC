@@ -322,7 +322,7 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
                       placeholder="mi-salon"
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <span className="text-gray-500 text-sm">.beautycontrol.app</span>
+                      <span className="text-gray-500 text-sm">.controldenegocios.com</span>
                     </div>
                     {subdomainStatus.checking && (
                       <div className="absolute inset-y-0 right-36 flex items-center pr-3">
@@ -345,7 +345,7 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
                     </p>
                   )}
                   <p className="text-gray-500 text-xs mt-1">
-                    Tu URL será: {formData.businessCode || 'mi-salon'}.beautycontrol.app
+                    Tu URL será: {formData.businessCode || 'mi-salon'}.controldenegocios.com
                   </p>
                 </div>
               </div>
@@ -743,10 +743,12 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
                 </div>
               )}
               
-              <div className="flex justify-between text-green-600">
-                <span>Prueba gratuita:</span>
-                <span className="font-medium">{selectedPlan?.trialDays || 14} días</span>
-              </div>
+              {selectedPlan?.trialDays > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Prueba gratuita:</span>
+                  <span className="font-medium">{selectedPlan.trialDays} días</span>
+                </div>
+              )}
               
               {/* Módulos incluidos */}
               {selectedPlan?.modules && selectedPlan.modules.length > 0 && (
@@ -791,9 +793,11 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
                 <span className="text-green-600">$0 COP</span>
               </div>
               
-              <p className="text-sm text-gray-500">
-                Tu primer cobro será el {new Date(Date.now() + (selectedPlan?.trialDays || 14) * 24 * 60 * 60 * 1000).toLocaleDateString('es-CO')}
-              </p>
+              {selectedPlan?.trialDays > 0 && (
+                <p className="text-sm text-gray-500">
+                  Tu primer cobro será el {new Date(Date.now() + selectedPlan.trialDays * 24 * 60 * 60 * 1000).toLocaleDateString('es-CO')}
+                </p>
+              )}
             </div>
 
             {invitationToken && (
