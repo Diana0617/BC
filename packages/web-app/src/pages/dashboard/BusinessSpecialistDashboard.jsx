@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom'
 import { 
   CalendarIcon, 
   UserGroupIcon, 
-  ClipboardListIcon,
-  CashIcon,
-  TrendingUpIcon,
+  ClipboardDocumentListIcon,
+  BanknotesIcon,
+  ArrowTrendingUpIcon,
   ClockIcon
-} from '@heroicons/react/outline'
+} from '@heroicons/react/24/outline'
 
 const BusinessSpecialistDashboard = () => {
   const navigate = useNavigate()
@@ -82,14 +82,14 @@ const BusinessSpecialistDashboard = () => {
     {
       title: 'Mis Servicios',
       description: 'Gestionar servicios',
-      icon: ClipboardListIcon,
+      icon: ClipboardDocumentListIcon,
       color: 'bg-purple-500',
       onClick: () => navigate('/services')
     },
     {
       title: 'Registro de Pagos',
       description: 'Ver pagos recibidos',
-      icon: CashIcon,
+      icon: BanknotesIcon,
       color: 'bg-green-500',
       onClick: () => navigate('/payments')
     }
@@ -171,7 +171,7 @@ const BusinessSpecialistDashboard = () => {
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <CashIcon className="w-6 h-6 text-green-600" />
+              <BanknotesIcon className="w-6 h-6 text-green-600" />
             </div>
             <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
               Hoy
