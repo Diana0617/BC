@@ -15,32 +15,36 @@ const basePlans = [
   {
     planData: {
       name: 'Básico',
-      description: '¡Gratis para siempre! Plan ideal para emprendedores y salones pequeños que están comenzando. Incluye funcionalidades esenciales para gestionar citas y clientes.',
+      description: '¡Gratis para siempre! Plan ideal para negocios unipersonales y emprendedores que trabajan solos. Agenda tus citas y gestiona hasta 10 procedimientos de forma simple.',
       price: 0, // GRATUITO
       currency: 'COP',
       duration: 1,
       durationType: 'MONTHS',
-      maxUsers: 2,
+      maxUsers: 1, // Solo 1 usuario (unipersonal)
       maxClients: 50,
       maxAppointments: 100,
+      maxServices: 10, // Máximo 10 procedimientos
       storageLimit: 524288000, // 500MB
       status: 'ACTIVE',
       isPopular: false,
       trialDays: 0, // No necesita trial, es gratis
       features: {
-        appointments: 'Gestión básica de citas (hasta 100/mes)',
+        appointments: 'Agenda básica de citas (hasta 100/mes)',
         clients: 'Base de datos de hasta 50 clientes',
-        payments: 'Pagos en efectivo únicamente',
+        services: 'Hasta 10 procedimientos/servicios',
+        unipersonal: 'Ideal para trabajadores independientes',
+        payments: 'Registro de pagos en efectivo',
         support: 'Soporte por email',
         trial_upgrade: 'Prueba GRATIS 15 días del Plan Estándar'
       },
       limitations: {
+        unipersonal: 'Solo para 1 persona (tú mismo)',
         single_branch: 'Solo 1 sucursal',
+        limited_services: 'Máximo 10 procedimientos',
+        no_reminders: 'Sin recordatorios automáticos',
         no_integrations: 'Sin integraciones de pago online',
         no_analytics: 'Sin reportes avanzados',
         no_inventory: 'Sin gestión de inventario',
-        no_reminders: 'Sin recordatorios automáticos',
-        limited_users: 'Máximo 2 usuarios',
         limited_clients: 'Máximo 50 clientes',
         limited_appointments: 'Máximo 100 citas/mes'
       }

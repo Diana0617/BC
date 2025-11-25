@@ -87,6 +87,11 @@ const SubscriptionPlan = sequelize.define('SubscriptionPlan', {
     type: DataTypes.INTEGER,
     allowNull: true
   },
+  maxServices: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'Máximo número de servicios/procedimientos permitidos'
+  },
   storageLimit: {
     type: DataTypes.BIGINT, // bytes
     allowNull: true

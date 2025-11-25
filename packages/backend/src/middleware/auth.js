@@ -76,9 +76,9 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Cargar branches asignados para especialistas y recepcionistas (incluyendo RECEPTIONIST_SPECIALIST)
+    // Cargar branches asignados para especialistas y recepcionistas (incluyendo RECEPTIONIST_SPECIALIST y BUSINESS_SPECIALIST)
     let branchIds = [];
-    if (['SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'].includes(user.role)) {
+    if (['SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'BUSINESS_SPECIALIST'].includes(user.role)) {
       const userBranches = await UserBranch.findAll({
         where: { userId: user.id },
         include: [{
@@ -183,11 +183,11 @@ const requireSpecialist = async (req, res, next) => {
       });
     }
 
-    // Verificar que el rol sea SPECIALIST
-    if (req.user.role !== 'SPECIALIST') {
+    // Verificar que el rol sea SPECIALIST o BUSINESS_SPECIALIST
+    if (!['SPECIALIST', 'BUSINESS_SPECIALIST'].includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        error: 'Acceso denegado. Rol SPECIALIST requerido'
+        error: 'Acceso denegado. Rol SPECIALIST o BUSINESS_SPECIALIST requerido'
       });
     }
 

@@ -18,15 +18,15 @@ const roleCheck = (allowedRoles) => {
 // Combinaciones específicas de roles
 const ownerOnly = roleCheck(['OWNER']);
 
-const businessAndOwner = roleCheck(['OWNER', 'BUSINESS']);
+const businessAndOwner = roleCheck(['OWNER', 'BUSINESS', 'BUSINESS_SPECIALIST']);
 
-const staffRoles = roleCheck(['SPECIALIST', 'RECEPTIONIST', 'BUSINESS']);
+const staffRoles = roleCheck(['SPECIALIST', 'RECEPTIONIST', 'BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST_SPECIALIST']);
 
-const allStaffRoles = roleCheck(['OWNER', 'BUSINESS', 'SPECIALIST', 'RECEPTIONIST']);
+const allStaffRoles = roleCheck(['OWNER', 'BUSINESS', 'SPECIALIST', 'RECEPTIONIST', 'BUSINESS_SPECIALIST', 'RECEPTIONIST_SPECIALIST']);
 
 const clientOnly = roleCheck(['CLIENT']);
 
-const allRoles = roleCheck(['OWNER', 'BUSINESS', 'SPECIALIST', 'RECEPTIONIST', 'CLIENT']);
+const allRoles = roleCheck(['OWNER', 'BUSINESS', 'SPECIALIST', 'RECEPTIONIST', 'CLIENT', 'BUSINESS_SPECIALIST', 'RECEPTIONIST_SPECIALIST']);
 
 // Middleware para verificar acceso específico a recursos
 const resourceOwnerCheck = (req, res, next) => {
@@ -38,13 +38,13 @@ const resourceOwnerCheck = (req, res, next) => {
     return next();
   }
   
-  // BUSINESS puede acceder a recursos de su negocio
-  if (role === 'BUSINESS') {
+  // BUSINESS y BUSINESS_SPECIALIST pueden acceder a recursos de su negocio
+  if (['BUSINESS', 'BUSINESS_SPECIALIST'].includes(role)) {
     return next();
   }
   
-  // SPECIALIST y RECEPTIONIST solo pueden acceder a sus propios recursos
-  if (['SPECIALIST', 'RECEPTIONIST'].includes(role)) {
+  // SPECIALIST, RECEPTIONIST y RECEPTIONIST_SPECIALIST solo pueden acceder a sus propios recursos
+  if (['SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'].includes(role)) {
     if (resourceUserId && resourceUserId !== userId) {
       return res.status(403).json({
         success: false,

@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { logout, clearSubscriptionWarning } from '@shared/store/slices/authSlice.js'
 import SubscriptionWarningBanner from '../../components/SubscriptionWarningBanner.jsx'
+import BusinessSpecialistDashboard from './BusinessSpecialistDashboard.jsx'
 
 const DashboardPage = () => {
   const dispatch = useDispatch()
@@ -18,48 +19,19 @@ const DashboardPage = () => {
   }
 
   const handleRenewSubscription = () => {
-    // TODO: Navegar a la página de renovación de suscripción
-    // Por ahora, podemos redirigir a una página de planes o mostrar modal
     console.log('Renovar suscripción');
-    // navigate('/subscription/renew');
     alert('Funcionalidad de renovación de suscripción próximamente. Contacte al administrador.');
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">Control de Negocios</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Hola, {user?.name || 'Usuario'}</span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors duration-200"
-              >
-                Cerrar Sesión
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+  // Render dashboard específico según el rol
+  const renderDashboardContent = () => {
+    if (user?.role === 'BUSINESS_SPECIALIST') {
+      return <BusinessSpecialistDashboard />
+    }
 
-      {/* Subscription Warning Banner */}
-      {subscriptionWarning && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-          <SubscriptionWarningBanner 
-            warning={subscriptionWarning} 
-            onDismiss={handleDismissWarning}
-            onRenew={handleRenewSubscription}
-          />
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    // Dashboard por defecto para otros roles
+    return (
+      <>
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Bienvenido a tu panel de control
@@ -198,6 +170,48 @@ const DashboardPage = () => {
             </div>
           </div>
         </div>
+      </>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-xl font-semibold text-gray-900">Control de Negocios</h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">
+                Hola, {user?.firstName || user?.name || 'Usuario'}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors duration-200"
+              >
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Subscription Warning Banner */}
+      {subscriptionWarning && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <SubscriptionWarningBanner 
+            warning={subscriptionWarning} 
+            onDismiss={handleDismissWarning}
+            onRenew={handleRenewSubscription}
+          />
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {renderDashboardContent()}
       </div>
     </div>
   )
