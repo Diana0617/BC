@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   DocumentTextIcon,
   PlusIcon,
@@ -8,7 +9,8 @@ import {
   EyeIcon,
   FunnelIcon,
   MagnifyingGlassIcon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 import ConsentTemplateEditor from '../components/consent/ConsentTemplateEditor';
 import {
@@ -21,6 +23,7 @@ import { loadBranding } from '@shared/store/slices/businessConfigurationSlice';
 
 const ConsentTemplatesPage = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const businessId = useSelector(state => state.auth.user?.businessId);
   const business = useSelector(state => state.auth.user?.business);
   const branches = useSelector(state => state.auth.user?.branches || []);
@@ -153,6 +156,13 @@ const ConsentTemplatesPage = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+              >
+                <ArrowLeftIcon className="h-5 w-5" />
+                Volver
+              </button>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
                 <DocumentTextIcon className="h-8 w-8 text-blue-600" />
                 Plantillas de Consentimiento
