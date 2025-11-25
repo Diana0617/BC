@@ -162,7 +162,7 @@ const ConsentTemplatesPage = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <button
-                onClick={() => navigate(-1)}
+                onClick={() => navigate('/business/profile')}
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
               >
                 <ArrowLeftIcon className="h-5 w-5" />
