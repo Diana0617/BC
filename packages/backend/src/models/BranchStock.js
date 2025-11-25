@@ -99,7 +99,7 @@ const BranchStock = sequelize.define('BranchStock', {
       name: 'idx_low_stock',
       fields: ['current_stock', 'min_stock'],
       where: {
-        currentStock: {
+        current_stock: {
           [sequelize.Sequelize.Op.lte]: sequelize.col('min_stock')
         }
       }
