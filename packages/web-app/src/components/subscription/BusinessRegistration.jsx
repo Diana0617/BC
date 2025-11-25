@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { EyeIcon, EyeSlashIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
-import { CountryDropdown, RegionDropdown } from 'react-country-region-selector'
+import { CountryDropdown } from 'react-country-region-selector'
 import PhoneInput from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
 import './PhoneInput.css'
@@ -432,7 +432,7 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
                   </label>
                   <CountryDropdown
                     value={formData.country}
-                    onChange={(val) => setFormData(prev => ({ ...prev, country: val, city: '' }))}
+                    onChange={(val) => setFormData(prev => ({ ...prev, country: val }))}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${
                       errors.country ? 'border-red-500' : 'border-gray-300'
                     }`}
@@ -446,17 +446,16 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ciudad/Región *
+                    Ciudad *
                   </label>
-                  <RegionDropdown
-                    country={formData.country}
+                  <input
+                    type="text"
                     value={formData.city}
-                    onChange={(val) => setFormData(prev => ({ ...prev, city: val }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                    placeholder="Ej: Bogotá, Medellín, Cali..."
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${
                       errors.city ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    blankOptionLabel="Selecciona una ciudad"
-                    defaultOptionLabel="Selecciona una ciudad"
                     disabled={!formData.country}
                   />
                   {errors.city && (
