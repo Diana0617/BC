@@ -124,7 +124,7 @@ const SubscriptionPage = () => {
             email: data.email,
             phone: data.phone,
             password: data.password,
-            role: 'BUSINESS_SPECIALIST' // Rol para plan gratuito
+            role: 'BUSINESS' // Usar BUSINESS hasta que se actualice el enum en producción
           },
           paymentData: {
             method: 'FREE', // Indicar que es plan gratuito

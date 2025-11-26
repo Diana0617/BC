@@ -306,7 +306,7 @@ class SubscriptionController {
           email: userData.email.toLowerCase(), // Normalizar email a minúsculas
           phone: userData.phone,
           password: hashedPassword,
-          role: userData.role || 'BUSINESS_OWNER', // Usar rol proporcionado o BUSINESS_OWNER por defecto
+          role: userData.role || 'BUSINESS', // Usar rol proporcionado o BUSINESS por defecto
           businessId: business.id,
           isActive: true,
           emailVerified: true, // Por ahora lo marcamos como verificado
