@@ -49,6 +49,9 @@ export { default as useOwnerFinancialReports } from './useOwnerFinancialReports'
 // PUBLIC hooks for landing page
 export { default as usePublicPlans } from './usePublicPlans';
 
+// SHARED hooks
+export { usePermissions } from './usePermissions';
+
 // Export all OWNER hooks as a group
 export const ownerHooks = {
   useOwner: useOwnerHook,
