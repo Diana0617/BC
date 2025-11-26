@@ -11,12 +11,16 @@ import {
   PencilIcon
 } from '@heroicons/react/24/outline'
 import { businessServicesApi, commissionApi, consentApi } from '@shared/api'
+import { usePermissions } from '@shared/hooks'
+import UpgradePlanModal from '../../../../components/common/UpgradePlanModal'
 import ServiceFormModal from '../../../../components/services/ServiceFormModal'
 import CommissionConfigModal from '../../../../components/services/CommissionConfigModal'
 import ConsentTemplateModal from '../../../../components/consent/ConsentTemplateModal'
 
 const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const activeBusiness = useSelector(state => state.business.currentBusiness)
+  const { isBusinessSpecialist } = usePermissions()
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   
   // Estados principales
   const [services, setServices] = useState([])
@@ -94,6 +98,11 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
   }
 
   const handleCreateService = () => {
+    // Límite de servicios para plan gratuito (ej: 5 servicios)
+    if (isBusinessSpecialist && services.length >= 5) {
+      setShowUpgradeModal(true)
+      return
+    }
     setSelectedService(null)
     setShowServiceModal(true)
   }
@@ -403,6 +412,12 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
           availableTemplates={consentTemplates}
         />
       )}
+      {/* Modal de Upgrade */}
+      <UpgradePlanModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        featureName="Servicios Ilimitados"
+      />
     </div>
   )
 }

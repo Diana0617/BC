@@ -22,6 +22,8 @@ import {
   QrCodeIcon,
   GlobeAltIcon
 } from '@heroicons/react/24/outline'
+import { usePermissions } from '@shared/hooks'
+import UpgradePlanModal from '../../../../components/common/UpgradePlanModal'
 import toast from 'react-hot-toast'
 
 // Mapeo de tipos de pago a iconos y colores
@@ -66,6 +68,8 @@ const PAYMENT_TYPE_CONFIG = {
 
 const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
   const dispatch = useDispatch()
+  const { isBusinessSpecialist } = usePermissions()
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   
   // Redux state
   const paymentMethods = useSelector(selectPaymentMethods)
@@ -95,6 +99,10 @@ const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
   }, [dispatch])
 
   const handleCreate = () => {
+    if (isBusinessSpecialist) {
+      setShowUpgradeModal(true)
+      return
+    }
     setEditingMethod(null)
     setFormData({
       name: '',
@@ -628,6 +636,12 @@ const PaymentMethodModal = ({ formData, setFormData, onSave, onCancel, isEditing
           </button>
         </div>
       </div>
+      {/* Modal de Upgrade */}
+      <UpgradePlanModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        featureName="Métodos de Pago Personalizados"
+      />
     </div>
   )
 }
