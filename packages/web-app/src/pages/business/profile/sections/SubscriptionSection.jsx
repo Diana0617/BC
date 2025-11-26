@@ -57,6 +57,10 @@ const SubscriptionSection = ({ isSetupMode }) => {
   // Preferir el currentPlan expuesto por el backend; si no, usar el plan de la suscripción
   const currentPlan = business?.currentPlan || currentSubscription?.plan
   
+  // Determinar si es plan gratuito
+  const planPrice = currentPlan?.price
+  const isFreePlan = planPrice === 0 || planPrice === '0.00' || parseFloat(planPrice) === 0
+
   // Mapeo de iconos para módulos
   const getModuleIcon = (iconName, category) => {
     const iconMap = {
@@ -222,54 +226,72 @@ const SubscriptionSection = ({ isSetupMode }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center">
-            <CalendarDaysIcon className="h-5 w-5 text-gray-400 mr-2" />
-            <div>
-              <p className="text-sm text-gray-600">
-                {effectiveSubscription?.status === 'TRIAL' ? 'Trial finaliza' : 'Fecha de vencimiento'}
-              </p>
-              <p className="font-medium text-gray-900">
-                {effectiveSubscription?.status === 'TRIAL' 
-                  ? formatDate(effectiveSubscription.trialEndDate) 
-                  : formatDate(effectiveSubscription?.endDate)
-                }
-              </p>
+          {!isFreePlan && (
+            <div className="flex items-center">
+              <CalendarDaysIcon className="h-5 w-5 text-gray-400 mr-2" />
+              <div>
+                <p className="text-sm text-gray-600">
+                  {effectiveSubscription?.status === 'TRIAL' ? 'Trial finaliza' : 'Fecha de vencimiento'}
+                </p>
+                <p className="font-medium text-gray-900">
+                  {effectiveSubscription?.status === 'TRIAL' 
+                    ? formatDate(effectiveSubscription.trialEndDate) 
+                    : formatDate(effectiveSubscription?.endDate)
+                  }
+                </p>
+              </div>
             </div>
-          </div>
+          )}
           
-          <div className="flex items-center">
-            <CreditCardIcon className="h-5 w-5 text-gray-400 mr-2" />
-            <div>
-              <p className="text-sm text-gray-600">Ciclo de facturación</p>
-              <p className="font-medium text-gray-900">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                  effectiveSubscription?.billingCycle === 'ANNUAL' 
-                    ? 'bg-purple-100 text-purple-800' 
-                    : 'bg-blue-100 text-blue-800'
-                }`}>
-                  {effectiveSubscription?.billingCycle === 'ANNUAL' ? '📅 Anual' : '📆 Mensual'}
-                </span>
-              </p>
+          {!isFreePlan && (
+            <div className="flex items-center">
+              <CreditCardIcon className="h-5 w-5 text-gray-400 mr-2" />
+              <div>
+                <p className="text-sm text-gray-600">Ciclo de facturación</p>
+                <p className="font-medium text-gray-900">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                    effectiveSubscription?.billingCycle === 'ANNUAL' 
+                      ? 'bg-purple-100 text-purple-800' 
+                      : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {effectiveSubscription?.billingCycle === 'ANNUAL' ? '📅 Anual' : '📆 Mensual'}
+                  </span>
+                </p>
+              </div>
             </div>
-          </div>
+          )}
           
-          <div className="flex items-center">
-            <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
-            <div>
-              <p className="text-sm text-gray-600">Estado del pago</p>
-              <p className="font-medium text-gray-900">
-                {effectiveSubscription?.status === 'TRIAL' && 'Período de prueba - Sin cargo'}
-                {effectiveSubscription?.status === 'ACTIVE' && 'Al día'}
-                {effectiveSubscription?.status === 'PENDING' && 'Procesando pago'}
-                {(effectiveSubscription?.status === 'OVERDUE' || effectiveSubscription?.status === 'SUSPENDED') && 'Requiere atención'}
-              </p>
+          {!isFreePlan && (
+            <div className="flex items-center">
+              <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+              <div>
+                <p className="text-sm text-gray-600">Estado del pago</p>
+                <p className="font-medium text-gray-900">
+                  {effectiveSubscription?.status === 'TRIAL' && 'Período de prueba - Sin cargo'}
+                  {effectiveSubscription?.status === 'ACTIVE' && 'Al día'}
+                  {effectiveSubscription?.status === 'PENDING' && 'Procesando pago'}
+                  {(effectiveSubscription?.status === 'OVERDUE' || effectiveSubscription?.status === 'SUSPENDED') && 'Requiere atención'}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
+
+          {isFreePlan && (
+             <div className="flex items-center">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+                <div>
+                  <p className="text-sm text-gray-600">Estado</p>
+                  <p className="font-medium text-gray-900">Plan Gratuito - Siempre activo</p>
+                </div>
+             </div>
+          )}
         </div>
       </div>
 
       {/* Información de próximo pago / Trial */}
       {(() => {
+        if (isFreePlan) return null;
+        
         const paymentInfo = getNextPaymentInfo()
         const isTrial = effectiveSubscription?.status === 'TRIAL'
         

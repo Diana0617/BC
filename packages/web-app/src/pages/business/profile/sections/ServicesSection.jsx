@@ -21,8 +21,14 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const activeBusiness = useSelector(state => state.business.currentBusiness)
   const { isBusinessSpecialist } = usePermissions()
   
+  // Obtener la suscripción activa o la primera disponible
+  const currentSubscription = activeBusiness?.subscriptions?.find(sub => 
+    sub.status === 'ACTIVE' || sub.status === 'TRIAL'
+  ) || activeBusiness?.subscriptions?.[0] || activeBusiness?.subscription
+
   // Determinar si el usuario tiene restricciones (por rol o por plan gratuito)
-  const isFreePlan = activeBusiness?.subscription?.plan?.price === 0 || activeBusiness?.subscription?.plan?.price === '0.00'
+  const planPrice = currentSubscription?.plan?.price
+  const isFreePlan = planPrice === 0 || planPrice === '0.00' || parseFloat(planPrice) === 0
   const isRestricted = isBusinessSpecialist || isFreePlan
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)

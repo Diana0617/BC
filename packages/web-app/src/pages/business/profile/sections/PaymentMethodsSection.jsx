@@ -71,8 +71,14 @@ const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
   const { isBusinessSpecialist } = usePermissions()
   const { currentBusiness } = useSelector(state => state.business)
   
+  // Obtener la suscripción activa o la primera disponible
+  const currentSubscription = currentBusiness?.subscriptions?.find(sub => 
+    sub.status === 'ACTIVE' || sub.status === 'TRIAL'
+  ) || currentBusiness?.subscriptions?.[0] || currentBusiness?.subscription
+
   // Determinar si el usuario tiene restricciones (por rol o por plan gratuito)
-  const isFreePlan = currentBusiness?.subscription?.plan?.price === 0 || currentBusiness?.subscription?.plan?.price === '0.00'
+  const planPrice = currentSubscription?.plan?.price
+  const isFreePlan = planPrice === 0 || planPrice === '0.00' || parseFloat(planPrice) === 0
   const isRestricted = isBusinessSpecialist || isFreePlan
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
