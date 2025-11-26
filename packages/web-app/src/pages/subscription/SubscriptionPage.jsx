@@ -95,8 +95,69 @@ const SubscriptionPage = () => {
     setCurrentStep(2)
   }
 
-  const handleRegistrationComplete = (data) => {
+  const handleRegistrationComplete = async (data) => {
     setRegistrationData(data)
+    
+    // Verificar si el plan es gratuito (Básico)
+    const isFreePlan = selectedPlan.price === 0 || selectedPlan.price === '0' || selectedPlan.price === '0.00'
+    
+    if (isFreePlan) {
+      console.log('📦 Plan gratuito detectado - creando negocio directamente sin pago')
+      
+      try {
+        // Crear negocio directamente para plan gratuito
+        const businessData = {
+          businessName: data.businessName,
+          businessEmail: data.businessEmail,
+          businessPhone: data.businessPhone,
+          address: data.address,
+          city: data.city,
+          country: data.country,
+          ownerEmail: data.email,
+          ownerFirstName: data.firstName,
+          ownerLastName: data.lastName,
+          ownerPhone: data.phone,
+          ownerPassword: data.password,
+          subscriptionPlanId: selectedPlan.id,
+          role: 'BUSINESS_SPECIALIST' // Rol específico para plan gratuito
+        }
+        
+        const result = await dispatch(createBusinessManually(businessData))
+        
+        if (createBusinessManually.fulfilled.match(result)) {
+          console.log('✅ Negocio gratuito creado exitosamente:', result.payload)
+          
+          // Autenticar al usuario automáticamente
+          if (result.payload.token && result.payload.user) {
+            dispatch(setCredentials({
+              token: result.payload.token,
+              user: result.payload.user,
+              refreshToken: result.payload.refreshToken
+            }))
+          }
+          
+          // Mostrar mensaje de éxito
+          setSuccessMessage('¡Cuenta gratuita creada exitosamente! Redirigiendo...')
+          setShowSuccessToast(true)
+          
+          // Redirigir al perfil
+          setTimeout(() => {
+            navigate('/business/profile?setup=true', { replace: true })
+          }, 2500)
+          
+          return
+        } else if (createBusinessManually.rejected.match(result)) {
+          throw new Error(result.payload || result.error.message || 'Error creando negocio gratuito')
+        }
+        
+      } catch (error) {
+        console.error('❌ Error creando negocio gratuito:', error)
+        alert('Error al crear cuenta gratuita: ' + error.message)
+        return
+      }
+    }
+    
+    // Si no es plan gratuito, continuar con flujo de pago
     setCurrentStep(3)
   }
 

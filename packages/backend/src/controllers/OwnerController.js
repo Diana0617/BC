@@ -7,6 +7,7 @@
 
 const { Op, Sequelize } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const Business = require('../models/Business');
 const User = require('../models/User');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
@@ -195,7 +196,8 @@ class OwnerController {
         ownerPhone,
         ownerPassword,
         subscriptionPlanId,
-        billingCycle = 'MONTHLY' // MONTHLY o ANNUAL - default MONTHLY
+        billingCycle = 'MONTHLY', // MONTHLY o ANNUAL - default MONTHLY
+        role = 'BUSINESS_OWNER' // Rol del usuario - default BUSINESS_OWNER, puede ser BUSINESS_SPECIALIST para plan gratuito
       } = req.body;
 
       console.log('📋 Datos recibidos para crear negocio:', {
@@ -310,8 +312,8 @@ class OwnerController {
           console.log('✅ Contraseña actualizada');
         }
         
-        // Actualizar rol a BUSINESS
-        await owner.update({ role: 'BUSINESS' });
+        // Actualizar rol (puede ser BUSINESS_OWNER o BUSINESS_SPECIALIST según el plan)
+        await owner.update({ role: role });
       } else {
         console.log('👤 Creando nuevo usuario...');
         // Usar la contraseña del formulario o una temporal si no se proporciona
@@ -321,17 +323,17 @@ class OwnerController {
         const salt = await bcrypt.genSalt(12);
         const hashedPassword = await bcrypt.hash(passwordToUse, salt);
         
-        // Crear nuevo usuario BUSINESS
+        // Crear nuevo usuario BUSINESS (o BUSINESS_SPECIALIST para plan gratuito)
         owner = await User.create({
           email: ownerEmail.toLowerCase(), // Normalizar email a minúsculas
           firstName: ownerFirstName,
           lastName: ownerLastName,
           phone: ownerPhone,
-          role: 'BUSINESS',
+          role: role, // Usar el rol proporcionado (BUSINESS_OWNER o BUSINESS_SPECIALIST)
           password: hashedPassword,
           emailVerified: false
         });
-        console.log('👤 Usuario creado:', owner.id);
+        console.log('👤 Usuario creado:', owner.id, 'con rol:', role);
       }
 
       // Crear el negocio
@@ -428,6 +430,31 @@ class OwnerController {
       });
       console.log('💰 Pago creado:', payment.id);
 
+      // Generar tokens de autenticación para auto-login
+      const payload = {
+        userId: owner.id,
+        email: owner.email,
+        role: owner.role,
+        businessId: business.id
+      };
+
+      const accessToken = jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+      );
+
+      const refreshToken = jwt.sign(
+        { userId: owner.id },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
+      );
+
+      // Recargar owner con business para respuesta completa
+      await owner.reload({
+        include: [{ model: Business, as: 'business' }]
+      });
+
       res.status(201).json({
         success: true,
         message: 'Negocio creado exitosamente',
@@ -438,10 +465,22 @@ class OwnerController {
             email: owner.email,
             firstName: owner.firstName,
             lastName: owner.lastName,
-            role: owner.role
+            role: owner.role,
+            businessId: owner.businessId
           },
           subscription,
-          payment
+          payment,
+          token: accessToken,
+          refreshToken: refreshToken,
+          user: {
+            id: owner.id,
+            email: owner.email,
+            firstName: owner.firstName,
+            lastName: owner.lastName,
+            role: owner.role,
+            businessId: business.id,
+            business: business
+          }
         }
       });
     } catch (error) {
