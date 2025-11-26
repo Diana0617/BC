@@ -35,6 +35,22 @@ export const usePermissions = () => {
       return true;
     }
     
+    // BUSINESS_SPECIALIST tiene permisos de especialista (crear/editar sus citas)
+    if (user?.role === 'BUSINESS_SPECIALIST') {
+      const specialistPermissions = [
+        'appointments.view',
+        'appointments.create',
+        'appointments.edit',
+        'appointments.cancel',
+        'clients.view',
+        'clients.create',
+        'services.view'
+      ];
+      if (specialistPermissions.includes(permissionKey)) {
+        return true;
+      }
+    }
+    
     // Verificar en el set de permisos
     return permissionsSet.has(permissionKey);
   }, [user?.role, permissionsSet]);
@@ -96,12 +112,13 @@ export const usePermissions = () => {
     // Helpers rápidos de rol
     isOwner: user?.role === 'OWNER',
     isBusiness: user?.role === 'BUSINESS',
-    isSpecialist: user?.role === 'SPECIALIST',
+    isSpecialist: user?.role === 'SPECIALIST' || user?.role === 'BUSINESS_SPECIALIST',
     isReceptionist: user?.role === 'RECEPTIONIST',
     isReceptionistSpecialist: user?.role === 'RECEPTIONIST_SPECIALIST',
+    isBusinessSpecialist: user?.role === 'BUSINESS_SPECIALIST',
     
     // Helper para verificar si tiene rol staff
-    isStaff: ['SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'].includes(user?.role)
+    isStaff: ['SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'BUSINESS_SPECIALIST'].includes(user?.role)
   };
 };
 

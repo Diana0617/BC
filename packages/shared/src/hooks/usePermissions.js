@@ -80,8 +80,10 @@ export const usePermissions = () => {
     // Verificaciones rápidas por rol
     isOwner: userRole === 'OWNER',
     isBusiness: userRole === 'BUSINESS',
-    isSpecialist: userRole === 'SPECIALIST',
+    isSpecialist: userRole === 'SPECIALIST' || userRole === 'BUSINESS_SPECIALIST',
     isReceptionist: userRole === 'RECEPTIONIST',
+    isReceptionistSpecialist: userRole === 'RECEPTIONIST_SPECIALIST',
+    isBusinessSpecialist: userRole === 'BUSINESS_SPECIALIST',
     isClient: userRole === 'CLIENT',
     
     // Estado del usuario
