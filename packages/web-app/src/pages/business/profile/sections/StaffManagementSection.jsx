@@ -38,6 +38,11 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const defaultCommissionRate = defaultCommissionRule?.customValue ?? defaultCommissionRule?.effective_value ?? defaultCommissionRule?.defaultValue ?? defaultCommissionRule?.template?.defaultValue ?? 50;
   
   const { isBusinessSpecialist } = usePermissions();
+  
+  // Determinar si el usuario tiene restricciones (por rol o por plan gratuito)
+  const isFreePlan = activeBusiness?.subscription?.plan?.price === 0 || activeBusiness?.subscription?.plan?.price === '0.00';
+  const isRestricted = isBusinessSpecialist || isFreePlan;
+
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const [specialists, setSpecialists] = useState([]);
@@ -1095,7 +1100,7 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
         {!isAddingSpecialist && (
           <button
             onClick={() => {
-              if (isBusinessSpecialist) {
+              if (isRestricted) {
                 setShowUpgradeModal(true);
               } else {
                 setIsAddingSpecialist(true);

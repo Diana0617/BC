@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSelector } from 'react-redux'
 import { usePermissions } from '@shared/hooks'
 import {
   CalendarDaysIcon,
@@ -9,6 +10,12 @@ import {
 
 const AppointmentsConfigSection = ({ isSetupMode, onComplete }) => {
   const { isBusinessSpecialist } = usePermissions()
+  const { currentBusiness } = useSelector(state => state.business)
+  
+  // Determinar si el usuario tiene restricciones (por rol o por plan gratuito)
+  const isFreePlan = currentBusiness?.subscription?.plan?.price === 0 || currentBusiness?.subscription?.plan?.price === '0.00'
+  const isRestricted = isBusinessSpecialist || isFreePlan
+
   const [config, setConfig] = useState({
     allowOnlineBooking: true,
     requireApproval: false,
@@ -32,8 +39,8 @@ const AppointmentsConfigSection = ({ isSetupMode, onComplete }) => {
 
   const [isSaving, setIsSaving] = useState(false)
 
-  // Deshabilitar edición para Business Specialist
-  const isReadOnly = isBusinessSpecialist
+  // Deshabilitar edición para Business Specialist o Plan Gratuito
+  const isReadOnly = isRestricted
 
   const handleConfigChange = (field, value) => {
     if (isReadOnly) return

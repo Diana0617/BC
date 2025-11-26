@@ -69,6 +69,12 @@ const PAYMENT_TYPE_CONFIG = {
 const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
   const dispatch = useDispatch()
   const { isBusinessSpecialist } = usePermissions()
+  const { currentBusiness } = useSelector(state => state.business)
+  
+  // Determinar si el usuario tiene restricciones (por rol o por plan gratuito)
+  const isFreePlan = currentBusiness?.subscription?.plan?.price === 0 || currentBusiness?.subscription?.plan?.price === '0.00'
+  const isRestricted = isBusinessSpecialist || isFreePlan
+
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   
   // Redux state
@@ -99,7 +105,7 @@ const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
   }, [dispatch])
 
   const handleCreate = () => {
-    if (isBusinessSpecialist) {
+    if (isRestricted) {
       setShowUpgradeModal(true)
       return
     }

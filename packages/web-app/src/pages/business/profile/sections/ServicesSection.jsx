@@ -20,6 +20,11 @@ import ConsentTemplateModal from '../../../../components/consent/ConsentTemplate
 const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const activeBusiness = useSelector(state => state.business.currentBusiness)
   const { isBusinessSpecialist } = usePermissions()
+  
+  // Determinar si el usuario tiene restricciones (por rol o por plan gratuito)
+  const isFreePlan = activeBusiness?.subscription?.plan?.price === 0 || activeBusiness?.subscription?.plan?.price === '0.00'
+  const isRestricted = isBusinessSpecialist || isFreePlan
+
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   
   // Estados principales
@@ -99,7 +104,7 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
   const handleCreateService = () => {
     // Límite de servicios para plan gratuito (ej: 5 servicios)
-    if (isBusinessSpecialist && services.length >= 5) {
+    if (isRestricted && services.length >= 5) {
       setShowUpgradeModal(true)
       return
     }
