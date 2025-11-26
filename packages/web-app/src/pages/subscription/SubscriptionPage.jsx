@@ -140,11 +140,11 @@ const SubscriptionPage = () => {
           console.log('✅ Suscripción gratuita creada exitosamente:', result.payload)
           
           // Autenticar al usuario automáticamente
-          if (result.payload.data.tokens) {
+          if (result.payload.data && result.payload.data.token) {
             dispatch(setCredentials({
-              token: result.payload.data.tokens.accessToken,
+              token: result.payload.data.token,
               user: result.payload.data.user,
-              refreshToken: result.payload.data.tokens.refreshToken
+              refreshToken: null
             }))
           }
           
