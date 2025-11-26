@@ -105,34 +105,46 @@ const SubscriptionPage = () => {
       console.log('📦 Plan gratuito detectado - creando negocio directamente sin pago')
       
       try {
-        // Crear negocio directamente para plan gratuito
-        const businessData = {
-          businessName: data.businessName,
-          businessEmail: data.businessEmail,
-          businessPhone: data.businessPhone,
-          address: data.address,
-          city: data.city,
-          country: data.country,
-          ownerEmail: data.email,
-          ownerFirstName: data.firstName,
-          ownerLastName: data.lastName,
-          ownerPhone: data.phone,
-          ownerPassword: data.password,
-          subscriptionPlanId: selectedPlan.id,
-          role: 'BUSINESS_SPECIALIST' // Rol específico para plan gratuito
+        // Preparar datos para el endpoint público de suscripción
+        const subscriptionData = {
+          planId: selectedPlan.id,
+          billingCycle: billingCycle,
+          businessData: {
+            name: data.businessName,
+            businessCode: data.businessCode,
+            email: data.businessEmail,
+            phone: data.businessPhone,
+            address: data.address,
+            city: data.city,
+            country: data.country
+          },
+          userData: {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: data.phone,
+            password: data.password,
+            role: 'BUSINESS_SPECIALIST' // Rol para plan gratuito
+          },
+          paymentData: {
+            method: 'FREE', // Indicar que es plan gratuito
+            status: 'COMPLETED',
+            amount: 0,
+            currency: selectedPlan.currency || 'COP'
+          }
         }
         
-        const result = await dispatch(createBusinessManually(businessData))
+        const result = await dispatch(createSubscription(subscriptionData))
         
-        if (createBusinessManually.fulfilled.match(result)) {
-          console.log('✅ Negocio gratuito creado exitosamente:', result.payload)
+        if (createSubscription.fulfilled.match(result)) {
+          console.log('✅ Suscripción gratuita creada exitosamente:', result.payload)
           
           // Autenticar al usuario automáticamente
-          if (result.payload.token && result.payload.user) {
+          if (result.payload.data.tokens) {
             dispatch(setCredentials({
-              token: result.payload.token,
-              user: result.payload.user,
-              refreshToken: result.payload.refreshToken
+              token: result.payload.data.tokens.accessToken,
+              user: result.payload.data.user,
+              refreshToken: result.payload.data.tokens.refreshToken
             }))
           }
           
@@ -146,8 +158,8 @@ const SubscriptionPage = () => {
           }, 2500)
           
           return
-        } else if (createBusinessManually.rejected.match(result)) {
-          throw new Error(result.payload || result.error.message || 'Error creando negocio gratuito')
+        } else if (createSubscription.rejected.match(result)) {
+          throw new Error(result.payload || result.error.message || 'Error creando suscripción gratuita')
         }
         
       } catch (error) {

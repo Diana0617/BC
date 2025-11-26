@@ -306,7 +306,7 @@ class SubscriptionController {
           email: userData.email.toLowerCase(), // Normalizar email a minúsculas
           phone: userData.phone,
           password: hashedPassword,
-          role: 'BUSINESS', // El creador del negocio es BUSINESS (owner del negocio)
+          role: userData.role || 'BUSINESS_OWNER', // Usar rol proporcionado o BUSINESS_OWNER por defecto
           businessId: business.id,
           isActive: true,
           emailVerified: true, // Por ahora lo marcamos como verificado
@@ -314,7 +314,7 @@ class SubscriptionController {
           updatedAt: new Date()
         }, { transaction })
 
-        console.log('Usuario creado:', user.id)
+        console.log('Usuario creado:', user.id, 'con rol:', user.role)
 
         // 4. Crear la suscripción
         const startDate = new Date()
