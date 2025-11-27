@@ -322,7 +322,7 @@ app.use('/api/financial', financialRoutes);
 app.use('/api/owner', ownerRoutes);
 app.use('/api/owner/business', ownerBusinessManagementRoutes);
 app.use('/api/owner/expenses', ownerExpenseRoutes);
-app.use('/api/business/expenses', businessExpenseRoutes); // Rutas de gastos del negocio
+app.use('/api/business/:businessId/expenses', businessExpenseRoutes); // Rutas de gastos del negocio
 app.use('/api/vouchers', voucherRoutes); // Rutas de vouchers y penalizaciones
 app.use('/api/cache', cacheRoutes); // Rutas de gestión de cache
 app.use('/api/subscriptions', subscriptionRoutes); // Rutas de suscripciones

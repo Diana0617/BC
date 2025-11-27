@@ -19,7 +19,7 @@ class BusinessExpenseController {
    */
   static async getCategories(req, res) {
     try {
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
 
       const categories = await BusinessExpenseCategory.findAll({
         where: { businessId, isActive: true },
@@ -64,7 +64,7 @@ class BusinessExpenseController {
    */
   static async createCategory(req, res) {
     try {
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
       const {
         name,
         description,
@@ -122,7 +122,7 @@ class BusinessExpenseController {
   static async updateCategory(req, res) {
     try {
       const { id } = req.params;
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
 
       const category = await BusinessExpenseCategory.findOne({
         where: { id, businessId, isActive: true }
@@ -163,7 +163,7 @@ class BusinessExpenseController {
   static async deleteCategory(req, res) {
     try {
       const { id } = req.params;
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
 
       const category = await BusinessExpenseCategory.findOne({
         where: { id, businessId, isActive: true }
@@ -216,7 +216,7 @@ class BusinessExpenseController {
    */
   static async getExpenses(req, res) {
     try {
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
       const {
         categoryId,
         status,
@@ -301,7 +301,7 @@ class BusinessExpenseController {
    */
   static async createExpense(req, res) {
     try {
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
       const {
         categoryId,
         description,
@@ -433,7 +433,7 @@ class BusinessExpenseController {
   static async getExpenseById(req, res) {
     try {
       const { id } = req.params;
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
 
       const expense = await BusinessExpense.findOne({
         where: { id, businessId, isActive: true },
@@ -485,7 +485,7 @@ class BusinessExpenseController {
   static async updateExpense(req, res) {
     try {
       const { id } = req.params;
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
 
       const expense = await BusinessExpense.findOne({
         where: { id, businessId, isActive: true }
@@ -562,7 +562,7 @@ class BusinessExpenseController {
   static async deleteExpense(req, res) {
     try {
       const { id } = req.params;
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
 
       const expense = await BusinessExpense.findOne({
         where: { id, businessId, isActive: true }
@@ -609,7 +609,7 @@ class BusinessExpenseController {
   static async approveExpense(req, res) {
     try {
       const { id } = req.params;
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
       const { notes } = req.body;
 
       const expense = await BusinessExpense.findOne({
@@ -661,7 +661,7 @@ class BusinessExpenseController {
   static async markAsPaid(req, res) {
     try {
       const { id } = req.params;
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
       const { paidDate, paymentMethod, transactionReference } = req.body;
 
       const expense = await BusinessExpense.findOne({
@@ -720,7 +720,7 @@ class BusinessExpenseController {
    */
   static async getStats(req, res) {
     try {
-      const businessId = req.business.id;
+      const businessId = req.tenancy.businessId || req.user.businessId;
       const { startDate, endDate, categoryId } = req.query;
 
       const where = { businessId, isActive: true };
@@ -775,16 +775,24 @@ class BusinessExpenseController {
       },
       {
         name: 'Nómina',
-        description: 'Pago de salarios y comisiones',
+        description: 'Pago de salarios',
         color: '#10B981',
         icon: 'users',
         requiresReceipt: false,
         isRecurring: true
       },
       {
+        name: 'Comisiones a Especialistas',
+        description: 'Pago de comisiones a especialistas por servicios realizados',
+        color: '#8B5CF6',
+        icon: 'currency-dollar',
+        requiresReceipt: false,
+        isRecurring: true
+      },
+      {
         name: 'Insumos y productos',
         description: 'Compra de productos y materiales',
-        color: '#8B5CF6',
+        color: '#A855F7',
         icon: 'shopping-cart',
         requiresReceipt: true,
         isRecurring: false
@@ -890,6 +898,36 @@ class BusinessExpenseController {
       byCategory,
       general
     };
+  }
+
+  /**
+   * Obtener o crear la categoría "Comisiones a Especialistas"
+   * Útil para cuando se registra un pago de comisión
+   */
+  static async getOrCreateCommissionCategory(businessId, userId) {
+    let category = await BusinessExpenseCategory.findOne({
+      where: { 
+        businessId, 
+        name: 'Comisiones a Especialistas',
+        isActive: true 
+      }
+    });
+
+    if (!category) {
+      category = await BusinessExpenseCategory.create({
+        businessId,
+        name: 'Comisiones a Especialistas',
+        description: 'Pago de comisiones a especialistas por servicios realizados',
+        color: '#8B5CF6',
+        icon: 'currency-dollar',
+        requiresReceipt: false,
+        isRecurring: true,
+        createdBy: userId,
+        sortOrder: 3 // Después de Nómina
+      });
+    }
+
+    return category;
   }
 }
 

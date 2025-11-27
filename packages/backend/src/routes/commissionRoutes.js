@@ -72,4 +72,36 @@ router.post(
   commissionController.calculateCommission
 );
 
+// ================== GESTIÓN DE PAGOS DE COMISIONES ==================
+
+/**
+ * Obtener resumen de comisiones por especialista
+ * GET /api/business/:businessId/commissions/specialists-summary
+ */
+router.get(
+  '/commissions/specialists-summary',
+  // authenticate,
+  commissionController.getSpecialistsSummary
+);
+
+/**
+ * Obtener detalle de comisiones de un especialista
+ * GET /api/business/:businessId/commissions/specialist/:specialistId/details
+ */
+router.get(
+  '/commissions/specialist/:specialistId/details',
+  // authenticate,
+  commissionController.getSpecialistDetails
+);
+
+/**
+ * Registrar pago de comisión a un especialista
+ * POST /api/business/:businessId/commissions/pay
+ */
+router.post(
+  '/commissions/pay',
+  // authenticate,
+  commissionController.payCommission
+);
+
 module.exports = router;

@@ -85,6 +85,9 @@ export * from './store/slices/timeSlotSlice.js';
 export * from './store/slices/productsSlice.js';
 // 📊 FINANCIAL MOVEMENTS & REPORTS SLICES
 export * from './store/slices/financialMovementsSlice.js';
+// 💸 BUSINESS EXPENSES & COMMISSIONS SLICES
+export * from './store/slices/businessExpensesSlice.js';
+export * from './store/slices/specialistCommissionsSlice.js';
 
 // Export selectors
 export * from './store/selectors/authSelectors.js';

@@ -7,8 +7,32 @@ import {
   selectMovementsLoading,
   selectMovementsTotals,
   selectTodayAppointmentsSummary,
-  selectTodayAppointmentsSummaryLoading
+  selectTodayAppointmentsSummaryLoading,
+  // Expenses
+  fetchExpenses,
+  fetchExpenseCategories,
+  createExpense,
+  updateExpense,
+  selectExpenses,
+  selectExpenseCategories,
+  selectExpensesLoading,
+  deleteExpense,
+  approveExpense,
+  markExpenseAsPaid,
+  // Commissions
+  fetchSpecialistsSummary,
+  fetchCommissionConfig,
+  fetchSpecialistDetails,
+  registerCommissionPayment,
+  selectSpecialists,
+  selectCommissionConfig,
+  selectCommissionsLoading,
+  selectSpecialistDetails
 } from '@shared'
+import ExpensesTab from '../../../../components/business/profile/ExpensesTab'
+import CommissionsTab from '../../../../components/business/profile/CommissionsTab'
+import ExpenseFormModal from '../../../../components/business/profile/ExpenseFormModal'
+import CommissionPaymentModal from '../../../../components/business/profile/CommissionPaymentModal'
 import {
   ChartBarIcon,
   CalendarDaysIcon,
@@ -18,7 +42,9 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ClockIcon,
-  CalendarIcon
+  CalendarIcon,
+  ReceiptPercentIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -33,13 +59,32 @@ const MovementsSection = () => {
   const movementsTotals = useSelector(selectMovementsTotals)
   const todayAppointments = useSelector(selectTodayAppointmentsSummary)
   const todayAppointmentsLoading = useSelector(selectTodayAppointmentsSummaryLoading)
+  const expenses = useSelector(selectExpenses)
+  const expenseCategories = useSelector(selectExpenseCategories)
+  const expensesLoading = useSelector(selectExpensesLoading)
+  const specialists = useSelector(selectSpecialists)
+  const commissionConfig = useSelector(selectCommissionConfig)
+  const commissionsLoading = useSelector(selectCommissionsLoading)
+  const selectedSpecialistDetails = useSelector(selectSpecialistDetails)
 
   // Local state
-  const [activeTab, setActiveTab] = useState('financial') // 'financial' o 'appointments'
+  const [activeTab, setActiveTab] = useState('financial') // 'financial', 'appointments', 'expenses', 'commissions'
   const [dateRange, setDateRange] = useState({
     startDate: format(new Date(), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd')
   })
+  const [expenseFilters, setExpenseFilters] = useState({})
+  const [commissionFilters, setCommissionFilters] = useState({
+    month: new Date().getMonth(),
+    year: new Date().getFullYear()
+  })
+  
+  // Modal states
+  const [showExpenseModal, setShowExpenseModal] = useState(false)
+  const [selectedExpense, setSelectedExpense] = useState(null)
+  const [showCommissionModal, setShowCommissionModal] = useState(false)
+  const [selectedSpecialistForPayment, setSelectedSpecialistForPayment] = useState(null)
+  const [selectedSpecialistPaymentDetails, setSelectedSpecialistPaymentDetails] = useState(null)
 
   // Cargar datos cuando cambia la pestaña o las fechas
   useEffect(() => {
@@ -56,11 +101,125 @@ const MovementsSection = () => {
         businessId: currentBusiness.id,
         date: dateRange.startDate
       }))
+    } else if (activeTab === 'expenses') {
+      dispatch(fetchExpenses({
+        businessId: currentBusiness.id,
+        filters: {
+          ...expenseFilters,
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate
+        }
+      }))
+      dispatch(fetchExpenseCategories({ businessId: currentBusiness.id }))
+    } else if (activeTab === 'commissions') {
+      dispatch(fetchSpecialistsSummary({
+        businessId: currentBusiness.id,
+        month: commissionFilters.month + 1,
+        year: commissionFilters.year
+      }))
+      dispatch(fetchCommissionConfig({ businessId: currentBusiness.id }))
     }
-  }, [activeTab, dateRange, currentBusiness, dispatch])
+  }, [activeTab, dateRange, currentBusiness, dispatch, expenseFilters, commissionFilters])
 
   const handleDateChange = (field, value) => {
     setDateRange(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Expense handlers
+  const handleCreateExpense = () => {
+    setSelectedExpense(null)
+    setShowExpenseModal(true)
+  }
+
+  const handleEditExpense = (expense) => {
+    setSelectedExpense(expense)
+    setShowExpenseModal(true)
+  }
+
+  const handleExpenseSubmit = async (expenseData, expenseId) => {
+    try {
+      if (expenseId) {
+        await dispatch(updateExpense({ 
+          businessId: currentBusiness.id, 
+          expenseId, 
+          expenseData 
+        })).unwrap()
+      } else {
+        await dispatch(createExpense({ 
+          businessId: currentBusiness.id, 
+          expenseData 
+        })).unwrap()
+      }
+      
+      setShowExpenseModal(false)
+      setSelectedExpense(null)
+      
+      // Reload expenses
+      dispatch(fetchExpenses({
+        businessId: currentBusiness.id,
+        filters: {
+          ...expenseFilters,
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate
+        }
+      }))
+    } catch (error) {
+      console.error('Error saving expense:', error)
+      throw error
+    }
+  }
+
+  const handleDeleteExpense = (expenseId) => {
+    if (window.confirm('¿Estás seguro de eliminar este gasto?')) {
+      dispatch(deleteExpense({ businessId: currentBusiness.id, expenseId }))
+    }
+  }
+
+  const handleApproveExpense = (expenseId) => {
+    dispatch(approveExpense({ businessId: currentBusiness.id, expenseId, status: 'approved' }))
+  }
+
+  const handleMarkAsPaid = (expenseId) => {
+    dispatch(markExpenseAsPaid({ businessId: currentBusiness.id, expenseId }))
+  }
+
+  // Commission handlers
+  const handleViewSpecialistDetails = (specialistId) => {
+    dispatch(fetchSpecialistDetails({
+      businessId: currentBusiness.id,
+      specialistId,
+      month: commissionFilters.month + 1,
+      year: commissionFilters.year
+    }))
+  }
+
+  const handlePayCommission = (specialist, details) => {
+    setSelectedSpecialistForPayment(specialist)
+    setSelectedSpecialistPaymentDetails(details)
+    setShowCommissionModal(true)
+  }
+
+  const handleCommissionPaymentSubmit = async (paymentData) => {
+    try {
+      await dispatch(registerCommissionPayment({
+        businessId: currentBusiness.id,
+        paymentData
+      })).unwrap()
+      
+      setShowCommissionModal(false)
+      setSelectedSpecialistForPayment(null)
+      setSelectedSpecialistPaymentDetails(null)
+      
+      // Reload specialists summary
+      dispatch(fetchSpecialistsSummary({
+        businessId: currentBusiness.id,
+        month: commissionFilters.month + 1,
+        year: commissionFilters.year
+      }))
+    } catch (error) {
+      console.error('Error registering payment:', error)
+      throw error
+    }
   }
 
   const formatCurrency = (amount) => {
@@ -117,10 +276,10 @@ const MovementsSection = () => {
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex space-x-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab('financial')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
               activeTab === 'financial'
                 ? 'border-pink-500 text-pink-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -131,7 +290,7 @@ const MovementsSection = () => {
           </button>
           <button
             onClick={() => setActiveTab('appointments')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
               activeTab === 'appointments'
                 ? 'border-pink-500 text-pink-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -139,6 +298,28 @@ const MovementsSection = () => {
           >
             <CalendarDaysIcon className="h-5 w-5 inline-block mr-2" />
             Turnos del Día
+          </button>
+          <button
+            onClick={() => setActiveTab('expenses')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+              activeTab === 'expenses'
+                ? 'border-pink-500 text-pink-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <ReceiptPercentIcon className="h-5 w-5 inline-block mr-2" />
+            Gastos del Negocio
+          </button>
+          <button
+            onClick={() => setActiveTab('commissions')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+              activeTab === 'commissions'
+                ? 'border-pink-500 text-pink-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <CurrencyDollarIcon className="h-5 w-5 inline-block mr-2" />
+            Comisiones Especialistas
           </button>
         </nav>
       </div>
@@ -186,7 +367,7 @@ const MovementsSection = () => {
       </div>
 
       {/* Content */}
-      {activeTab === 'financial' ? (
+      {activeTab === 'financial' && (
         <FinancialMovementsTab
           movements={movements}
           loading={movementsLoading}
@@ -195,7 +376,9 @@ const MovementsSection = () => {
           getPaymentMethodLabel={getPaymentMethodLabel}
           getStatusBadge={getStatusBadge}
         />
-      ) : (
+      )}
+      
+      {activeTab === 'appointments' && (
         <AppointmentsTab
           summary={todayAppointments}
           loading={todayAppointmentsLoading}
@@ -203,6 +386,60 @@ const MovementsSection = () => {
           selectedDate={dateRange.startDate}
         />
       )}
+
+      {activeTab === 'expenses' && (
+        <ExpensesTab
+          expenses={expenses}
+          categories={expenseCategories}
+          loading={expensesLoading}
+          onCreateExpense={handleCreateExpense}
+          onEditExpense={handleEditExpense}
+          onDeleteExpense={handleDeleteExpense}
+          onApproveExpense={handleApproveExpense}
+          onMarkAsPaid={handleMarkAsPaid}
+          filters={expenseFilters}
+          onFilterChange={setExpenseFilters}
+        />
+      )}
+
+      {activeTab === 'commissions' && (
+        <CommissionsTab
+          specialists={specialists}
+          config={commissionConfig}
+          selectedSpecialistDetails={selectedSpecialistDetails}
+          loading={commissionsLoading}
+          onPayCommission={handlePayCommission}
+          onViewDetails={handleViewSpecialistDetails}
+          filters={commissionFilters}
+          onFilterChange={setCommissionFilters}
+        />
+      )}
+      
+      {/* Modals */}
+      <ExpenseFormModal
+        isOpen={showExpenseModal}
+        onClose={() => {
+          setShowExpenseModal(false)
+          setSelectedExpense(null)
+        }}
+        onSubmit={handleExpenseSubmit}
+        expense={selectedExpense}
+        categories={expenseCategories}
+        loading={expensesLoading}
+      />
+
+      <CommissionPaymentModal
+        isOpen={showCommissionModal}
+        onClose={() => {
+          setShowCommissionModal(false)
+          setSelectedSpecialistForPayment(null)
+          setSelectedSpecialistPaymentDetails(null)
+        }}
+        onSubmit={handleCommissionPaymentSubmit}
+        specialist={selectedSpecialistForPayment}
+        details={selectedSpecialistPaymentDetails}
+        loading={commissionsLoading}
+      />
     </div>
   )
 }

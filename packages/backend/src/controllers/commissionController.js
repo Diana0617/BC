@@ -517,3 +517,482 @@ exports.calculateCommission = async (req, res) => {
     });
   }
 };
+
+// ==================== NUEVOS MÉTODOS PARA GESTIÓN DE PAGOS ====================
+
+const { Op } = require('sequelize');
+const { 
+  CommissionPaymentRequest, 
+  CommissionDetail,
+  User,
+  Client,
+  Appointment,
+  BusinessExpense,
+  BusinessExpenseCategory,
+  FinancialMovement
+} = require('../models');
+const BusinessExpenseController = require('./BusinessExpenseController');
+const { format, startOfMonth, endOfMonth } = require('date-fns');
+
+/**
+ * Obtener resumen de comisiones por especialista
+ * GET /api/business/:businessId/commissions/specialists-summary
+ */
+exports.getSpecialistsSummary = async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    const { month, year } = req.query;
+
+    // Determinar período (por defecto mes actual)
+    const now = new Date();
+    const targetMonth = month ? parseInt(month) - 1 : now.getMonth();
+    const targetYear = year ? parseInt(year) : now.getFullYear();
+    const periodStart = startOfMonth(new Date(targetYear, targetMonth));
+    const periodEnd = endOfMonth(new Date(targetYear, targetMonth));
+
+    // Obtener todos los especialistas del negocio
+    const specialists = await User.findAll({
+      where: {
+        businessId,
+        role: {
+          [Op.in]: ['SPECIALIST_LEVEL_1', 'SPECIALIST_LEVEL_2']
+        },
+        isActive: true
+      },
+      attributes: ['id', 'firstName', 'lastName', 'email', 'profilePicture', 'role'],
+      include: [
+        {
+          model: Service,
+          as: 'services',
+          attributes: ['id', 'name'],
+          through: { attributes: [] }
+        }
+      ]
+    });
+
+    // Para cada especialista, calcular sus estadísticas
+    const specialistsWithStats = await Promise.all(
+      specialists.map(async (specialist) => {
+        // Comisiones generadas (servicios completados)
+        const completedAppointments = await Appointment.findAll({
+          where: {
+            businessId,
+            specialistId: specialist.id,
+            status: 'COMPLETED',
+            date: {
+              [Op.between]: [periodStart, periodEnd]
+            }
+          },
+          include: [
+            {
+              model: Service,
+              as: 'service',
+              attributes: ['id', 'name', 'price', 'commissionPercentage']
+            }
+          ]
+        });
+
+        let generated = 0;
+        let servicesCount = 0;
+
+        completedAppointments.forEach(appointment => {
+          const price = parseFloat(appointment.finalPrice || appointment.service?.price || 0);
+          const commissionRate = appointment.service?.commissionPercentage || 50;
+          const commissionAmount = (price * commissionRate) / 100;
+          generated += commissionAmount;
+          servicesCount++;
+        });
+
+        // Comisiones pagadas
+        const paidCommissions = await CommissionDetail.sum('commissionAmount', {
+          where: {
+            serviceDate: {
+              [Op.between]: [periodStart, periodEnd]
+            },
+            paymentStatus: 'PAID'
+          },
+          include: [
+            {
+              model: Appointment,
+              as: 'appointment',
+              where: { specialistId: specialist.id },
+              required: true,
+              attributes: []
+            }
+          ]
+        });
+
+        const paid = paidCommissions || 0;
+        const pending = generated - paid;
+
+        return {
+          specialistId: specialist.id,
+          name: `${specialist.firstName} ${specialist.lastName}`,
+          email: specialist.email,
+          avatar: specialist.profilePicture,
+          role: specialist.role,
+          services: specialist.services.map(s => s.name),
+          stats: {
+            generated: Math.round(generated * 100) / 100,
+            paid: Math.round(paid * 100) / 100,
+            pending: Math.round(pending * 100) / 100,
+            servicesCount
+          }
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data: {
+        period: {
+          start: periodStart,
+          end: periodEnd,
+          month: targetMonth + 1,
+          year: targetYear
+        },
+        specialists: specialistsWithStats
+      }
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo resumen de especialistas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener resumen de especialistas',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * Obtener detalle de comisiones de un especialista
+ * GET /api/business/:businessId/commissions/specialist/:specialistId/details
+ */
+exports.getSpecialistDetails = async (req, res) => {
+  try {
+    const { businessId, specialistId } = req.params;
+    const { startDate, endDate } = req.query;
+
+    // Validar que el especialista pertenezca al negocio
+    const specialist = await User.findOne({
+      where: {
+        id: specialistId,
+        businessId,
+        role: {
+          [Op.in]: ['SPECIALIST_LEVEL_1', 'SPECIALIST_LEVEL_2']
+        }
+      },
+      attributes: ['id', 'firstName', 'lastName', 'email', 'profilePicture']
+    });
+
+    if (!specialist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Especialista no encontrado'
+      });
+    }
+
+    // Determinar período
+    const periodStart = startDate ? new Date(startDate) : startOfMonth(new Date());
+    const periodEnd = endDate ? new Date(endDate) : endOfMonth(new Date());
+
+    // Obtener turnos completados con comisiones
+    const appointments = await Appointment.findAll({
+      where: {
+        businessId,
+        specialistId,
+        status: 'COMPLETED',
+        date: {
+          [Op.between]: [periodStart, periodEnd]
+        }
+      },
+      include: [
+        {
+          model: Service,
+          as: 'service',
+          attributes: ['id', 'name', 'price', 'commissionPercentage']
+        },
+        {
+          model: Client,
+          as: 'client',
+          attributes: ['id', 'name', 'phone', 'email']
+        },
+        {
+          model: CommissionDetail,
+          as: 'commissionDetails',
+          required: false
+        }
+      ],
+      order: [['date', 'DESC']]
+    });
+
+    // Calcular detalles de comisiones
+    const commissionDetails = appointments.map(appointment => {
+      const price = parseFloat(appointment.finalPrice || appointment.service?.price || 0);
+      const commissionRate = appointment.service?.commissionPercentage || 50;
+      const commissionAmount = (price * commissionRate) / 100;
+      const isPaid = appointment.commissionDetails && appointment.commissionDetails.length > 0 
+        && appointment.commissionDetails[0].paymentStatus === 'PAID';
+
+      return {
+        appointmentId: appointment.id,
+        date: appointment.date,
+        client: appointment.client ? {
+          id: appointment.client.id,
+          name: appointment.client.name,
+          phone: appointment.client.phone
+        } : null,
+        service: appointment.service ? {
+          id: appointment.service.id,
+          name: appointment.service.name,
+          price
+        } : null,
+        commissionRate,
+        commissionAmount: Math.round(commissionAmount * 100) / 100,
+        status: isPaid ? 'PAID' : 'PENDING',
+        commissionDetailId: appointment.commissionDetails?.[0]?.id || null
+      };
+    });
+
+    // Calcular totales
+    const totals = commissionDetails.reduce((acc, detail) => {
+      acc.generated += detail.commissionAmount;
+      if (detail.status === 'PAID') {
+        acc.paid += detail.commissionAmount;
+      } else {
+        acc.pending += detail.commissionAmount;
+      }
+      return acc;
+    }, { generated: 0, paid: 0, pending: 0 });
+
+    // Obtener histórico de pagos
+    const paymentHistory = await CommissionPaymentRequest.findAll({
+      where: {
+        businessId,
+        specialistId,
+        status: {
+          [Op.in]: ['PAID', 'APPROVED']
+        }
+      },
+      order: [['paidAt', 'DESC']],
+      limit: 10,
+      include: [
+        {
+          model: User,
+          as: 'paidByUser',
+          attributes: ['firstName', 'lastName'],
+          required: false
+        }
+      ]
+    });
+
+    res.json({
+      success: true,
+      data: {
+        specialist: {
+          id: specialist.id,
+          name: `${specialist.firstName} ${specialist.lastName}`,
+          email: specialist.email,
+          avatar: specialist.profilePicture
+        },
+        period: {
+          start: periodStart,
+          end: periodEnd
+        },
+        commissionDetails,
+        totals: {
+          generated: Math.round(totals.generated * 100) / 100,
+          paid: Math.round(totals.paid * 100) / 100,
+          pending: Math.round(totals.pending * 100) / 100
+        },
+        paymentHistory: paymentHistory.map(payment => ({
+          id: payment.id,
+          requestNumber: payment.requestNumber,
+          amount: payment.totalAmount,
+          periodFrom: payment.periodFrom,
+          periodTo: payment.periodTo,
+          paidAt: payment.paidAt,
+          paidBy: payment.paidByUser ? 
+            `${payment.paidByUser.firstName} ${payment.paidByUser.lastName}` : 
+            null,
+          paymentMethod: payment.paymentMethod,
+          status: payment.status
+        }))
+      }
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo detalles del especialista:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener detalles del especialista',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * Registrar pago de comisión
+ * POST /api/business/:businessId/commissions/pay
+ */
+exports.payCommission = async (req, res) => {
+  const transaction = await require('../config/database').sequelize.transaction();
+
+  try {
+    const { businessId } = req.params;
+    const {
+      specialistId,
+      periodFrom,
+      periodTo,
+      amount,
+      paymentMethod,
+      paymentReference,
+      bankAccount,
+      paidDate,
+      notes,
+      appointmentIds // IDs de los turnos cuyas comisiones se están pagando
+    } = req.body;
+
+    // Validar especialista
+    const specialist = await User.findOne({
+      where: { id: specialistId, businessId }
+    });
+
+    if (!specialist) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'Especialista no encontrado'
+      });
+    }
+
+    // Generar número de solicitud
+    const requestCount = await CommissionPaymentRequest.count({
+      where: { businessId }
+    });
+    const requestNumber = `CPR-${new Date().getFullYear()}-${String(requestCount + 1).padStart(4, '0')}`;
+
+    // 1. Crear CommissionPaymentRequest
+    const paymentRequest = await CommissionPaymentRequest.create({
+      requestNumber,
+      specialistId,
+      businessId,
+      periodFrom: new Date(periodFrom),
+      periodTo: new Date(periodTo),
+      totalAmount: parseFloat(amount),
+      status: 'PAID',
+      paymentMethod,
+      paymentReference,
+      bankAccount,
+      paidAt: paidDate ? new Date(paidDate) : new Date(),
+      paidBy: req.user.id,
+      specialistNotes: notes,
+      submittedAt: new Date()
+    }, { transaction });
+
+    // 2. Crear CommissionDetails para cada turno
+    const appointments = await Appointment.findAll({
+      where: {
+        id: { [Op.in]: appointmentIds },
+        businessId,
+        specialistId
+      },
+      include: [
+        {
+          model: Service,
+          as: 'service'
+        },
+        {
+          model: Client,
+          as: 'client'
+        }
+      ]
+    });
+
+    const commissionDetailsCreated = [];
+    for (const appointment of appointments) {
+      const price = parseFloat(appointment.finalPrice || appointment.service?.price || 0);
+      const commissionRate = appointment.service?.commissionPercentage || 50;
+      const commissionAmount = (price * commissionRate) / 100;
+
+      const detail = await CommissionDetail.create({
+        paymentRequestId: paymentRequest.id,
+        appointmentId: appointment.id,
+        serviceId: appointment.serviceId,
+        clientId: appointment.clientId,
+        serviceDate: appointment.date,
+        serviceName: appointment.service?.name || 'Servicio',
+        servicePrice: price,
+        commissionRate,
+        commissionAmount,
+        clientName: appointment.client?.name || 'Cliente',
+        paymentStatus: 'PAID'
+      }, { transaction });
+
+      commissionDetailsCreated.push(detail);
+    }
+
+    // 3. Obtener o crear categoría "Comisiones a Especialistas"
+    const category = await BusinessExpenseController.getOrCreateCommissionCategory(
+      businessId, 
+      req.user.id
+    );
+
+    // 4. Crear BusinessExpense
+    const expense = await BusinessExpense.create({
+      businessId,
+      categoryId: category.id,
+      description: `Comisión ${specialist.firstName} ${specialist.lastName} - ${format(new Date(periodFrom), 'MMM yyyy')}`,
+      amount: parseFloat(amount),
+      expenseDate: paidDate ? new Date(paidDate) : new Date(),
+      paidDate: paidDate ? new Date(paidDate) : new Date(),
+      status: 'PAID',
+      paymentMethod,
+      transactionReference: paymentReference,
+      notes: `Pago de comisión. Solicitud: ${requestNumber}. ${notes || ''}`,
+      createdBy: req.user.id
+    }, { transaction });
+
+    // 5. Crear FinancialMovement
+    const movement = await FinancialMovement.create({
+      businessId,
+      userId: req.user.id,
+      type: 'EXPENSE',
+      category: 'Comisiones a Especialistas',
+      businessExpenseCategoryId: category.id,
+      businessExpenseId: expense.id,
+      amount: parseFloat(amount),
+      description: `Comisión ${specialist.firstName} ${specialist.lastName} - ${format(new Date(periodFrom), 'MMM yyyy')}`,
+      notes: notes || null,
+      paymentMethod,
+      transactionId: paymentReference,
+      referenceId: paymentRequest.id,
+      referenceType: 'CommissionPaymentRequest',
+      status: 'COMPLETED',
+      paidDate: paidDate ? new Date(paidDate) : new Date()
+    }, { transaction });
+
+    await transaction.commit();
+
+    res.status(201).json({
+      success: true,
+      message: 'Pago de comisión registrado exitosamente',
+      data: {
+        paymentRequest,
+        commissionDetails: commissionDetailsCreated,
+        expense,
+        movement
+      }
+    });
+
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error registrando pago de comisión:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al registrar pago de comisión',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};

@@ -65,6 +65,9 @@ import cashRegisterReducer from './slices/cashRegisterSlice';
 import receiptReducer from './slices/receiptSlice';
 // 📊 FINANCIAL MOVEMENTS & REPORTS REDUCERS
 import financialMovementsReducer from './slices/financialMovementsSlice';
+// 💸 BUSINESS EXPENSES & COMMISSIONS REDUCERS
+import businessExpensesReducer from './slices/businessExpensesSlice';
+import specialistCommissionsReducer from './slices/specialistCommissionsSlice';
 
 // Create and configure the Redux store
 export const createStore = (preloadedState = {}) => {
@@ -135,7 +138,10 @@ export const createStore = (preloadedState = {}) => {
       cashRegister: cashRegisterReducer,
       receipt: receiptReducer,
       // 📊 FINANCIAL MOVEMENTS & REPORTS REDUCERS
-      financialMovements: financialMovementsReducer
+      financialMovements: financialMovementsReducer,
+      // 💸 BUSINESS EXPENSES & COMMISSIONS REDUCERS
+      businessExpenses: businessExpensesReducer,
+      specialistCommissions: specialistCommissionsReducer
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>
