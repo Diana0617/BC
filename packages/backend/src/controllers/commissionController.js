@@ -557,7 +557,7 @@ exports.getSpecialistsSummary = async (req, res) => {
         role: {
           [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST', 'BUSINESS_SPECIALIST']
         },
-        isActive: true
+        status: 'ACTIVE'
       },
       attributes: ['id', 'firstName', 'lastName', 'email', 'avatar', 'role'],
       include: [
