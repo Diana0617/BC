@@ -15,7 +15,9 @@ import {
   ArrowRightOnRectangleIcon,
   PaintBrushIcon,
   ChatBubbleLeftRightIcon,
-  CubeIcon
+  CubeIcon,
+  BanknotesIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline'
 
 // Redux actions
@@ -30,6 +32,7 @@ import { logout, clearSubscriptionWarning } from '@shared/store/slices/authSlice
 // Componentes
 import SubscriptionWarningBanner from '../../../components/SubscriptionWarningBanner'
 import RenewSubscriptionModal from '../../../components/subscription/RenewSubscriptionModal'
+import UpgradePlanModal from '../../../components/common/UpgradePlanModal'
 
 // Componentes de secciones
 import SubscriptionSection from './sections/SubscriptionSection'
@@ -47,6 +50,7 @@ import PaymentMethodsSection from './sections/PaymentMethodsSection'
 import CalendarAccessSection from './sections/CalendarAccessSection'
 import CustomerHistorySection from './sections/CustomerHistorySection'
 import WhatsAppConfigSection from './sections/WhatsAppConfigSection'
+import MovementsSection from './sections/MovementsSection'
 import BusinessRuleModal from '../../../components/BusinessRuleModalV2'
 
 // Hook personalizado para la configuración del negocio
@@ -88,6 +92,7 @@ const BusinessProfile = () => {
   // Estados locales
   const [activeSection, setActiveSection] = useState('subscription')
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [activeInitialConfigTab, setActiveInitialConfigTab] = useState('basic-info')
 
   // Estados de Redux
@@ -146,6 +151,14 @@ const BusinessProfile = () => {
   // Obtener TODOS los módulos disponibles y marcar cuáles están incluidos en el plan
   const allModules = business?.allModules || []
   const availableModules = allModules.filter(module => module.isAvailable).map(module => module.name) || []
+
+  // Determinar si es plan gratuito
+  const currentSubscription = business?.subscriptions?.find(sub => 
+    sub.status === 'ACTIVE' || sub.status === 'TRIAL'
+  ) || business?.subscriptions?.[0] || business?.subscription
+
+  const planPrice = currentSubscription?.plan?.price
+  const isFreePlan = planPrice === 0 || planPrice === '0.00' || parseFloat(planPrice) === 0
 
   console.log('🔍 All Modules:', allModules)
   console.log('✅ Available Modules:', availableModules)
@@ -237,6 +250,14 @@ const BusinessProfile = () => {
       icon: CalendarDaysIcon,
       component: CalendarAccessSection,
       alwaysVisible: true
+    },
+    {
+      id: 'movements',
+      name: 'Movimientos',
+      icon: ChartBarIcon,
+      component: MovementsSection,
+      alwaysVisible: true,
+      moduleRequired: 'balance' // Requiere módulo de balance/reportes
     },
     {
       id: 'customer-history',
@@ -444,7 +465,11 @@ const BusinessProfile = () => {
     // Si es un trigger de modal, abrir el modal correspondiente
     if (tab?.isModalTrigger) {
       if (tabId === 'business-rules') {
-        setIsRuleModalOpen(true)
+        if (isFreePlan) {
+          setShowUpgradeModal(true)
+        } else {
+          setIsRuleModalOpen(true)
+        }
         return
       }
     }
@@ -556,15 +581,17 @@ const BusinessProfile = () => {
                       {tab.name}
                     </h3>
                     <p className="text-gray-600 mb-6 max-w-sm mx-auto">
-                      Configura las reglas de negocio que rigen el funcionamiento de tu establecimiento.
+                      {isFreePlan 
+                        ? 'La configuración de reglas de negocio está disponible en planes premium.' 
+                        : 'Configura las reglas de negocio que rigen el funcionamiento de tu establecimiento.'}
                     </p>
                     <button
-                      onClick={() => setIsRuleModalOpen(true)}
+                      onClick={() => isFreePlan ? setShowUpgradeModal(true) : setIsRuleModalOpen(true)}
                       className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center space-x-2"
                       style={{ backgroundColor: branding?.primaryColor || '#2563eb' }}
                     >
                       <ShieldCheckIcon className="h-5 w-5" />
-                      <span>Abrir Configuración de Reglas</span>
+                      <span>{isFreePlan ? 'Actualizar Plan' : 'Abrir Configuración de Reglas'}</span>
                     </button>
                   </div>
                 )
@@ -822,6 +849,12 @@ const BusinessProfile = () => {
         onClose={() => setIsRuleModalOpen(false)}
         businessId={business?.id}
         business={business}
+      />
+
+      {/* Modal de upgrade de plan */}
+      <UpgradePlanModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
       />
 
       {/* Modal de renovación de suscripción */}

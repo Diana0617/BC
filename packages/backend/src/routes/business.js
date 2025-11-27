@@ -5,6 +5,7 @@ const SubscriptionStatusController = require('../controllers/SubscriptionStatusC
 const { authenticateToken } = require('../middleware/auth');
 const tenancyMiddleware = require('../middleware/tenancy');
 const { ownerOnly, businessAndOwner, allStaffRoles } = require('../middleware/roleCheck');
+const { restrictFreePlan } = require('../middleware/planRestrictions');
 
 /**
  * Rutas de Negocios - Beauty Control
@@ -480,7 +481,7 @@ router.get('/subscription-status', allStaffRoles, SubscriptionStatusController.c
  *               $ref: '#/components/schemas/Error'
  */
 // Invitar empleado al negocio
-router.post('/invite-employee', businessAndOwner, BusinessController.inviteEmployee);
+router.post('/invite-employee', businessAndOwner, restrictFreePlan('STAFF_CREATE'), BusinessController.inviteEmployee);
 
 /**
  * @swagger

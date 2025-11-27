@@ -411,6 +411,13 @@ const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
         />
       )}
 
+      {/* Modal de Upgrade */}
+      <UpgradePlanModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        featureName="Métodos de Pago Personalizados"
+      />
+
       {/* Setup Mode Actions */}
       {isSetupMode && (
         <div className="flex justify-between items-center pt-6 border-t border-gray-200">
@@ -648,12 +655,6 @@ const PaymentMethodModal = ({ formData, setFormData, onSave, onCancel, isEditing
           </button>
         </div>
       </div>
-      {/* Modal de Upgrade */}
-      <UpgradePlanModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        featureName="Métodos de Pago Personalizados"
-      />
     </div>
   )
 }

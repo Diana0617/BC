@@ -17,6 +17,9 @@ router.use(authenticateToken);
 // Obtener lista de citas
 router.get('/', AppointmentController.getAppointments);
 
+// Obtener resumen de turnos del día
+router.get('/summary/today', AppointmentController.getTodaySummary);
+
 // Obtener citas por rango de fechas (debe ir ANTES de '/:id' para evitar conflictos)
 router.get('/date-range', AppointmentController.getAppointmentsByDateRange);
 

@@ -83,6 +83,8 @@ export * from './store/slices/appointmentCalendarSlice.js';
 export * from './store/slices/timeSlotSlice.js';
 // 📦 PRODUCTS & INVENTORY SLICES
 export * from './store/slices/productsSlice.js';
+// 📊 FINANCIAL MOVEMENTS & REPORTS SLICES
+export * from './store/slices/financialMovementsSlice.js';
 
 // Export selectors
 export * from './store/selectors/authSelectors.js';
