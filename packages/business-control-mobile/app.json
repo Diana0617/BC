@@ -5,11 +5,11 @@
     "owner": "codediana",
     "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "_icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "jsEngine": "hermes",
-    "splash": {
+    "_splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
@@ -23,7 +23,7 @@
       }
     },
     "android": {
-      "adaptiveIcon": {
+      "_adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
