@@ -8,13 +8,13 @@ const ENV = {
   },
   staging: {
     apiUrl: 'https://bc-16wt.onrender.com',
-    webUrl: 'https://www.controldenegocios.com',
-    subscribeUrl: 'https://www.controldenegocios.com/subscribe',
+    webUrl: 'https://bc-nine-alpha.vercel.app',
+    subscribeUrl: 'https://bc-nine-alpha.vercel.app/subscribe',
   },
   prod: {
     apiUrl: 'https://bc-16wt.onrender.com',
-    webUrl: 'https://www.controldenegocios.com',
-    subscribeUrl: 'https://www.controldenegocios.com/subscribe',
+    webUrl: 'https://bc-nine-alpha.vercel.app',
+    subscribeUrl: 'https://bc-nine-alpha.vercel.app/subscribe',
   },
 };
 

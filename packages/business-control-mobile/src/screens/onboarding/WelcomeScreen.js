@@ -31,7 +31,7 @@ function WelcomeScreen({ navigation }) {
   };
 
   const handleTerms = async () => {
-    const termsUrl = 'https://controldenegocios.com/terminos';
+    const termsUrl = 'https://bc-nine-alpha.vercel.app/terminos';
     try {
       await Linking.openURL(termsUrl);
     } catch (error) {
@@ -40,7 +40,7 @@ function WelcomeScreen({ navigation }) {
   };
 
   const handlePrivacy = async () => {
-    const privacyUrl = 'https://controldenegocios.com/privacidad';
+    const privacyUrl = 'https://bc-nine-alpha.vercel.app/privacidad';
     try {
       await Linking.openURL(privacyUrl);
     } catch (error) {

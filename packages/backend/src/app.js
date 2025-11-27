@@ -64,6 +64,7 @@ app.use(helmet({
 // CORS configurado - Always allow production URLs
 const allowedOrigins = [
   // Production URLs
+  'https://bc-nine-alpha.vercel.app',
   'https://www.controldenegocios.com',
   'https://controldenegocios.com',
   process.env.WEB_URL,

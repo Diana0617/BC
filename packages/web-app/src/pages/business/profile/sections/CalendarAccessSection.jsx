@@ -320,7 +320,7 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
     console.log('🏷️ Subdomain:', currentBusiness?.subdomain)
     
     if (businessIdentifier) {
-      const bookingUrl = `https://controldenegocios.com/book/${businessIdentifier}`
+      const bookingUrl = `https://bc-nine-alpha.vercel.app/book/${businessIdentifier}`
       console.log('🔗 URL de reservas:', bookingUrl)
       
       // Generar QR usando API de QR Code Generator
@@ -440,7 +440,7 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
     const businessIdentifier = currentBusiness?.subdomain || 
                                currentBusiness?.slug ||
                                currentBusiness?.id
-    const bookingUrl = `https://controldenegocios.com/book/${businessIdentifier || 'TU_CODIGO'}`
+    const bookingUrl = `https://bc-nine-alpha.vercel.app/book/${businessIdentifier || 'TU_CODIGO'}`
     
     console.log('📋 Copiando enlace:', bookingUrl)
     
@@ -855,7 +855,7 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 </p>
                 <div className="bg-gray-50 rounded p-3 overflow-x-auto">
                   <code className="text-xs text-gray-800 break-all">
-                    https://controldenegocios.com/book/{currentBusiness?.subdomain || currentBusiness?.slug || currentBusiness?.id || 'TU_CODIGO'}
+                    https://bc-nine-alpha.vercel.app/book/{currentBusiness?.subdomain || currentBusiness?.slug || currentBusiness?.id || 'TU_CODIGO'}
                   </code>
                 </div>
                 <button 
