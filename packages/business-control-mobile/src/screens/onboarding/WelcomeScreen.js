@@ -58,11 +58,7 @@ function WelcomeScreen({ navigation }) {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
-              <Image 
-                source={require('../../../assets/logo.png')} 
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
+              <Ionicons name="cut" size={40} color="#ec4899" />
             </View>
             <Text style={styles.logoText}>Control de Negocios</Text>
             <Text style={styles.tagline}>Tu salón en la palma de tu mano</Text>
@@ -212,10 +208,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
-  },
-  logoImage: {
-    width: 60,
-    height: 60,
   },
   logoText: {
     fontSize: 28,
