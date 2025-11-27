@@ -559,11 +559,11 @@ exports.getSpecialistsSummary = async (req, res) => {
         },
         isActive: true
       },
-      attributes: ['id', 'firstName', 'lastName', 'email', 'profilePicture', 'role'],
+      attributes: ['id', 'firstName', 'lastName', 'email', 'avatar', 'role'],
       include: [
         {
           model: Service,
-          as: 'services',
+          as: 'specialistServices',
           attributes: ['id', 'name'],
           through: { attributes: [] }
         }

@@ -868,7 +868,7 @@ class BusinessExpenseController {
       where: whereCondition,
       attributes: [
         'categoryId',
-        [fn('COUNT', col('id')), 'count'],
+        [fn('COUNT', col('BusinessExpense.id')), 'count'],
         [fn('SUM', col('amount')), 'total']
       ],
       include: [
@@ -886,7 +886,7 @@ class BusinessExpenseController {
     const general = await BusinessExpense.findOne({
       where: whereCondition,
       attributes: [
-        [fn('COUNT', col('id')), 'totalExpenses'],
+        [fn('COUNT', col('BusinessExpense.id')), 'totalExpenses'],
         [fn('SUM', col('amount')), 'totalAmount'],
         [fn('AVG', col('amount')), 'averageAmount']
       ],
