@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
+import '../styles/driver-custom.css';
 import { 
   X, 
   Clock, 
@@ -20,7 +23,8 @@ import {
   AlertCircle,
   GripVertical,
   Plus,
-  Minus
+  Minus,
+  HelpCircle
 } from 'lucide-react';
 import {
   getAvailableTemplates,
@@ -40,6 +44,11 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
   const [editValue, setEditValue] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [mobileTab, setMobileTab] = useState('available'); // 'available' o 'assigned'
+  
+  const availableRulesRef = useRef(null);
+  const assignedRulesRef = useRef(null);
+  const searchRef = useRef(null);
+  const categoryRef = useRef(null);
 
   const {
     availableTemplates,
@@ -47,6 +56,78 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
     availableTemplatesLoaded,
     assignedRulesLoaded
   } = useSelector(state => state.businessRule);
+
+  // Tour guiado con Driver.js
+  const startTour = () => {
+    const driverObj = driver({
+      showProgress: true,
+      showButtons: ['next', 'previous', 'close'],
+      progressText: '{{current}} de {{total}}',
+      nextBtnText: 'Siguiente →',
+      prevBtnText: '← Anterior',
+      doneBtnText: '¡Entendido!',
+      popoverClass: 'driverjs-theme',
+      steps: [
+        {
+          element: searchRef.current,
+          popover: {
+            title: '🔍 Buscar Reglas',
+            description: 'Usa el buscador para encontrar reglas específicas por nombre o descripción.',
+            position: 'bottom'
+          }
+        },
+        {
+          element: categoryRef.current,
+          popover: {
+            title: '📂 Filtrar por Categoría',
+            description: 'Filtra las reglas por tipo: Pagos, Citas, Cancelaciones, etc.',
+            position: 'bottom'
+          }
+        },
+        {
+          element: availableRulesRef.current,
+          popover: {
+            title: '📋 Reglas Disponibles',
+            description: window.innerWidth >= 1024 
+              ? 'Arrastra las reglas desde aquí hacia la columna derecha para activarlas en tu negocio.'
+              : 'Toca el botón + en cada regla para activarla en tu negocio.',
+            position: 'right'
+          }
+        },
+        {
+          element: assignedRulesRef.current,
+          popover: {
+            title: '✅ Reglas Activas',
+            description: 'Aquí aparecerán las reglas que has activado. Usa el botón ✏️ para personalizar sus valores y 🗑️ para desactivarlas.',
+            position: 'left'
+          }
+        },
+        {
+          popover: {
+            title: '🎉 ¡Listo!',
+            description: 'Ahora puedes configurar las reglas de tu negocio. Si necesitas ayuda nuevamente, haz clic en el botón de ayuda (?)',
+            position: 'center'
+          }
+        }
+      ]
+    });
+
+    driverObj.drive();
+    
+    // Guardar en localStorage que ya vio el tour
+    localStorage.setItem('businessRulesTourCompleted', 'true');
+  };
+
+  // Mostrar tour automáticamente la primera vez
+  useEffect(() => {
+    if (isOpen && !localStorage.getItem('businessRulesTourCompleted')) {
+      // Esperar un poco para que el modal se renderice completamente
+      const timer = setTimeout(() => {
+        startTour();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const { isAuthenticated, token } = useSelector(state => state.auth);
 
@@ -278,12 +359,21 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
                       Arrastra las reglas disponibles para asignarlas a tu negocio
                     </p>
                   </div>
-                  <button
-                    onClick={onClose}
-                    className="rounded-full bg-white/20 p-2 text-white hover:bg-white/30 transition-colors"
-                  >
-                    <X className="h-5 w-5 lg:h-6 lg:w-6" />
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={startTour}
+                      className="rounded-full bg-white/20 p-2 text-white hover:bg-white/30 transition-colors"
+                      title="Ver tutorial"
+                    >
+                      <HelpCircle className="h-5 w-5 lg:h-6 lg:w-6" />
+                    </button>
+                    <button
+                      onClick={onClose}
+                      className="rounded-full bg-white/20 p-2 text-white hover:bg-white/30 transition-colors"
+                    >
+                      <X className="h-5 w-5 lg:h-6 lg:w-6" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Stats */}
@@ -306,7 +396,7 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
               {/* Filters */}
               <div className="flex-shrink-0 border-b border-gray-200 bg-gray-50 px-4 lg:px-6 py-3 lg:py-4">
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1">
+                  <div className="flex-1" ref={searchRef}>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <input
@@ -318,7 +408,7 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
                       />
                     </div>
                   </div>
-                  <div className="sm:w-64">
+                  <div className="sm:w-64" ref={categoryRef}>
                     <select
                       value={selectedCategory}
                       onChange={(e) => setSelectedCategory(e.target.value)}
@@ -375,7 +465,7 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
                 <div className="h-full grid grid-cols-1 lg:grid-cols-2 divide-x divide-gray-200">
                   
                   {/* LEFT COLUMN: Available Rules */}
-                  <div className={`flex flex-col h-full overflow-hidden ${mobileTab === 'assigned' ? 'hidden lg:flex' : ''}`}>
+                  <div className={`flex flex-col h-full overflow-hidden ${mobileTab === 'assigned' ? 'hidden lg:flex' : ''}`} ref={availableRulesRef}>
                     <div className="hidden lg:block flex-shrink-0 px-6 py-3 bg-gray-100 border-b border-gray-200">
                       <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center">
                         <Settings className="h-4 w-4 mr-2" />
@@ -416,17 +506,14 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
                                     </div>
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <h4 className="text-sm font-semibold text-gray-900 truncate">
-                                      {rule.key}
-                                    </h4>
-                                    <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                                    <h4 className="text-sm font-medium text-gray-900">
                                       {rule.description}
-                                    </p>
-                                    <div className="mt-2">
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                                        {rule.type || 'STRING'}
-                                      </span>
-                                    </div>
+                                    </h4>
+                                    {rule.examples?.descriptions?.[0] && (
+                                      <p className="mt-1 text-xs text-gray-500">
+                                        Ej: {rule.examples.descriptions.join(' o ')}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
                                 
@@ -451,6 +538,7 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
                     className={`flex flex-col h-full overflow-hidden bg-gradient-to-br from-pink-50 to-purple-50 ${mobileTab === 'available' ? 'hidden lg:flex' : ''}`}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
+                    ref={assignedRulesRef}
                   >
                     <div className="hidden lg:block flex-shrink-0 px-6 py-3 bg-pink-600 border-b border-pink-700">
                       <h3 className="text-sm font-semibold text-white uppercase tracking-wide flex items-center">
@@ -500,8 +588,8 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between">
-                                      <h4 className="text-sm font-semibold text-gray-900">
-                                        {rule.key}
+                                      <h4 className="text-sm font-medium text-gray-900 pr-2">
+                                        {rule.description}
                                       </h4>
                                       <div className="flex items-center space-x-2">
                                         <button
@@ -520,17 +608,19 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
                                         </button>
                                       </div>
                                     </div>
-                                    <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                                      {rule.description}
-                                    </p>
                                     <div className="mt-2 flex flex-wrap items-center gap-2">
                                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                                         isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
                                       }`}>
                                         {isActive ? 'Activa' : 'Inactiva'}
                                       </span>
-                                      <span className="text-xs text-gray-600 truncate max-w-[200px]">
-                                        Valor: <span className="font-medium">{String(currentValue)}</span>
+                                      <span className="text-xs text-gray-600">
+                                        <span className="font-medium">
+                                          {rule.type === 'BOOLEAN' 
+                                            ? (currentValue ? 'Sí' : 'No')
+                                            : String(currentValue)
+                                          }
+                                        </span>
                                       </span>
                                     </div>
                                   </div>
@@ -616,45 +706,48 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
 
             {/* Modal Body */}
             <div className="p-6 space-y-4">
-              {/* Description */}
+              {/* Description as Question */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-gray-700">{editingRule.description}</p>
-              </div>
-
-              {/* Rule Type Badge */}
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-700">Tipo:</span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                  {editingRule.type || 'STRING'}
-                </span>
+                <p className="text-base font-medium text-gray-900">{editingRule.description}</p>
               </div>
 
               {/* Value Input */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Valor de la Regla
-                </label>
-                
+              <div className="space-y-3">
                 {editingRule.type === 'BOOLEAN' ? (
-                  <div className="flex items-center space-x-4">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={editValue === true || editValue === 'true'}
-                        onChange={() => setEditValue(true)}
-                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm text-gray-700">Sí / Activo</span>
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Selecciona tu respuesta
                     </label>
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={editValue === false || editValue === 'false'}
-                        onChange={() => setEditValue(false)}
-                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm text-gray-700">No / Inactivo</span>
-                    </label>
+                    <div className="flex flex-col space-y-2">
+                      <label className="flex items-center space-x-3 cursor-pointer p-4 border-2 rounded-lg transition-all hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          checked={editValue === true || editValue === 'true'}
+                          onChange={() => setEditValue(true)}
+                          className="w-5 h-5 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-900">Sí</span>
+                          {editingRule.examples?.descriptions?.[0] && (
+                            <p className="text-xs text-gray-500 mt-0.5">{editingRule.examples.descriptions[0]}</p>
+                          )}
+                        </div>
+                      </label>
+                      <label className="flex items-center space-x-3 cursor-pointer p-4 border-2 rounded-lg transition-all hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          checked={editValue === false || editValue === 'false'}
+                          onChange={() => setEditValue(false)}
+                          className="w-5 h-5 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-900">No</span>
+                          {editingRule.examples?.descriptions?.[1] && (
+                            <p className="text-xs text-gray-500 mt-0.5">{editingRule.examples.descriptions[1]}</p>
+                          )}
+                        </div>
+                      </label>
+                    </div>
                   </div>
                 ) : editingRule.type === 'NUMBER' ? (
                   <div>
@@ -700,7 +793,11 @@ const BusinessRuleModalV2 = ({ isOpen, onClose, business }) => {
               {/* Default Value Reference */}
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-600">
-                  <span className="font-medium">Valor por defecto:</span> {String(editingRule.defaultValue)}
+                  <span className="font-medium">Valor sugerido:</span> {
+                    editingRule.type === 'BOOLEAN' 
+                      ? (editingRule.defaultValue ? 'Sí' : 'No')
+                      : String(editingRule.defaultValue)
+                  }
                 </p>
               </div>
             </div>
