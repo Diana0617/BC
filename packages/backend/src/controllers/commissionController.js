@@ -555,7 +555,7 @@ exports.getSpecialistsSummary = async (req, res) => {
       where: {
         businessId,
         role: {
-          [Op.in]: ['SPECIALIST_LEVEL_1', 'SPECIALIST_LEVEL_2']
+          [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST', 'BUSINESS_SPECIALIST']
         },
         isActive: true
       },
