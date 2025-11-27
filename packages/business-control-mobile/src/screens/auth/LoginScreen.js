@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -122,7 +123,11 @@ export default function LoginScreen({ navigation }) {
                     elevation: 16,
                   }}
                 >
-                  <Ionicons name="business" size={40} color="#ffffff" />
+                  <Image 
+                    source={require('../../../assets/logo.png')} 
+                    style={{ width: 50, height: 50 }}
+                    resizeMode="contain"
+                  />
                 </LinearGradient>
                 <Text style={{ 
                   fontSize: 32, 
@@ -261,7 +266,7 @@ export default function LoginScreen({ navigation }) {
                     marginTop: 8,
                     marginLeft: 4
                   }}>
-                    Tu dominio completo: {formData.subdomain || 'tu-salon'}.businesscontrol.app
+                    Tu dominio completo: {formData.subdomain || 'tu-salon'}.controldenegocios.com
                   </Text>
                 </View>
 
