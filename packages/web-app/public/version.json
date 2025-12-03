@@ -1,6 +1,0 @@
-{
-  "version": "3.0.0-peer-deps-fix",
-  "timestamp": "2025-10-18T13:55:00Z",
-  "commit": "46472e8",
-  "note": "react-router-dom as peerDependency - fixes duplicate React Router instances"
-}
