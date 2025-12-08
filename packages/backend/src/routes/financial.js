@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const FinancialMovementController = require('../controllers/FinancialMovementController');
 const { authenticateToken } = require('../middleware/auth');
 // const tenancyMiddleware = require('../middleware/tenancy');
 // const { allStaffRoles, businessAndOwner } = require('../middleware/roleCheck');
@@ -17,13 +18,11 @@ router.get('/summary', (req, res) => {
   });
 });
 
+// Obtener resumen de movimientos financieros
+router.get('/movements/summary', FinancialMovementController.getMovementsSummary);
+
 // Obtener movimientos financieros
-router.get('/movements', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de movimientos financieros aún no implementada'
-  });
-});
+router.get('/movements', FinancialMovementController.getMovements);
 
 // Registrar movimiento financiero
 router.post('/movements', (req, res) => {

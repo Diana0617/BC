@@ -399,14 +399,14 @@ const ruleTemplates = [
     key: 'FACTURA_GENERACION_AUTOMATICA',
     type: 'BOOLEAN',
     defaultValue: true,
-    description: 'Generar facturas automáticamente al completar servicios',
+    description: '¿Generar facturas automáticamente al completar servicios?',
     category: 'SERVICE_POLICY',
     allowCustomization: true,
     version: '1.0.0',
     requiredModule: 'facturacion_electronica',
     examples: {
       values: [true, false],
-      descriptions: ['Facturación automática', 'Facturación manual']
+      descriptions: ['Sí, automáticamente', 'No, las creo manualmente']
     }
   },
   
@@ -414,14 +414,14 @@ const ruleTemplates = [
     key: 'FACTURA_ENVIAR_EMAIL',
     type: 'BOOLEAN',
     defaultValue: true,
-    description: 'Enviar facturas por correo electrónico automáticamente',
+    description: '¿Enviar facturas por email automáticamente a tus clientes?',
     category: 'NOTIFICATION_POLICY',
     allowCustomization: true,
     version: '1.0.0',
     requiredModule: 'facturacion_electronica',
     examples: {
       values: [true, false],
-      descriptions: ['Envío automático', 'Envío manual']
+      descriptions: ['Sí, envío automático', 'No, envío manual']
     }
   },
   
@@ -435,39 +435,39 @@ const ruleTemplates = [
     key: 'PAGO_ACEPTAR_EFECTIVO',
     type: 'BOOLEAN',
     defaultValue: true,
-    description: 'Aceptar pagos en efectivo',
+    description: '¿Aceptas pagos en efectivo en tu negocio?',
     category: 'PAYMENT_POLICY',
     allowCustomization: true,
     version: '1.0.0',
     examples: {
       values: [true, false],
-      descriptions: ['Acepta efectivo', 'Solo digital']
+      descriptions: ['Sí, acepto efectivo', 'No, solo pagos digitales']
     }
   },
   {
     key: 'PAGO_ACEPTAR_TARJETA',
     type: 'BOOLEAN',
     defaultValue: true,
-    description: 'Aceptar pagos con tarjeta de crédito/débito',
+    description: '¿Aceptas pagos con tarjeta de crédito/débito?',
     category: 'PAYMENT_POLICY',
     allowCustomization: true,
     version: '1.0.0',
     examples: {
       values: [true, false],
-      descriptions: ['Acepta tarjetas', 'Sin tarjetas']
+      descriptions: ['Sí, acepto tarjetas', 'No acepto tarjetas']
     }
   },
   {
     key: 'COMISIONES_HABILITADAS',
     type: 'BOOLEAN',
     defaultValue: true,
-    description: '¿En tu negocio se manejan comisiones para especialistas?',
+    description: '¿Trabajas con comisiones para tus especialistas?',
     category: 'SERVICE_POLICY',
     allowCustomization: true,
     version: '1.0.0',
     examples: {
       values: [true, false],
-      descriptions: ['Negocio con comisiones', 'Negocio sin comisiones (empleados con salario fijo)']
+      descriptions: ['Sí, pago por comisiones', 'No, pago salario fijo']
     }
   },
   {
@@ -513,13 +513,13 @@ const ruleTemplates = [
     key: 'DEVOLUCION_PERMITIR',
     type: 'BOOLEAN',
     defaultValue: true,
-    description: 'Permitir devoluciones y reembolsos',
+    description: '¿Permites devoluciones y reembolsos en tu negocio?',
     category: 'REFUND_POLICY',
     allowCustomization: true,
     version: '1.0.0',
     examples: {
       values: [true, false],
-      descriptions: ['Permite devoluciones', 'Sin devoluciones']
+      descriptions: ['Sí, acepto devoluciones', 'No acepto devoluciones']
     }
   },
   {

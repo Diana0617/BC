@@ -11,12 +11,27 @@ import {
   PencilIcon
 } from '@heroicons/react/24/outline'
 import { businessServicesApi, commissionApi, consentApi } from '@shared/api'
+import { usePermissions } from '@shared/hooks'
+import UpgradePlanModal from '../../../../components/common/UpgradePlanModal'
 import ServiceFormModal from '../../../../components/services/ServiceFormModal'
 import CommissionConfigModal from '../../../../components/services/CommissionConfigModal'
 import ConsentTemplateModal from '../../../../components/consent/ConsentTemplateModal'
 
 const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const activeBusiness = useSelector(state => state.business.currentBusiness)
+  const { isBusinessSpecialist } = usePermissions()
+  
+  // Obtener la suscripción activa o la primera disponible
+  const currentSubscription = activeBusiness?.subscriptions?.find(sub => 
+    sub.status === 'ACTIVE' || sub.status === 'TRIAL'
+  ) || activeBusiness?.subscriptions?.[0] || activeBusiness?.subscription
+
+  // Determinar si el usuario tiene restricciones (por rol o por plan gratuito)
+  const planPrice = currentSubscription?.plan?.price
+  const isFreePlan = planPrice === 0 || planPrice === '0.00' || parseFloat(planPrice) === 0
+  const isRestricted = isBusinessSpecialist || isFreePlan
+
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   
   // Estados principales
   const [services, setServices] = useState([])
@@ -94,6 +109,11 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
   }
 
   const handleCreateService = () => {
+    // Límite de servicios para plan gratuito (ej: 5 servicios)
+    if (isRestricted && services.length >= 5) {
+      setShowUpgradeModal(true)
+      return
+    }
     setSelectedService(null)
     setShowServiceModal(true)
   }
@@ -403,6 +423,12 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
           availableTemplates={consentTemplates}
         />
       )}
+      {/* Modal de Upgrade */}
+      <UpgradePlanModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        featureName="Servicios Ilimitados"
+      />
     </div>
   )
 }

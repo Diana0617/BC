@@ -1,4 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useSelector } from 'react-redux'
+import { usePermissions } from '@shared/hooks'
 import {
   CalendarDaysIcon,
   ClockIcon,
@@ -7,6 +9,19 @@ import {
 } from '@heroicons/react/24/outline'
 
 const AppointmentsConfigSection = ({ isSetupMode, onComplete }) => {
+  const { isBusinessSpecialist } = usePermissions()
+  const { currentBusiness } = useSelector(state => state.business)
+  
+  // Obtener la suscripción activa o la primera disponible
+  const currentSubscription = currentBusiness?.subscriptions?.find(sub => 
+    sub.status === 'ACTIVE' || sub.status === 'TRIAL'
+  ) || currentBusiness?.subscriptions?.[0] || currentBusiness?.subscription
+
+  // Determinar si el usuario tiene restricciones (por rol o por plan gratuito)
+  const planPrice = currentSubscription?.plan?.price
+  const isFreePlan = planPrice === 0 || planPrice === '0.00' || parseFloat(planPrice) === 0
+  const isRestricted = isBusinessSpecialist || isFreePlan
+
   const [config, setConfig] = useState({
     allowOnlineBooking: true,
     requireApproval: false,
@@ -30,7 +45,11 @@ const AppointmentsConfigSection = ({ isSetupMode, onComplete }) => {
 
   const [isSaving, setIsSaving] = useState(false)
 
+  // Deshabilitar edición para Business Specialist o Plan Gratuito
+  const isReadOnly = isRestricted
+
   const handleConfigChange = (field, value) => {
+    if (isReadOnly) return
     setConfig(prev => ({
       ...prev,
       [field]: value
@@ -38,6 +57,7 @@ const AppointmentsConfigSection = ({ isSetupMode, onComplete }) => {
   }
 
   const handleWorkingHoursChange = (day, field, value) => {
+    if (isReadOnly) return
     setConfig(prev => ({
       ...prev,
       workingHours: {
@@ -90,6 +110,14 @@ const AppointmentsConfigSection = ({ isSetupMode, onComplete }) => {
           <p className="text-sm text-gray-600 mt-1">
             Configura las opciones avanzadas para la gestión de citas y turnos
           </p>
+          {isReadOnly && (
+            <div className="mt-2 bg-yellow-50 border border-yellow-200 rounded-md p-2 inline-block">
+              <p className="text-xs text-yellow-800">
+                🔒 La configuración avanzada está disponible en planes superiores.
+                Se utilizará la configuración predeterminada.
+              </p>
+            </div>
+          )}
         </div>
         {isSetupMode && (
           <div className="flex items-center text-sm text-blue-600">

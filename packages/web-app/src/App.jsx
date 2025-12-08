@@ -51,6 +51,9 @@ import TermsOfService from './pages/public/TermsOfService'
 import PrivacyPolicy from './pages/public/PrivacyPolicy'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 
+// WebView Components
+import ExpenseFormWebView from './pages/webview/ExpenseFormWebView'
+
 // Test Components (temporal)
 import ReduxPlansTest from './components/test/ReduxPlansTest'
 import TestPayment1000 from './components/payments/TestPayment1000'
@@ -396,6 +399,9 @@ function AppLayout() {
           <Route path="/booking/success" element={<BookingSuccess />} />
           <Route path="/terminos" element={<TermsOfService />} />
           <Route path="/privacidad" element={<PrivacyPolicy />} />
+          
+          {/* WebView routes - For mobile app access */}
+          <Route path="/webview/expense-form" element={<ExpenseFormWebView />} />
           
           {/* Subscription routes (Public) */}
           <Route path="/subscribe" element={<SubscriptionPage />} />

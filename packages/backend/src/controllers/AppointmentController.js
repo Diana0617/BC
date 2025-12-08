@@ -2145,6 +2145,108 @@ class AppointmentController {
     }
   }
 
+  /**
+   * Obtener resumen de turnos del día
+   * GET /api/appointments/summary/today?businessId={bizId}&date=YYYY-MM-DD
+   */
+  static async getTodaySummary(req, res) {
+    try {
+      const { businessId, date, branchId } = req.query;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: 'businessId es requerido'
+        });
+      }
+
+      // Fecha objetivo (hoy por defecto)
+      const targetDate = date ? new Date(date) : new Date();
+      targetDate.setHours(0, 0, 0, 0);
+      
+      const nextDay = new Date(targetDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+
+      // Construir filtros
+      const where = {
+        businessId,
+        startTime: {
+          [Op.gte]: targetDate,
+          [Op.lt]: nextDay
+        }
+      };
+
+      // Filtrar por sucursal si se especifica
+      if (branchId) {
+        where.branchId = branchId;
+      }
+
+      // Obtener todas las citas del día
+      const appointments = await Appointment.findAll({
+        where,
+        include: [
+          {
+            model: Service,
+            as: 'service',
+            attributes: ['name', 'price', 'duration']
+          },
+          {
+            model: User,
+            as: 'specialist',
+            attributes: ['firstName', 'lastName']
+          },
+          {
+            model: Client,
+            as: 'client',
+            attributes: ['firstName', 'lastName', 'phone']
+          }
+        ]
+      });
+
+      // Calcular resumen por estado
+      const summary = {
+        total: appointments.length,
+        completed: appointments.filter(a => a.status === 'COMPLETED').length,
+        confirmed: appointments.filter(a => a.status === 'CONFIRMED').length,
+        pending: appointments.filter(a => a.status === 'PENDING').length,
+        inProgress: appointments.filter(a => a.status === 'IN_PROGRESS').length,
+        cancelled: appointments.filter(a => a.status === 'CANCELLED').length,
+        noShow: appointments.filter(a => a.status === 'NO_SHOW').length,
+        
+        // Totales financieros
+        totalRevenue: appointments
+          .filter(a => a.status === 'COMPLETED')
+          .reduce((sum, a) => sum + parseFloat(a.price || 0), 0),
+        
+        potentialRevenue: appointments
+          .filter(a => ['CONFIRMED', 'PENDING', 'IN_PROGRESS'].includes(a.status))
+          .reduce((sum, a) => sum + parseFloat(a.price || 0), 0),
+        
+        // Detalles por estado
+        appointmentsByStatus: {
+          COMPLETED: appointments.filter(a => a.status === 'COMPLETED'),
+          CONFIRMED: appointments.filter(a => a.status === 'CONFIRMED'),
+          PENDING: appointments.filter(a => a.status === 'PENDING'),
+          IN_PROGRESS: appointments.filter(a => a.status === 'IN_PROGRESS'),
+          CANCELLED: appointments.filter(a => a.status === 'CANCELLED'),
+          NO_SHOW: appointments.filter(a => a.status === 'NO_SHOW')
+        }
+      };
+
+      return res.json({
+        success: true,
+        data: summary
+      });
+
+    } catch (error) {
+      console.error('Error al obtener resumen de turnos del día:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Error al obtener resumen de turnos'
+      });
+    }
+  }
+
 }
 
 module.exports = AppointmentController;

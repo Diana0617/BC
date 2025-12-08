@@ -16,6 +16,8 @@ import {
   UserIcon
 } from '@heroicons/react/24/outline';
 import { businessSpecialistsApi, businessBranchesApi, specialistServicesApi, businessServicesApi } from '@shared/api';
+import { usePermissions } from '@shared/hooks';
+import UpgradePlanModal from '../../../../components/common/UpgradePlanModal';
 import StaffKanbanBoard from '../../../../components/staff/StaffKanbanBoard.jsx';
 import PhoneInput from '../../../../components/PhoneInput';
 
@@ -35,6 +37,20 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const commissionCalculationType = commissionTypeRule?.customValue ?? commissionTypeRule?.effective_value ?? commissionTypeRule?.defaultValue ?? commissionTypeRule?.template?.defaultValue ?? 'POR_SERVICIO';
   const defaultCommissionRate = defaultCommissionRule?.customValue ?? defaultCommissionRule?.effective_value ?? defaultCommissionRule?.defaultValue ?? defaultCommissionRule?.template?.defaultValue ?? 50;
   
+  const { isBusinessSpecialist } = usePermissions();
+  
+  // Obtener la suscripción activa o la primera disponible
+  const currentSubscription = activeBusiness?.subscriptions?.find(sub => 
+    sub.status === 'ACTIVE' || sub.status === 'TRIAL'
+  ) || activeBusiness?.subscriptions?.[0] || activeBusiness?.subscription;
+
+  // Determinar si el usuario tiene restricciones (por rol o por plan gratuito)
+  const planPrice = currentSubscription?.plan?.price;
+  const isFreePlan = planPrice === 0 || planPrice === '0.00' || parseFloat(planPrice) === 0;
+  const isRestricted = isBusinessSpecialist || isFreePlan;
+
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
   const [specialists, setSpecialists] = useState([]);
   const [branches, setBranches] = useState([]);
   const [isAddingSpecialist, setIsAddingSpecialist] = useState(false);
@@ -1089,7 +1105,13 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
         
         {!isAddingSpecialist && (
           <button
-            onClick={() => setIsAddingSpecialist(true)}
+            onClick={() => {
+              if (isRestricted) {
+                setShowUpgradeModal(true);
+              } else {
+                setIsAddingSpecialist(true);
+              }
+            }}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
             title="Agregar miembro del equipo"
           >
@@ -1359,6 +1381,12 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
           </div>
         </div>
       )}
+      {/* Modal de Upgrade */}
+      <UpgradePlanModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        featureName="Gestión de Equipo"
+      />
     </div>
   );
 };

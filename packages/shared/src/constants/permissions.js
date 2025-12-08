@@ -4,6 +4,8 @@ export const ROLES = {
   BUSINESS: 'BUSINESS',     // Propietario de negocio
   SPECIALIST: 'SPECIALIST', // Especialista/Empleado
   RECEPTIONIST: 'RECEPTIONIST', // Recepcionista
+  RECEPTIONIST_SPECIALIST: 'RECEPTIONIST_SPECIALIST', // Recepcionista + Especialista
+  BUSINESS_SPECIALIST: 'BUSINESS_SPECIALIST', // Dueño individual + Especialista
   CLIENT: 'CLIENT'          // Cliente
 };
 
@@ -20,6 +22,8 @@ export const ROLE_HIERARCHY = {
   [ROLES.CLIENT]: 1,
   [ROLES.RECEPTIONIST]: 2,
   [ROLES.SPECIALIST]: 3,
+  [ROLES.RECEPTIONIST_SPECIALIST]: 3,
+  [ROLES.BUSINESS_SPECIALIST]: 3.5, // Tiene permisos de especialista + administración básica
   [ROLES.BUSINESS]: 4,
   [ROLES.OWNER]: 5
 };
@@ -305,5 +309,62 @@ export const ROLE_PERMISSIONS = {
     
     // Ver servicios disponibles
     PERMISSIONS.SERVICE.VIEW
+  ],
+
+  [ROLES.RECEPTIONIST_SPECIALIST]: [
+    // Ver información del negocio
+    PERMISSIONS.BUSINESS.VIEW,
+    
+    // Gestión de clientes (como recepcionista)
+    PERMISSIONS.CLIENT.CREATE,
+    PERMISSIONS.CLIENT.VIEW,
+    PERMISSIONS.CLIENT.EDIT,
+    PERMISSIONS.CLIENT.VIEW_HISTORY,
+    
+    // Gestión de citas (crear para otros + gestionar las propias)
+    PERMISSIONS.APPOINTMENT.CREATE,
+    PERMISSIONS.APPOINTMENT.VIEW,
+    PERMISSIONS.APPOINTMENT.EDIT,
+    PERMISSIONS.APPOINTMENT.CANCEL,
+    
+    // Ver servicios
+    PERMISSIONS.SERVICE.VIEW,
+    
+    // Ver productos
+    PERMISSIONS.PRODUCT.VIEW
+  ],
+
+  [ROLES.BUSINESS_SPECIALIST]: [
+    // Gestión de su negocio (solo ver y configurar)
+    PERMISSIONS.BUSINESS.VIEW,
+    PERMISSIONS.BUSINESS.EDIT,
+    PERMISSIONS.BUSINESS.SETTINGS,
+    
+    // Gestión de clientes
+    PERMISSIONS.CLIENT.CREATE,
+    PERMISSIONS.CLIENT.VIEW,
+    PERMISSIONS.CLIENT.EDIT,
+    PERMISSIONS.CLIENT.VIEW_HISTORY,
+    
+    // Gestión de citas (crear y gestionar sus propias citas)
+    PERMISSIONS.APPOINTMENT.CREATE,
+    PERMISSIONS.APPOINTMENT.VIEW,
+    PERMISSIONS.APPOINTMENT.EDIT,
+    PERMISSIONS.APPOINTMENT.CANCEL,
+    
+    // Gestión de servicios (crear y editar sus propios servicios)
+    PERMISSIONS.SERVICE.CREATE,
+    PERMISSIONS.SERVICE.VIEW,
+    PERMISSIONS.SERVICE.EDIT,
+    PERMISSIONS.SERVICE.MANAGE_PRICING,
+    
+    // Ver productos
+    PERMISSIONS.PRODUCT.VIEW,
+    
+    // Ver finanzas básicas
+    PERMISSIONS.FINANCIAL.VIEW,
+    
+    // Ver suscripción
+    PERMISSIONS.SUBSCRIPTION.VIEW
   ]
 };

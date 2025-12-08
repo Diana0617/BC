@@ -5,6 +5,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { businessAndOwner } = require('../middleware/roleCheck');
 const { validateSubdomain } = require('../middleware/subdomain');
 const tenancy = require('../middleware/tenancy');
+const { restrictFreePlan } = require('../middleware/planRestrictions');
 
 /**
  * @swagger
@@ -217,6 +218,7 @@ router.put('/business/rules/:ruleKey',
   businessAndOwner,
   validateSubdomain,
   tenancy,
+  restrictFreePlan('RULES_EDIT'),
   BusinessRulesController.setRuleValue
 );
 

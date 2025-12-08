@@ -261,7 +261,7 @@ export default function LoginScreen({ navigation }) {
                     marginTop: 8,
                     marginLeft: 4
                   }}>
-                    Tu dominio completo: {formData.subdomain || 'tu-salon'}.businesscontrol.app
+                    Tu dominio completo: {formData.subdomain || 'tu-salon'}.controldenegocios.com
                   </Text>
                 </View>
 

@@ -58,6 +58,9 @@ function InitialDashboard() {
       return <BusinessDashboard />;
     case 'specialist':
       return <SpecialistDashboard />;
+    case 'business_specialist':
+      // Usuario individual que es dueño y especialista a la vez
+      return <SpecialistDashboard />;
     case 'receptionist':
       return <ReceptionistDashboard />;
     case 'receptionist_specialist':

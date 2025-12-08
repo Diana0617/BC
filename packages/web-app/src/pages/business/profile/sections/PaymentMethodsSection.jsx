@@ -22,6 +22,8 @@ import {
   QrCodeIcon,
   GlobeAltIcon
 } from '@heroicons/react/24/outline'
+import { usePermissions } from '@shared/hooks'
+import UpgradePlanModal from '../../../../components/common/UpgradePlanModal'
 import toast from 'react-hot-toast'
 
 // Mapeo de tipos de pago a iconos y colores
@@ -66,6 +68,20 @@ const PAYMENT_TYPE_CONFIG = {
 
 const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
   const dispatch = useDispatch()
+  const { isBusinessSpecialist } = usePermissions()
+  const { currentBusiness } = useSelector(state => state.business)
+  
+  // Obtener la suscripción activa o la primera disponible
+  const currentSubscription = currentBusiness?.subscriptions?.find(sub => 
+    sub.status === 'ACTIVE' || sub.status === 'TRIAL'
+  ) || currentBusiness?.subscriptions?.[0] || currentBusiness?.subscription
+
+  // Determinar si el usuario tiene restricciones (por rol o por plan gratuito)
+  const planPrice = currentSubscription?.plan?.price
+  const isFreePlan = planPrice === 0 || planPrice === '0.00' || parseFloat(planPrice) === 0
+  const isRestricted = isBusinessSpecialist || isFreePlan
+
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   
   // Redux state
   const paymentMethods = useSelector(selectPaymentMethods)
@@ -95,6 +111,10 @@ const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
   }, [dispatch])
 
   const handleCreate = () => {
+    if (isRestricted) {
+      setShowUpgradeModal(true)
+      return
+    }
     setEditingMethod(null)
     setFormData({
       name: '',
@@ -390,6 +410,13 @@ const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
           isEditing={!!editingMethod}
         />
       )}
+
+      {/* Modal de Upgrade */}
+      <UpgradePlanModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        featureName="Métodos de Pago Personalizados"
+      />
 
       {/* Setup Mode Actions */}
       {isSetupMode && (

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const { requireBasicAccess, requireFullAccess } = require('../middleware/subscription');
+const { restrictFreePlan } = require('../middleware/planRestrictions');
 const ServiceController = require('../controllers/ServiceController');
 const { uploadImage } = require('../middleware/uploadMiddleware');
 // const tenancyMiddleware = require('../middleware/tenancy');
@@ -19,7 +20,7 @@ router.get('/categories', requireBasicAccess, ServiceController.getCategories);
 router.get('/', requireBasicAccess, ServiceController.getServices);
 
 // Crear nuevo servicio (requiere acceso completo)
-router.post('/', requireFullAccess, /* businessAndOwner, */ ServiceController.createService);
+router.post('/', requireFullAccess, restrictFreePlan('SERVICES_LIMIT'), /* businessAndOwner, */ ServiceController.createService);
 
 // Obtener servicio por ID (acceso básico)
 router.get('/:id', requireBasicAccess, ServiceController.getServiceById);

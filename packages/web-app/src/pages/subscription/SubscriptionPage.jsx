@@ -95,8 +95,81 @@ const SubscriptionPage = () => {
     setCurrentStep(2)
   }
 
-  const handleRegistrationComplete = (data) => {
+  const handleRegistrationComplete = async (data) => {
     setRegistrationData(data)
+    
+    // Verificar si el plan es gratuito (Básico)
+    const isFreePlan = selectedPlan.price === 0 || selectedPlan.price === '0' || selectedPlan.price === '0.00'
+    
+    if (isFreePlan) {
+      console.log('📦 Plan gratuito detectado - creando negocio directamente sin pago')
+      
+      try {
+        // Preparar datos para el endpoint público de suscripción
+        const subscriptionData = {
+          planId: selectedPlan.id,
+          billingCycle: billingCycle,
+          businessData: {
+            name: data.businessName,
+            businessCode: data.businessCode,
+            email: data.businessEmail,
+            phone: data.businessPhone,
+            address: data.address,
+            city: data.city,
+            country: data.country
+          },
+          userData: {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: data.phone,
+            password: data.password,
+            role: 'BUSINESS' // Usar BUSINESS hasta que se actualice el enum en producción
+          },
+          paymentData: {
+            method: 'FREE', // Indicar que es plan gratuito
+            status: 'COMPLETED',
+            amount: 0,
+            currency: selectedPlan.currency || 'COP'
+          }
+        }
+        
+        const result = await dispatch(createSubscription(subscriptionData))
+        
+        if (createSubscription.fulfilled.match(result)) {
+          console.log('✅ Suscripción gratuita creada exitosamente:', result.payload)
+          
+          // Autenticar al usuario automáticamente
+          if (result.payload.data && result.payload.data.token) {
+            dispatch(setCredentials({
+              token: result.payload.data.token,
+              user: result.payload.data.user,
+              refreshToken: null
+            }))
+          }
+          
+          // Mostrar mensaje de éxito
+          setSuccessMessage('¡Cuenta gratuita creada exitosamente! Redirigiendo...')
+          setShowSuccessToast(true)
+          
+          // Redirigir al perfil
+          setTimeout(() => {
+            navigate('/business/profile?setup=true', { replace: true })
+          }, 2500)
+          
+          return
+        } else if (createSubscription.rejected.match(result)) {
+          throw new Error(result.payload || result.error.message || 'Error creando suscripción gratuita')
+        }
+        
+      } catch (error) {
+        console.error('❌ Error creando negocio gratuito:', error)
+        alert('Error al crear cuenta gratuita: ' + error.message)
+        return
+      }
+    }
+    
+    // Si no es plan gratuito, continuar con flujo de pago
     setCurrentStep(3)
   }
 

@@ -3,6 +3,7 @@ const router = express.Router();
 const PaymentConfigController = require('../controllers/PaymentConfigController');
 const AppointmentPaymentControllerV2 = require('../controllers/AppointmentPaymentControllerV2');
 const { authenticateToken, authorizeRole } = require('../middleware/auth');
+const { restrictFreePlan } = require('../middleware/planRestrictions');
 
 /**
  * Rutas para configuración de métodos de pago del negocio
@@ -44,6 +45,7 @@ router.post(
   '/business/:businessId/payment-methods',
   authenticateToken,
   authorizeRole(['BUSINESS', 'OWNER']),
+  restrictFreePlan('PAYMENT_METHODS'),
   PaymentConfigController.createPaymentMethod
 );
 
