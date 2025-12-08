@@ -1,0 +1,89 @@
+
+> beauty-control-backend@1.0.0 test
+> jest tests/integration/tenant-isolation.test.js
+
+  console.log
+    ✅ Servicio de email configurado correctamente
+
+      at EmailService.log [as verifyConnection] (src/services/EmailService.js:33:15)
+
+FAIL tests/integration/tenant-isolation.test.js (10.455 s)
+  Tenant Isolation Verification
+    × User A should see Product A (4 ms)
+    × User B should see Product B (2 ms)
+    × User A should NOT be able to access Product B by ID (1 ms)
+    × User B should NOT be able to access Product A by ID (1 ms)
+
+  ● Tenant Isolation Verification › User A should see Product A
+
+    TypeError: app.address is not a function
+
+    [0m [90m 88 |[39m   test([32m'User A should see Product A'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 89 |[39m     [36mconst[39m res [33m=[39m [36mawait[39m request(app)
+    [31m[1m>[22m[39m[90m 90 |[39m       [33m.[39m[36mget[39m([32m'/api/products'[39m) [90m// Adjust route[39m
+     [90m    |[39m        [31m[1m^[22m[39m
+     [90m 91 |[39m       [33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer ${tokenA}`[39m)[33m;[39m
+     [90m 92 |[39m
+     [90m 93 |[39m     expect(res[33m.[39mstatusCode)[33m.[39mtoEqual([35m200[39m)[33m;[39m[0m
+
+      at Test.serverAddress (node_modules/supertest/lib/test.js:46:22)
+      at new Test (node_modules/supertest/lib/test.js:34:14)
+      at Object.obj.<computed> [as get] (node_modules/supertest/index.js:43:18)
+      at Object.get (tests/integration/tenant-isolation.test.js:90:8)
+
+  ● Tenant Isolation Verification › User B should see Product B
+
+    TypeError: app.address is not a function
+
+    [0m [90m  99 |[39m   test([32m'User B should see Product B'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 100 |[39m     [36mconst[39m res [33m=[39m [36mawait[39m request(app)
+    [31m[1m>[22m[39m[90m 101 |[39m       [33m.[39m[36mget[39m([32m'/api/products'[39m)
+     [90m     |[39m        [31m[1m^[22m[39m
+     [90m 102 |[39m       [33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer ${tokenB}`[39m)[33m;[39m
+     [90m 103 |[39m
+     [90m 104 |[39m     expect(res[33m.[39mstatusCode)[33m.[39mtoEqual([35m200[39m)[33m;[39m[0m
+
+      at Test.serverAddress (node_modules/supertest/lib/test.js:46:22)
+      at new Test (node_modules/supertest/lib/test.js:34:14)
+      at Object.obj.<computed> [as get] (node_modules/supertest/index.js:43:18)
+      at Object.get (tests/integration/tenant-isolation.test.js:101:8)
+
+  ● Tenant Isolation Verification › User A should NOT be able to access Product B by ID
+
+    TypeError: app.address is not a function
+
+    [0m [90m 110 |[39m   test([32m'User A should NOT be able to access Product B by ID'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 111 |[39m     [36mconst[39m res [33m=[39m [36mawait[39m request(app)
+    [31m[1m>[22m[39m[90m 112 |[39m       [33m.[39m[36mget[39m([32m`/api/products/${productB.id}`[39m)
+     [90m     |[39m        [31m[1m^[22m[39m
+     [90m 113 |[39m       [33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer ${tokenA}`[39m)[33m;[39m
+     [90m 114 |[39m
+     [90m 115 |[39m     [90m// Should return 404 (Not Found) or 403 (Forbidden), but definitely not 200 with data[39m[0m
+
+      at Test.serverAddress (node_modules/supertest/lib/test.js:46:22)
+      at new Test (node_modules/supertest/lib/test.js:34:14)
+      at Object.obj.<computed> [as get] (node_modules/supertest/index.js:43:18)
+      at Object.get (tests/integration/tenant-isolation.test.js:112:8)
+
+  ● Tenant Isolation Verification › User B should NOT be able to access Product A by ID
+
+    TypeError: app.address is not a function
+
+    [0m [90m 119 |[39m   test([32m'User B should NOT be able to access Product A by ID'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 120 |[39m     [36mconst[39m res [33m=[39m [36mawait[39m request(app)
+    [31m[1m>[22m[39m[90m 121 |[39m       [33m.[39m[36mget[39m([32m`/api/products/${productA.id}`[39m)
+     [90m     |[39m        [31m[1m^[22m[39m
+     [90m 122 |[39m       [33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer ${tokenB}`[39m)[33m;[39m
+     [90m 123 |[39m
+     [90m 124 |[39m     expect([[35m404[39m[33m,[39m [35m403[39m])[33m.[39mtoContain(res[33m.[39mstatusCode)[33m;[39m[0m
+
+      at Test.serverAddress (node_modules/supertest/lib/test.js:46:22)
+      at new Test (node_modules/supertest/lib/test.js:34:14)
+      at Object.obj.<computed> [as get] (node_modules/supertest/index.js:43:18)
+      at Object.get (tests/integration/tenant-isolation.test.js:121:8)
+
+Test Suites: 1 failed, 1 total
+Tests:       4 failed, 4 total
+Snapshots:   0 total
+Time:        10.583 s
+Ran all test suites matching /tests\\integration\\tenant-isolation.test.js/i.

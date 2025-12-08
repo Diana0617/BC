@@ -1,0 +1,462 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2024-01-20T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "req_complete_appointment_success",
+      "parentId": "fld_appointments_validation",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "url": "{{ _.base_url }}/api/appointments/{{ _.appointment_id }}/complete?businessId={{ _.business_id }}",
+      "name": "✅ Complete Appointment (Success)",
+      "description": "Completar cita con todas las validaciones pasadas:\n- Servicio con consentimiento firmado\n- Evidencia fotográfica subida\n- Pago mínimo cumplido\n\nResultado esperado: 200 OK",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"rating\": 5,\n  \"feedback\": \"Excelente servicio, muy profesional\",\n  \"finalAmount\": 120000\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.specialist_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1705708800000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_complete_without_consent",
+      "parentId": "fld_appointments_validation",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "url": "{{ _.base_url }}/api/appointments/{{ _.appointment_id }}/complete?businessId={{ _.business_id }}",
+      "name": "❌ Complete Without Consent",
+      "description": "Intentar completar cita que requiere consentimiento pero no está firmado.\n\nResultado esperado: 400 Bad Request\n{\n  \"success\": false,\n  \"error\": \"No se puede completar la cita\",\n  \"validationErrors\": [\n    \"Esta cita requiere consentimiento informado firmado\"\n  ]\n}",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"rating\": 5,\n  \"feedback\": \"Servicio completado\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.specialist_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1705708700000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_complete_without_evidence",
+      "parentId": "fld_appointments_validation",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "url": "{{ _.base_url }}/api/appointments/{{ _.appointment_id }}/complete?businessId={{ _.business_id }}",
+      "name": "❌ Complete Without Evidence",
+      "description": "Intentar completar cita cuando el negocio requiere evidencia fotográfica.\n\nResultado esperado: 400 Bad Request\n{\n  \"success\": false,\n  \"error\": \"No se puede completar la cita\",\n  \"validationErrors\": [\n    \"Se requiere foto \\\"antes\\\" del procedimiento\",\n    \"Se requiere foto \\\"después\\\" del procedimiento\"\n  ]\n}",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"rating\": 5\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.specialist_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1705708600000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_complete_without_payment",
+      "parentId": "fld_appointments_validation",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "url": "{{ _.base_url }}/api/appointments/{{ _.appointment_id }}/complete?businessId={{ _.business_id }}",
+      "name": "❌ Complete Without Minimum Payment",
+      "description": "Intentar completar cita sin cumplir el pago mínimo requerido.\n\nEscenario: \n- Total: $100,000\n- Pagado: $30,000\n- Mínimo requerido: 50% ($50,000)\n\nResultado esperado: 400 Bad Request\n{\n  \"success\": false,\n  \"error\": \"No se puede completar la cita\",\n  \"validationErrors\": [\n    \"Se requiere pago mínimo del 50% ($50,000). Pagado: $30,000\"\n  ]\n}",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.specialist_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1705708500000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_upload_evidence_before",
+      "parentId": "fld_appointments_validation",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "url": "{{ _.base_url }}/api/appointments/{{ _.appointment_id }}/evidence?businessId={{ _.business_id }}",
+      "name": "Upload Evidence - Before Photos",
+      "description": "Subir fotos \"antes\" del procedimiento.\n\nFormData:\n- type: \"before\"\n- files: [archivo1.jpg, archivo2.jpg]",
+      "method": "POST",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "type",
+            "value": "before",
+            "type": "text"
+          },
+          {
+            "name": "files",
+            "value": "",
+            "type": "file",
+            "description": "Seleccionar archivos de imágenes"
+          }
+        ]
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.specialist_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1705708400000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_upload_evidence_after",
+      "parentId": "fld_appointments_validation",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "url": "{{ _.base_url }}/api/appointments/{{ _.appointment_id }}/evidence?businessId={{ _.business_id }}",
+      "name": "Upload Evidence - After Photos",
+      "description": "Subir fotos \"después\" del procedimiento.",
+      "method": "POST",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "type",
+            "value": "after",
+            "type": "text"
+          },
+          {
+            "name": "files",
+            "value": "",
+            "type": "file",
+            "description": "Seleccionar archivos de imágenes"
+          }
+        ]
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.specialist_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1705708300000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_reschedule_success",
+      "parentId": "fld_appointments_validation",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "url": "{{ _.base_url }}/api/appointments/{{ _.appointment_id }}/reschedule?businessId={{ _.business_id }}",
+      "name": "✅ Reschedule Appointment (Success)",
+      "description": "Reprogramar cita a nuevo horario disponible.",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"newStartTime\": \"2024-01-25T14:00:00Z\",\n  \"newEndTime\": \"2024-01-25T15:30:00Z\",\n  \"reason\": \"Cliente solicitó cambio de horario por motivos laborales\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.receptionist_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1705708200000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_reschedule_past_date",
+      "parentId": "fld_appointments_validation",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "url": "{{ _.base_url }}/api/appointments/{{ _.appointment_id }}/reschedule?businessId={{ _.business_id }}",
+      "name": "❌ Reschedule to Past Date",
+      "description": "Intentar reprogramar a una fecha en el pasado.\n\nResultado esperado: 400 Bad Request\n{\n  \"success\": false,\n  \"error\": \"No se puede reprogramar la cita\",\n  \"validationErrors\": [\n    \"No se puede reprogramar una cita en el pasado\"\n  ]\n}",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"newStartTime\": \"2023-01-01T10:00:00Z\",\n  \"newEndTime\": \"2023-01-01T11:30:00Z\",\n  \"reason\": \"Intento de reprogramación al pasado\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.receptionist_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1705708100000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_reschedule_completed",
+      "parentId": "fld_appointments_validation",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "url": "{{ _.base_url }}/api/appointments/{{ _.completed_appointment_id }}/reschedule?businessId={{ _.business_id }}",
+      "name": "❌ Reschedule Completed Appointment",
+      "description": "Intentar reprogramar una cita que ya está completada.\n\nResultado esperado: 400 Bad Request\n{\n  \"success\": false,\n  \"error\": \"No se puede reprogramar la cita\",\n  \"validationErrors\": [\n    \"No se puede reprogramar una cita completada\"\n  ]\n}",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"newStartTime\": \"2024-01-30T14:00:00Z\",\n  \"newEndTime\": \"2024-01-30T15:30:00Z\",\n  \"reason\": \"Intento de reprogramación\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.receptionist_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1705708000000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_update_appointment_success",
+      "parentId": "fld_appointments_validation",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "url": "{{ _.base_url }}/api/appointments/{{ _.appointment_id }}?businessId={{ _.business_id }}",
+      "name": "✅ Update Appointment (Success)",
+      "description": "Actualizar cita (cambiar servicio, especialista o notas).",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"serviceId\": \"{{ _.new_service_id }}\",\n  \"notes\": \"Cliente solicitó cambio de servicio a manicure con gel\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.receptionist_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1705707900000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_update_completed",
+      "parentId": "fld_appointments_validation",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "url": "{{ _.base_url }}/api/appointments/{{ _.completed_appointment_id }}?businessId={{ _.business_id }}",
+      "name": "❌ Update Completed Appointment",
+      "description": "Intentar actualizar una cita que ya está completada.\n\nResultado esperado: 400 Bad Request\n{\n  \"success\": false,\n  \"error\": \"No se puede actualizar la cita\",\n  \"validationErrors\": [\n    \"No se puede modificar una cita completada\"\n  ]\n}",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"notes\": \"Intento de actualización\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.receptionist_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1705707800000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_appointments_validation",
+      "parentId": "wrk_main",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "name": "Appointment Validations",
+      "description": "Tests para validaciones de citas:\n- Consentimiento\n- Evidencia fotográfica\n- Pago mínimo\n- Reprogramación\n- Actualización",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1705708800000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "wrk_main",
+      "parentId": null,
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "name": "Beauty Control - Backend API",
+      "description": "API completa de Beauty Control",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_base",
+      "parentId": "wrk_main",
+      "modified": 1705708800000,
+      "created": 1705708800000,
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:5000",
+        "business_id": "",
+        "appointment_id": "",
+        "completed_appointment_id": "",
+        "new_service_id": "",
+        "specialist_token": "",
+        "receptionist_token": ""
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url",
+          "business_id",
+          "appointment_id",
+          "completed_appointment_id",
+          "new_service_id",
+          "specialist_token",
+          "receptionist_token"
+        ]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1705708800000,
+      "_type": "environment"
+    }
+  ]
+}
