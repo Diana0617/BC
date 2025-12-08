@@ -26,7 +26,7 @@
     "heroicons": "^2.2.0",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
-    "react-country-region-selector": "^4.0.3",
+    "react-country-region-selector": "^4.0.4",
     "react-dom": "^19.1.1",
     "react-hot-toast": "^2.6.0",
     "react-phone-number-input": "^3.4.14",
