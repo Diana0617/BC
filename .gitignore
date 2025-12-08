@@ -144,3 +144,5 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+packages/business-control-mobile/builds/*.apk
+packages/business-control-mobile/builds/*.aab
