@@ -44,73 +44,91 @@ const WhatsAppEmbeddedSignup = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Handle OAuth callback from popup window
+  // Cargar SDK de Facebook
   useEffect(() => {
-    const handleMessage = async (event) => {
-      // Validate origin (should be from Meta)
-      if (!event.origin.includes('facebook.com')) {
-        return
-      }
+    if (!embeddedSignupConfig.appId) return
 
-      // Extract OAuth data from postMessage
-      const { code, state, setup } = event.data
+    // Verificar si ya está cargado
+    if (window.FB) {
+      window.FB.init({
+        appId: embeddedSignupConfig.appId,
+        cookie: true,
+        xfbml: true,
+        version: 'v18.0'
+      })
+      return
+    }
 
-      if (code && state) {
-        // Validate state matches our config
-        if (state !== embeddedSignupConfig.state) {
-          toast.error('Estado de OAuth inválido')
-          return
-        }
-
-        // Process the callback
-        const result = await dispatch(handleEmbeddedSignupCallback({
-          code,
-          state,
-          setup // Contains phone_number_id, waba_id, etc.
-        }))
-
-        if (result.type.endsWith('/fulfilled')) {
-          toast.success('✅ Conexión exitosa con WhatsApp Business')
-        } else {
-          toast.error('❌ Error al procesar la conexión')
-        }
+    // Cargar SDK de Facebook
+    const script = document.createElement('script')
+    script.src = 'https://connect.facebook.net/en_US/sdk.js'
+    script.async = true
+    script.defer = true
+    script.crossOrigin = 'anonymous'
+    
+    script.onload = () => {
+      window.fbAsyncInit = function() {
+        window.FB.init({
+          appId: embeddedSignupConfig.appId,
+          cookie: true,
+          xfbml: true,
+          version: 'v18.0'
+        })
       }
     }
 
-    window.addEventListener('message', handleMessage)
-    return () => window.removeEventListener('message', handleMessage)
-  }, [dispatch, embeddedSignupConfig])
+    document.body.appendChild(script)
+
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script)
+      }
+    }
+  }, [embeddedSignupConfig.appId])
 
   const handleEmbeddedSignupClick = () => {
-    if (!embeddedSignupConfig.appId || !embeddedSignupConfig.redirectUri) {
+    if (!embeddedSignupConfig.appId || !embeddedSignupConfig.configId) {
       toast.error('Configuración de Embedded Signup no disponible')
       return
     }
 
-    // Construct OAuth URL
-    const oauthUrl = new URL('https://www.facebook.com/v18.0/dialog/oauth')
-    oauthUrl.searchParams.set('client_id', embeddedSignupConfig.appId)
-    oauthUrl.searchParams.set('redirect_uri', embeddedSignupConfig.redirectUri)
-    oauthUrl.searchParams.set('state', embeddedSignupConfig.state)
-    oauthUrl.searchParams.set('scope', embeddedSignupConfig.scope || 'business_management,whatsapp_business_management,whatsapp_business_messaging')
-    oauthUrl.searchParams.set('response_type', 'code')
-    oauthUrl.searchParams.set('extras', JSON.stringify({
-      feature: 'whatsapp_embedded_signup',
-      setup: {
-        // Pre-fill business info if available
+    // Inicializar SDK de Facebook si no está cargado
+    if (!window.FB) {
+      toast.error('SDK de Facebook no está cargado')
+      return
+    }
+
+    // Usar el método oficial de Embedded Signup del SDK de Facebook
+    window.FB.login(
+      (response) => {
+        if (response.authResponse) {
+          const { code } = response.authResponse
+          
+          // Procesar el callback
+          dispatch(handleEmbeddedSignupCallback({
+            code,
+            state: embeddedSignupConfig.state,
+            setup: response.authResponse.setup || {}
+          }))
+          .unwrap()
+          .then(() => {
+            toast.success('✅ Conexión exitosa con WhatsApp Business')
+          })
+          .catch((error) => {
+            toast.error(`❌ Error: ${error}`)
+          })
+        } else {
+          toast.error('Conexión cancelada')
+        }
+      },
+      {
+        config_id: embeddedSignupConfig.configId,
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: {
+          setup: {}
+        }
       }
-    }))
-
-    // Open popup window
-    const width = 600
-    const height = 700
-    const left = window.screen.width / 2 - width / 2
-    const top = window.screen.height / 2 - height / 2
-
-    window.open(
-      oauthUrl.toString(),
-      'WhatsApp Embedded Signup',
-      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
     )
   }
 
@@ -163,7 +181,7 @@ const WhatsAppEmbeddedSignup = () => {
       {/* Action Button */}
       <button
         onClick={handleEmbeddedSignupClick}
-        disabled={isLoadingConfig || isHandlingCallback || !embeddedSignupConfig.appId}
+        disabled={isLoadingConfig || isHandlingCallback || !embeddedSignupConfig.appId || !embeddedSignupConfig.configId}
         className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {isLoadingConfig ? (

@@ -390,7 +390,8 @@ class WhatsAppAdminController {
    */
   async getEmbeddedSignupConfig(req, res) {
     try {
-      const appId = process.env.WHATSAPP_APP_ID;
+      const appId = process.env.META_APP_ID;
+      const configId = process.env.WHATSAPP_CONFIG_ID;
       const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
       const redirectUri = `${baseUrl}/whatsapp/callback`;
       
@@ -405,6 +406,7 @@ class WhatsAppAdminController {
         success: true,
         data: {
           appId,
+          configId,
           redirectUri,
           state,
           scope: 'whatsapp_business_management,whatsapp_business_messaging'
