@@ -519,42 +519,80 @@ class WhatsAppAdminController {
    */
   async _exchangeCodeForToken(code) {
     try {
-      const appId = process.env.WHATSAPP_APP_ID;
-      const appSecret = process.env.WHATSAPP_APP_SECRET;
-      const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-      const redirectUri = `${baseUrl}/whatsapp/callback`;
+      const axios = require('axios');
+      const appId = process.env.META_APP_ID;
+      const appSecret = process.env.META_APP_SECRET;
+      const redirectUri = 'https://www.controldenegocios.com/'; // Debe coincidir con Meta config
 
-      // This is a placeholder - actual implementation would call Meta's OAuth endpoint
-      // https://graph.facebook.com/v18.0/oauth/access_token
-      
-      logger.warn('Embedded Signup token exchange not fully implemented - returning mock data');
-      
+      logger.info('Exchanging code for token...', { appId, redirectUri });
+
+      // Exchange authorization code for access token
+      // https://developers.facebook.com/docs/facebook-login/guides/access-tokens/get-long-lived
+      const response = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+        params: {
+          client_id: appId,
+          client_secret: appSecret,
+          code: code,
+          redirect_uri: redirectUri
+        }
+      });
+
+      const accessToken = response.data.access_token;
+
+      logger.info('Access token obtained successfully');
+
+      // Get debug token info to extract WABA and phone number
+      const debugResponse = await axios.get('https://graph.facebook.com/v18.0/debug_token', {
+        params: {
+          input_token: accessToken,
+          access_token: `${appId}|${appSecret}`
+        }
+      });
+
+      logger.info('Token debug info:', debugResponse.data);
+
+      // Get WABA ID from token granular scopes or data
+      let wabaId = null;
+      let phoneNumberId = null;
+
+      if (debugResponse.data.data && debugResponse.data.data.granular_scopes) {
+        const wabaScope = debugResponse.data.data.granular_scopes.find(
+          scope => scope.scope === 'whatsapp_business_management'
+        );
+        if (wabaScope && wabaScope.target_ids && wabaScope.target_ids.length > 0) {
+          wabaId = wabaScope.target_ids[0];
+        }
+      }
+
+      // If WABA ID found, get phone numbers
+      if (wabaId) {
+        const phoneNumbersResponse = await axios.get(
+          `https://graph.facebook.com/v18.0/${wabaId}/phone_numbers`,
+          {
+            params: { access_token: accessToken }
+          }
+        );
+
+        if (phoneNumbersResponse.data.data && phoneNumbersResponse.data.data.length > 0) {
+          phoneNumberId = phoneNumbersResponse.data.data[0].id;
+        }
+
+        logger.info('WABA and phone number found', { wabaId, phoneNumberId });
+      }
+
       return {
-        success: false,
-        error: 'Embedded Signup requiere configuración adicional en Meta for Developers'
+        success: true,
+        data: {
+          accessToken,
+          wabaId,
+          phoneNumberId
+        }
       };
-
-      // TODO: Implement actual OAuth flow
-      // const response = await axios.post('https://graph.facebook.com/v18.0/oauth/access_token', {
-      //   client_id: appId,
-      //   client_secret: appSecret,
-      //   code: code,
-      //   redirect_uri: redirectUri
-      // });
-      
-      // return {
-      //   success: true,
-      //   data: {
-      //     accessToken: response.data.access_token,
-      //     wabaId: response.data.waba_id,
-      //     phoneNumberId: response.data.phone_number_id
-      //   }
-      // };
     } catch (error) {
-      logger.error('Error exchanging code for token:', error);
+      logger.error('Error exchanging code for token:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.message
+        error: error.response?.data?.error?.message || error.message
       };
     }
   }

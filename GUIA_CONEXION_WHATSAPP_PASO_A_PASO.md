@@ -722,12 +722,94 @@ Cuando un cliente responda:
 
 ## ¿Cuánto cuesta?
 
-- **Mensajes de plantilla (iniciados por ti):**
-  - Meta da 1,000 conversaciones gratis al mes
-  - Después: ~$0.04 - $0.10 USD por conversación (varía por país)
+### 💰 Costos de WhatsApp Business Platform
 
-- **Respuestas (en 24 horas):**
-  - ✅ GRATIS
+#### 1️⃣ Conversaciones Iniciadas por Ti (Plantillas)
+Cuando envías recordatorios de citas:
+
+**✅ GRATIS:**
+- **1,000 conversaciones gratis al mes** por cada número de WhatsApp
+
+**Después de las 1,000 conversaciones:**
+- **Colombia**: ~$0.04 - $0.05 USD por conversación
+- **México**: ~$0.07 - $0.08 USD por conversación
+- **USA**: ~$0.10 USD por conversación
+- **Otros países**: Consulta precios en Meta
+
+**¿Qué es una conversación?**
+- Dura **24 horas** desde el primer mensaje
+- Puedes enviar **múltiples mensajes** dentro de esas 24h sin costo adicional
+
+---
+
+#### 2️⃣ Conversaciones Iniciadas por el Cliente
+Cuando el cliente te escribe primero:
+
+- ✅ **GRATIS** si respondes dentro de 24 horas
+- ❌ **Pagas** si respondes después de 24 horas (mismo precio que arriba)
+
+---
+
+#### 3️⃣ Ejemplo Real: Salón de Belleza Pequeño
+
+**Escenario:**
+- 100 clientes al mes
+- 3 mensajes automáticos por cliente:
+  1. Confirmación al agendar cita
+  2. Recordatorio 24 horas antes
+  3. Recordatorio 1 hora antes
+
+**Total:** 100 clientes × 3 mensajes = 300 conversaciones/mes
+
+**Costo:** **$0 USD** (estás dentro de las 1,000 gratis) ✅
+
+---
+
+#### 4️⃣ Ejemplo: Salón de Belleza Grande
+
+**Escenario:**
+- 500 clientes al mes
+- 3 mensajes por cliente = 1,500 conversaciones/mes
+
+**Cálculo:**
+- 1,000 conversaciones gratis
+- 500 conversaciones adicionales
+- 500 × $0.05 USD = **$25 USD/mes** (~$100,000 COP)
+
+**Comparación con SMS:**
+- SMS: 1,500 × $0.08 USD = **$120 USD/mes**
+- **Ahorro: $95 USD/mes con WhatsApp**
+
+---
+
+#### 5️⃣ ¿Vale la Pena?
+
+**Beneficios vs Costo:**
+
+| Beneficio | Valor Mensual |
+|-----------|---------------|
+| Reducción de ausencias (10-15%) | $200-500 USD |
+| Mejor imagen profesional | Invaluable |
+| Ahorro de tiempo en llamadas | $100-200 USD |
+| **Costo WhatsApp** | **$0-25 USD** |
+| **ROI (Retorno)** | **400-2000%** |
+
+**Conclusión:** El costo es **mínimo** comparado con los beneficios.
+
+---
+
+#### 6️⃣ Comparación: WhatsApp vs SMS
+
+| Característica | WhatsApp | SMS |
+|----------------|----------|-----|
+| **Mensajes gratis** | 1,000/mes | 0 |
+| **Costo después** | $0.04-0.10 | $0.03-0.10 |
+| **Tasa de apertura** | 98% | 20% |
+| **Multimedia** | ✅ Sí (imágenes, botones) | ❌ No |
+| **Respuestas gratis** | ✅ Sí (24h) | ❌ No |
+| **Verificación** | ✅ Badge verde | ❌ No |
+
+**Ganador:** WhatsApp 🏆
 
 ## ¿Puedo cambiar mi número después?
 
