@@ -187,6 +187,7 @@ const initialState = {
   // Embedded Signup config
   embeddedSignupConfig: {
     appId: null,
+    configId: null,
     redirectUri: null,
     state: null,
     scope: null

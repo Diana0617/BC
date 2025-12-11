@@ -34,7 +34,8 @@ const WhatsAppEmbeddedSignup = () => {
 
   const loadConfig = async () => {
     setIsLoadingConfig(true)
-    await dispatch(getEmbeddedSignupConfig())
+    const result = await dispatch(getEmbeddedSignupConfig())
+    console.log('🔧 Embedded Signup Config:', result.payload)
     setIsLoadingConfig(false)
   }
 
@@ -177,6 +178,20 @@ const WhatsAppEmbeddedSignup = () => {
           <li>Acceso de administrador a Meta Business</li>
         </ul>
       </div>
+
+      {/* Debug Info - Remove in production */}
+      {(!embeddedSignupConfig.appId || !embeddedSignupConfig.configId) && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <p className="text-sm text-red-800 font-medium mb-2">⚠️ Configuración incompleta</p>
+          <ul className="text-xs text-red-700 space-y-1">
+            {!embeddedSignupConfig.appId && <li>• App ID no configurado en el backend</li>}
+            {!embeddedSignupConfig.configId && <li>• Configuration ID no configurado en el backend</li>}
+          </ul>
+          <p className="text-xs text-red-600 mt-2">
+            Contacte al administrador del sistema para configurar las variables de entorno.
+          </p>
+        </div>
+      )}
 
       {/* Action Button */}
       <button
