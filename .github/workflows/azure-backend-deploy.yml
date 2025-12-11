@@ -1,0 +1,43 @@
+name: Deploy Backend to Azure
+
+on:
+  push:
+    branches:
+      - main
+      - desarrollo
+    paths:
+      - 'packages/backend/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Install dependencies
+      working-directory: ./packages/backend
+      run: npm ci
+    
+    - name: Run tests (if available)
+      working-directory: ./packages/backend
+      run: npm test --if-present
+      continue-on-error: true
+    
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: beautycontrol-api
+        package: ./packages/backend
