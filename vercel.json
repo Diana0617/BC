@@ -34,6 +34,6 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://bc-16wt.onrender.com"
+    "VITE_API_URL": "https://beautycontrol-api.azurewebsites.net"
   }
 }

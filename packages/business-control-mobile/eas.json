@@ -26,8 +26,8 @@
       },
       "env": {
         "EXPO_PUBLIC_ENVIRONMENT": "staging",
-        "EXPO_PUBLIC_API_URL": "https://bc-16wt.onrender.com",
-        "EXPO_PUBLIC_WEB_URL": "https://bc-nine-alpha.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://beautycontrol-api.azurewebsites.net",
+        "EXPO_PUBLIC_WEB_URL": "https://www.controldenegocios.com"
       }
     },
     "production": {
@@ -36,8 +36,8 @@
       },
       "env": {
         "EXPO_PUBLIC_ENVIRONMENT": "prod",
-        "EXPO_PUBLIC_API_URL": "https://bc-16wt.onrender.com",
-        "EXPO_PUBLIC_WEB_URL": "https://bc-nine-alpha.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://beautycontrol-api.azurewebsites.net",
+        "EXPO_PUBLIC_WEB_URL": "https://www.controldenegocios.com"
       }
     }
   },

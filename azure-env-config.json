@@ -1,0 +1,118 @@
+[
+  {
+    "name": "NODE_ENV",
+    "value": "production"
+  },
+  {
+    "name": "PORT",
+    "value": "8080"
+  },
+  {
+    "name": "DATABASE_URL",
+    "value": "postgresql://dbadmin:BeautyControl2024!@beautycontrol-db.postgres.database.azure.com:5432/beautycontrol?sslmode=require"
+  },
+  {
+    "name": "JWT_SECRET",
+    "value": "eyJhbGciOiJIUzI1NiJ9.ew0KICAic3ViIjogIjEyMzQ1Njc4OTAiLA0KICAibmFtZSI6ICJBbmlzaCBOYXRoIiwNCiAgImlhdCI6IDE1MTYyMzkwMjINCn0.Zh1M0GgbprIRPjNKHTkEj57Q8i-H4Aw0yt6WB8NvJmQ"
+  },
+  {
+    "name": "JWT_EXPIRES_IN",
+    "value": "24h"
+  },
+  {
+    "name": "JWT_REFRESH_EXPIRES_IN",
+    "value": "7d"
+  },
+  {
+    "name": "META_APP_ID",
+    "value": "1928881431390804"
+  },
+  {
+    "name": "META_APP_SECRET",
+    "value": "793aa3cfe4cfbadd8c2268478d4f99af"
+  },
+  {
+    "name": "WHATSAPP_CONFIG_ID",
+    "value": "884984130753544"
+  },
+  {
+    "name": "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+    "value": "beauty_control_webhook_verify_2024"
+  },
+  {
+    "name": "WHATSAPP_ENCRYPTION_KEY",
+    "value": "f2ca5316d90d0019c8a3babd497211bf57619106acdda82a3355f890fcf87590"
+  },
+  {
+    "name": "ENCRYPTION_KEY",
+    "value": "f2ca5316d90d0019c8a3babd497211bf57619106acdda82a3355f890fcf87590"
+  },
+  {
+    "name": "CLOUDINARY_CLOUD_NAME",
+    "value": "dxfgdwmwd"
+  },
+  {
+    "name": "CLOUDINARY_API_KEY",
+    "value": "577318946718494"
+  },
+  {
+    "name": "CLOUDINARY_API_SECRET",
+    "value": "cjL1SHIhqtXWr8BQzAi4KYj3Mt0"
+  },
+  {
+    "name": "BASE_URL",
+    "value": "https://beautycontrol-api.azurewebsites.net"
+  },
+  {
+    "name": "ALLOWED_ORIGINS",
+    "value": "https://www.controldenegocios.com,https://controldenegocios.com"
+  },
+  {
+    "name": "DISABLE_SYNC",
+    "value": "true"
+  },
+  {
+    "name": "TZ",
+    "value": "America/Bogota"
+  },
+  {
+    "name": "WOMPI_PUBLIC_KEY",
+    "value": "pub_test_1nf2D5dP7OYtphAhdDWDM8VLAco7oeVR"
+  },
+  {
+    "name": "WOMPI_PRIVATE_KEY",
+    "value": "prv_test_szLYXA82TUu6TOPsDA9U0wt6yyiZq6uF"
+  },
+  {
+    "name": "WOMPI_INTEGRITY_SECRET",
+    "value": "test_integrity_cnP2QcevX6TuLM9nNqBtbzDN3l2WrahW"
+  },
+  {
+    "name": "WOMPI_ENVIRONMENT",
+    "value": "test"
+  },
+  {
+    "name": "WOMPI_EVENT_SECRET",
+    "value": "test_events_hyciiLGlXJIMzmvoHEauRfab4BYbEFeG"
+  },
+  {
+    "name": "WOMPI_API_URL",
+    "value": "https://sandbox.wompi.co/v1"
+  },
+  {
+    "name": "EMAIL_HOST",
+    "value": "smtp.gmail.com"
+  },
+  {
+    "name": "EMAIL_PORT",
+    "value": "587"
+  },
+  {
+    "name": "EMAIL_USER",
+    "value": "dagtiso@gmail.com"
+  },
+  {
+    "name": "EMAIL_PASSWORD",
+    "value": "lvrqldtuxgoekvaq"
+  }
+]

@@ -1,0 +1,142 @@
+[
+  {
+    "name": "NODE_ENV",
+    "value": "production",
+    "slotSetting": false
+  },
+  {
+    "name": "PORT",
+    "value": "8080",
+    "slotSetting": false
+  },
+  {
+    "name": "DATABASE_URL",
+    "value": "postgresql://dbadmin:BeautyControl2024!@beautycontrol-db.postgres.database.azure.com:5432/beautycontrol?sslmode=require",
+    "slotSetting": false
+  },
+  {
+    "name": "JWT_SECRET",
+    "value": "eyJhbGciOiJIUzI1NiJ9.ew0KICAic3ViIjogIjEyMzQ1Njc4OTAiLA0KICAibmFtZSI6ICJBbmlzaCBOYXRoIiwNCiAgImlhdCI6IDE1MTYyMzkwMjINCn0.Zh1M0GgbprIRPjNKHTkEj57Q8i-H4Aw0yt6WB8NvJmQ",
+    "slotSetting": false
+  },
+  {
+    "name": "JWT_EXPIRES_IN",
+    "value": "24h",
+    "slotSetting": false
+  },
+  {
+    "name": "JWT_REFRESH_EXPIRES_IN",
+    "value": "7d",
+    "slotSetting": false
+  },
+  {
+    "name": "META_APP_ID",
+    "value": "1928881431390804",
+    "slotSetting": false
+  },
+  {
+    "name": "META_APP_SECRET",
+    "value": "793aa3cfe4cfbadd8c2268478d4f99af",
+    "slotSetting": false
+  },
+  {
+    "name": "WHATSAPP_CONFIG_ID",
+    "value": "884984130753544",
+    "slotSetting": false
+  },
+  {
+    "name": "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+    "value": "beauty_control_webhook_verify_2024",
+    "slotSetting": false
+  },
+  {
+    "name": "ENCRYPTION_KEY",
+    "value": "f2ca5316d90d0019c8a3babd497211bf57619106acdda82a3355f890fcf87590",
+    "slotSetting": false
+  },
+  {
+    "name": "CLOUDINARY_CLOUD_NAME",
+    "value": "dxfgdwmwd",
+    "slotSetting": false
+  },
+  {
+    "name": "CLOUDINARY_API_KEY",
+    "value": "577318946718494",
+    "slotSetting": false
+  },
+  {
+    "name": "CLOUDINARY_API_SECRET",
+    "value": "cjL1SHIhqtXWr8BQzAi4KYj3Mt0",
+    "slotSetting": false
+  },
+  {
+    "name": "BASE_URL",
+    "value": "https://beautycontrol-api.azurewebsites.net",
+    "slotSetting": false
+  },
+  {
+    "name": "ALLOWED_ORIGINS",
+    "value": "https://www.controldenegocios.com,https://controldenegocios.com",
+    "slotSetting": false
+  },
+  {
+    "name": "DISABLE_SYNC",
+    "value": "true",
+    "slotSetting": false
+  },
+  {
+    "name": "TZ",
+    "value": "America/Bogota",
+    "slotSetting": false
+  },
+  {
+    "name": "WOMPI_PUBLIC_KEY",
+    "value": "pub_test_1nf2D5dP7OYtphAhdDWDM8VLAco7oeVR",
+    "slotSetting": false
+  },
+  {
+    "name": "WOMPI_PRIVATE_KEY",
+    "value": "prv_test_szLYXA82TUu6TOPsDA9U0wt6yyiZq6uF",
+    "slotSetting": false
+  },
+  {
+    "name": "WOMPI_INTEGRITY_SECRET",
+    "value": "test_integrity_cnP2QcevX6TuLM9nNqBtbzDN3l2WrahW",
+    "slotSetting": false
+  },
+  {
+    "name": "WOMPI_ENVIRONMENT",
+    "value": "test",
+    "slotSetting": false
+  },
+  {
+    "name": "WOMPI_EVENT_SECRET",
+    "value": "test_events_hyciiLGlXJIMzmvoHEauRfab4BYbEFeG",
+    "slotSetting": false
+  },
+  {
+    "name": "WOMPI_API_URL",
+    "value": "https://sandbox.wompi.co/v1",
+    "slotSetting": false
+  },
+  {
+    "name": "EMAIL_HOST",
+    "value": "smtp.gmail.com",
+    "slotSetting": false
+  },
+  {
+    "name": "EMAIL_PORT",
+    "value": "587",
+    "slotSetting": false
+  },
+  {
+    "name": "EMAIL_USER",
+    "value": "dagtiso@gmail.com",
+    "slotSetting": false
+  },
+  {
+    "name": "EMAIL_PASSWORD",
+    "value": "lvrqldtuxgoekvaq",
+    "slotSetting": false
+  }
+]

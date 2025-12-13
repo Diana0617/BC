@@ -6,7 +6,7 @@
 
 const https = require('https');
 
-const BACKEND_URL = 'https://bc-16wt.onrender.com';
+const BACKEND_URL = 'https://beautycontrol-api.azurewebsites.net';
 
 // Necesitarás un token válido - obtenerlo desde la consola del navegador:
 // localStorage.getItem('token')
@@ -29,7 +29,7 @@ if (!TOKEN) {
 console.log('🧪 Probando endpoint de Embedded Signup Config...\n');
 
 const options = {
-  hostname: 'bc-16wt.onrender.com',
+  hostname: 'beautycontrol-api.azurewebsites.net',
   path: '/api/admin/whatsapp/embedded-signup/config',
   method: 'GET',
   headers: {
