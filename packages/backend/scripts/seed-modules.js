@@ -281,6 +281,33 @@ const baseModules = [
     permissions: ['analytics.view', 'analytics.configure'],
     dependencies: ['client_history', 'balance'],
     pricing: { type: 'PREMIUM', price: 40000, currency: 'COP' }
+  },
+
+  // =====================
+  // MÓDULO DE FIDELIZACIÓN Y REFERIDOS
+  // =====================
+  {
+    name: 'loyalty',
+    displayName: 'Programa de Fidelización',
+    description: 'Sistema completo de puntos, recompensas y referidos. Premia a tus clientes por su lealtad con beneficios personalizados',
+    icon: 'gift',
+    category: 'ANALYTICS',
+    status: 'ACTIVE',
+    version: '1.0.0',
+    requiresConfiguration: true,
+    configurationSchema: {
+      type: 'object',
+      properties: {
+        enablePoints: { type: 'boolean', default: true },
+        enableReferrals: { type: 'boolean', default: true },
+        pointsExpireDays: { type: 'number', default: 365 },
+        rewardExpireDays: { type: 'number', default: 30 },
+        showPointsToClients: { type: 'boolean', default: true }
+      }
+    },
+    permissions: ['loyalty.view', 'loyalty.manage', 'loyalty.configure', 'loyalty.reports'],
+    dependencies: ['appointment-booking', 'basic-payments'],
+    pricing: { type: 'PREMIUM', price: 35000, currency: 'COP' }
   }
 ];
 

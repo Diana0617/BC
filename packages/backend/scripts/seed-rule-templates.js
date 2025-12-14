@@ -584,6 +584,447 @@ async function seedRuleTemplates(closeConnection = false) {
       }
     }
 
+    // =====================
+    // REGLAS DE FIDELIZACIÓN Y REFERIDOS
+    // =====================
+    const loyaltyRules = [
+      {
+        key: 'LOYALTY_ENABLED',
+        type: 'BOOLEAN',
+        defaultValue: true,
+        description: 'Activar programa de fidelización y puntos',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        examples: {
+          values: [true, false],
+          descriptions: ['Programa activo', 'Programa desactivado']
+        }
+      },
+      {
+        key: 'LOYALTY_POINTS_PER_CURRENCY_UNIT',
+        type: 'NUMBER',
+        defaultValue: 1,
+        description: 'Puntos otorgados por cada $1000 COP gastados',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 0,
+          max: 100,
+          type: 'number'
+        },
+        examples: {
+          values: [0.1, 0.5, 1, 2, 5],
+          descriptions: ['0.1 puntos por $1000', '0.5 puntos por $1000', '1 punto por $1000', '2 puntos por $1000', '5 puntos por $1000']
+        }
+      },
+      {
+        key: 'LOYALTY_APPOINTMENT_POINTS_ENABLED',
+        type: 'BOOLEAN',
+        defaultValue: true,
+        description: 'Otorgar puntos por pago de citas completadas',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty'
+      },
+      {
+        key: 'LOYALTY_PRODUCT_POINTS_ENABLED',
+        type: 'BOOLEAN',
+        defaultValue: true,
+        description: 'Otorgar puntos por compra de productos',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty'
+      },
+      {
+        key: 'LOYALTY_REFERRAL_ENABLED',
+        type: 'BOOLEAN',
+        defaultValue: true,
+        description: 'Otorgar puntos por referir nuevos clientes',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty'
+      },
+      {
+        key: 'LOYALTY_REFERRAL_POINTS',
+        type: 'NUMBER',
+        defaultValue: 500,
+        description: 'Puntos otorgados al referir un cliente nuevo',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 0,
+          max: 10000,
+          type: 'integer'
+        },
+        examples: {
+          values: [100, 250, 500, 1000, 2000],
+          descriptions: ['100 puntos', '250 puntos', '500 puntos', '1000 puntos', '2000 puntos']
+        }
+      },
+      {
+        key: 'LOYALTY_REFERRAL_FIRST_VISIT_BONUS',
+        type: 'NUMBER',
+        defaultValue: 200,
+        description: 'Puntos bonus cuando el referido completa su primera cita pagada',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 0,
+          max: 5000,
+          type: 'integer'
+        },
+        examples: {
+          values: [0, 100, 200, 500, 1000],
+          descriptions: ['Sin bonus', '100 puntos', '200 puntos', '500 puntos', '1000 puntos']
+        }
+      },
+      {
+        key: 'LOYALTY_MILESTONE_ENABLED',
+        type: 'BOOLEAN',
+        defaultValue: true,
+        description: 'Otorgar puntos al completar X procedimientos (hitos)',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty'
+      },
+      {
+        key: 'LOYALTY_MILESTONE_COUNT',
+        type: 'NUMBER',
+        defaultValue: 5,
+        description: 'Cantidad de procedimientos para alcanzar el hito',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 1,
+          max: 100,
+          type: 'integer'
+        },
+        examples: {
+          values: [3, 5, 10, 15, 20],
+          descriptions: ['Cada 3 citas', 'Cada 5 citas', 'Cada 10 citas', 'Cada 15 citas', 'Cada 20 citas']
+        }
+      },
+      {
+        key: 'LOYALTY_MILESTONE_POINTS',
+        type: 'NUMBER',
+        defaultValue: 300,
+        description: 'Puntos otorgados al alcanzar el hito de procedimientos',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 0,
+          max: 10000,
+          type: 'integer'
+        }
+      },
+      {
+        key: 'LOYALTY_ON_TIME_PAYMENT_BONUS',
+        type: 'NUMBER',
+        defaultValue: 50,
+        description: 'Puntos bonus por pagar puntualmente (sin deuda)',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 0,
+          max: 1000,
+          type: 'integer'
+        },
+        examples: {
+          values: [0, 25, 50, 100, 200],
+          descriptions: ['Sin bonus', '25 puntos', '50 puntos', '100 puntos', '200 puntos']
+        }
+      },
+      {
+        key: 'LOYALTY_BIRTHDAY_BONUS_ENABLED',
+        type: 'BOOLEAN',
+        defaultValue: true,
+        description: 'Otorgar puntos de cumpleaños al cliente',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty'
+      },
+      {
+        key: 'LOYALTY_BIRTHDAY_BONUS_POINTS',
+        type: 'NUMBER',
+        defaultValue: 500,
+        description: 'Puntos de regalo en el cumpleaños del cliente',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 0,
+          max: 5000,
+          type: 'integer'
+        },
+        examples: {
+          values: [100, 250, 500, 1000, 2000],
+          descriptions: ['100 puntos', '250 puntos', '500 puntos', '1000 puntos', '2000 puntos']
+        }
+      },
+      {
+        key: 'LOYALTY_ANNIVERSARY_BONUS_ENABLED',
+        type: 'BOOLEAN',
+        defaultValue: true,
+        description: 'Otorgar puntos en aniversario de cliente (antigüedad)',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty'
+      },
+      {
+        key: 'LOYALTY_ANNIVERSARY_BONUS_POINTS',
+        type: 'NUMBER',
+        defaultValue: 1000,
+        description: 'Puntos de regalo por cada año como cliente',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 0,
+          max: 10000,
+          type: 'integer'
+        }
+      },
+      {
+        key: 'LOYALTY_POINTS_EXPIRY_DAYS',
+        type: 'NUMBER',
+        defaultValue: 365,
+        description: 'Días de validez de los puntos (0 = nunca expiran)',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 0,
+          max: 3650,
+          type: 'integer'
+        },
+        examples: {
+          values: [0, 90, 180, 365, 730],
+          descriptions: ['Nunca expiran', '3 meses', '6 meses', '1 año', '2 años']
+        }
+      },
+      {
+        key: 'LOYALTY_MIN_POINTS_TO_REDEEM',
+        type: 'NUMBER',
+        defaultValue: 1000,
+        description: 'Cantidad mínima de puntos para poder canjear recompensas',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 0,
+          max: 50000,
+          type: 'integer'
+        },
+        examples: {
+          values: [500, 1000, 2000, 5000, 10000],
+          descriptions: ['500 puntos', '1000 puntos', '2000 puntos', '5000 puntos', '10000 puntos']
+        }
+      },
+      {
+        key: 'LOYALTY_REWARD_EXPIRY_DAYS',
+        type: 'NUMBER',
+        defaultValue: 30,
+        description: 'Días de validez de las recompensas canjeadas',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 1,
+          max: 365,
+          type: 'integer'
+        },
+        examples: {
+          values: [15, 30, 60, 90, 180],
+          descriptions: ['15 días', '30 días', '60 días', '90 días', '6 meses']
+        }
+      },
+      {
+        key: 'LOYALTY_DISCOUNT_PERCENTAGE_RATE',
+        type: 'NUMBER',
+        defaultValue: 10,
+        description: 'Porcentaje de descuento por cada X puntos canjeados',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 1,
+          max: 100,
+          type: 'number'
+        },
+        examples: {
+          values: [5, 10, 15, 20, 25],
+          descriptions: ['5% descuento', '10% descuento', '15% descuento', '20% descuento', '25% descuento']
+        }
+      },
+      {
+        key: 'LOYALTY_POINTS_FOR_DISCOUNT',
+        type: 'NUMBER',
+        defaultValue: 1000,
+        description: 'Cantidad de puntos necesarios para obtener el descuento configurado',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        requiredModule: 'loyalty',
+        validationRules: {
+          min: 100,
+          max: 50000,
+          type: 'integer'
+        },
+        examples: {
+          values: [500, 1000, 2000, 5000, 10000],
+          descriptions: ['500 puntos', '1000 puntos', '2000 puntos', '5000 puntos', '10000 puntos']
+        }
+      },
+      // ================ REGLAS DE BRANDING PARA TARJETAS ================
+      {
+        key: 'BRANDING_PRIMARY_COLOR',
+        type: 'STRING',
+        defaultValue: '#8B5CF6',
+        description: 'Color primario del negocio (hexadecimal) para tarjeta de fidelización',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        validationRules: {
+          pattern: '^#[0-9A-Fa-f]{6}$',
+          type: 'string'
+        },
+        examples: {
+          values: ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444'],
+          descriptions: ['Púrpura', 'Azul', 'Verde', 'Ámbar', 'Rojo']
+        }
+      },
+      {
+        key: 'BRANDING_SECONDARY_COLOR',
+        type: 'STRING',
+        defaultValue: '#EC4899',
+        description: 'Color secundario del negocio (hexadecimal) para gradientes',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        validationRules: {
+          pattern: '^#[0-9A-Fa-f]{6}$',
+          type: 'string'
+        },
+        examples: {
+          values: ['#EC4899', '#6366F1', '#14B8A6', '#F97316', '#DC2626'],
+          descriptions: ['Rosa', 'Índigo', 'Verde azulado', 'Naranja', 'Rojo oscuro']
+        }
+      },
+      {
+        key: 'BRANDING_ACCENT_COLOR',
+        type: 'STRING',
+        defaultValue: '#F59E0B',
+        description: 'Color de acento para destacar elementos (puntos, botones)',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        validationRules: {
+          pattern: '^#[0-9A-Fa-f]{6}$',
+          type: 'string'
+        },
+        examples: {
+          values: ['#F59E0B', '#FBBF24', '#34D399', '#60A5FA', '#F472B6'],
+          descriptions: ['Ámbar', 'Amarillo', 'Verde claro', 'Azul claro', 'Rosa claro']
+        }
+      },
+      {
+        key: 'BRANDING_TEXT_COLOR',
+        type: 'STRING',
+        defaultValue: '#1F2937',
+        description: 'Color de texto principal',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        validationRules: {
+          pattern: '^#[0-9A-Fa-f]{6}$',
+          type: 'string'
+        },
+        examples: {
+          values: ['#1F2937', '#374151', '#4B5563', '#6B7280', '#000000'],
+          descriptions: ['Gris oscuro', 'Gris medio oscuro', 'Gris medio', 'Gris', 'Negro']
+        }
+      },
+      {
+        key: 'BRANDING_BACKGROUND_COLOR',
+        type: 'STRING',
+        defaultValue: '#FFFFFF',
+        description: 'Color de fondo',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        validationRules: {
+          pattern: '^#[0-9A-Fa-f]{6}$',
+          type: 'string'
+        },
+        examples: {
+          values: ['#FFFFFF', '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB'],
+          descriptions: ['Blanco', 'Gris muy claro', 'Gris claro', 'Gris', 'Gris medio']
+        }
+      },
+      {
+        key: 'BRANDING_USE_GRADIENT',
+        type: 'BOOLEAN',
+        defaultValue: true,
+        description: 'Usar gradiente en tarjeta de fidelización (de color primario a secundario)',
+        category: 'GENERAL',
+        allowCustomization: true,
+        version: '1.0.0',
+        examples: {
+          values: [true, false],
+          descriptions: ['Usar gradiente', 'Color sólido']
+        }
+      }
+    ];
+
+    console.log('\n📝 Agregando reglas de Fidelización...');
+    for (const template of loyaltyRules) {
+      try {
+        const [rule, wasCreated] = await RuleTemplate.findOrCreate({
+          where: { key: template.key },
+          defaults: template
+        });
+
+        if (wasCreated) {
+          created++;
+          console.log(`✅ Creada: ${template.key}`);
+        } else {
+          // Actualizar si ya existe
+          await rule.update(template);
+          updated++;
+          console.log(`🔄 Actualizada: ${template.key}`);
+        }
+      } catch (error) {
+        skipped++;
+        console.log(`⚠️  Omitida ${template.key}:`, error.message);
+      }
+    }
+
     console.log('\n📊 Resumen del seeding:');
     console.log(`✅ Creadas: ${created}`);
     console.log(`🔄 Actualizadas: ${updated}`);

@@ -1,8 +1,11 @@
 const VoucherService = require('../services/VoucherService');
 const Voucher = require('../models/Voucher');
+const Business = require('../models/Business');
 const CustomerCancellationHistory = require('../models/CustomerCancellationHistory');
 const CustomerBookingBlock = require('../models/CustomerBookingBlock');
 const User = require('../models/User');
+// TODO: Implementar VoucherPDFService similar a LoyaltyCardPDFService
+// const VoucherPDFService = require('../services/VoucherPDFService');
 const { Op } = require('sequelize');
 
 /**
@@ -19,7 +22,8 @@ class VoucherController {
    */
   static async getMyVouchers(req, res) {
     try {
-      const { userId, businessId } = req.user;
+      const userId = req.user.userId || req.user.id;
+      const { businessId } = req.user;
 
       const vouchers = await VoucherService.getCustomerVouchers(
         businessId,
@@ -51,7 +55,8 @@ class VoucherController {
   static async validateVoucher(req, res) {
     try {
       const { code } = req.params;
-      const { userId, businessId } = req.user;
+      const userId = req.user.userId || req.user.id;
+      const { businessId } = req.user;
 
       const voucher = await Voucher.findOne({
         where: {
@@ -110,7 +115,8 @@ class VoucherController {
   static async applyVoucher(req, res) {
     try {
       const { voucherCode, bookingId } = req.body;
-      const { userId, businessId } = req.user;
+      const userId = req.user.userId || req.user.id;
+      const { businessId } = req.user;
 
       if (!voucherCode || !bookingId) {
         return res.status(400).json({
@@ -152,7 +158,8 @@ class VoucherController {
    */
   static async checkBlockStatus(req, res) {
     try {
-      const { userId, businessId } = req.user;
+      const userId = req.user.userId || req.user.id;
+      const { businessId } = req.user;
 
       const isBlocked = await VoucherService.isCustomerBlocked(businessId, userId);
 
@@ -201,7 +208,8 @@ class VoucherController {
    */
   static async getCancellationHistory(req, res) {
     try {
-      const { userId, businessId } = req.user;
+      const userId = req.user.userId || req.user.id;
+      const { businessId } = req.user;
       const { days = 30 } = req.query;
 
       const history = await VoucherService.getCustomerCancellationHistory(
@@ -554,6 +562,91 @@ class VoucherController {
   }
 
   /**
+   * @route GET /api/vouchers/:voucherId/pdf
+   * @desc Descargar tarjeta PDF del voucher (incluye logo del negocio)
+   * @access Private
+   */
+  static async getVoucherPDF(req, res) {
+    try {
+      const { voucherId } = req.params;
+      const requesterId = req.user.userId || req.user.id;
+      const { businessId, role } = req.user;
+
+      if (!voucherId) {
+        return res.status(400).json({
+          success: false,
+          error: 'voucherId es requerido'
+        });
+      }
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: 'businessId no está disponible en el token'
+        });
+      }
+
+      const voucher = await Voucher.findOne({
+        where: { id: voucherId },
+        include: [
+          {
+            model: Business,
+            as: 'business',
+            attributes: ['id', 'name', 'logo']
+          },
+          {
+            model: User,
+            as: 'customer',
+            attributes: ['id', 'name', 'email', 'phone']
+          }
+        ]
+      });
+
+      if (!voucher) {
+        return res.status(404).json({
+          success: false,
+          error: 'Voucher no encontrado'
+        });
+      }
+
+      const isBusinessOperator = ['OWNER', 'ADMIN', 'BUSINESS'].includes(role);
+      const sameBusiness = voucher.businessId === businessId;
+      const isOwnerCustomer = voucher.customerId === requesterId;
+
+      const canAccess = (isBusinessOperator && sameBusiness) || (!isBusinessOperator && sameBusiness && isOwnerCustomer);
+      if (!canAccess) {
+        return res.status(403).json({
+          success: false,
+          error: 'No tienes acceso a este voucher'
+        });
+      }
+
+      // TODO: Implementar VoucherPDFService para generar PDF de vouchers
+      return res.status(501).json({
+        success: false,
+        error: 'Generación de PDF de vouchers no implementada aún'
+      });
+
+      // const pdfBuffer = await VoucherPDFService.generateVoucherCardPDF({
+      //   voucher,
+      //   business: voucher.business,
+      //   customer: voucher.customer
+      // });
+
+      // const safeCode = voucher.code || voucher.id;
+      // res.setHeader('Content-Type', 'application/pdf');
+      // res.setHeader('Content-Disposition', `inline; filename="voucher-${safeCode}.pdf"`);
+      // return res.status(200).send(pdfBuffer);
+    } catch (error) {
+      console.error('Error generando PDF del voucher:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Error al generar PDF del voucher'
+      });
+    }
+  }
+
+  /**
    * @swagger
    * /api/vouchers/cleanup:
    *   post:
@@ -625,7 +718,7 @@ class VoucherController {
     try {
       const { businessId, clientId } = req.params;
       const { reason = 'MANUAL', notes, durationDays = 30 } = req.body;
-      const { userId } = req.user;
+      const userId = req.user.userId || req.user.id;
 
       const block = await VoucherService.createBlock(
         businessId,

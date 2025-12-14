@@ -29,6 +29,9 @@ export * from './timeSlotSelectors';
 // Voucher Selectors
 export * from './voucherSelectors';
 
+// Loyalty Selectors
+export * from './loyaltySelectors';
+
 // Commission Selectors (FM-26)
 export * from './commissionSelectors';
 

@@ -101,6 +101,10 @@ const TreatmentSession = require('./TreatmentSession');
 // Modelos de gestión de caja
 const CashRegisterShift = require('./CashRegisterShift');
 
+// Modelos de fidelización/loyalty
+const LoyaltyPointTransaction = require('./LoyaltyPointTransaction');
+const LoyaltyReward = require('./LoyaltyReward');
+
 // Definir asociaciones
 // User - Business
 User.belongsTo(Business, { 
@@ -222,6 +226,92 @@ BusinessClient.belongsTo(Business, {
 BusinessClient.belongsTo(User, { 
   foreignKey: 'preferredSpecialistId', 
   as: 'preferredSpecialist' 
+});
+
+// BusinessClient - Referral (self-referential)
+BusinessClient.belongsTo(BusinessClient, {
+  foreignKey: 'referredBy',
+  as: 'referrer'
+});
+BusinessClient.hasMany(BusinessClient, {
+  foreignKey: 'referredBy',
+  as: 'referrals'
+});
+
+// Loyalty - Business
+LoyaltyPointTransaction.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+Business.hasMany(LoyaltyPointTransaction, {
+  foreignKey: 'businessId',
+  as: 'loyaltyTransactions'
+});
+
+LoyaltyReward.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+Business.hasMany(LoyaltyReward, {
+  foreignKey: 'businessId',
+  as: 'loyaltyRewards'
+});
+
+// Loyalty - Client
+LoyaltyPointTransaction.belongsTo(Client, {
+  foreignKey: 'clientId',
+  as: 'client'
+});
+Client.hasMany(LoyaltyPointTransaction, {
+  foreignKey: 'clientId',
+  as: 'loyaltyTransactions'
+});
+
+LoyaltyReward.belongsTo(Client, {
+  foreignKey: 'clientId',
+  as: 'client'
+});
+Client.hasMany(LoyaltyReward, {
+  foreignKey: 'clientId',
+  as: 'loyaltyRewards'
+});
+
+// Loyalty - Branch
+LoyaltyPointTransaction.belongsTo(Branch, {
+  foreignKey: 'branchId',
+  as: 'branch'
+});
+Branch.hasMany(LoyaltyPointTransaction, {
+  foreignKey: 'branchId',
+  as: 'loyaltyTransactions'
+});
+
+// Loyalty - User (who processed the transaction)
+LoyaltyPointTransaction.belongsTo(User, {
+  foreignKey: 'processedBy',
+  as: 'processor'
+});
+User.hasMany(LoyaltyPointTransaction, {
+  foreignKey: 'processedBy',
+  as: 'processedLoyaltyTransactions'
+});
+
+LoyaltyReward.belongsTo(User, {
+  foreignKey: 'issuedBy',
+  as: 'issuer'
+});
+User.hasMany(LoyaltyReward, {
+  foreignKey: 'issuedBy',
+  as: 'issuedRewards'
+});
+
+LoyaltyReward.belongsTo(User, {
+  foreignKey: 'usedBy',
+  as: 'usedByUser'
+});
+User.hasMany(LoyaltyReward, {
+  foreignKey: 'usedBy',
+  as: 'usedRewards'
 });
 
 // Business - Branch
@@ -1679,5 +1769,8 @@ module.exports = {
   // Modelos de Wompi Payment Config (pagos clientes → negocios)
   BusinessWompiPaymentConfig,
   // Modelos de gestión de caja
-  CashRegisterShift
+  CashRegisterShift,
+  // Modelos de fidelización/loyalty
+  LoyaltyPointTransaction,
+  LoyaltyReward
 };

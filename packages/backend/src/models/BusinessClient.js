@@ -104,6 +104,33 @@ const BusinessClient = sequelize.define('BusinessClient', {
     type: DataTypes.JSONB,
     allowNull: true,
     defaultValue: {}
+  },
+  // Campos de programa de fidelización y referidos
+  referralCode: {
+    type: DataTypes.STRING(15),
+    allowNull: true,
+    unique: true,
+    comment: 'Código único de referido del cliente (ej: REF-ABC123)'
+  },
+  referredBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'clients',
+      key: 'id'
+    },
+    comment: 'Cliente que refirió a este cliente (para programa de fidelización)'
+  },
+  referralCount: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    comment: 'Cantidad de clientes referidos por este cliente'
+  },
+  lastReferralDate: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Fecha del último referido exitoso'
   }
 }, {
   tableName: 'business_clients',
@@ -118,6 +145,13 @@ const BusinessClient = sequelize.define('BusinessClient', {
     },
     {
       fields: ['clientNumber', 'businessId']
+    },
+    {
+      unique: true,
+      fields: ['referralCode']
+    },
+    {
+      fields: ['referredBy']
     }
   ]
 });

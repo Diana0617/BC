@@ -84,6 +84,10 @@ export { default as businessValidationApi } from './businessValidationApi';
 export { default as voucherApi } from './voucherApi';
 import voucherApi from './voucherApi';
 
+// 🎁 LOYALTY/FIDELITY SYSTEM API
+export { default as loyaltyApi } from './loyaltyApi';
+import loyaltyApi from './loyaltyApi';
+
 // 💰 COMMISSION & CONSENT SYSTEM APIS (FM-26)
 export { default as commissionApi } from './commissionApi';
 import commissionApi from './commissionApi';
@@ -132,7 +136,9 @@ export const ownerApis = {
   ruleTemplateApi,
   businessRuleApi,
   // Voucher System API
-  voucherApi
+  voucherApi,
+  // Loyalty System API
+  loyaltyApi
 };
 
 // Export all BUSINESS APIs as a group
@@ -154,5 +160,7 @@ export const businessApis = {
   // WhatsApp Business Platform API
   whatsappApi,
   // Business Wompi Payment Config API
-  businessWompiPaymentApi
+  businessWompiPaymentApi,
+  // Loyalty System API
+  loyaltyApi
 };
