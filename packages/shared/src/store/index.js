@@ -42,6 +42,8 @@ import appointmentCalendarReducer from './slices/appointmentCalendarSlice';
 import timeSlotReducer from './slices/timeSlotSlice';
 // 🎫 VOUCHER SYSTEM REDUCERS
 import voucherReducer from './slices/voucherSlice';
+// 🎁 LOYALTY/FIDELITY SYSTEM REDUCERS
+import loyaltyReducer from './slices/loyaltySlice';
 // 💰 COMMISSION & CONSENT SYSTEM REDUCERS (FM-26)
 import commissionReducer from './slices/commissionSlice';
 import consentReducer from './slices/consentSlice';
@@ -116,6 +118,8 @@ export const createStore = (preloadedState = {}) => {
       timeSlot: timeSlotReducer,
       // 🎫 VOUCHER SYSTEM REDUCERS
       voucher: voucherReducer,
+      // 🎁 LOYALTY/FIDELITY SYSTEM REDUCERS
+      loyalty: loyaltyReducer,
       // 💰 COMMISSION & CONSENT SYSTEM REDUCERS (FM-26)
       commission: commissionReducer,
       consent: consentReducer,

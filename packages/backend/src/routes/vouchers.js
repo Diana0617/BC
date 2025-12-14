@@ -22,6 +22,13 @@ const { businessAndOwner, businessOnly } = require('../middleware/roleCheck');
 router.get('/my-vouchers', authenticateToken, VoucherController.getMyVouchers);
 
 /**
+ * @route GET /api/vouchers/:voucherId/pdf
+ * @desc Descargar tarjeta PDF del voucher
+ * @access Private
+ */
+router.get('/:voucherId/pdf', authenticateToken, VoucherController.getVoucherPDF);
+
+/**
  * @route GET /api/vouchers/validate/:code
  * @desc Validar un código de voucher
  * @access Private

@@ -220,7 +220,9 @@ const basePlans = [
       { moduleName: 'expenses', isIncluded: true },
       { moduleName: 'balance', isIncluded: true },
       { moduleName: 'client_history', isIncluded: true },
-      { moduleName: 'advanced-analytics', isIncluded: true }
+      { moduleName: 'advanced-analytics', isIncluded: true },
+      // FIDELIZACIÓN
+      { moduleName: 'loyalty', isIncluded: true }
     ]
   },
 
@@ -275,7 +277,9 @@ const basePlans = [
       { moduleName: 'expenses', isIncluded: true },
       { moduleName: 'balance', isIncluded: true },
       { moduleName: 'client_history', isIncluded: true },
-      { moduleName: 'advanced-analytics', isIncluded: true }
+      { moduleName: 'advanced-analytics', isIncluded: true },
+      // FIDELIZACIÓN
+      { moduleName: 'loyalty', isIncluded: true }
     ]
   }
 ];

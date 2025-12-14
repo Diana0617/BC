@@ -50,6 +50,7 @@ import BookingSuccess from './pages/public/BookingSuccess'
 import TermsOfService from './pages/public/TermsOfService'
 import PrivacyPolicy from './pages/public/PrivacyPolicy'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
+import CheckPointsPage from './pages/public/CheckPointsPage'
 
 // WebView Components
 import ExpenseFormWebView from './pages/webview/ExpenseFormWebView'
@@ -399,6 +400,7 @@ function AppLayout() {
           <Route path="/booking/success" element={<BookingSuccess />} />
           <Route path="/terminos" element={<TermsOfService />} />
           <Route path="/privacidad" element={<PrivacyPolicy />} />
+          <Route path="/check-points/:referralCode" element={<CheckPointsPage />} />
           
           {/* WebView routes - For mobile app access */}
           <Route path="/webview/expense-form" element={<ExpenseFormWebView />} />

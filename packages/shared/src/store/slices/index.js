@@ -59,6 +59,9 @@ export { default as timeSlotSlice } from './timeSlotSlice';
 // 🎫 VOUCHER SYSTEM SLICES
 export { default as voucherSlice } from './voucherSlice';
 
+// 🎁 LOYALTY/FIDELITY SYSTEM SLICES
+export { default as loyaltySlice } from './loyaltySlice';
+
 // 💰 COMMISSION & CONSENT SYSTEM SLICES (FM-26)
 export { default as commissionSlice } from './commissionSlice';
 export { default as consentSlice } from './consentSlice';
@@ -215,6 +218,38 @@ export {
   clearOperationMessages,
   resetVoucherState
 } from './voucherSlice';
+
+// 🎁 LOYALTY/FIDELITY SYSTEM EXPORTS
+export {
+  // Thunks - Cliente
+  fetchMyBalance,
+  fetchMyTransactions,
+  fetchMyReferralCode,
+  fetchMyReferrals,
+  redeemPoints,
+  fetchMyRewards,
+  applyReward,
+  downloadMyCard,
+  // Thunks - Negocio
+  fetchClientBalance,
+  fetchClientTransactions,
+  fetchClientReferrals,
+  creditPointsManually,
+  findClientByReferralCode,
+  downloadClientCard,
+  downloadBulkCards,
+  // Actions
+  resetMyBalance,
+  resetMyTransactions,
+  resetMyRewards,
+  resetClientBalance,
+  resetClientTransactions,
+  resetFoundClient,
+  setShowRedeemModal,
+  setShowRewardDetailsModal,
+  setSelectedReward,
+  clearErrors as clearLoyaltyErrors
+} from './loyaltySlice';
 
 // 💉 TREATMENT PLANS SYSTEM EXPORTS (FM-28)
 export {
