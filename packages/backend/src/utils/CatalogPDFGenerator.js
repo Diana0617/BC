@@ -7,7 +7,7 @@ class CatalogPDFGenerator {
    * Generar PDF del catálogo con imágenes
    */
   static async generate(catalogItems, business, filters = {}) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
         const doc = new PDFDocument({ size: 'A4', margin: 50 });
         const stream = new PassThrough();
@@ -37,7 +37,8 @@ class CatalogPDFGenerator {
         doc.moveDown();
 
         // Items del catálogo
-        catalogItems.forEach((item, index) => {
+        for (let index = 0; index < catalogItems.length; index++) {
+          const item = catalogItems[index];
           // Verificar si necesitamos una nueva página
           if (doc.y > 650) {
             doc.addPage();
@@ -89,23 +90,34 @@ class CatalogPDFGenerator {
             .text(availText, 50, doc.y + 3);
           doc.fillColor('black');
 
-          // TODO: Agregar imagen si existe
-          // Si el item tiene imágenes, intentar descargarlas y agregarlas al PDF
-          if (item.images && item.images.length > 0 && item.images[0].thumbnail) {
+          // Agregar imagen si existe
+          if (item.images && item.images.length > 0) {
             try {
-              // Por ahora solo agregamos un placeholder
-              // En producción, descargaríamos la imagen y la agregaríamos con doc.image()
-              doc.fontSize(8).text('[Imagen disponible]', 380, startY, {
+              const imageUrl = item.images[0].thumbnail?.url || item.images[0].main?.url;
+              if (imageUrl) {
+                // Descargar imagen
+                const imageBuffer = await this.downloadImage(imageUrl);
+                if (imageBuffer) {
+                  // Agregar imagen al PDF (máximo 150x150)
+                  doc.image(imageBuffer, 380, startY, {
+                    fit: [150, 150],
+                    align: 'center',
+                    valign: 'center'
+                  });
+                }
+              }
+            } catch (error) {
+              console.error('Error adding image to PDF:', error);
+              // Si falla, mostrar placeholder
+              doc.fontSize(8).text('[Imagen no disponible]', 380, startY, {
                 width: 150,
                 align: 'center'
               });
-            } catch (error) {
-              console.error('Error adding image to PDF:', error);
             }
           }
 
           doc.moveDown(1.5);
-        });
+        }
 
         // Footer
         const pages = doc.bufferedPageRange();

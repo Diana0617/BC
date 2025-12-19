@@ -256,7 +256,7 @@ const SupplierCatalog = () => {
                     <img
                       src={item.images[0].thumbnail?.url || item.images[0].main?.url}
                       alt={item.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
                     <PhotoIcon className="h-16 w-16 text-gray-300" />
