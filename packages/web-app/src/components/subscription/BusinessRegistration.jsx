@@ -57,7 +57,7 @@ const BusinessRegistration = ({ selectedPlan, billingCycle = 'MONTHLY', invitati
     setSubdomainStatus({ checking: true, available: null, message: 'Verificando...' })
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://beautycontrol-api.azurewebsites.net'
       const response = await fetch(`${API_BASE_URL}/api/auth/check-subdomain/${subdomain}`)
       
       // Verificar si la respuesta es exitosa

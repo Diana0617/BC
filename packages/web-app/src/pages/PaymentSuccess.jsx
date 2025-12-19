@@ -180,9 +180,10 @@ const PaymentSuccess = () => {
     const fetchTransactionData = async () => {
       // Priorizar referencia sobre transactionId
       const identifier = reference || transactionId;
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://beautycontrol-api.azurewebsites.net';
       const endpoint = reference 
-        ? `http://localhost:3001/api/wompi/transaction-by-reference/${reference}`
-        : `http://localhost:3001/api/wompi/transaction/${transactionId}`;
+        ? `${API_BASE_URL}/api/wompi/transaction-by-reference/${reference}`
+        : `${API_BASE_URL}/api/wompi/transaction/${transactionId}`;
 
       if (!identifier) {
         setError('No se recibió referencia o ID de transacción')

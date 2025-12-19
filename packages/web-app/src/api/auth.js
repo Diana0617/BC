@@ -102,7 +102,8 @@ async request(endpoint, options = {}) {
   }
 }
 
-export const apiClient = new ApiClient('http://localhost:3001');
+// Usar la configuración dinámica de la URL
+export const apiClient = new ApiClient(API_CONFIG.BASE_URL);
 
 // Auth API functions
 export const authAPI = {

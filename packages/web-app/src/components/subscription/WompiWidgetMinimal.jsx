@@ -243,7 +243,7 @@ const WompiWidgetMinimal = ({
         }
 
         // Llamar al endpoint de renovación
-        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://beautycontrol-api.azurewebsites.net'
         const response = await fetch(`${API_BASE_URL}/api/wompi/renew-subscription`, {
           method: 'POST',
           headers: {
@@ -475,7 +475,8 @@ const WompiWidgetMinimal = ({
       }
 
       // Paso 3: Generar firma de integridad
-      const signatureResponse = await fetch('http://localhost:3001/api/wompi/generate-signature', {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://beautycontrol-api.azurewebsites.net';
+      const signatureResponse = await fetch(`${API_BASE_URL}/api/wompi/generate-signature`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
