@@ -236,6 +236,7 @@ class SupplierInvoiceController {
       const processedItems = [];
       
       for (const item of items) {
+        console.log('📦 Processing item:', JSON.stringify(item, null, 2));
         let finalProductId = item.productId;
 
         // Si no existe el producto, crearlo
@@ -263,11 +264,11 @@ class SupplierInvoiceController {
             supplierId: finalSupplierId,
             productId: finalProductId,
             supplierSku: item.productData.sku,
-            supplierProductName: item.productData.name,
-            supplierPrice: item.unitCost,
-            minimumOrderQuantity: 1,
-            leadTimeDays: 7,
-            isAvailable: true,
+            name: item.productData.name,
+            price: item.unitCost,
+            minimumOrder: 1,
+            leadTime: 7,
+            available: true,
             lastPurchaseDate: new Date(issueDate),
             lastPurchasePrice: item.unitCost,
             notes: `Agregado automáticamente desde factura ${invoiceNumber}`
