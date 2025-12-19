@@ -276,16 +276,25 @@ const LoyaltyConfigSection = ({ isSetupMode, onComplete, isCompleted }) => {
       
       const response = await getBusinessAssignedRules(false)
       
+      // La respuesta viene en formato { success: true, data: [...] }
+      const rulesArray = response.data?.data || response.data || []
+      
+      console.log('📊 Loyalty rules response:', response.data)
+      console.log('📊 Rules array:', rulesArray)
+      
       // Convertir array de reglas a objeto con key como índice
       const rulesMap = {}
-      response.data.forEach(rule => {
-        if (rule.ruleKey.startsWith('LOYALTY_')) {
-          rulesMap[rule.ruleKey] = {
-            value: rule.customValue !== null ? rule.customValue : rule.defaultValue,
-            isActive: rule.isActive
+      
+      if (Array.isArray(rulesArray)) {
+        rulesArray.forEach(rule => {
+          if (rule.ruleKey && rule.ruleKey.startsWith('LOYALTY_')) {
+            rulesMap[rule.ruleKey] = {
+              value: rule.customValue !== null ? rule.customValue : rule.defaultValue,
+              isActive: rule.isActive
+            }
           }
-        }
-      })
+        })
+      }
       
       // Completar con valores por defecto si faltan reglas
       Object.keys(ruleMetadata).forEach(key => {
