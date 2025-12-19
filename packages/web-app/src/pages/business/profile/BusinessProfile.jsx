@@ -17,7 +17,8 @@ import {
   ChatBubbleLeftRightIcon,
   CubeIcon,
   BanknotesIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline'
 
 // Redux actions
@@ -51,6 +52,7 @@ import CalendarAccessSection from './sections/CalendarAccessSection'
 import CustomerHistorySection from './sections/CustomerHistorySection'
 import WhatsAppConfigSection from './sections/WhatsAppConfigSection'
 import MovementsSection from './sections/MovementsSection'
+import LoyaltyConfigSection from './sections/LoyaltyConfigSection'
 import BusinessRuleModal from '../../../components/BusinessRuleModalV2'
 
 // Hook personalizado para la configuración del negocio
@@ -296,7 +298,14 @@ const BusinessProfile = () => {
       moduleRequired: 'taxxa_integration', // Actualizado para coincidir con BD
       setupStep: 'taxxa-config'
     },
-    
+    {
+      id: 'loyalty',
+      name: 'Programa de Fidelización',
+      icon: SparklesIcon,
+      component: LoyaltyConfigSection,
+      moduleRequired: 'loyalty',
+      setupStep: 'loyalty-config'
+    }
   ]
 
   // Módulos que NO deben mostrarse en el sidebar (no tienen configuración UI o son redundantes)
@@ -350,6 +359,8 @@ const BusinessProfile = () => {
     'appointment-reminders',
     // Taxxa (ya tiene sección específica en modulesSections)
     'taxxa_integration',
+    // Loyalty (ya tiene sección específica en modulesSections)
+    'loyalty',
     // Gestión de usuarios (se maneja desde Historial de Clientes)
     'user-management',
     // Reserva de citas (se maneja desde Calendario)
