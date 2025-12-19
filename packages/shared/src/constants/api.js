@@ -17,28 +17,45 @@ export const getApiUrl = () => {
     console.log('📡 Using fallback API URL:', url);
     return url;
   } else if (typeof window !== 'undefined') {
+    // 1. Prioridad: Variable de entorno VITE_API_URL
+    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
+      console.log('🔵 [SHARED API_CONFIG] Usando VITE_API_URL:', import.meta.env.VITE_API_URL);
+      return import.meta.env.VITE_API_URL;
+    }
     // Web browser environment - detectar automáticamente
-    const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    const isLanIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+    const protocol = window.location.protocol;
     
-    // Si está en localhost o IP LAN, usar el mismo host para el API
-    if (isLocalhost || isLanIp) {
-      const apiUrl = `${protocol}//${hostname}:3001`;
-      console.log('🔵 [SHARED API_CONFIG] Auto-detectado:', apiUrl);
-      return apiUrl;
+    // 1. Detectar entorno de producción (Vercel)
+    const isProduction = hostname.includes('vercel.app') || 
+                        hostname.includes('beautycontrol.') ||
+                        (typeof import.meta !== 'undefined' && import.meta.env?.PROD);
+
+    if (isProduction) {
+      const productionUrl = 'https://beautycontrol-api.azurewebsites.net';
+      console.log('🔵 [SHARED API_CONFIG] Producción detectada:', productionUrl);
+      return productionUrl;
     }
     
-    // Si hay window.__BC_API_URL__ configurado en index.html, usarlo
+    // 2. Si hay window.__BC_API_URL__ configurado en index.html, usarlo
     if (window.__BC_API_URL__) {
       console.log('🔵 [SHARED API_CONFIG] Desde window:', window.__BC_API_URL__);
       return window.__BC_API_URL__;
     }
     
-    // Fallback para producción
-    console.log('🔵 [SHARED API_CONFIG] Fallback producción');
-    return 'http://localhost:3001';
+    // 3. Desarrollo local: detectar IP/hostname
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isLanIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+    
+    if (isLocalhost || isLanIp) {
+      const apiUrl = `${protocol}//${hostname}:3001`;
+      console.log('🔵 [SHARED API_CONFIG] Desarrollo local:', apiUrl);
+      return apiUrl;
+    }
+    
+    // 4. Fallback para producción si nada coincide
+    console.log('🔵 [SHARED API_CONFIG] Fallback producción Azure');
+    return 'https://beautycontrol-api.azurewebsites.net';
   } else {
     // Node.js environment
     return process.env.API_BASE_URL || 'http://localhost:3001';
