@@ -251,12 +251,12 @@ const SupplierCatalog = () => {
                 className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
               >
                 {/* Imagen */}
-                <div className="aspect-square bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                <div className="aspect-square bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden p-2">
                   {item.images && item.images.length > 0 ? (
                     <img
                       src={item.images[0].thumbnail?.url || item.images[0].main?.url}
                       alt={item.name}
-                      className="w-full h-full object-contain"
+                      className="max-w-full max-h-full object-contain"
                     />
                   ) : (
                     <PhotoIcon className="h-16 w-16 text-gray-300" />
