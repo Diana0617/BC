@@ -104,6 +104,7 @@ const basePlans = [
       { moduleName: 'appointment-reminders', isIncluded: true },
       // INVENTORY
       { moduleName: 'inventory', isIncluded: true },
+      { moduleName: 'stock-control', isIncluded: true },
       // PAYMENTS
       { moduleName: 'basic-payments', isIncluded: true },
       // REPORTS

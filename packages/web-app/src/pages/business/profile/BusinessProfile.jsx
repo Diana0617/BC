@@ -376,9 +376,11 @@ const BusinessProfile = () => {
   })
 
   // Luego, crear secciones genéricas solo para módulos que NO están en modulesSections
+  // y que SÍ están disponibles en el plan actual
   const existingModuleNames = modulesSections.map(s => s.moduleRequired)
   const genericModulesSections = allModules
     .filter(module => 
+      module.isAvailable &&  // SOLO módulos disponibles en el plan actual
       !excludedModules.includes(module.name.toLowerCase()) &&
       !existingModuleNames.includes(module.name)
     )
@@ -388,7 +390,7 @@ const BusinessProfile = () => {
       icon: CogIcon,
       component: null,
       moduleRequired: module.name,
-      isAvailable: module.isAvailable,
+      isAvailable: true,  // Ya está filtrado por isAvailable
       moduleInfo: module,
       isGeneric: true
     }))

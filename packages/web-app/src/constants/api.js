@@ -1,20 +1,37 @@
 // API Configuration for web app
-// Detectar dinámicamente la URL del API basándose en el host actual
+// Detectar dinámicamente la URL del API basándose en el entorno
 const getApiBaseUrl = () => {
-  const protocol = window.location.protocol;
+  // 1. Prioridad: Variable de entorno explícita
+  if (import.meta.env.VITE_API_URL) {
+    console.log('[API_CONFIG] Usando VITE_API_URL:', import.meta.env.VITE_API_URL);
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // 2. Detectar entorno de producción (Vercel)
   const hostname = window.location.hostname;
+  const isProduction = hostname.includes('vercel.app') || 
+                      hostname.includes('beautycontrol.') ||
+                      import.meta.env.PROD;
+
+  if (isProduction) {
+    const productionUrl = 'https://beautycontrol-api.azurewebsites.net';
+    console.log('[API_CONFIG] Modo producción:', productionUrl);
+    return productionUrl;
+  }
+
+  // 3. Desarrollo local: detectar IP/hostname
+  const protocol = window.location.protocol;
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
   const isLanIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
   
-  // Si está en localhost o IP LAN, usar el mismo host para el API
   if (isLocalhost || isLanIp) {
     const apiUrl = `${protocol}//${hostname}:3001`;
-    console.log('[WEB API_CONFIG] Auto-detectado:', apiUrl);
+    console.log('[API_CONFIG] Modo desarrollo local:', apiUrl);
     return apiUrl;
   }
   
-  // Fallback para producción
-  console.log('[WEB API_CONFIG] Fallback producción');
+  // 4. Fallback
+  console.warn('[API_CONFIG] Usando fallback localhost');
   return 'http://localhost:3001';
 };
 
