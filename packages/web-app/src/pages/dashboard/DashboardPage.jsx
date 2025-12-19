@@ -12,6 +12,8 @@ const DashboardPage = () => {
 
   const handleLogout = () => {
     dispatch(logout())
+    // Force a hard reload to clear all cached data
+    window.location.href = '/'
   }
 
   const handleDismissWarning = () => {

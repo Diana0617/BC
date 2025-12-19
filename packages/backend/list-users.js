@@ -1,25 +1,33 @@
-require('dotenv').config();
-const { User } = require('./src/models');
+const { sequelize, User, Business } = require('./src/models');
 
-async function listAllUsers() {
+async function listUsers() {
   try {
     const users = await User.findAll({
-      attributes: ['id', 'email', 'firstName', 'lastName', 'role', 'status'],
-      order: [['createdAt', 'DESC']],
-      limit: 10
-    });
-
-    console.log('\n📋 Últimos 10 usuarios en la base de datos:\n');
-    users.forEach((user, index) => {
-      console.log(`${index + 1}. ${user.email} - ${user.firstName} ${user.lastName} (${user.role}) - ${user.status}`);
+      attributes: ['id', 'email', 'role', 'businessId', 'createdAt'],
+      limit: 20,
+      order: [['createdAt', 'DESC']]
     });
     
-    console.log(`\n✅ Total encontrados: ${users.length}`);
-    process.exit(0);
+    console.log(`\n��� Total usuarios en producción: ${users.length}\n`);
+    
+    for (const user of users) {
+      console.log(`Email: ${user.email}`);
+      console.log(`  ID: ${user.id}`);
+      console.log(`  Role: ${user.role}`);
+      console.log(`  BusinessId: ${user.businessId}`);
+      
+      if (user.businessId) {
+        const business = await Business.findByPk(user.businessId);
+        console.log(`  Business: ${business ? business.name : '❌ NO EXISTE'}`);
+      }
+      console.log('');
+    }
+    
+    await sequelize.close();
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error('Error:', error.message);
     process.exit(1);
   }
 }
 
-listAllUsers();
+listUsers();

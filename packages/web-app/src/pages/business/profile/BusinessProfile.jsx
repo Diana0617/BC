@@ -64,7 +64,8 @@ const BusinessProfile = () => {
   // Logout handler
   const handleLogout = () => {
     dispatch(logout())
-    navigate('/', { replace: true })
+    // Force a hard reload to clear all cached data
+    window.location.href = '/'
   }
 
   const handleDismissWarning = () => {

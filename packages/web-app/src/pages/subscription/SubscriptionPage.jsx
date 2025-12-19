@@ -51,7 +51,8 @@ const SubscriptionPage = () => {
   // Handler para logout
   const handleLogout = () => {
     dispatch({ type: 'auth/logout' });
-    window.location.reload();
+    // Force a hard reload to clear all cached data
+    window.location.href = '/';
   };
 
   // Debug: Ver el estado de los planes

@@ -295,12 +295,28 @@ const authSlice = createSlice({
       state.refreshToken = null;
       state.user = null;
       state.error = null;
+      state.subscriptionWarning = null;
       
-      // Clear storage
+      // Clear storage aggressively
       if (typeof window !== 'undefined') {
-        StorageHelper.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-        StorageHelper.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-        StorageHelper.removeItem(STORAGE_KEYS.USER_DATA);
+        try {
+          // Remove specific auth items
+          StorageHelper.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+          StorageHelper.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+          StorageHelper.removeItem(STORAGE_KEYS.USER_DATA);
+          
+          // Also clear with direct localStorage/sessionStorage access
+          localStorage.removeItem('bc_auth_token');
+          sessionStorage.removeItem('bc_auth_token');
+          localStorage.removeItem('bc_user_data');
+          sessionStorage.removeItem('bc_user_data');
+          localStorage.removeItem('bc_refresh_token');
+          sessionStorage.removeItem('bc_refresh_token');
+          
+          console.log('✅ Logout: All auth data cleared from storage');
+        } catch (error) {
+          console.error('Error during logout cleanup:', error);
+        }
       }
     },
     
