@@ -709,4 +709,61 @@ router.post('/dev-update-password', async (req, res) => {
   }
 });
 
+/**
+ * TEMPORARY DEV ENDPOINT: Update subscription status directly (NO AUTH REQUIRED)
+ * TODO: Remove this endpoint in production
+ */
+router.post('/dev-update-subscription-status', async (req, res) => {
+  try {
+    const { subscriptionId, status } = req.body;
+    const BusinessSubscription = require('../models/BusinessSubscription');
+    
+    if (!subscriptionId || !status) {
+      return res.status(400).json({
+        success: false,
+        message: 'subscriptionId and status are required'
+      });
+    }
+    
+    if (!['ACTIVE', 'TRIAL', 'SUSPENDED', 'CANCELLED', 'EXPIRED'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status. Must be ACTIVE, TRIAL, SUSPENDED, CANCELLED, or EXPIRED'
+      });
+    }
+    
+    const subscription = await BusinessSubscription.findByPk(subscriptionId);
+    
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'Subscription not found'
+      });
+    }
+    
+    await subscription.update({ status });
+    
+    console.log(`🔄 Subscription status updated: ${subscriptionId} -> ${status}`);
+    
+    res.json({
+      success: true,
+      message: 'Subscription status updated successfully',
+      data: {
+        subscriptionId: subscription.id,
+        businessId: subscription.businessId,
+        status: subscription.status,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate
+      }
+    });
+  } catch (error) {
+    console.error('Error updating subscription status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating subscription status',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
