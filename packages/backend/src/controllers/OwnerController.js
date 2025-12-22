@@ -197,7 +197,7 @@ class OwnerController {
         ownerPassword,
         subscriptionPlanId,
         billingCycle = 'MONTHLY', // MONTHLY o ANNUAL - default MONTHLY
-        role = 'BUSINESS_OWNER' // Rol del usuario - default BUSINESS_OWNER, puede ser BUSINESS_SPECIALIST para plan gratuito
+        role = 'BUSINESS' // Rol del usuario - default BUSINESS, puede ser BUSINESS_SPECIALIST para plan gratuito
       } = req.body;
 
       console.log('📋 Datos recibidos para crear negocio:', {
