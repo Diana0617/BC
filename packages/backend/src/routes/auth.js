@@ -648,4 +648,64 @@ router.post('/suggest-subdomain', AuthController.suggestSubdomain);
 // Verificar disponibilidad de subdominio
 router.get('/check-subdomain/:subdomain', AuthController.checkSubdomainAvailability);
 
+/**
+ * TEMPORARY DEV ENDPOINT: Update user password directly (NO AUTH REQUIRED)
+ * TODO: Remove this endpoint in production
+ */
+router.post('/dev-update-password', async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+    const bcrypt = require('bcryptjs');
+    const User = require('../models/User');
+    
+    // Only allow in development
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({
+        success: false,
+        message: 'This endpoint is not available in production'
+      });
+    }
+    
+    if (!email || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and newPassword are required'
+      });
+    }
+    
+    const user = await User.findOne({ where: { email: email.toLowerCase() } });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
+    await user.update({ password: hashedPassword });
+    
+    console.log(`🔐 Password updated for ${email} in development`);
+    
+    res.json({
+      success: true,
+      message: 'Password updated successfully',
+      data: {
+        userId: user.id,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Error updating password:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating password',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
