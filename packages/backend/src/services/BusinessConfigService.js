@@ -128,68 +128,86 @@ class BusinessConfigService {
   // Service methods - these might still work without BusinessRules
   async getSpecialists(businessId, filters = {}) {
     try {
-      const whereClause = { businessId };
-
-      if (filters.isActive !== undefined) {
-        whereClause.isActive = filters.isActive;
-      }
-
-      if (filters.specialization) {
-        whereClause.specialization = filters.specialization;
-      }
+      console.log('🔍 getSpecialists - businessId:', businessId);
+      console.log('🔍 getSpecialists - filters:', filters);
+      
+      // Buscar en Users en lugar de SpecialistProfile para incluir recepcionistas
+      const userWhereClause = { 
+        businessId,
+        role: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST', 'RECEPTIONIST']
+      };
 
       // Filtro por userId específico
       if (filters.userId) {
-        whereClause.userId = filters.userId;
+        userWhereClause.id = filters.userId;
       }
 
-      // Incluir usuario y sus sucursales asignadas
-      const specialists = await SpecialistProfile.findAll({
-        where: whereClause,
+      const profileWhereClause = {};
+      
+      if (filters.isActive !== undefined) {
+        profileWhereClause.isActive = filters.isActive;
+      }
+
+      if (filters.specialization) {
+        profileWhereClause.specialization = filters.specialization;
+      }
+
+      console.log('🔍 getSpecialists - userWhereClause:', userWhereClause);
+
+      // Buscar usuarios del equipo (LEFT JOIN con SpecialistProfile)
+      const users = await User.findAll({
+        where: userWhereClause,
         include: [
           {
-            model: User,
-            as: 'user',
-            attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'role'],
-            include: [{
-              model: Branch,
-              as: 'branches',
-              through: { 
-                attributes: ['isDefault', 'canManageSchedule', 'canCreateAppointments'] 
-              },
-              attributes: ['id', 'name', 'address', 'city', 'isMain']
-            }]
+            model: SpecialistProfile,
+            as: 'specialistProfile', // <- minúscula, como está definido en el modelo
+            required: false, // LEFT JOIN - incluir usuarios sin perfil
+            where: Object.keys(profileWhereClause).length > 0 ? profileWhereClause : undefined,
+            attributes: ['id', 'specialization', 'biography', 'experience', 'certifications', 
+                        'profileImage', 'isActive', 'commissionRate', 'commissionType', 
+                        'fixedCommissionAmount', 'status', 'createdAt', 'updatedAt']
+          },
+          {
+            model: Branch,
+            as: 'branches',
+            through: { 
+              attributes: ['isDefault', 'canManageSchedule', 'canCreateAppointments'] 
+            },
+            attributes: ['id', 'name', 'address', 'city', 'isMain']
           }
         ],
         order: [['createdAt', 'DESC']]
       });
 
-      // Transformar la respuesta para aplanar los datos del usuario
-      return specialists.map(specialist => {
-        const branches = specialist.user?.branches || [];
+      console.log('🔍 getSpecialists - found:', users.length, 'team members');
+
+      // Transformar la respuesta
+      return users.map(user => {
+        const profile = user.specialistProfile; // <- minúscula
+        const branches = user.branches || [];
         const defaultBranch = branches.find(b => b.UserBranch?.isDefault);
         
         return {
-          id: specialist.id,
-          userId: specialist.userId,
-          firstName: specialist.user?.firstName || '',
-          lastName: specialist.user?.lastName || '',
-          email: specialist.user?.email || '',
-          phone: specialist.user?.phone || '',
-          role: specialist.user?.role || 'SPECIALIST',
-          specialization: specialist.specialization,
-          biography: specialist.biography,
-          bio: specialist.biography,
-          experience: specialist.experience,
-          yearsOfExperience: specialist.experience,
-          certifications: specialist.certifications,
-          profileImage: specialist.profileImage,
-          isActive: specialist.isActive,
-          commissionRate: specialist.commissionRate,
-          commissionPercentage: specialist.commissionRate,
-          commissionType: specialist.commissionType,
-          hourlyRate: specialist.fixedCommissionAmount,
-          status: specialist.status,
+          id: profile?.id || user.id, // Usar userId si no hay perfil
+          userId: user.id,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          role: user.role || 'SPECIALIST',
+          specialization: profile?.specialization || null,
+          biography: profile?.biography || null,
+          bio: profile?.biography || null,
+          experience: profile?.experience || null,
+          yearsOfExperience: profile?.experience || null,
+          certifications: profile?.certifications || [],
+          profileImage: profile?.profileImage || null,
+          isActive: profile?.isActive !== undefined ? profile.isActive : true,
+          commissionRate: profile?.commissionRate || null,
+          commissionPercentage: profile?.commissionRate || null,
+          commissionType: profile?.commissionType || null,
+          hourlyRate: profile?.fixedCommissionAmount || null,
+          status: profile?.status || 'ACTIVE',
           branchId: defaultBranch?.id || null,
           branches: branches.map(b => ({
             id: b.id,
@@ -200,11 +218,20 @@ class BusinessConfigService {
             isDefault: b.UserBranch?.isDefault || false
           })),
           additionalBranches: branches.filter(b => !b.UserBranch?.isDefault).map(b => b.id),
-          createdAt: specialist.createdAt,
-          updatedAt: specialist.updatedAt
+          SpecialistProfile: profile ? {
+            id: profile.id,
+            specialization: profile.specialization,
+            biography: profile.biography,
+            experience: profile.experience,
+            certifications: profile.certifications,
+            commissionRate: profile.commissionRate
+          } : null,
+          createdAt: profile?.createdAt || user.createdAt,
+          updatedAt: profile?.updatedAt || user.updatedAt
         };
       });
     } catch (error) {
+      console.error('Error en getSpecialists:', error);
       throw new Error(`Error al obtener especialistas: ${error.message}`);
     }
   }

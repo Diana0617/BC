@@ -2,9 +2,9 @@ import Constants from 'expo-constants';
 
 const ENV = {
   dev: {
-    apiUrl: 'http://192.168.0.213:3001',
-    webUrl: 'http://192.168.0.213:3000',
-    subscribeUrl: 'http://192.168.0.213:3000/subscribe',
+    apiUrl: 'http://192.168.1.157:3001',
+    webUrl: 'http://192.168.1.157:3000',
+    subscribeUrl: 'http://192.168.1.157:3000/subscribe',
   },
   staging: {
     apiUrl: 'https://beautycontrol-api.azurewebsites.net',

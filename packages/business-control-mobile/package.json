@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "cross-env EXPO_USE_EXPERIMENTAL_BRIDGELESS=0 REACT_NATIVE_PACKAGER_HOSTNAME=192.168.0.213 expo start --lan",
-    "android": "cross-env EXPO_USE_EXPERIMENTAL_BRIDGELESS=0 REACT_NATIVE_PACKAGER_HOSTNAME=192.168.0.213 expo start --android --lan",
-    "ios": "cross-env EXPO_USE_EXPERIMENTAL_BRIDGELESS=0 REACT_NATIVE_PACKAGER_HOSTNAME=192.168.0.213 expo start --ios --lan",
+    "start": "cross-env EXPO_USE_EXPERIMENTAL_BRIDGELESS=0 REACT_NATIVE_PACKAGER_HOSTNAME=192.168.1.157 expo start --lan",
+    "android": "cross-env EXPO_USE_EXPERIMENTAL_BRIDGELESS=0 REACT_NATIVE_PACKAGER_HOSTNAME=192.168.1.157 expo start --android --lan",
+    "ios": "cross-env EXPO_USE_EXPERIMENTAL_BRIDGELESS=0 REACT_NATIVE_PACKAGER_HOSTNAME=192.168.1.157 expo start --ios --lan",
     "web": "cross-env EXPO_USE_EXPERIMENTAL_BRIDGELESS=0 expo start --web",
     "start:tunnel": "cross-env EXPO_USE_EXPERIMENTAL_BRIDGELESS=0 expo start --tunnel"
   },

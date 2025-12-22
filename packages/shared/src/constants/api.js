@@ -12,24 +12,18 @@ export const getApiUrl = () => {
     }
     
     // Fallback to local IP for development
-    const localIP = process.env.EXPO_PUBLIC_LOCAL_IP || '192.168.0.213';
+    const localIP = process.env.EXPO_PUBLIC_LOCAL_IP || '192.168.1.157';
     const url = `http://${localIP}:3001`;
     console.log('📡 Using fallback API URL:', url);
     return url;
   } else if (typeof window !== 'undefined') {
-    // 1. Prioridad: Variable de entorno VITE_API_URL
-    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
-      console.log('🔵 [SHARED API_CONFIG] Usando VITE_API_URL:', import.meta.env.VITE_API_URL);
-      return import.meta.env.VITE_API_URL;
-    }
     // Web browser environment - detectar automáticamente
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
     
     // 1. Detectar entorno de producción (Vercel)
     const isProduction = hostname.includes('vercel.app') || 
-                        hostname.includes('beautycontrol.') ||
-                        (typeof import.meta !== 'undefined' && import.meta.env?.PROD);
+                         hostname.includes('beautycontrol.');
 
     if (isProduction) {
       const productionUrl = 'https://beautycontrol-api.azurewebsites.net';

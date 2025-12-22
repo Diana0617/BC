@@ -85,7 +85,7 @@ config.server = {
   enhanceMiddleware: (middleware) => {
     return (req, res, next) => {
       if (req.url === '/') {
-        const hostname = process.env.REACT_NATIVE_PACKAGER_HOSTNAME || '192.168.0.213';
+        const hostname = process.env.REACT_NATIVE_PACKAGER_HOSTNAME || '192.168.1.157';
         console.log('📱 Metro Bundler activo en:', hostname + ':8081');
       }
       return middleware(req, res, next);

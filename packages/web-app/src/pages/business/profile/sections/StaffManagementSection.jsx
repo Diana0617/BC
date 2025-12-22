@@ -130,10 +130,13 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
     try {
       setLoading(true);
       const response = await businessSpecialistsApi.getSpecialists(activeBusiness.id);
-      setSpecialists(response.data || response || []);
+      console.log('Especialistas cargados:', response);
+      const specialistsList = response.data || response || [];
+      console.log('Lista de especialistas:', specialistsList);
+      setSpecialists(specialistsList);
     } catch (err) {
-      setError('Error al cargar especialistas');
-      console.error(err);
+      console.error('Error al cargar especialistas:', err);
+      setError('Error al cargar equipo de trabajo');
     } finally {
       setLoading(false);
     }
@@ -327,9 +330,25 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
         resetForm();
       }, 1500);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Error al guardar especialista');
-      console.error('Error completo:', err);
+      console.error('Error creando especialista:', err);
+      console.error('Error response:', err.response?.data);
+      
+      // Extraer el mensaje de error correctamente
+      let errorMessage = 'Error al guardar especialista';
+      
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
       setLoading(false);
+      
+      // Scroll al mensaje de error
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -1121,10 +1140,29 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
         )}
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-sm text-red-800">{error}</p>
+      {/* Error Message Global */}
+      {error && !isAddingSpecialist && (
+        <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 shadow-lg">
+          <div className="flex items-start">
+            <XCircleIcon className="h-6 w-6 text-red-600 mr-3 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-semibold text-red-900 mb-1">Error</h4>
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Message */}
+      {success && (
+        <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4 shadow-lg">
+          <div className="flex items-start">
+            <CheckCircleIcon className="h-6 w-6 text-green-600 mr-3 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-semibold text-green-900 mb-1">Éxito</h4>
+              <p className="text-sm text-green-800">{success}</p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1135,6 +1173,26 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editingSpecialist ? 'Editar miembro del equipo' : 'Nuevo miembro del equipo'}
             </h3>
+
+            {/* Mensajes de error y éxito dentro del formulario */}
+            {error && (
+              <div className="mb-4 bg-red-50 border-2 border-red-300 text-red-700 px-4 py-3 rounded-lg shadow-md">
+                <div className="flex items-start">
+                  <XCircleIcon className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-sm">Error al guardar</p>
+                    <p className="text-sm">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {success && (
+              <div className="mb-4 bg-green-50 border-2 border-green-300 text-green-700 px-4 py-3 rounded-lg flex items-center shadow-md">
+                <CheckCircleIcon className="h-5 w-5 mr-2" />
+                {success}
+              </div>
+            )}
             
             {/* Tabs - Solo mostrar si estamos editando un especialista existente */}
             {editingSpecialist?.id && (
@@ -1206,20 +1264,6 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
               </div>
             )}
           </div>
-
-          {/* Mensajes de error y éxito */}
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-              {error}
-            </div>
-          )}
-          
-          {success && (
-            <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center">
-              <CheckCircleIcon className="h-5 w-5 mr-2" />
-              {success}
-            </div>
-          )}
 
           {/* Tab Content */}
           {currentTab === 'info' && (

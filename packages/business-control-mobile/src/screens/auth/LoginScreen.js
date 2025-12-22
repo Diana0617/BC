@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -106,8 +107,7 @@ export default function LoginScreen({ navigation }) {
             <View style={{ paddingHorizontal: 24 }}>
               {/* Control de Negocios Logo */}
               <View style={{ alignItems: 'center', marginTop: 32, marginBottom: 32 }}>
-                <LinearGradient
-                  colors={['#ec4899', '#8b5cf6']}
+                <View
                   style={{
                     width: 80,
                     height: 80,
@@ -115,6 +115,7 @@ export default function LoginScreen({ navigation }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 16,
+                    backgroundColor: '#ffffff',
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: 8 },
                     shadowOpacity: 0.3,
@@ -122,8 +123,12 @@ export default function LoginScreen({ navigation }) {
                     elevation: 16,
                   }}
                 >
-                  <Ionicons name="business" size={40} color="#ffffff" />
-                </LinearGradient>
+                  <Image 
+                    source={require('../../../assets/logo-cn.png')} 
+                    style={{ width: 60, height: 60 }}
+                    resizeMode="contain"
+                  />
+                </View>
                 <Text style={{ 
                   fontSize: 32, 
                   fontWeight: 'bold', 
