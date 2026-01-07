@@ -228,11 +228,27 @@ class CashRegisterController {
         transaction
       });
 
+      console.log('🔍 openShift - Verificando turno existente:', {
+        businessId,
+        userId,
+        userEmail: req.user.email,
+        userRole: req.user.role,
+        existingShift: existingShift ? {
+          id: existingShift.id,
+          shiftNumber: existingShift.shiftNumber,
+          openedAt: existingShift.openedAt
+        } : 'NINGUNO'
+      });
+
       if (existingShift) {
         await transaction.rollback();
         return res.status(400).json({
           success: false,
-          error: 'Ya tienes un turno abierto. Debes cerrarlo antes de abrir uno nuevo.'
+          error: 'Ya tienes un turno abierto. Debes cerrarlo antes de abrir uno nuevo.',
+          debug: {
+            existingShiftId: existingShift.id,
+            openedAt: existingShift.openedAt
+          }
         });
       }
 
@@ -548,6 +564,13 @@ class CashRegisterController {
         });
       }
 
+      console.log('🔍 getShiftSummary - Buscando turno con:', {
+        businessId,
+        userId,
+        userEmail: req.user.email,
+        userRole: req.user.role
+      });
+
       const activeShift = await CashRegisterShift.findOne({
         where: {
           businessId,
@@ -556,10 +579,39 @@ class CashRegisterController {
         }
       });
 
+      console.log('🔍 getShiftSummary - Turno encontrado:', activeShift ? {
+        id: activeShift.id,
+        shiftNumber: activeShift.shiftNumber,
+        status: activeShift.status,
+        userId: activeShift.userId,
+        businessId: activeShift.businessId
+      } : 'NINGUNO');
+
       if (!activeShift) {
+        // Buscar CUALQUIER turno abierto para el businessId
+        const anyOpenShift = await CashRegisterShift.findAll({
+          where: {
+            businessId,
+            status: 'OPEN'
+          },
+          attributes: ['id', 'userId', 'shiftNumber', 'openedAt'],
+          limit: 5
+        });
+
+        console.log('⚠️ No se encontró turno para userId:', userId);
+        console.log('⚠️ Turnos abiertos en este negocio:', anyOpenShift.map(s => ({
+          id: s.id,
+          userId: s.userId,
+          shiftNumber: s.shiftNumber
+        })));
+
         return res.status(404).json({
           success: false,
-          error: 'No tienes un turno abierto'
+          error: 'No tienes un turno abierto',
+          debug: {
+            searchedUserId: userId,
+            openShiftsFound: anyOpenShift.length
+          }
         });
       }
 
