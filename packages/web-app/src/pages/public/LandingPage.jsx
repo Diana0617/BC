@@ -32,7 +32,7 @@ const LandingPage = () => {
     if (isAuthenticated && user?.role) {
       if (user.role === 'OWNER') {
         window.location.replace('/owner/dashboard');
-      } else if (user.role === 'BUSINESS') {
+      } else if (user.role === 'BUSINESS' || user.role === 'BUSINESS_SPECIALIST') {
         window.location.replace('/business/profile');
       } else if (user.role === 'BUSINESS_OWNER') {
         window.location.replace('/dashboard');

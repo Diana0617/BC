@@ -31,7 +31,7 @@ router.get(
 router.get(
   '/business/:businessId/payment-methods/all',
   authenticateToken,
-  authorizeRole(['BUSINESS', 'OWNER']),
+  authorizeRole(['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER']),
   PaymentConfigController.getPaymentMethods
 );
 
@@ -44,7 +44,7 @@ router.get(
 router.post(
   '/business/:businessId/payment-methods',
   authenticateToken,
-  authorizeRole(['BUSINESS', 'OWNER']),
+  authorizeRole(['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER']),
   restrictFreePlan('PAYMENT_METHODS'),
   PaymentConfigController.createPaymentMethod
 );
@@ -58,7 +58,7 @@ router.post(
 router.put(
   '/business/:businessId/payment-methods/:methodId',
   authenticateToken,
-  authorizeRole(['BUSINESS', 'OWNER']),
+  authorizeRole(['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER']),
   PaymentConfigController.updatePaymentMethod
 );
 
@@ -71,7 +71,7 @@ router.put(
 router.delete(
   '/business/:businessId/payment-methods/:methodId',
   authenticateToken,
-  authorizeRole(['BUSINESS', 'OWNER']),
+  authorizeRole(['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER']),
   PaymentConfigController.deletePaymentMethod
 );
 
@@ -83,7 +83,7 @@ router.delete(
 router.patch(
   '/business/:businessId/payment-methods/:methodId/toggle',
   authenticateToken,
-  authorizeRole(['BUSINESS', 'OWNER']),
+  authorizeRole(['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER']),
   PaymentConfigController.togglePaymentMethod
 );
 
@@ -96,7 +96,7 @@ router.patch(
 router.patch(
   '/business/:businessId/payment-methods/reorder',
   authenticateToken,
-  authorizeRole(['BUSINESS', 'OWNER']),
+  authorizeRole(['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER']),
   PaymentConfigController.reorderPaymentMethods
 );
 
@@ -150,7 +150,7 @@ router.post(
 router.post(
   '/appointments/:appointmentId/payments/:paymentId/refund',
   authenticateToken,
-  authorizeRole(['BUSINESS', 'OWNER']),
+  authorizeRole(['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER']),
   AppointmentPaymentControllerV2.refundPayment
 );
 

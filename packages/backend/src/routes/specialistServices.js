@@ -19,7 +19,7 @@ router.get(
 router.post(
   '/:specialistId/services',
   authenticateToken,
-  authorizeRole(['BUSINESS', 'OWNER']),
+  authorizeRole(['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER']),
   SpecialistServiceController.assignServiceToSpecialist
 );
 
@@ -27,7 +27,7 @@ router.post(
 router.put(
   '/:specialistId/services/:serviceId',
   authenticateToken,
-  authorizeRole(['BUSINESS', 'OWNER']),
+  authorizeRole(['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER']),
   SpecialistServiceController.updateSpecialistService
 );
 
@@ -35,7 +35,7 @@ router.put(
 router.delete(
   '/:specialistId/services/:serviceId',
   authenticateToken,
-  authorizeRole(['BUSINESS', 'OWNER']),
+  authorizeRole(['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER']),
   SpecialistServiceController.removeServiceFromSpecialist
 );
 

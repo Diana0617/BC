@@ -74,11 +74,14 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken, bil
 
   // Función para calcular el precio según el ciclo
   const getPriceForCycle = (plan, cycle) => {
+    // Asegurar que el precio sea un número válido
+    const price = parseFloat(plan.price) || 0
+    
     if (cycle === 'ANNUAL') {
       // Aplicar descuento del 15% para plan anual
-      return plan.price * 0.85
+      return price * 0.85
     }
-    return plan.price
+    return price
   }
 
   return (

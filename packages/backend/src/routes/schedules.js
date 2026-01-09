@@ -215,7 +215,7 @@ router.post('/',
  *         description: No autorizado
  */
 router.get('/',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
   [
     query('specialistId').optional().isInt({ min: 1 }),
     query('type').optional().isIn(['REGULAR', 'SPECIAL', 'TEMPORARY']),
@@ -248,7 +248,7 @@ router.get('/',
  *         description: Horario no encontrado
  */
 router.get('/:scheduleId',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
   [
     param('scheduleId').isInt({ min: 1 }).withMessage('ID de horario inválido')
   ],
@@ -475,7 +475,7 @@ router.post('/bulk-generate',
  *         description: Fecha de inicio requerida
  */
 router.get('/agenda/weekly',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
   [
     query('startDate').isISO8601().withMessage('Fecha de inicio inválida'),
     query('specialistId').optional().isInt({ min: 1 })
@@ -518,7 +518,7 @@ router.get('/agenda/weekly',
  *         description: Año y mes requeridos
  */
 router.get('/agenda/monthly',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
   [
     query('year').isInt({ min: 2020, max: 2030 }).withMessage('Año inválido'),
     query('month').isInt({ min: 1, max: 12 }).withMessage('Mes inválido'),

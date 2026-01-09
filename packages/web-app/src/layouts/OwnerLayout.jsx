@@ -139,8 +139,8 @@ const OwnerLayout = () => {
             {/* Título de la página */}
             <div className="flex-1 flex items-center">
               <Link to="/" className="flex items-center group">
-                <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center shadow-lg transition hover:scale-105">
-                  <span className="text-cyan-700 font-bold text-xl">BC</span>
+                <div className="h-10 w-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg transition hover:scale-105 p-2">
+                  <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
                 </div>
                 <span className="ml-2 text-lg font-bold text-white group-hover:text-yellow-300 transition">Control de Negocios</span>
               </Link>
@@ -186,8 +186,8 @@ const SidebarContent = ({ navigation }) => (
     {/* Logo responsive y navegación al home */}
     <div className={`flex items-center h-16 px-2 ${typeof isMobile !== 'undefined' && isMobile ? 'bg-gray-900' : 'bg-gradient-to-r from-cyan-700 via-cyan-800 to-cyan-900'}`}>
       <Link to="/" className="flex items-center group">
-        <div className="h-8 w-8 bg-white rounded-lg flex items-center justify-center shadow-lg transition hover:scale-105">
-          <span className="text-cyan-700 font-bold text-lg">BC</span>
+        <div className="h-8 w-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg transition hover:scale-105 p-1.5">
+          <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
         </div>
         <span className={`ml-2 font-semibold transition ${typeof isMobile !== 'undefined' && isMobile ? 'text-gray-100 group-hover:text-yellow-300' : 'text-white group-hover:text-yellow-300'}`}>Control de Negocios</span>
       </Link>

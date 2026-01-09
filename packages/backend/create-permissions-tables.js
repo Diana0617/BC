@@ -184,6 +184,7 @@ async function seedDefaultRolePermissions() {
     { role: 'RECEPTIONIST', permissionKey: 'clients.create' },
     { role: 'RECEPTIONIST', permissionKey: 'clients.edit' },
     { role: 'RECEPTIONIST', permissionKey: 'services.view' },
+    { role: 'RECEPTIONIST', permissionKey: 'inventory.view' },
 
     // RECEPTIONIST_SPECIALIST - Combinación de ambos
     { role: 'RECEPTIONIST_SPECIALIST', permissionKey: 'appointments.view' },

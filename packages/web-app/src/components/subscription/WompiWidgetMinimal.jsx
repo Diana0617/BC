@@ -169,7 +169,14 @@ const WompiWidgetMinimal = ({
       const canUse3DS = use3DS && (hasAuthenticatedData || hasRegistrationData)
       
       if (canUse3DS) {
-        // Para 3DS v2 necesitamos cardToken y acceptanceToken
+        // EXCEPCIÓN: Si es renovación, NO necesitamos tokens (usa tarjeta guardada)
+        if (isRenewal) {
+          console.log('🔄 Renovación detectada - usando tarjeta guardada (sin tokens)')
+          await handle3DSPayment()
+          return
+        }
+        
+        // Para 3DS v2 (nuevas suscripciones) necesitamos cardToken y acceptanceToken
         if (!cardToken || !acceptanceToken) {
           console.log('🔑 Necesitamos tokens para 3DS v2 - mostrando formulario de tarjeta')
           setShowCardForm(true)

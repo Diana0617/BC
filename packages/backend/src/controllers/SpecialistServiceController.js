@@ -206,7 +206,7 @@ class SpecialistServiceController {
       }
 
       // Solo BUSINESS u OWNER pueden asignar servicios
-      if (!['BUSINESS', 'OWNER'].includes(role)) {
+      if (!['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(role)) {
         return res.status(403).json({
           success: false,
           error: 'No tienes permiso para asignar servicios'
@@ -375,7 +375,7 @@ class SpecialistServiceController {
       }
 
       // Solo BUSINESS u OWNER pueden actualizar
-      if (!['BUSINESS', 'OWNER'].includes(role)) {
+      if (!['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(role)) {
         return res.status(403).json({
           success: false,
           error: 'No tienes permiso para actualizar servicios'
@@ -484,7 +484,7 @@ class SpecialistServiceController {
       }
 
       // Solo BUSINESS u OWNER pueden eliminar
-      if (!['BUSINESS', 'OWNER'].includes(role)) {
+      if (!['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(role)) {
         return res.status(403).json({
           success: false,
           error: 'No tienes permiso para eliminar servicios'
@@ -556,7 +556,7 @@ class SpecialistServiceController {
       }
 
       // Solo BUSINESS u OWNER pueden cambiar estado
-      if (!['BUSINESS', 'OWNER'].includes(role)) {
+      if (!['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(role)) {
         return res.status(403).json({
           success: false,
           error: 'No tienes permiso para cambiar el estado de servicios'

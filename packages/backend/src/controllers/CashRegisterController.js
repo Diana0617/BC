@@ -76,7 +76,7 @@ class CashRegisterController {
       );
 
       const hasOnlySpecialists = usersInBusiness.every(u => 
-        u.role === 'SPECIALIST' || u.role === 'BUSINESS'
+        u.role === 'SPECIALIST' || u.role === 'BUSINESS' || u.role === 'BUSINESS_SPECIALIST'
       );
 
       // Determinar si el usuario actual debe usar caja
@@ -89,7 +89,7 @@ class CashRegisterController {
         reason = shouldUse 
           ? 'Gestionas la caja como recepcionista'
           : 'Solo los recepcionistas gestionan la caja';
-      } else if (hasOnlySpecialists && userRole === 'SPECIALIST') {
+      } else if (hasOnlySpecialists && (userRole === 'SPECIALIST' || userRole === 'BUSINESS_SPECIALIST')) {
         // Si solo hay especialistas, ellos usan caja
         shouldUse = true;
         reason = 'Gestionas la caja como especialista';
@@ -662,7 +662,7 @@ class CashRegisterController {
       const where = { businessId };
 
       // Filtro de usuario según rol
-      if (userRole === 'SPECIALIST' || userRole === 'RECEPTIONIST' || userRole === 'RECEPTIONIST_SPECIALIST') {
+      if (userRole === 'SPECIALIST' || userRole === 'BUSINESS_SPECIALIST' || userRole === 'RECEPTIONIST' || userRole === 'RECEPTIONIST_SPECIALIST') {
         where.userId = userId; // Solo ver sus propios turnos
       } else if (userRole === 'BUSINESS') {
         // BUSINESS puede ver todos los turnos del negocio (sin filtro adicional)

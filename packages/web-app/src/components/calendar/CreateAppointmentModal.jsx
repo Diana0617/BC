@@ -37,7 +37,12 @@ const CreateAppointmentModal = ({
   // Redux state
   const business = useSelector(state => state.business?.currentBusiness)
   const token = useSelector(state => state.auth?.token)
+  const user = useSelector(state => state.auth?.user)
   const businessId = business?.id
+  
+  // Si es BUSINESS_SPECIALIST, él mismo es el especialista
+  const isBusinessSpecialist = user?.role === 'BUSINESS_SPECIALIST'
+  const autoSpecialistId = isBusinessSpecialist ? user?.id : null
   
   const [formData, setFormData] = useState({
     // Datos del cliente
@@ -48,7 +53,7 @@ const CreateAppointmentModal = ({
     
     // Datos de la cita
     branchId: initialData.branchId || '',
-    specialistId: initialData.specialistId || '',
+    specialistId: initialData.specialistId || autoSpecialistId || '',
     serviceId: '',
     date: initialData.date || new Date().toISOString().split('T')[0],
     startTime: initialData.startTime || '09:00',
@@ -82,7 +87,7 @@ const CreateAppointmentModal = ({
         clientPhone: '',
         clientEmail: '',
         branchId: initialData.branchId || '',
-        specialistId: initialData.specialistId || '',
+        specialistId: initialData.specialistId || autoSpecialistId || '',
         serviceId: '',
         date: initialData.date || new Date().toISOString().split('T')[0],
         startTime: initialData.startTime || '09:00',
@@ -95,7 +100,8 @@ const CreateAppointmentModal = ({
       setIsNewClient(false)
       setErrors({})
     }
-  }, [isOpen, initialData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen])
 
   // Auto-calcular endTime cuando cambia servicio
   useEffect(() => {
@@ -172,7 +178,8 @@ const CreateAppointmentModal = ({
       // Si no hay especialista, mostrar todos los servicios
       setFilteredServices(services)
     }
-  }, [formData.specialistId, businessId, token, services, loadSpecialistServices])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.specialistId, businessId, token, services])
 
   /**
    * Buscar clientes en el backend
@@ -493,11 +500,6 @@ const CreateAppointmentModal = ({
               )}
 
               {/* Dropdown de Resultados */}
-              {(() => {
-                console.log('🎨 [WEB RENDER] showClientDropdown:', showClientDropdown, 'clientResults:', clientResults.length)
-                return null
-              })()}
-              
               {showClientDropdown && clientResults.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   <div className="px-3 py-2 bg-blue-50 border-b border-blue-100">
@@ -614,10 +616,12 @@ const CreateAppointmentModal = ({
                       className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                         errors.clientPhone ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="3001234567"
+                      placeholder="+57 300 123 4567"
                     />
-                    {errors.clientPhone && (
+                    {errors.clientPhone ? (
                       <p className="text-red-500 text-xs mt-1">{errors.clientPhone}</p>
+                    ) : (
+                      <p className="text-xs text-gray-500 mt-1">💡 Puedes incluir espacios y formato</p>
                     )}
                   </div>
 
@@ -674,29 +678,46 @@ const CreateAppointmentModal = ({
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Especialista *
-                </label>
-                <select
-                  name="specialistId"
-                  value={formData.specialistId}
-                  onChange={handleChange}
-                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.specialistId ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="">Seleccionar especialista</option>
-                  {specialists.map(specialist => (
-                    <option key={specialist.id} value={specialist.id}>
-                      {specialist.firstName} {specialist.lastName}
-                    </option>
-                  ))}
-                </select>
-                {errors.specialistId && (
-                  <p className="text-red-500 text-xs mt-1">{errors.specialistId}</p>
-                )}
-              </div>
+              {isBusinessSpecialist ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Especialista
+                  </label>
+                  <div className="w-full border border-gray-300 bg-gray-50 rounded-lg px-3 py-2 flex items-center">
+                    <UserCircleIcon className="h-5 w-5 text-purple-600 mr-2" />
+                    <span className="text-gray-700">
+                      {user?.firstName} {user?.lastName} <span className="text-gray-500 text-sm">(Tú)</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-purple-600 mt-1">
+                    ✓ Como dueño-especialista, las citas se asignan automáticamente a ti
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Especialista *
+                  </label>
+                  <select
+                    name="specialistId"
+                    value={formData.specialistId}
+                    onChange={handleChange}
+                    className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.specialistId ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Seleccionar especialista</option>
+                    {specialists.map(specialist => (
+                      <option key={specialist.id} value={specialist.id}>
+                        {specialist.firstName} {specialist.lastName}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.specialistId && (
+                    <p className="text-red-500 text-xs mt-1">{errors.specialistId}</p>
+                  )}
+                </div>
+              )}
 
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">

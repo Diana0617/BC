@@ -4,6 +4,10 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { CheckCircleIcon, XCircleIcon, ClockIcon } from '@heroicons/react/24/outline'
 import { createSubscription } from '@shared/store/slices/subscriptionSlice.js'
+import { setCredentials } from '@shared/store/slices/authSlice'
+import RoleSelectionModal from '../components/onboarding/RoleSelectionModal'
+import userRoleApi from '@shared/api/userRoleApi'
+import toast from 'react-hot-toast'
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams()
@@ -17,6 +21,8 @@ const PaymentSuccess = () => {
   const [businessCreated, setBusinessCreated] = useState(false)
   const [generatedPassword, setGeneratedPassword] = useState(null)
   const [businessCreationAttempted, setBusinessCreationAttempted] = useState(false)
+  const [showRoleModal, setShowRoleModal] = useState(false)
+  const [userName, setUserName] = useState('')
 
   const transactionId = searchParams.get('id')
   const reference = searchParams.get('reference')
@@ -149,16 +155,54 @@ const PaymentSuccess = () => {
       const result = await dispatch(createSubscription(subscriptionData)).unwrap();
       
       console.log('✅ Negocio creado exitosamente:', result);
+      console.log('📦 Datos recibidos del backend:', {
+        hasToken: !!result.token,
+        hasUser: !!result.user,
+        user: result.user,
+        hasBusiness: !!result.business
+      });
+      
+      // Actualizar credenciales en Redux con el token y user completo
+      if (result.token && result.user) {
+        console.log('🔐 Actualizando credenciales en Redux:', {
+          user: result.user,
+          hasToken: !!result.token,
+          userRole: result.user.role,
+          businessId: result.user.businessId
+        });
+        
+        // Guardar token en localStorage
+        localStorage.setItem('token', result.token);
+        
+        // Actualizar Redux con credenciales completas
+        dispatch(setCredentials({
+          user: result.user,
+          token: result.token
+        }));
+      } else {
+        console.warn('⚠️ Respuesta incompleta del backend:', {
+          hasToken: !!result.token,
+          hasUser: !!result.user
+        });
+      }
+      
       setBusinessCreated(true);
+      
+      // Guardar nombre del usuario para el modal
+      const firstName = businessData.firstName || result.user?.firstName || '';
+      setUserName(firstName);
+      console.log('👤 Nombre del usuario para modal:', firstName);
       
       // Solo limpiar localStorage si la creación fue exitosa
       console.log('🗑️ Limpiando localStorage después de creación exitosa');
       localStorage.removeItem('pendingBusinessCreation');
       
-          // Redirigir al perfil de Business en modo setup
-          setTimeout(() => {
-            navigate('/business/profile?setup=true');
-          }, 3000);    } catch (error) {
+      // Mostrar modal de selección de rol después de 2 segundos
+      console.log('⏱️ Programando apertura del modal en 2 segundos...');
+      setTimeout(() => {
+        console.log('🎭 Mostrando modal de selección de rol');
+        setShowRoleModal(true);
+      }, 2000);    } catch (error) {
       console.error('❌ Error creando negocio:', error);
       
       // Manejar errores específicos
@@ -220,6 +264,33 @@ const PaymentSuccess = () => {
 
     fetchTransactionData()
   }, [transactionId, reference, businessCreated, createBusinessFromPayment])
+
+  // Handler para selección de rol
+  const handleRoleSelect = async (role) => {
+    try {
+      console.log('🎭 Rol seleccionado:', role);
+      const response = await userRoleApi.updateRole(role);
+      
+      if (response.success) {
+        toast.success('Rol configurado exitosamente');
+        setShowRoleModal(false);
+        
+        // Redirigir al perfil en modo setup
+        setTimeout(() => {
+          navigate('/business/profile?setup=true');
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Error actualizando rol:', error);
+      toast.error('Error al configurar el rol');
+    }
+  }
+
+  const handleSkipRoleSelection = () => {
+    setShowRoleModal(false);
+    // Redirigir directamente al perfil
+    navigate('/business/profile?setup=true');
+  }
 
   const getStatusInfo = (status) => {
     switch (status) {
@@ -416,6 +487,14 @@ const PaymentSuccess = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de selección de rol */}
+      <RoleSelectionModal
+        isOpen={showRoleModal}
+        onClose={handleSkipRoleSelection}
+        onSelectRole={handleRoleSelect}
+        userName={userName}
+      />
     </div>
   )
 }

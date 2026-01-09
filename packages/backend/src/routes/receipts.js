@@ -62,7 +62,7 @@ router.get('/specialist/:specialistId',
   (req, res, next) => {
     // Verificar que el especialista solo acceda a sus propios recibos
     // o que sea el propietario/business del negocio
-    if (req.user.role === 'SPECIALIST' && req.user.id !== parseInt(req.params.specialistId)) {
+    if ((req.user.role === 'SPECIALIST' || req.user.role === 'BUSINESS_SPECIALIST') && req.user.id !== parseInt(req.params.specialistId)) {
       return res.status(403).json({
         success: false,
         message: 'No tienes permiso para ver estos recibos'

@@ -28,9 +28,19 @@ const SupplierCatalog = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
+  // Debug: Log cuando cambia el business
   useEffect(() => {
+    console.log('🏢 SupplierCatalog - Business state:', business);
+    console.log('🏢 SupplierCatalog - Business ID:', business?.id);
+  }, [business]);
+
+  useEffect(() => {
+    console.log('🔄 useEffect triggered - business.id:', business?.id);
     if (business?.id) {
+      console.log('✅ Calling loadInitialData...');
       loadInitialData();
+    } else {
+      console.warn('⚠️ business.id is not available yet');
     }
   }, [business?.id]);
 
@@ -42,29 +52,36 @@ const SupplierCatalog = () => {
 
   const loadInitialData = async () => {
     try {
+      console.log('🔍 Loading initial data with businessId:', business.id);
       const [suppliersRes, categoriesRes] = await Promise.all([
         supplierCatalogApi.getSuppliers(business.id),
         supplierCatalogApi.getCategories(business.id)
       ]);
 
+      console.log('📦 Suppliers response:', suppliersRes);
+      console.log('📂 Categories response:', categoriesRes);
+
       if (suppliersRes.success) setSuppliers(suppliersRes.data);
       if (categoriesRes.success) setCategories(categoriesRes.data);
     } catch (error) {
-      console.error('Error loading initial data:', error);
+      console.error('❌ Error loading initial data:', error);
     }
   };
 
   const loadCatalog = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Loading catalog with businessId:', business.id, 'filters:', filters);
       const response = await supplierCatalogApi.getCatalog(business.id, filters);
+      
+      console.log('📦 Catalog response:', response);
       
       if (response.success) {
         setCatalogItems(response.data);
         setTotal(response.total);
       }
     } catch (error) {
-      console.error('Error loading catalog:', error);
+      console.error('❌ Error loading catalog:', error);
     } finally {
       setLoading(false);
     }

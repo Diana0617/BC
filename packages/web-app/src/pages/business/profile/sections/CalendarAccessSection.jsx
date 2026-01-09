@@ -32,6 +32,13 @@ import CreateAppointmentModal from '../../../../components/calendar/CreateAppoin
 
 const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const { currentBusiness } = useSelector(state => state.business)
+  const { user } = useSelector(state => state.auth)
+  
+  console.log('📍 CalendarAccessSection mounted:', {
+    currentBusiness: currentBusiness?.id,
+    userBusinessId: user?.businessId,
+    userRole: user?.role
+  });
   
   // Leer reglas de negocio para verificar si tiene multisucursal
   const businessRules = useSelector(state => state.businessRule?.assignedRules || [])
@@ -104,14 +111,19 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
   // Cargar sucursales
   const loadBranches = useCallback(async () => {
-    if (!currentBusiness?.id) return
+    const businessId = currentBusiness?.id || user?.businessId;
+    
+    if (!businessId) {
+      console.warn('⚠️ No businessId available to load branches');
+      return;
+    }
     
     try {
       setIsLoading(true)
-      console.log('🏢 Cargando sucursales para el negocio:', currentBusiness.id)
+      console.log('🏢 Cargando sucursales para el negocio:', businessId)
       
       // Llamar a la API real de sucursales
-      const response = await businessBranchesApi.getBranches(currentBusiness.id, {
+      const response = await businessBranchesApi.getBranches(businessId, {
         isActive: true,
         limit: 50
       })
@@ -124,11 +136,49 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
         : (response.data?.branches || response.branches || [])
       console.log('🏪 Sucursales obtenidas:', branchesData)
       
+      // Si no hay sucursales, crear una por defecto automáticamente SOLO para BUSINESS_SPECIALIST
+      if (branchesData.length === 0 && user?.role === 'BUSINESS_SPECIALIST') {
+        console.log('🔨 No hay sucursales para BUSINESS_SPECIALIST, creando sucursal por defecto...')
+        try {
+          const businessName = currentBusiness?.name || user?.business?.name || 'Mi Negocio';
+          const defaultBranch = {
+            name: businessName,
+            code: 'PRINCIPAL',
+            address: currentBusiness?.address || user?.business?.address || '',
+            city: currentBusiness?.city || user?.business?.city || '',
+            phone: currentBusiness?.phone || user?.business?.phone || '',
+            isActive: true,
+            isMain: true
+          }
+          
+          console.log('📋 Datos de la sucursal a crear:', defaultBranch);
+          
+          const createResponse = await businessBranchesApi.createBranch(businessId, defaultBranch)
+          console.log('✅ Sucursal por defecto creada:', createResponse)
+          
+          // Agregar la nueva sucursal al array
+          const newBranch = createResponse.data?.branch || createResponse.data
+          if (newBranch) {
+            branchesData.push(newBranch)
+            toast.success('Sucursal principal creada automáticamente')
+          }
+        } catch (createError) {
+          console.error('❌ Error creando sucursal por defecto:', createError)
+          console.error('❌ Detalle del error:', createError.response?.data || createError.message)
+          
+          // Solo mostrar mensaje si es un error real (no de conexión)
+          if (!createError.message?.includes('Failed to fetch')) {
+            const errorMsg = createError.response?.data?.error || createError.message || 'Error desconocido';
+            toast.error(`No se pudo crear la sucursal: ${errorMsg}. Ve a la sección Sucursales para crearla manualmente.`)
+          }
+        }
+      }
+      
       setBranches(branchesData)
       
-      // Si no hay módulo multisucursal y hay al menos una sucursal, seleccionarla automáticamente
-      if (!hasMultiBranch && branchesData.length > 0) {
-        console.log('🔒 Modo sucursal única, seleccionando automáticamente:', branchesData[0])
+      // Si hay al menos una sucursal, seleccionar la primera automáticamente
+      if (branchesData.length > 0) {
+        console.log('🎯 Seleccionando automáticamente la primera sucursal:', branchesData[0])
         const firstBranch = branchesData[0]
         setSelectedBranch(firstBranch)
         // Cargar inmediatamente su horario
@@ -136,21 +186,15 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
       }
     } catch (error) {
       console.error('❌ Error cargando sucursales:', error)
-      // Fallback a datos mock en caso de error
-      const mockBranches = [
-        { id: 1, name: 'Sucursal Centro', code: 'CENTRO', businessHours: null },
-        { id: 2, name: 'Sucursal Norte', code: 'NORTE', businessHours: null }
-      ]
-      console.log('⚠️ Usando datos mock de sucursales')
-      setBranches(mockBranches)
-      if (!selectedBranch && mockBranches.length > 0) {
-        setSelectedBranch(mockBranches[0])
+      // Solo mostrar toast si es un error real (no de conexión)
+      if (!error.message?.includes('Failed to fetch')) {
+        toast.error('Error cargando sucursales')
       }
     } finally {
       setIsLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentBusiness?.id, hasMultiBranch])
+  }, [currentBusiness?.id, user?.businessId, user?.role, hasMultiBranch])
 
   // Cargar horarios de la sucursal seleccionada
   const loadBranchSchedule = useCallback(async (branch = null) => {
@@ -207,10 +251,12 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
   // Cargar citas del mes actual
   const loadAppointments = useCallback(async () => {
-    if (!currentBusiness?.id || activeTab !== 'turnos') return
+    const businessId = currentBusiness?.id || user?.businessId;
+    
+    if (!businessId || activeTab !== 'turnos') return
 
     console.log('📅 Cargando citas para:', {
-      businessId: currentBusiness.id,
+      businessId: businessId,
       branchId: selectedBranch?.id,
       month: currentMonth
     })
@@ -220,7 +266,7 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
       const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
       
       await getByDateRange({
-        businessId: currentBusiness.id,
+        businessId: businessId,
         branchId: selectedBranch?.id,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString()
@@ -228,7 +274,7 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
     } catch (error) {
       console.error('Error cargando citas:', error)
     }
-  }, [currentBusiness, currentMonth, selectedBranch, activeTab, getByDateRange])
+  }, [currentBusiness?.id, user?.businessId, currentMonth, selectedBranch, activeTab, getByDateRange])
   
   // Log separado para ver las citas cuando cambien (sin crear loop)
   useEffect(() => {
@@ -242,11 +288,13 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
   // Cargar especialistas de la sucursal seleccionada
   const loadSpecialists = useCallback(async () => {
-    if (!currentBusiness?.id || !selectedBranch?.id) return
+    const businessId = currentBusiness?.id || user?.businessId;
+    
+    if (!businessId || !selectedBranch?.id) return
 
     try {
       console.log('👨‍⚕️ Cargando especialistas de la sucursal:', selectedBranch.name)
-      const response = await businessSpecialistsApi.getSpecialists(currentBusiness.id, {
+      const response = await businessSpecialistsApi.getSpecialists(businessId, {
         branchId: selectedBranch.id,
         isActive: true
       })
@@ -258,15 +306,17 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
       console.error('❌ Error cargando especialistas:', error)
       setSpecialists([])
     }
-  }, [currentBusiness, selectedBranch])
+  }, [currentBusiness?.id, user?.businessId, selectedBranch])
 
   // Cargar servicios activos del negocio
   const loadServices = useCallback(async () => {
-    if (!currentBusiness?.id) return
+    const businessId = currentBusiness?.id || user?.businessId;
+    
+    if (!businessId) return
 
     try {
       console.log('💼 Cargando servicios del negocio...')
-      const response = await getServices(currentBusiness.id, {
+      const response = await getServices(businessId, {
         isActive: true,
         limit: 100
       })
@@ -276,16 +326,18 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
       setServices(servicesList)
     } catch (error) {
       console.error('❌ Error cargando servicios:', error)
+      // No mostrar toast de error, solo loguear
       setServices([])
     }
-  }, [currentBusiness])
+  }, [currentBusiness?.id, user?.businessId])
 
   // Efectos
   useEffect(() => {
-    if (currentBusiness?.id) {
+    const businessId = currentBusiness?.id || user?.businessId;
+    if (businessId) {
       loadBranches()
     }
-  }, [currentBusiness, loadBranches])
+  }, [currentBusiness?.id, user?.businessId, loadBranches])
 
   useEffect(() => {
     loadBranchSchedule()
@@ -709,6 +761,33 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const renderTurnosTab = () => (
     <div className="space-y-6">
       {renderBranchSelector()}
+
+      {/* Mensaje si no hay sucursal seleccionada */}
+      {!selectedBranch && branches.length === 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <div className="flex items-start">
+            <InformationCircleIcon className="h-6 w-6 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-semibold text-yellow-800 mb-2">
+                Necesitas una sucursal para gestionar turnos
+              </h4>
+              <p className="text-sm text-yellow-700 mb-3">
+                Para poder crear y gestionar turnos, primero debes configurar al menos una sucursal.
+              </p>
+              <button
+                onClick={() => {
+                  // Navegar a la sección de sucursales
+                  const event = new CustomEvent('navigate-to-section', { detail: 'branches' });
+                  window.dispatchEvent(event);
+                }}
+                className="text-sm font-medium text-yellow-800 underline hover:text-yellow-900"
+              >
+                Ir a configurar sucursales →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-3 sm:space-y-0">

@@ -4867,6 +4867,107 @@ router.post('/subscriptions/cash', OwnerController.createCashSubscription);
  */
 router.patch('/subscriptions/:subscriptionId/cancel', OwnerController.cancelSubscription);
 
+/**
+ * @swagger
+ * /api/owner/subscriptions/{subscriptionId}/reactivate:
+ *   patch:
+ *     tags:
+ *       - Owner Subscription Management
+ *     summary: Reactivar una suscripción
+ *     description: Reactiva una suscripción cancelada o expirada manualmente
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: subscriptionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la suscripción a reactivar
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 description: Razón de la reactivación
+ *                 example: "Cliente regularizó pago"
+ *               newEndDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Nueva fecha de fin (opcional)
+ *     responses:
+ *       200:
+ *         description: Suscripción reactivada exitosamente
+ *       404:
+ *         description: Suscripción no encontrada
+ *       400:
+ *         description: No se puede reactivar la suscripción
+ */
+router.patch('/subscriptions/:subscriptionId/reactivate', OwnerController.reactivateSubscription);
+
+/**
+ * @swagger
+ * /api/owner/subscriptions/{subscriptionId}/suspend:
+ *   patch:
+ *     tags:
+ *       - Owner Subscription Management
+ *     summary: Suspender una suscripción
+ *     description: Suspende temporalmente una suscripción activa
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: subscriptionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la suscripción a suspender
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 description: Razón de la suspensión
+ *                 example: "Pago pendiente"
+ *     responses:
+ *       200:
+ *         description: Suscripción suspendida exitosamente
+ */
+router.patch('/subscriptions/:subscriptionId/suspend', OwnerController.suspendSubscription);
+
+/**
+ * @swagger
+ * /api/owner/subscriptions/{subscriptionId}:
+ *   delete:
+ *     tags:
+ *       - Owner Subscription Management
+ *     summary: Eliminar una suscripción
+ *     description: Elimina permanentemente una suscripción (solo para desarrollo/testing)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: subscriptionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la suscripción a eliminar
+ *     responses:
+ *       200:
+ *         description: Suscripción eliminada exitosamente
+ *       403:
+ *         description: No permitido en producción
+ */
+router.delete('/subscriptions/:subscriptionId', OwnerController.deleteSubscription);
+
 // === GESTIÓN DE PAGOS ===
 
 /**

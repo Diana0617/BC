@@ -372,7 +372,37 @@ router.post('/refresh-token', AuthController.refreshToken);
  */
 // Obtener perfil del usuario autenticado
 router.get('/profile', authenticateToken, AuthController.getProfile);
-
+/**
+ * @swagger
+ * /api/auth/update-role:
+ *   patch:
+ *     summary: Actualizar rol del usuario (BUSINESS <-> BUSINESS_SPECIALIST)
+ *     description: Permite al usuario cambiar entre BUSINESS y BUSINESS_SPECIALIST
+ *     tags: [🔐 Autenticación]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newRole
+ *             properties:
+ *               newRole:
+ *                 type: string
+ *                 enum: [BUSINESS, BUSINESS_SPECIALIST]
+ *                 description: Nuevo rol del usuario
+ *     responses:
+ *       200:
+ *         description: Rol actualizado exitosamente
+ *       400:
+ *         description: Rol no válido
+ *       403:
+ *         description: No autorizado para cambiar rol
+ */
+router.patch('/update-role', authenticateToken, AuthController.updateUserRole);
 // =====================================
 // RUTAS DE RECUPERACIÓN DE CONTRASEÑA
 // =====================================
@@ -452,6 +482,9 @@ router.post('/forgot-password', AuthController.requestPasswordReset);
  */
 // Verificar token de recuperación
 router.get('/reset-password/:token', AuthController.verifyResetToken);
+
+// Verificar token de recuperación (POST - usado por frontend)
+router.post('/verify-reset-token', AuthController.verifyResetToken);
 
 /**
  * @swagger

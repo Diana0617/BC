@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { logout, clearSubscriptionWarning } from '@shared/store/slices/authSlice.js'
 import SubscriptionWarningBanner from '../../components/SubscriptionWarningBanner.jsx'
 import BusinessSpecialistDashboard from './BusinessSpecialistDashboard.jsx'
+import BusinessOwnerDashboard from './BusinessOwnerDashboard.jsx'
+import ReceptionistDashboard from './ReceptionistDashboard.jsx'
 
 const DashboardPage = () => {
   const dispatch = useDispatch()
@@ -27,8 +29,19 @@ const DashboardPage = () => {
 
   // Render dashboard específico según el rol
   const renderDashboardContent = () => {
+    // Business Owner Dashboard
+    if (user?.role === 'BUSINESS') {
+      return <BusinessOwnerDashboard />
+    }
+    
+    // Business Specialist Dashboard
     if (user?.role === 'BUSINESS_SPECIALIST') {
       return <BusinessSpecialistDashboard />
+    }
+
+    // Receptionist Dashboard
+    if (user?.role === 'RECEPTIONIST' || user?.role === 'RECEPTIONIST_SPECIALIST') {
+      return <ReceptionistDashboard />
     }
 
     // Dashboard por defecto para otros roles

@@ -70,8 +70,12 @@ const CreateClientModal = ({ onClose, onSuccess }) => {
       newErrors.email = 'Email inválido';
     }
 
-    if (formData.phone && !/^\+?\d{10,15}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Teléfono inválido (10-15 dígitos)';
+    if (formData.phone) {
+      // Limpiar teléfono para validar solo dígitos
+      const cleanPhone = formData.phone.replace(/[\s\-\(\)\+]/g, '');
+      if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+        newErrors.phone = 'El teléfono debe tener entre 10 y 15 dígitos';
+      }
     }
 
     setErrors(newErrors);
@@ -119,8 +123,15 @@ const CreateClientModal = ({ onClose, onSuccess }) => {
       }
     } catch (error) {
       console.error('Error creating client:', error);
-      const errorMessage = error.response?.data?.error || 'Error al crear el cliente';
-      toast.error(errorMessage);
+      
+      // Manejar errores de validación del backend
+      if (error.response?.data?.fieldErrors) {
+        setErrors(error.response.data.fieldErrors);
+        toast.error('Por favor corrige los errores del formulario');
+      } else {
+        const errorMessage = error.response?.data?.error || 'Error al crear el cliente';
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -162,6 +173,31 @@ const CreateClientModal = ({ onClose, onSuccess }) => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Banner de Errores */}
+            {Object.keys(errors).length > 0 && (
+              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">
+                      Hay {Object.keys(errors).length} error{Object.keys(errors).length > 1 ? 'es' : ''} en el formulario
+                    </h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      <ul className="list-disc list-inside space-y-1">
+                        {Object.entries(errors).map(([field, message]) => (
+                          <li key={field}>{message}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Información Personal */}
             <div>
               <h4 className="text-md font-medium text-gray-900 mb-4 flex items-center">
@@ -261,8 +297,10 @@ const CreateClientModal = ({ onClose, onSuccess }) => {
                       placeholder="+57 300 123 4567"
                     />
                   </div>
-                  {errors.phone && (
+                  {errors.phone ? (
                     <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                  ) : (
+                    <p className="mt-1 text-xs text-gray-500">💡 Puedes incluir espacios, guiones o paréntesis</p>
                   )}
                 </div>
 

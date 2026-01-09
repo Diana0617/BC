@@ -32,7 +32,7 @@ export const authAPI = {
   resetPassword: async (token, newPassword) => {
     return apiClient.post(API_CONFIG.ENDPOINTS.AUTH.RESET_PASSWORD, {
       token,
-      newPassword
+      password: newPassword // Backend espera 'password', no 'newPassword'
     });
   },
 

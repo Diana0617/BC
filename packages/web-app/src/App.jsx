@@ -42,6 +42,7 @@ import OwnerReports from './pages/owner/reports/OwnerReports'
 import BusinessProfile from './pages/business/profile/BusinessProfile.jsx'
 import ConsentTemplatesPage from './pages/ConsentTemplatesPage.jsx'
 import InventoryDashboard from './pages/business/inventory/InventoryDashboard.jsx'
+import ClientsPage from './pages/clients/ClientsPage.jsx'
 
 // Public Pages
 import LandingPage from './pages/public/LandingPage'
@@ -49,8 +50,10 @@ import OnlineBookingPage from './pages/public/OnlineBookingPage'
 import BookingSuccess from './pages/public/BookingSuccess'
 import TermsOfService from './pages/public/TermsOfService'
 import PrivacyPolicy from './pages/public/PrivacyPolicy'
-import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import CheckPointsPage from './pages/public/CheckPointsPage'
+
+// Auth Pages
+import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 
 // WebView Components
 import ExpenseFormWebView from './pages/webview/ExpenseFormWebView'
@@ -230,7 +233,7 @@ function AppLayout() {
           let redirectPath = '/business/profile';
           if (userData?.role === 'OWNER') {
             redirectPath = '/owner/dashboard';
-          } else if (userData?.role === 'BUSINESS') {
+          } else if (userData?.role === 'BUSINESS' || userData?.role === 'BUSINESS_SPECIALIST') {
             redirectPath = '/business/profile';
           } else {
             redirectPath = '/dashboard';
@@ -296,7 +299,7 @@ function AppLayout() {
           let redirectPath = '/business/profile';
           if (userData?.role === 'OWNER') {
             redirectPath = '/owner/dashboard';
-          } else if (userData?.role === 'BUSINESS') {
+          } else if (userData?.role === 'BUSINESS' || userData?.role === 'BUSINESS_SPECIALIST') {
             redirectPath = '/business/profile';
           } else {
             redirectPath = '/dashboard';
@@ -395,7 +398,10 @@ function AppLayout() {
         <Routes>
           {/* Public routes - No authentication required */}
           {!isAuthenticated && <Route path="/" element={<LandingPage />} />}
+          
+          {/* Auth routes */}
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          
           <Route path="/book/:businessCode" element={<OnlineBookingPage />} />
           <Route path="/booking/success" element={<BookingSuccess />} />
           <Route path="/terminos" element={<TermsOfService />} />
@@ -437,7 +443,7 @@ function AppLayout() {
           <Route 
             path="/business/profile" 
             element={
-              isAuthenticated && user?.role === 'BUSINESS' 
+              isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST'].includes(user?.role)
                 ? <BusinessProfile /> 
                 : <Navigate to="/" replace />
             } 
@@ -445,7 +451,7 @@ function AppLayout() {
           <Route 
             path="/business/consent-templates" 
             element={
-              isAuthenticated && user?.role === 'BUSINESS' 
+              isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST'].includes(user?.role)
                 ? <ConsentTemplatesPage /> 
                 : <Navigate to="/" replace />
             } 
@@ -453,8 +459,16 @@ function AppLayout() {
           <Route 
             path="/business/inventory" 
             element={
-              isAuthenticated && user?.role === 'BUSINESS' 
+              isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'].includes(user?.role)
                 ? <InventoryDashboard /> 
+                : <Navigate to="/" replace />
+            } 
+          />
+          <Route 
+            path="/clients" 
+            element={
+              isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST'].includes(user?.role)
+                ? <ClientsPage /> 
                 : <Navigate to="/" replace />
             } 
           />

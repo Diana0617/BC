@@ -19,6 +19,10 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const dispatch = useDispatch()
   const { branding, uploadingLogo, saving, error, saveError } = useSelector(state => state.businessConfiguration)
   const activeBusiness = useSelector(state => state.business?.currentBusiness)
+  const { user } = useSelector(state => state.auth)
+  
+  // Usar businessId del usuario si activeBusiness no está disponible
+  const businessId = activeBusiness?.id || user?.businessId
   
   const [formData, setFormData] = useState({
     primaryColor: '#FF6B9D',
@@ -108,11 +112,14 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const handleSave = async () => {
     console.log('🔵 handleSave called');
     console.log('📦 activeBusiness:', activeBusiness);
+    console.log('👤 user.businessId:', user?.businessId);
+    console.log('🆔 businessId:', businessId);
     console.log('🎨 formData:', formData);
     console.log('🖼️ logoFile:', logoFile);
     
-    if (!activeBusiness?.id) {
-      console.log('❌ No activeBusiness.id, returning');
+    if (!businessId) {
+      console.log('❌ No businessId available, returning');
+      alert('No se pudo identificar el negocio. Por favor recarga la página.');
       return;
     }
 
@@ -121,7 +128,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
       if (logoFile) {
         console.log('📤 Uploading logo...');
         const resultLogo = await dispatch(uploadLogo({
-          businessId: activeBusiness.id,
+          businessId: businessId,
           logoFile: logoFile
         }))
         
@@ -134,7 +141,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
       // Guardar colores
       console.log('💾 Saving branding colors...');
       const result = await dispatch(saveBranding({
-        businessId: activeBusiness.id,
+        businessId: businessId,
         brandingData: {
           primaryColor: formData.primaryColor,
           secondaryColor: formData.secondaryColor,

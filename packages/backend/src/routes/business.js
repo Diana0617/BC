@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const BusinessController = require('../controllers/BusinessController');
 const SubscriptionStatusController = require('../controllers/SubscriptionStatusController');
+const BusinessMetricsController = require('../controllers/BusinessMetricsController');
 const { authenticateToken } = require('../middleware/auth');
 const tenancyMiddleware = require('../middleware/tenancy');
 const { ownerOnly, businessAndOwner, allStaffRoles } = require('../middleware/roleCheck');
@@ -636,6 +637,62 @@ router.get('/modules',
   authenticateToken,
   businessAndOwner,
   BusinessController.getAvailableModules
+);
+
+// =====================================
+// RUTAS DE MÉTRICAS DEL DASHBOARD
+// =====================================
+
+/**
+ * @swagger
+ * /api/business/metrics:
+ *   get:
+ *     summary: Obtener métricas principales del negocio
+ *     description: Retorna ventas, ingresos, gastos, citas para el dashboard
+ *     tags: [📊 Métricas]
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [today, week, month]
+ *         description: Período de las métricas
+ *     responses:
+ *       200:
+ *         description: Métricas obtenidas exitosamente
+ */
+router.get('/metrics', 
+  authenticateToken,
+  allStaffRoles,
+  BusinessMetricsController.getMainMetrics
+);
+
+/**
+ * @swagger
+ * /api/business/metrics/sales-breakdown:
+ *   get:
+ *     summary: Obtener desglose de ventas
+ *     description: Retorna desglose de ventas por tipo y método de pago
+ *     tags: [📊 Métricas]
+ */
+router.get('/metrics/sales-breakdown',
+  authenticateToken,
+  allStaffRoles,
+  BusinessMetricsController.getSalesBreakdown
+);
+
+/**
+ * @swagger
+ * /api/business/metrics/appointments-summary:
+ *   get:
+ *     summary: Obtener resumen de citas
+ *     description: Retorna estado y métricas de citas del negocio
+ *     tags: [📊 Métricas]
+ */
+router.get('/metrics/appointments-summary',
+  authenticateToken,
+  allStaffRoles,
+  BusinessMetricsController.getAppointmentsSummary
 );
 
 // =====================================

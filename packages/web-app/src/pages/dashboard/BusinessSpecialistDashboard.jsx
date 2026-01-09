@@ -7,7 +7,11 @@ import {
   ClipboardDocumentListIcon,
   BanknotesIcon,
   ArrowTrendingUpIcon,
-  ClockIcon
+  ClockIcon,
+  CubeIcon,
+  Cog6ToothIcon,
+  DocumentTextIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline'
 
 const BusinessSpecialistDashboard = () => {
@@ -87,6 +91,34 @@ const BusinessSpecialistDashboard = () => {
       onClick: () => navigate('/services')
     },
     {
+      title: 'Inventario',
+      description: 'Gestionar productos',
+      icon: CubeIcon,
+      color: 'bg-indigo-500',
+      onClick: () => navigate('/business/inventory')
+    },
+    {
+      title: 'Consentimientos',
+      description: 'Plantillas de consentimiento',
+      icon: DocumentTextIcon,
+      color: 'bg-teal-500',
+      onClick: () => navigate('/business/consent-templates')
+    },
+    {
+      title: 'Mi Equipo',
+      description: 'Gestionar personal',
+      icon: UsersIcon,
+      color: 'bg-orange-500',
+      onClick: () => navigate('/business/profile?tab=team')
+    },
+    {
+      title: 'Configuración',
+      description: 'Ajustes del negocio',
+      icon: Cog6ToothIcon,
+      color: 'bg-gray-500',
+      onClick: () => navigate('/business/profile')
+    },
+    {
       title: 'Registro de Pagos',
       description: 'Ver pagos recibidos',
       icon: BanknotesIcon,
@@ -111,7 +143,12 @@ const BusinessSpecialistDashboard = () => {
           ¡Hola, {user?.firstName || 'Profesional'}! 👋
         </h1>
         <p className="text-pink-100">
-          Listo para atender a tus clientes hoy
+          Gestiona tu negocio y atiende a tus clientes en un solo lugar
+        </p>
+        <p className="text-pink-50 text-sm mt-2 flex items-center gap-2">
+          <span className="bg-white/20 px-2 py-1 rounded">Dueño</span>
+          <span>+</span>
+          <span className="bg-white/20 px-2 py-1 rounded">Especialista</span>
         </p>
       </div>
 
@@ -229,77 +266,6 @@ const BusinessSpecialistDashboard = () => {
               </p>
             </button>
           ))}
-        </div>
-      </div>
-
-      {/* Services Summary */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Mis Servicios
-          </h2>
-          <button
-            onClick={() => navigate('/services')}
-            className="text-sm text-pink-600 hover:text-pink-700 font-medium"
-          >
-            Ver todos →
-          </button>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <p className="text-3xl font-bold text-gray-900">
-              {stats.totalServices}
-            </p>
-            <p className="text-sm text-gray-600">
-              Servicios activos
-            </p>
-          </div>
-          <div className="w-px h-12 bg-gray-200"></div>
-          <div className="flex-1">
-            <p className="text-sm text-gray-600 mb-1">
-              Límite del plan
-            </p>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-pink-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(stats.totalServices / 10) * 100}%` }}
-              ></div>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {stats.totalServices} de 10 servicios
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Plan Info */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-md p-6 border border-purple-200">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Plan Básico - Gratis para siempre ✨
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Perfecto para profesionales independientes
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <span className="bg-white px-3 py-1 rounded-full text-xs text-gray-700 border border-purple-200">
-                ✓ Hasta 50 clientes
-              </span>
-              <span className="bg-white px-3 py-1 rounded-full text-xs text-gray-700 border border-purple-200">
-                ✓ 10 servicios
-              </span>
-              <span className="bg-white px-3 py-1 rounded-full text-xs text-gray-700 border border-purple-200">
-                ✓ Agenda ilimitada
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => navigate('/subscription/upgrade')}
-            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg whitespace-nowrap"
-          >
-            Mejorar Plan
-          </button>
         </div>
       </div>
     </div>

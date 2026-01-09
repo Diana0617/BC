@@ -397,6 +397,7 @@ class SubscriptionController {
         await transaction.commit()
 
         // Generar token JWT para auto-login
+        // Generar token JWT para auto-login
         const token = jwt.sign(
           { 
             userId: user.id, 
@@ -407,6 +408,18 @@ class SubscriptionController {
           { expiresIn: '24h' }
         )
 
+        // Obtener datos completos del usuario con business y plan para la respuesta
+        const userWithBusiness = await User.findByPk(user.id, {
+          include: [{
+            model: Business,
+            as: 'business',
+            include: [{
+              model: SubscriptionPlan,
+              as: 'currentPlan'
+            }]
+          }]
+        });
+
         // Preparar datos de respuesta
         const responseData = {
           business: {
@@ -415,12 +428,13 @@ class SubscriptionController {
             subdomain: business.subdomain,
             email: business.email
           },
-          user: {
+          user: userWithBusiness ? userWithBusiness.toJSON() : {
             id: user.id,
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
-            role: user.role
+            role: user.role,
+            businessId: user.businessId
           },
           subscription: {
             id: subscription.id,

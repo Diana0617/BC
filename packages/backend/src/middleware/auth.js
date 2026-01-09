@@ -53,9 +53,31 @@ const authenticateToken = async (req, res, next) => {
 
     console.log('🔑 authenticateToken - Token recibido (primeros 20 chars):', token.substring(0, 20) + '...');
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    console.log('✅ authenticateToken: Token decoded successfully:', { userId: decoded.userId, businessId: decoded.businessId });
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('✅ Token decoded successfully:', { 
+        userId: decoded.userId, 
+        businessId: decoded.businessId,
+        role: decoded.role 
+      });
+    } catch (jwtError) {
+      console.log('❌ JWT verification failed:', jwtError.message);
+      
+      if (jwtError.name === 'TokenExpiredError') {
+        return res.status(401).json({ 
+          success: false,
+          error: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+          code: 'TOKEN_EXPIRED'
+        });
+      }
+      
+      return res.status(401).json({ 
+        success: false,
+        error: 'Token inválido. Por favor, inicia sesión nuevamente.',
+        code: 'TOKEN_INVALID'
+      });
+    }
     
     const user = await User.findOne({
       where: { 
@@ -103,10 +125,25 @@ const authenticateToken = async (req, res, next) => {
       }
       
       // Si está en TRIAL, verificar que no haya expirado
-      // EXCEPCIÓN: Permitir acceso al endpoint de renovación de suscripción
-      const isRenewalEndpoint = req.path === '/renew-subscription' && req.method === 'POST';
+      // EXCEPCIÓN: Permitir acceso al endpoint de renovación de suscripción y perfil de negocio
+      const fullPath = req.originalUrl || req.url;
+      const isRenewalEndpoint = (fullPath.includes('/renew-subscription') || fullPath.includes('/wompi/renew-subscription')) && req.method === 'POST';
+      const isBusinessProfileEndpoint = (fullPath.includes('/api/business') || req.path === '/') && req.method === 'GET';
+      const isAllowedEndpoint = isRenewalEndpoint || isBusinessProfileEndpoint;
       
-      if (business.status === 'TRIAL' && business.trialEndDate && !isRenewalEndpoint) {
+      console.log('🔍 Verificando renovación:', {
+        path: req.path,
+        originalUrl: req.originalUrl,
+        fullPath,
+        method: req.method,
+        isRenewalEndpoint,
+        isBusinessProfileEndpoint,
+        isAllowedEndpoint,
+        trialStatus: business.status,
+        trialEnd: business.trialEndDate
+      });
+      
+      if (business.status === 'TRIAL' && business.trialEndDate && !isAllowedEndpoint) {
         const now = new Date();
         const trialEnd = new Date(business.trialEndDate);
         
@@ -326,13 +363,13 @@ const requireSpecialistOrReceptionist = async (req, res, next) => {
 
     // Agregar información del usuario según su rol
     // RECEPTIONIST_SPECIALIST tiene ambos permisos
-    if (req.user.role === 'SPECIALIST' || req.user.role === 'RECEPTIONIST_SPECIALIST') {
+    if (req.user.role === 'SPECIALIST' || req.user.role === 'BUSINESS_SPECIALIST' || req.user.role === 'RECEPTIONIST_SPECIALIST') {
       req.specialist = {
         id: req.user.id,
         businessId: req.user.businessId,
         branchIds: req.user.branchIds || []
       };
-      // Evitar acceso cruzado para especialistas puros
+      // Evitar acceso cruzado para especialistas puros (no BUSINESS_SPECIALIST)
       if (req.user.role === 'SPECIALIST') {
         if (req.body.specialistId || req.params.specialistId) {
           delete req.body.specialistId;

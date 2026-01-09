@@ -53,6 +53,7 @@ import CustomerHistorySection from './sections/CustomerHistorySection'
 import WhatsAppConfigSection from './sections/WhatsAppConfigSection'
 import MovementsSection from './sections/MovementsSection'
 import LoyaltyConfigSection from './sections/LoyaltyConfigSection'
+import RoleConfigSection from './sections/RoleConfigSection'
 import BusinessRuleModal from '../../../components/BusinessRuleModalV2'
 
 // Hook personalizado para la configuración del negocio
@@ -130,11 +131,13 @@ const BusinessProfile = () => {
   // Esto evita usar un business.id stale de localStorage o navegación previa que causa 403
   // Usar ref para evitar loop infinito
   useEffect(() => {
-    if (user?.id && user?.role === 'BUSINESS' && !businessSyncedRef.current) {
+    const businessRoles = ['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'];
+    if (user?.id && user?.businessId && businessRoles.includes(user?.role) && !businessSyncedRef.current) {
+      console.log('🔄 Cargando business desde el backend para user:', user.id, 'role:', user.role);
       businessSyncedRef.current = true
       dispatch(fetchCurrentBusiness())
     }
-  }, [user?.id, user?.role, dispatch])
+  }, [user?.id, user?.role, user?.businessId, dispatch])
 
   // Cargar configuración y branding SOLO cuando business.id esté sincronizado con el token
   // Usar ref para evitar cargar múltiples veces
@@ -198,6 +201,12 @@ const BusinessProfile = () => {
           icon: BuildingStorefrontIcon,
           component: BasicInfoSection,
           setupStep: 'basic-info'
+        },
+        {
+          id: 'role-config',
+          name: 'Mi Rol',
+          icon: UserCircleIcon,
+          component: RoleConfigSection
         },
         {
           id: 'branding',

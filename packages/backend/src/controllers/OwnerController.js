@@ -794,6 +794,296 @@ class OwnerController {
       });
     }
   }
+
+  /**
+   * Reactivar una suscripción cancelada o expirada
+   */
+  static async reactivateSubscription(req, res) {
+    try {
+      const { subscriptionId } = req.params;
+      const { reason, newEndDate, resetToTrial } = req.body;
+
+      // Buscar la suscripción
+      const subscription = await BusinessSubscription.findByPk(subscriptionId, {
+        include: [
+          {
+            model: Business,
+            as: 'business',
+            attributes: ['id', 'name', 'email', 'status']
+          },
+          {
+            model: SubscriptionPlan,
+            as: 'plan',
+            attributes: ['id', 'name', 'duration', 'durationType', 'trialDays']
+          }
+        ]
+      });
+
+      if (!subscription) {
+        return res.status(404).json({
+          success: false,
+          error: 'Suscripción no encontrada'
+        });
+      }
+
+      // Verificar que la suscripción esté en un estado que permita reactivación
+      if (subscription.status === 'ACTIVE') {
+        return res.status(400).json({
+          success: false,
+          error: 'La suscripción ya está activa'
+        });
+      }
+
+      // Calcular nueva fecha de fin
+      let endDate;
+      let startDate = new Date();
+      let newStatus = 'ACTIVE';
+      let trialEndDate = null;
+      
+      if (resetToTrial) {
+        // Reestablecer período de prueba
+        const trialDays = subscription.plan.trialDays || 15;
+        newStatus = 'TRIAL';
+        trialEndDate = new Date(startDate);
+        trialEndDate.setDate(trialEndDate.getDate() + trialDays);
+        endDate = trialEndDate;
+      } else if (newEndDate) {
+        endDate = new Date(newEndDate);
+      } else {
+        // Calcular según el plan
+        endDate = new Date(startDate);
+        
+        if (subscription.plan.durationType === 'monthly') {
+          endDate.setMonth(endDate.getMonth() + subscription.plan.duration);
+        } else if (subscription.plan.durationType === 'yearly') {
+          endDate.setFullYear(endDate.getFullYear() + subscription.plan.duration);
+        } else {
+          endDate.setDate(endDate.getDate() + subscription.plan.duration);
+        }
+      }
+
+      // Calcular siguiente fecha de pago
+      let nextPaymentDate = new Date(endDate);
+      // Dar un día adicional para el pago antes de que venza
+      nextPaymentDate.setDate(nextPaymentDate.getDate() + 1);
+
+      // Actualizar suscripción
+      await subscription.update({
+        status: newStatus,
+        startDate: startDate,
+        endDate: endDate,
+        nextPaymentDate: nextPaymentDate,
+        trialEndDate: trialEndDate,
+        cancelledAt: null,
+        cancellationReason: null,
+        autoRenew: true
+      });
+
+      // Actualizar estado del negocio si estaba inactivo
+      if (subscription.business.status !== 'ACTIVE') {
+        await subscription.business.update({ status: 'ACTIVE' });
+      }
+
+      // Log de la reactivación
+      console.log(`✅ Suscripción ${subscriptionId} reactivada por Owner`, {
+        businessId: subscription.businessId,
+        reason,
+        resetToTrial,
+        newStatus,
+        newEndDate: endDate
+      });
+
+      res.json({
+        success: true,
+        message: 'Suscripción reactivada exitosamente',
+        data: {
+          subscription: {
+            id: subscription.id,
+            status: subscription.status,
+            startDate: subscription.startDate,
+            endDate: subscription.endDate,
+            business: {
+              id: subscription.business.id,
+              name: subscription.business.name,
+              status: subscription.business.status
+            },
+            plan: {
+              id: subscription.plan.id,
+              name: subscription.plan.name
+            }
+          },
+          reactivationDetails: {
+            reason: reason || 'Reactivación manual por Owner',
+            reactivatedAt: new Date(),
+            reactivatedBy: req.user.id
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error reactivando suscripción:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Suspender una suscripción
+   */
+  static async suspendSubscription(req, res) {
+    try {
+      const { subscriptionId } = req.params;
+      const { reason } = req.body;
+
+      if (!reason) {
+        return res.status(400).json({
+          success: false,
+          error: 'La razón de suspensión es requerida'
+        });
+      }
+
+      const subscription = await Subscription.findByPk(subscriptionId, {
+        include: [
+          {
+            model: Business,
+            as: 'business',
+            attributes: ['id', 'name', 'status']
+          },
+          {
+            model: SubscriptionPlan,
+            as: 'plan',
+            attributes: ['id', 'name']
+          }
+        ]
+      });
+
+      if (!subscription) {
+        return res.status(404).json({
+          success: false,
+          error: 'Suscripción no encontrada'
+        });
+      }
+
+      if (subscription.status === 'SUSPENDED') {
+        return res.status(400).json({
+          success: false,
+          error: 'La suscripción ya está suspendida'
+        });
+      }
+
+      // Actualizar suscripción
+      await subscription.update({
+        status: 'SUSPENDED',
+        cancellationReason: reason,
+        autoRenew: false
+      });
+
+      // Suspender el negocio también
+      await subscription.business.update({ status: 'SUSPENDED' });
+
+      console.log(`⚠️ Suscripción ${subscriptionId} suspendida por Owner`, {
+        businessId: subscription.businessId,
+        reason
+      });
+
+      res.json({
+        success: true,
+        message: 'Suscripción suspendida exitosamente',
+        data: {
+          subscription: {
+            id: subscription.id,
+            status: subscription.status,
+            business: {
+              id: subscription.business.id,
+              name: subscription.business.name,
+              status: subscription.business.status
+            }
+          },
+          suspensionDetails: {
+            reason,
+            suspendedAt: new Date(),
+            suspendedBy: req.user.id
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error suspendiendo suscripción:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Eliminar una suscripción (solo desarrollo)
+   */
+  static async deleteSubscription(req, res) {
+    try {
+      // Solo permitir en desarrollo
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({
+          success: false,
+          error: 'Eliminación de suscripciones no permitida en producción. Use cancelar o suspender.'
+        });
+      }
+
+      const { subscriptionId } = req.params;
+
+      const subscription = await Subscription.findByPk(subscriptionId, {
+        include: [
+          {
+            model: Business,
+            as: 'business',
+            attributes: ['id', 'name']
+          }
+        ]
+      });
+
+      if (!subscription) {
+        return res.status(404).json({
+          success: false,
+          error: 'Suscripción no encontrada'
+        });
+      }
+
+      const businessName = subscription.business.name;
+      const businessId = subscription.businessId;
+
+      // Eliminar suscripción
+      await subscription.destroy();
+
+      console.log(`🗑️ Suscripción ${subscriptionId} eliminada por Owner (desarrollo)`, {
+        businessId,
+        businessName
+      });
+
+      res.json({
+        success: true,
+        message: 'Suscripción eliminada exitosamente',
+        data: {
+          deletedSubscriptionId: subscriptionId,
+          businessId,
+          businessName,
+          deletedAt: new Date(),
+          deletedBy: req.user.id
+        }
+      });
+
+    } catch (error) {
+      console.error('Error eliminando suscripción:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 }
 
 module.exports = OwnerController;

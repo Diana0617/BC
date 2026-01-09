@@ -95,6 +95,15 @@ export const PERMISSIONS = {
     MANAGE_INVENTORY: 'product:manage_inventory'
   },
   
+  // === INVENTORY MANAGEMENT ===
+  INVENTORY: {
+    VIEW: 'inventory.view',
+    CREATE: 'inventory.create',
+    EDIT: 'inventory.edit',
+    DELETE: 'inventory.delete',
+    MOVEMENTS: 'inventory.movements'
+  },
+  
   // === FINANCIAL MANAGEMENT ===
   FINANCIAL: {
     VIEW: 'financial:view',
@@ -298,8 +307,9 @@ export const ROLE_PERMISSIONS = {
     // Ver servicios
     PERMISSIONS.SERVICE.VIEW,
     
-    // Ver productos
-    PERMISSIONS.PRODUCT.VIEW
+    // Ver productos e inventario
+    PERMISSIONS.PRODUCT.VIEW,
+    PERMISSIONS.INVENTORY.VIEW
   ],
 
   [ROLES.CLIENT]: [
@@ -335,34 +345,60 @@ export const ROLE_PERMISSIONS = {
   ],
 
   [ROLES.BUSINESS_SPECIALIST]: [
-    // Gestión de su negocio (solo ver y configurar)
+    // === PERMISOS COMPLETOS DE BUSINESS ===
+    // Gestión completa del negocio
     PERMISSIONS.BUSINESS.VIEW,
     PERMISSIONS.BUSINESS.EDIT,
+    PERMISSIONS.BUSINESS.DELETE,
     PERMISSIONS.BUSINESS.SETTINGS,
     
-    // Gestión de clientes
+    // Gestión completa de usuarios y staff
+    PERMISSIONS.USER.CREATE,
+    PERMISSIONS.USER.VIEW,
+    PERMISSIONS.USER.EDIT,
+    PERMISSIONS.USER.DELETE,
+    PERMISSIONS.USER.MANAGE_STAFF,
+    PERMISSIONS.USER.MANAGE_ROLES,
+    
+    // Gestión completa de clientes
     PERMISSIONS.CLIENT.CREATE,
     PERMISSIONS.CLIENT.VIEW,
     PERMISSIONS.CLIENT.EDIT,
+    PERMISSIONS.CLIENT.DELETE,
     PERMISSIONS.CLIENT.VIEW_HISTORY,
     
-    // Gestión de citas (crear y gestionar sus propias citas)
+    // Gestión completa de citas
     PERMISSIONS.APPOINTMENT.CREATE,
     PERMISSIONS.APPOINTMENT.VIEW,
     PERMISSIONS.APPOINTMENT.EDIT,
+    PERMISSIONS.APPOINTMENT.DELETE,
     PERMISSIONS.APPOINTMENT.CANCEL,
     
-    // Gestión de servicios (crear y editar sus propios servicios)
+    // Gestión completa de servicios
     PERMISSIONS.SERVICE.CREATE,
     PERMISSIONS.SERVICE.VIEW,
     PERMISSIONS.SERVICE.EDIT,
+    PERMISSIONS.SERVICE.DELETE,
     PERMISSIONS.SERVICE.MANAGE_PRICING,
     
-    // Ver productos
+    // Gestión completa de productos e inventario
+    PERMISSIONS.PRODUCT.CREATE,
     PERMISSIONS.PRODUCT.VIEW,
+    PERMISSIONS.PRODUCT.EDIT,
+    PERMISSIONS.PRODUCT.DELETE,
+    PERMISSIONS.PRODUCT.MANAGE_INVENTORY,
+    PERMISSIONS.INVENTORY.VIEW,
+    PERMISSIONS.INVENTORY.CREATE,
+    PERMISSIONS.INVENTORY.EDIT,
+    PERMISSIONS.INVENTORY.DELETE,
+    PERMISSIONS.INVENTORY.MOVEMENTS,
     
-    // Ver finanzas básicas
+    // Gestión completa de finanzas
     PERMISSIONS.FINANCIAL.VIEW,
+    PERMISSIONS.FINANCIAL.CREATE_RECORD,
+    PERMISSIONS.FINANCIAL.EDIT_RECORD,
+    PERMISSIONS.FINANCIAL.DELETE_RECORD,
+    PERMISSIONS.FINANCIAL.VIEW_REPORTS,
     
     // Ver suscripción
     PERMISSIONS.SUBSCRIPTION.VIEW

@@ -95,8 +95,13 @@ const requireFullAccess = async (req, res, next) => {
  */
 const requireBasicAccess = async (req, res, next) => {
   try {
-    // Solo aplica a usuarios con businessId (no OWNER)
-    if (!req.user.businessId || req.user.role === 'OWNER') {
+    // OWNER no tiene restricciones de suscripción (admin de plataforma)
+    if (req.user.role === 'OWNER') {
+      return next();
+    }
+
+    // Usuarios sin businessId pueden pasar (casos especiales)
+    if (!req.user.businessId) {
       return next();
     }
 

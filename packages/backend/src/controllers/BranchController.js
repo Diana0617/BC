@@ -97,7 +97,7 @@ class BranchController {
       const branchData = req.body;
 
       // Verificar permisos de administración
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para crear sucursales'
@@ -160,7 +160,7 @@ class BranchController {
       const updateData = req.body;
 
       // Verificar permisos de administración
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para actualizar sucursales'
@@ -221,7 +221,7 @@ class BranchController {
       const { businessId, branchId } = req.params;
 
       // Verificar permisos de administración
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para eliminar sucursales'
@@ -265,7 +265,7 @@ class BranchController {
       const { specialistIds } = req.body;
 
       // Verificar permisos de administración
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para asignar especialistas'
@@ -378,7 +378,7 @@ class BranchController {
       const { specialistId, dayOfWeek, startTime, endTime, priority, isActive } = req.body;
 
       // Verificar permisos de administración
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para gestionar horarios'
@@ -470,7 +470,7 @@ class BranchController {
       const updateData = req.body;
 
       // Verificar permisos de administración
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para gestionar horarios'
@@ -618,7 +618,7 @@ class BranchController {
       const { businessId, branchId, scheduleId } = req.params;
 
       // Verificar permisos de administración
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para eliminar horarios'

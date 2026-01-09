@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { fetchCurrentBusiness } from '@shared/store/slices/businessSlice';
 import {
   PackageIcon,
   ShoppingCartIcon,
@@ -21,9 +22,18 @@ import SupplierCatalog from './catalog/SupplierCatalog';
 
 const InventoryDashboard = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const branding = useSelector(state => state.businessConfiguration?.branding);
   const business = useSelector(state => state.business?.currentBusiness);
   const [activeSection, setActiveSection] = useState('inventario');
+
+  // Cargar el business actual cuando se monta el componente
+  useEffect(() => {
+    if (!business) {
+      console.log('📦 InventoryDashboard - Loading current business...');
+      dispatch(fetchCurrentBusiness());
+    }
+  }, [dispatch, business]);
 
   const sections = [
     {

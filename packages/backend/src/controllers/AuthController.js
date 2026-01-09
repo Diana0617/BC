@@ -154,13 +154,45 @@ class AuthController {
    */
   static async login(req, res) {
     try {
-      const { email, password } = req.body;
+      console.log('🔑 Login attempt - Full body:', req.body);
+      const { email, password, subdomain } = req.body;
+
+      console.log('🔑 Extracted credentials:', { 
+        email, 
+        subdomain, 
+        hasPassword: !!password,
+        passwordLength: password?.length,
+        passwordFirstChar: password?.charCodeAt(0),
+        passwordLastChar: password?.charCodeAt(password?.length - 1)
+      });
 
       // Validaciones básicas
       if (!email || !password) {
         return res.status(400).json({
           success: false,
           error: 'Email y contraseña son requeridos'
+        });
+      }
+
+      // Si se proporciona subdomain, buscar el negocio primero
+      let targetBusiness = null;
+      if (subdomain) {
+        console.log('🏢 Buscando negocio con subdomain:', subdomain);
+        targetBusiness = await Business.findOne({
+          where: { subdomain: subdomain.toLowerCase() }
+        });
+
+        if (!targetBusiness) {
+          console.log('❌ Negocio no encontrado para subdomain:', subdomain);
+          return res.status(401).json({
+            success: false,
+            error: 'Credenciales inválidas'
+          });
+        }
+        console.log('✅ Negocio encontrado:', { 
+          id: targetBusiness.id, 
+          name: targetBusiness.name,
+          subdomain: targetBusiness.subdomain 
         });
       }
 
@@ -201,21 +233,32 @@ class AuthController {
       });
 
       if (!user) {
+        console.log('❌ Usuario no encontrado:', email);
         return res.status(401).json({
           success: false,
           error: 'Credenciales inválidas'
         });
       }
 
+      console.log('👤 Usuario encontrado:', { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role,
+        businessId: user.businessId 
+      });
+
       // Verificar contraseña
       const isPasswordValid = await bcrypt.compare(password, user.password);
       
       if (!isPasswordValid) {
+        console.log('❌ Contraseña inválida para:', email);
         return res.status(401).json({
           success: false,
           error: 'Credenciales inválidas'
         });
       }
+
+      console.log('✅ Contraseña válida');
 
       // Determinar el negocio asociado al usuario
       let associatedBusiness = null;
@@ -227,9 +270,30 @@ class AuthController {
         effectiveBusinessId = user.businessId;
       }
       // Para especialistas, obtener el negocio desde specialistProfile
-      else if (user.role === 'SPECIALIST' && user.specialistProfile) {
+      else if ((user.role === 'SPECIALIST' || user.role === 'BUSINESS_SPECIALIST') && user.specialistProfile) {
         associatedBusiness = user.specialistProfile.business;
         effectiveBusinessId = user.specialistProfile.businessId;
+      }
+
+      console.log('🏢 Negocio asociado al usuario:', { 
+        businessId: effectiveBusinessId,
+        businessName: associatedBusiness?.name,
+        businessSubdomain: associatedBusiness?.subdomain
+      });
+
+      // Si se proporcionó subdomain, validar que coincida con el negocio del usuario
+      if (subdomain && targetBusiness) {
+        if (effectiveBusinessId !== targetBusiness.id) {
+          console.log('❌ El usuario no pertenece al negocio del subdomain:', {
+            userBusinessId: effectiveBusinessId,
+            subdomainBusinessId: targetBusiness.id
+          });
+          return res.status(401).json({
+            success: false,
+            error: 'Credenciales inválidas'
+          });
+        }
+        console.log('✅ Usuario pertenece al negocio del subdomain');
       }
 
       // Verificar si el negocio está activo o en período de prueba válido
@@ -515,6 +579,97 @@ class AuthController {
   }
 
   /**
+   * Actualizar rol del usuario (solo BUSINESS <-> BUSINESS_SPECIALIST)
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   */
+  static async updateUserRole(req, res) {
+    try {
+      const userId = req.user.id;
+      const { newRole } = req.body;
+
+      // Validar que el nuevo rol sea válido
+      const allowedRoles = ['BUSINESS', 'BUSINESS_SPECIALIST'];
+      if (!allowedRoles.includes(newRole)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Rol no válido. Solo se puede cambiar entre BUSINESS y BUSINESS_SPECIALIST.'
+        });
+      }
+
+      // Obtener usuario actual
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: 'Usuario no encontrado'
+        });
+      }
+
+      // Verificar que el usuario actual sea BUSINESS o BUSINESS_SPECIALIST
+      if (!allowedRoles.includes(user.role)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Solo los usuarios BUSINESS o BUSINESS_SPECIALIST pueden cambiar de rol.'
+        });
+      }
+
+      // Verificar que tenga un negocio asociado
+      if (!user.businessId) {
+        return res.status(400).json({
+          success: false,
+          error: 'El usuario debe tener un negocio asociado para cambiar de rol.'
+        });
+      }
+
+      // Actualizar rol
+      const oldRole = user.role;
+      await user.update({ role: newRole });
+
+      console.log(`✅ Usuario ${user.email} cambió de rol: ${oldRole} → ${newRole}`);
+
+      // Retornar usuario actualizado
+      const updatedUser = await User.findByPk(userId, {
+        include: [
+          {
+            model: Business,
+            as: 'business',
+            include: [
+              {
+                model: SubscriptionPlan,
+                as: 'currentPlan'
+              }
+            ]
+          }
+        ]
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Rol actualizado exitosamente',
+        data: {
+          user: {
+            id: updatedUser.id,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            email: updatedUser.email,
+            role: updatedUser.role,
+            businessId: updatedUser.businessId,
+            business: updatedUser.business
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error actualizando rol:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
    * Generar tokens JWT
    * @param {Object} user - Usuario
    * @returns {Object} Tokens de acceso y refresh
@@ -702,7 +857,25 @@ class AuthController {
       if (!emailResult.success) {
         console.error('❌ Error enviando email de recuperación:', emailResult.error);
         
-        // Eliminar token si no se pudo enviar el email
+        // En desarrollo, permitir continuar aunque falle el email
+        if (process.env.NODE_ENV === 'development') {
+          console.log('⚠️ MODO DESARROLLO - Token generado pero email no enviado');
+          console.log('🔑 Token de recuperación:', resetToken);
+          console.log('🔗 URL de reset:', resetUrl);
+          
+          return res.json({
+            success: true,
+            message: 'Token generado (modo desarrollo - email no configurado)',
+            data: {
+              emailSent: false,
+              expiresIn: '1 hora',
+              resetToken: resetToken, // Solo en desarrollo
+              resetUrl: resetUrl // Solo en desarrollo
+            }
+          });
+        }
+        
+        // En producción, eliminar token si no se pudo enviar el email
         await tokenRecord.destroy();
         
         return res.status(500).json({
@@ -736,7 +909,8 @@ class AuthController {
    */
   static async verifyResetToken(req, res) {
     try {
-      const { token } = req.params;
+      // Aceptar token tanto en params (GET) como en body (POST)
+      const token = req.params.token || req.body.token;
 
       if (!token) {
         return res.status(400).json({

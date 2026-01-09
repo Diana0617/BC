@@ -1,16 +1,91 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from 'react';
 import { useOwnerPayments } from '@shared';
+import { reactivateSubscription, suspendSubscription, deleteSubscription } from '@shared/api/ownerSubscriptionsManagementApi';
 
 const OwnerSubscriptionsPage = () => {
   const { payments, loading, errors, pagination, helpers, actions, filters } = useOwnerPayments();
   const pageSize = pagination?.limit || 10;
+  const [actionLoading, setActionLoading] = useState(null);
 
   // La carga de pagos se gestiona desde el hook useOwnerPayments, no desde aquí
 
   useEffect(() => {
     console.log('Pagos y suscripciones:', payments);
   }, [payments]);
+
+  const handleReactivate = async (subscriptionId, businessName) => {
+    const options = [
+      'Reactivar con período actual',
+      'Reestablecer período de prueba (15 días)',
+      'Cancelar'
+    ];
+    
+    const choice = prompt(
+      `¿Cómo desea reactivar la suscripción de ${businessName}?\n\n` +
+      `1 - ${options[0]}\n` +
+      `2 - ${options[1]}\n` +
+      `3 - ${options[2]}\n\n` +
+      'Ingrese el número de opción:'
+    );
+    
+    if (!choice || choice === '3') return;
+    
+    const isTrial = choice === '2';
+    const reason = prompt('Razón de la reactivación (opcional):');
+    
+    setActionLoading(subscriptionId);
+    
+    try {
+      await reactivateSubscription(subscriptionId, { 
+        reason,
+        resetToTrial: isTrial
+      });
+      alert(`Suscripción reactivada exitosamente${isTrial ? ' con período de prueba de 15 días' : ''}`);
+      // Forzar recarga completa
+      window.location.reload();
+    } catch (error) {
+      alert(`Error: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleSuspend = async (subscriptionId, businessName) => {
+    const reason = prompt(`Suspender suscripción de ${businessName}. Ingrese la razón:`);
+    if (!reason) return;
+    
+    setActionLoading(subscriptionId);
+    
+    try {
+      await suspendSubscription(subscriptionId, reason);
+      alert('Suscripción suspendida exitosamente');
+      // Forzar recarga completa
+      window.location.reload();
+    } catch (error) {
+      alert(`Error: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDelete = async (subscriptionId, businessName) => {
+    if (!confirm(`⚠️ ELIMINAR PERMANENTEMENTE la suscripción de ${businessName}?\n\nEsta acción NO se puede deshacer.`)) return;
+    if (!confirm('¿Está COMPLETAMENTE SEGURO?')) return;
+    
+    setActionLoading(subscriptionId);
+    
+    try {
+      await deleteSubscription(subscriptionId);
+      alert('Suscripción eliminada exitosamente');
+      // Forzar recarga completa
+      window.location.reload();
+    } catch (error) {
+      alert(`Error: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   let errorMsg = '';
   if (errors) {
@@ -74,14 +149,15 @@ const OwnerSubscriptionsPage = () => {
               <th className="px-4 py-3 text-left font-semibold text-indigo-700">Monto</th>
               <th className="px-4 py-3 text-left font-semibold text-indigo-700">Comisión</th>
               <th className="px-4 py-3 text-left font-semibold text-indigo-700">Monto Neto</th>
+              <th className="px-4 py-3 text-center font-semibold text-indigo-700">Acciones</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
             {loading && loading.payments && (
-              <tr><td colSpan={15} className="p-8 text-center text-indigo-500 font-semibold">Cargando pagos y suscripciones...</td></tr>
+              <tr><td colSpan={16} className="p-8 text-center text-indigo-500 font-semibold">Cargando pagos y suscripciones...</td></tr>
             )}
             {!loading.payments && payments.length === 0 && (
-              <tr><td colSpan={15} className="p-8 text-center text-gray-400">No hay pagos ni suscripciones registradas.</td></tr>
+              <tr><td colSpan={16} className="p-8 text-center text-gray-400">No hay pagos ni suscripciones registradas.</td></tr>
             )}
             {!loading.payments && payments.map(payment => {
               const sub = payment.subscription || {};
@@ -111,6 +187,45 @@ const OwnerSubscriptionsPage = () => {
                   <td className="px-4 py-3 text-gray-700 font-bold">{payment.amount}</td>
                   <td className="px-4 py-3 text-gray-700">{payment.commissionFee || '-'}</td>
                   <td className="px-4 py-3 text-gray-700 font-bold">{payment.netAmount || '-'}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2 justify-center">
+                      {/* Botón Reactivar - solo si está cancelada, expirada o suspendida */}
+                      {(sub.status === 'CANCELED' || sub.status === 'EXPIRED' || sub.status === 'SUSPENDED') && (
+                        <button
+                          onClick={() => handleReactivate(sub.id, sub.business?.name)}
+                          disabled={actionLoading === sub.id}
+                          className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          title="Reactivar suscripción"
+                        >
+                          {actionLoading === sub.id ? '...' : 'Reactivar'}
+                        </button>
+                      )}
+                      
+                      {/* Botón Suspender - solo si está activa */}
+                      {sub.status === 'ACTIVE' && (
+                        <button
+                          onClick={() => handleSuspend(sub.id, sub.business?.name)}
+                          disabled={actionLoading === sub.id}
+                          className="px-3 py-1 text-xs font-medium text-white bg-yellow-600 rounded hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          title="Suspender suscripción"
+                        >
+                          {actionLoading === sub.id ? '...' : 'Suspender'}
+                        </button>
+                      )}
+                      
+                      {/* Botón Eliminar - solo en desarrollo */}
+                      {import.meta.env.DEV && (
+                        <button
+                          onClick={() => handleDelete(sub.id, sub.business?.name)}
+                          disabled={actionLoading === sub.id}
+                          className="px-3 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          title="Eliminar suscripción (solo dev)"
+                        >
+                          {actionLoading === sub.id ? '...' : 'Eliminar'}
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               );
             })}

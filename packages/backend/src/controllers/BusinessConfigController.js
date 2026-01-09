@@ -44,7 +44,7 @@ class BusinessConfigController {
       const rulesData = req.body;
       
       // Verificar permisos de administración
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para modificar las reglas del negocio'
@@ -115,7 +115,7 @@ class BusinessConfigController {
       const { businessId } = req.params;
       const { userData, profileData } = req.body;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para crear especialistas'
@@ -150,7 +150,7 @@ class BusinessConfigController {
       const { businessId, profileId } = req.params;
       const profileData = req.body;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para modificar especialistas'
@@ -180,7 +180,7 @@ class BusinessConfigController {
     try {
       const { businessId, profileId } = req.params;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para eliminar especialistas'
@@ -209,7 +209,7 @@ class BusinessConfigController {
       const { businessId, profileId } = req.params;
       const { isActive } = req.body;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para cambiar el estado de especialistas'
@@ -272,7 +272,7 @@ class BusinessConfigController {
       const { businessId } = req.params;
       const scheduleData = req.body;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'SPECIALIST', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'SPECIALIST', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para crear horarios'
@@ -280,7 +280,7 @@ class BusinessConfigController {
       }
 
       // Los especialistas solo pueden crear sus propios horarios
-      if (req.user.role === 'SPECIALIST' && scheduleData.specialistId !== req.user.id) {
+      if ((req.user.role === 'SPECIALIST' || req.user.role === 'BUSINESS_SPECIALIST') && scheduleData.specialistId !== req.user.id) {
         return res.status(403).json({
           success: false,
           message: 'Solo puedes crear tus propios horarios'
@@ -349,7 +349,7 @@ class BusinessConfigController {
     try {
       const { businessId, scheduleId } = req.params;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para eliminar horarios'
@@ -485,7 +485,7 @@ class BusinessConfigController {
     try {
       const { businessId } = req.params;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para acceder a la configuración de pagos'
@@ -526,7 +526,7 @@ class BusinessConfigController {
       const { businessId } = req.params;
       const configData = req.body;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para modificar la configuración de pagos'
@@ -560,7 +560,7 @@ class BusinessConfigController {
     try {
       const { businessId } = req.params;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para probar la configuración de pagos'
@@ -713,7 +713,7 @@ class BusinessConfigController {
       const { businessId } = req.params;
       const serviceData = req.body;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para crear servicios en este negocio'
@@ -744,7 +744,7 @@ class BusinessConfigController {
       const { businessId, serviceId } = req.params;
       const serviceData = req.body;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para actualizar servicios en este negocio'
@@ -775,7 +775,7 @@ class BusinessConfigController {
     try {
       const { businessId, serviceId } = req.params;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para eliminar servicios en este negocio'
@@ -805,7 +805,7 @@ class BusinessConfigController {
       const { businessId, serviceId } = req.params;
       const { isActive } = req.body;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para cambiar el estado de servicios en este negocio'
@@ -886,7 +886,7 @@ class BusinessConfigController {
     try {
       const { businessId, serviceId } = req.params;
       
-      if (req.user.businessId !== businessId || !['BUSINESS', 'OWNER'].includes(req.user.role)) {
+      if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para actualizar imágenes en este negocio'

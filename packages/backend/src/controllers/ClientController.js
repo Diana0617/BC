@@ -387,14 +387,32 @@ class ClientController {
         }
       }
 
+      // Limpiar teléfonos: quitar espacios, guiones, paréntesis y signos +
+      const cleanPhone = (phoneStr) => {
+        if (!phoneStr) return null;
+        return phoneStr.replace(/[\s\-\(\)\+]/g, '');
+      };
+
+      const cleanedPhone = cleanPhone(phone);
+      const cleanedPhoneSecondary = cleanPhone(phoneSecondary);
+
+      // Validar longitud del teléfono después de limpiar
+      if (cleanedPhone && (cleanedPhone.length < 10 || cleanedPhone.length > 15)) {
+        return res.status(400).json({
+          success: false,
+          error: 'El teléfono debe tener entre 10 y 15 dígitos',
+          field: 'phone'
+        });
+      }
+
       // 🔒 CRÍTICO: SIEMPRE guardar el businessId con el cliente
       const newClient = await Client.create({
         businessId: businessId, // ✅ Asociar cliente al negocio
         firstName,
         lastName,
         email,
-        phone: phone || null,
-        phoneSecondary: phoneSecondary || null,
+        phone: cleanedPhone,
+        phoneSecondary: cleanedPhoneSecondary,
         dateOfBirth: validDateOfBirth,
         gender: gender || null,
         address: address || null,
@@ -414,9 +432,34 @@ class ClientController {
       console.error('Error creating client:', error);
       
       if (error.name === 'SequelizeValidationError') {
+        // Mapear errores de Sequelize a mensajes amigables
+        const fieldErrors = {};
+        error.errors.forEach(err => {
+          const field = err.path;
+          let message = err.message;
+          
+          // Personalizar mensajes según el campo y tipo de error
+          if (field === 'phone') {
+            if (err.validatorKey === 'len') {
+              message = 'El teléfono debe tener entre 10 y 15 dígitos';
+            }
+          } else if (field === 'email') {
+            if (err.validatorKey === 'isEmail') {
+              message = 'El email no tiene un formato válido';
+            }
+          } else if (field === 'firstName' || field === 'lastName') {
+            if (err.validatorKey === 'len') {
+              message = `El ${field === 'firstName' ? 'nombre' : 'apellido'} debe tener entre 2 y 50 caracteres`;
+            }
+          }
+          
+          fieldErrors[field] = message;
+        });
+        
         return res.status(400).json({
           success: false,
           error: 'Datos inválidos',
+          fieldErrors: fieldErrors,
           details: error.errors.map(e => e.message)
         });
       }
