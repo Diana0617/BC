@@ -5,7 +5,9 @@ const {
   SpecialistProfile, 
   User,
   Product,
-  InventoryMovement
+  InventoryMovement,
+  Branch,
+  SpecialistBranchSchedule
 } = require('../models');
 const { Op, fn, col, literal } = require('sequelize');
 const { sequelize } = require('../config/database');
@@ -904,6 +906,78 @@ class SpecialistController {
       res.status(500).json({
         success: false,
         error: 'Error interno del servidor',
+        details: error.message
+      });
+    }
+  }
+
+  /**
+   * Obtener sucursales donde atiende un especialista
+   * GET /api/specialists/:specialistId/branches
+   */
+  static async getSpecialistBranches(req, res) {
+    try {
+      const { specialistId } = req.params;
+      const { businessId } = req.query;
+
+      console.log('🔍 getSpecialistBranches called:', { specialistId, businessId });
+
+      // Buscar el specialist profile
+      // El specialistId puede ser userId o specialistProfileId
+      let specialistProfile = await SpecialistProfile.findOne({
+        where: { userId: specialistId, businessId }
+      });
+
+      if (!specialistProfile) {
+        specialistProfile = await SpecialistProfile.findOne({
+          where: { id: specialistId, businessId }
+        });
+      }
+
+      if (!specialistProfile) {
+        return res.status(404).json({
+          success: false,
+          error: 'Especialista no encontrado'
+        });
+      }
+
+      // Obtener sucursales únicas donde el especialista tiene horarios
+      const branchSchedules = await SpecialistBranchSchedule.findAll({
+        where: {
+          specialistId: specialistProfile.id,
+          isActive: true
+        },
+        include: [
+          {
+            model: Branch,
+            as: 'branch',
+            where: { businessId },
+            attributes: ['id', 'name', 'address', 'city', 'phone']
+          }
+        ],
+        attributes: ['branchId'],
+        group: ['branchId', 'branch.id', 'branch.name', 'branch.address', 'branch.city', 'branch.phone']
+      });
+
+      // Extraer sucursales únicas
+      const branches = branchSchedules
+        .map(schedule => schedule.branch)
+        .filter((branch, index, self) => 
+          index === self.findIndex(b => b.id === branch.id)
+        );
+
+      console.log(`✅ Found ${branches.length} branches for specialist`);
+
+      return res.status(200).json({
+        success: true,
+        data: branches
+      });
+
+    } catch (error) {
+      console.error('❌ Error en getSpecialistBranches:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Error al obtener sucursales del especialista',
         details: error.message
       });
     }

@@ -747,15 +747,38 @@ const BusinessProfile = () => {
                 )}
               </div>
             </div>
-            {/* Botón de logout */}
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition hover:bg-gray-100"
-              style={{ color: branding?.secondaryColor || '#06b6d4' }}
-            >
-              <ArrowRightOnRectangleIcon className="h-5 w-5" />
-              <span>Salir</span>
-            </button>
+            {/* Botones de navegación */}
+            <div className="flex items-center space-x-3">
+              {/* Botón Dashboard para BUSINESS */}
+              {user?.role === 'BUSINESS' && (
+                <button
+                  onClick={() => navigate('/business/dashboard')}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  <ChartBarIcon className="h-5 w-5" />
+                  <span>Dashboard</span>
+                </button>
+              )}
+              {/* Botón Dashboard para BUSINESS_SPECIALIST */}
+              {(user?.role === 'BUSINESS_SPECIALIST' || user?.role === 'SPECIALIST' || user?.role === 'RECEPTIONIST_SPECIALIST') && (
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition bg-purple-600 text-white hover:bg-purple-700"
+                >
+                  <ChartBarIcon className="h-5 w-5" />
+                  <span>Mi Dashboard</span>
+                </button>
+              )}
+              {/* Botón de logout */}
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition hover:bg-gray-100"
+                style={{ color: branding?.secondaryColor || '#06b6d4' }}
+              >
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                <span>Salir</span>
+              </button>
+            </div>
             {isSetupMode && (
               <div className="flex items-center space-x-4">
                 <div className="w-48 bg-gray-200 rounded-full h-2">

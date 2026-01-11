@@ -1,6 +1,5 @@
-const { Appointment, Payment, Expense, Business, User, Service, Product } = require('../models');
+const { Appointment, BusinessExpense, Business, User, Service, Product, sequelize } = require('../models');
 const { Op } = require('sequelize');
-const sequelize = require('../config/database');
 
 /**
  * Controlador para métricas del dashboard de Business
@@ -34,17 +33,19 @@ class BusinessMetricsController {
           startDate = new Date(now.setHours(0, 0, 0, 0));
       }
 
-      // 1. Métricas de ventas (pagos completados)
-      const salesData = await Payment.findAll({
+      // 1. Métricas de ventas (usando paidAmount de appointments)
+      const salesData = await Appointment.findAll({
         where: {
           businessId,
-          status: 'COMPLETED',
-          createdAt: {
+          paymentStatus: {
+            [Op.in]: ['PAID', 'PARTIAL']
+          },
+          startTime: {
             [Op.gte]: startDate
           }
         },
         attributes: [
-          [sequelize.fn('SUM', sequelize.col('amount')), 'totalSales'],
+          [sequelize.fn('SUM', sequelize.col('paidAmount')), 'totalSales'],
           [sequelize.fn('COUNT', sequelize.col('id')), 'totalTransactions']
         ],
         raw: true
@@ -54,7 +55,7 @@ class BusinessMetricsController {
       const totalTransactions = parseInt(salesData[0]?.totalTransactions || 0);
 
       // 2. Métricas de gastos
-      const expensesData = await Expense.findAll({
+      const expensesData = await BusinessExpense.findAll({
         where: {
           businessId,
           createdAt: {
@@ -74,7 +75,7 @@ class BusinessMetricsController {
       const appointmentsData = await Appointment.findAll({
         where: {
           businessId,
-          appointmentDate: {
+          startTime: {
             [Op.gte]: startDate
           }
         },
@@ -198,81 +199,50 @@ class BusinessMetricsController {
           startDate = new Date(now.setHours(0, 0, 0, 0));
       }
 
-      // Desglose por tipo (servicios vs productos)
-      const paymentsByType = await Payment.findAll({
+      // Obtener totales de appointments con pago
+      const salesData = await Appointment.findAll({
         where: {
           businessId,
-          status: 'COMPLETED',
-          createdAt: {
+          paymentStatus: {
+            [Op.in]: ['PAID', 'PARTIAL']
+          },
+          startTime: {
             [Op.gte]: startDate
           }
         },
         attributes: [
-          'paymentType',
-          [sequelize.fn('SUM', sequelize.col('amount')), 'total'],
+          [sequelize.fn('SUM', sequelize.col('paidAmount')), 'total'],
           [sequelize.fn('COUNT', sequelize.col('id')), 'count']
         ],
-        group: ['paymentType'],
         raw: true
       });
 
-      // Desglose por método de pago
-      const paymentsByMethod = await Payment.findAll({
-        where: {
-          businessId,
-          status: 'COMPLETED',
-          createdAt: {
-            [Op.gte]: startDate
-          }
-        },
-        attributes: [
-          'paymentMethod',
-          [sequelize.fn('COUNT', sequelize.col('id')), 'count']
-        ],
-        group: ['paymentMethod'],
-        raw: true
-      });
-
-      // Calcular método más usado
-      const mostUsedMethod = paymentsByMethod.reduce((max, current) => 
-        parseInt(current.count) > parseInt(max.count) ? current : max
-      , { paymentMethod: 'N/A', count: 0 });
-
-      // Calcular totales
-      const totalSales = paymentsByType.reduce((sum, item) => 
-        sum + parseFloat(item.total || 0), 0
-      );
-      const totalCount = paymentsByType.reduce((sum, item) => 
-        sum + parseInt(item.count || 0), 0
-      );
+      const totalSales = parseFloat(salesData[0]?.total || 0);
+      const totalCount = parseInt(salesData[0]?.count || 0);
       const averageTicket = totalCount > 0 ? totalSales / totalCount : 0;
-
-      // Organizar por tipo
-      const servicesSales = paymentsByType.find(p => p.paymentType === 'SERVICE')?.total || 0;
-      const productsSales = paymentsByType.find(p => p.paymentType === 'PRODUCT')?.total || 0;
 
       res.json({
         success: true,
         data: {
           services: {
-            value: parseFloat(servicesSales),
+            value: parseFloat(totalSales),
             formatted: new Intl.NumberFormat('es-CO', {
               style: 'currency',
               currency: 'COP',
               minimumFractionDigits: 0
-            }).format(servicesSales)
+            }).format(totalSales)
           },
           products: {
-            value: parseFloat(productsSales),
+            value: 0,
             formatted: new Intl.NumberFormat('es-CO', {
               style: 'currency',
               currency: 'COP',
               minimumFractionDigits: 0
-            }).format(productsSales)
+            }).format(0)
           },
           mostUsedMethod: {
-            method: mostUsedMethod.paymentMethod,
-            count: parseInt(mostUsedMethod.count)
+            method: 'N/A',
+            count: 0
           },
           averageTicket: {
             value: averageTicket,
@@ -285,7 +255,8 @@ class BusinessMetricsController {
           total: {
             value: totalSales,
             transactions: totalCount
-          }
+          },
+          methodsByType: []
         },
         period,
         generatedAt: new Date()
@@ -330,7 +301,7 @@ class BusinessMetricsController {
       const appointmentsData = await Appointment.findAll({
         where: {
           businessId,
-          appointmentDate: {
+          startTime: {
             [Op.gte]: startDate
           }
         },

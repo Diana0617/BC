@@ -44,7 +44,15 @@ router.patch('/:id/cancel', AppointmentController.updateAppointmentStatus);
 router.post('/:id/start', async (req, res) => {
   try {
     const { id } = req.params;
-    const { businessId } = req.query;
+    // Obtener businessId del query o del usuario autenticado
+    const businessId = req.query.businessId || req.user?.businessId;
+    
+    if (!businessId) {
+      return res.status(400).json({
+        success: false,
+        error: 'businessId es requerido'
+      });
+    }
 
     const where = { id, businessId };
 
@@ -95,7 +103,15 @@ router.post('/:id/start', async (req, res) => {
 router.post('/:id/complete', async (req, res) => {
   try {
     const { id } = req.params;
-    const { businessId } = req.query;
+    // Obtener businessId del query o del usuario autenticado
+    const businessId = req.query.businessId || req.user?.businessId;
+    
+    if (!businessId) {
+      return res.status(400).json({
+        success: false,
+        error: 'businessId es requerido'
+      });
+    }
     const { payment, notes } = req.body;
 
     console.log('🔵 POST /appointments/:id/complete - Iniciando...');
@@ -197,6 +213,86 @@ router.post('/:id/complete', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
+    });
+  }
+});
+
+// Procesar pago de cita
+router.post('/:id/payment', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { businessId, paymentMethodId, amount, discount, notes } = req.body;
+    
+    if (!businessId) {
+      return res.status(400).json({
+        success: false,
+        error: 'businessId es requerido'
+      });
+    }
+
+    if (!paymentMethodId || !amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Método de pago y monto son requeridos'
+      });
+    }
+
+    const where = { id, businessId };
+
+    // Aplicar filtros de acceso según el rol
+    if (req.specialist) {
+      where.specialistId = req.specialist.id;
+    }
+
+    const appointment = await Appointment.findOne({ where });
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Cita no encontrada'
+      });
+    }
+
+    // Validar que esté en estado IN_PROGRESS o COMPLETED
+    if (!['IN_PROGRESS', 'COMPLETED'].includes(appointment.status)) {
+      return res.status(400).json({
+        success: false,
+        error: `No se puede procesar el pago de una cita en estado ${appointment.status}`
+      });
+    }
+
+    // Calcular el monto total con descuento
+    const totalDiscount = (appointment.discountAmount || 0) + (discount || 0);
+    const finalAmount = Math.max(0, amount - (discount || 0));
+
+    // Actualizar appointment con información de pago
+    await appointment.update({
+      paymentStatus: 'PAID',
+      paidAmount: finalAmount,
+      discountAmount: totalDiscount,
+      paymentMethodId,
+      paidAt: new Date(),
+      specialistNotes: notes || appointment.specialistNotes
+    });
+
+    console.log('✅ Pago procesado exitosamente:', {
+      appointmentId: id,
+      amount: finalAmount,
+      discount: totalDiscount
+    });
+
+    return res.json({
+      success: true,
+      message: 'Pago procesado exitosamente',
+      data: appointment
+    });
+
+  } catch (error) {
+    console.error('❌ Error al procesar pago:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor',
+      message: error.message
     });
   }
 });

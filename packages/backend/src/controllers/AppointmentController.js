@@ -191,7 +191,7 @@ class AppointmentController {
           {
             model: Service,
             as: 'service',
-            attributes: ['id', 'name', 'description', 'duration', 'price', 'category']
+            attributes: ['id', 'name', 'description', 'duration', 'price', 'category', 'requiresConsent', 'consentTemplateId']
           },
           {
             model: Client,
@@ -209,7 +209,7 @@ class AppointmentController {
             }]
           },
           {
-            model: require('../models/Branch'),
+            model: Branch,
             as: 'branch',
             attributes: ['id', 'name', 'code', 'address'],
             required: false
@@ -358,6 +358,8 @@ class AppointmentController {
    */
   static async createAppointment(req, res) {
     try {
+      console.log('📥 [createAppointment] req.body completo:', JSON.stringify(req.body, null, 2));
+      
       // Verificar que el usuario NO sea OWNER de la plataforma
       if (req.user?.role === 'OWNER') {
         return res.status(403).json({
@@ -382,6 +384,14 @@ class AppointmentController {
         clientNotes,
         branchId
       } = req.body;
+      
+      console.log('📋 [createAppointment] Valores extraídos:', {
+        businessId,
+        specialistId,
+        serviceId,
+        clientId,
+        branchId
+      });
 
       // Calcular endTime si viene duration pero no endTime
       let calculatedEndTime = endTime;
@@ -462,34 +472,54 @@ class AppointmentController {
       // Validar que el especialista pertenezca al negocio
       console.log('🔍 Buscando especialista:', { specialistId, businessId });
       
-      // Primero buscar el SpecialistProfile para obtener el userId
-      const SpecialistProfile = require('../models/SpecialistProfile');
-      const specialistProfile = await SpecialistProfile.findOne({
+      // Verificar si es un usuario BUSINESS_SPECIALIST (dueño del negocio)
+      const User = require('../models/User');
+      const businessSpecialistUser = await User.findOne({
         where: {
           id: specialistId,
           businessId,
-          isActive: true
-        },
-        include: [{
-          model: User,
-          as: 'user',
-          where: {
-            status: 'ACTIVE',
-            role: { [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST'] }
-          }
-        }]
+          status: 'ACTIVE',
+          role: 'BUSINESS_SPECIALIST'
+        }
       });
 
-      if (!specialistProfile || !specialistProfile.user) {
-        console.log('❌ Especialista no encontrado o no válido');
-        return res.status(400).json({
-          success: false,
-          error: 'Especialista no válido para este negocio'
-        });
-      }
+      let specialist;
+      let specialistProfile = null; // Declarar en el scope externo
       
-      const specialist = specialistProfile.user;
-      console.log('✅ Especialista válido:', specialist.id);
+      if (businessSpecialistUser) {
+        // Es un BUSINESS_SPECIALIST, no necesita SpecialistProfile
+        specialist = businessSpecialistUser;
+        console.log('✅ BUSINESS_SPECIALIST válido:', specialist.id);
+      } else {
+        // Buscar el SpecialistProfile para especialistas regulares
+        const SpecialistProfile = require('../models/SpecialistProfile');
+        specialistProfile = await SpecialistProfile.findOne({
+          where: {
+            id: specialistId,
+            businessId,
+            isActive: true
+          },
+          include: [{
+            model: User,
+            as: 'user',
+            where: {
+              status: 'ACTIVE',
+              role: { [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST'] }
+            }
+          }]
+        });
+
+        if (!specialistProfile || !specialistProfile.user) {
+          console.log('❌ Especialista no encontrado o no válido');
+          return res.status(400).json({
+            success: false,
+            error: 'Especialista no válido para este negocio'
+          });
+        }
+        
+        specialist = specialistProfile.user;
+        console.log('✅ Especialista válido:', specialist.id);
+      }
 
       // Validar que el servicio pertenezca al negocio
       console.log('🔍 Buscando servicio:', { serviceId, businessId });
@@ -531,22 +561,28 @@ class AppointmentController {
         }
 
         console.log('🔍 Verificando acceso del especialista a la sucursal');
-        // Verificar que el especialista tenga acceso a esa sucursal
-        const specialistBranchAccess = await UserBranch.findOne({
-          where: {
-            userId: specialist.id, // Usar el User.id del especialista
-            branchId: branchId
-          }
-        });
-
-        if (!specialistBranchAccess) {
-          console.log('❌ Especialista sin acceso a la sucursal');
-          return res.status(400).json({
-            success: false,
-            error: 'El especialista no tiene acceso a la sucursal seleccionada'
+        
+        // BUSINESS_SPECIALIST (dueño del negocio) tiene acceso a todas las sucursales
+        if (specialist.role === 'BUSINESS_SPECIALIST') {
+          console.log('✅ BUSINESS_SPECIALIST tiene acceso automático a todas las sucursales');
+        } else {
+          // Verificar que el especialista regular tenga acceso a esa sucursal
+          const specialistBranchAccess = await UserBranch.findOne({
+            where: {
+              userId: specialist.id, // Usar el User.id del especialista
+              branchId: branchId
+            }
           });
+
+          if (!specialistBranchAccess) {
+            console.log('❌ Especialista sin acceso a la sucursal');
+            return res.status(400).json({
+              success: false,
+              error: 'El especialista no tiene acceso a la sucursal seleccionada'
+            });
+          }
+          console.log('✅ Especialista tiene acceso a la sucursal');
         }
-        console.log('✅ Especialista tiene acceso a la sucursal');
       }
 
       // ✅ VALIDACIÓN DE HORARIOS: Primero intentar horarios del especialista, luego horarios del negocio
@@ -557,23 +593,30 @@ class AppointmentController {
       const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][appointmentDate.getDay()];
       const appointmentTime = appointmentDate.toTimeString().split(' ')[0]; // "HH:MM:SS"
       
+      // Para BUSINESS_SPECIALIST, usar directamente el userId ya que no tienen specialistProfile
+      const specialistIdForSchedule = businessSpecialistUser ? businessSpecialistUser.id : (specialistProfile ? specialistProfile.id : null);
+      
       console.log('🔍 Verificando horario del especialista:', {
-        specialistProfileId: specialistProfile.id,
+        specialistId: specialistIdForSchedule,
+        isBUSINESS_SPECIALIST: !!businessSpecialistUser,
         branchId,
         dayOfWeek,
         appointmentTime,
         appointmentDate: appointmentDate.toISOString()
       });
 
-      // 1. Intentar obtener horarios del especialista
-      let schedules = await SpecialistBranchSchedule.findAll({
-        where: {
-          specialistId: specialistProfile.id,
-          branchId: branchId || null,
-          dayOfWeek,
-          isActive: true
-        }
-      });
+      // 1. Intentar obtener horarios del especialista (solo si NO es BUSINESS_SPECIALIST)
+      let schedules = [];
+      if (!businessSpecialistUser && specialistIdForSchedule) {
+        schedules = await SpecialistBranchSchedule.findAll({
+          where: {
+            specialistId: specialistIdForSchedule,
+            branchId: branchId || null,
+            dayOfWeek,
+            isActive: true
+          }
+        });
+      }
 
       console.log(`📅 Horarios del especialista encontrados: ${schedules.length}`);
 
@@ -615,6 +658,28 @@ class AppointmentController {
             console.log('✅ Usando horarios de la sucursal como fallback');
           } else {
             console.log('❌ La sucursal está cerrada ese día');
+            
+            // Retornar error específico para sucursal cerrada
+            const dayNames = {
+              monday: 'lunes',
+              tuesday: 'martes',
+              wednesday: 'miércoles',
+              thursday: 'jueves',
+              friday: 'viernes',
+              saturday: 'sábado',
+              sunday: 'domingo'
+            };
+            
+            return res.status(400).json({
+              success: false,
+              error: `La sucursal está cerrada los ${dayNames[dayOfWeek]}. Por favor, selecciona otro día.`,
+              details: {
+                reason: 'BRANCH_CLOSED',
+                dayOfWeek,
+                branchId: targetBranch.id,
+                branchName: targetBranch.name
+              }
+            });
           }
         }
       }
@@ -631,9 +696,32 @@ class AppointmentController {
           sunday: 'domingo'
         };
         
+        // Mensaje más específico según el contexto
+        let errorMessage = `No hay horarios disponibles para los ${dayNames[dayOfWeek]}`;
+        let errorReason = 'NO_SCHEDULES';
+        
+        if (branchId) {
+          errorMessage += ' en esta sucursal';
+          errorReason = 'NO_SCHEDULES_IN_BRANCH';
+        }
+        
+        if (!businessSpecialistUser && specialistIdForSchedule) {
+          errorMessage += '. El especialista no tiene horarios configurados y la sucursal no tiene horarios definidos para este día';
+          errorReason = 'NO_SPECIALIST_SCHEDULES';
+        }
+        
+        errorMessage += '. Por favor, selecciona otro día u horario.';
+        
         return res.status(400).json({
           success: false,
-          error: `No hay horarios disponibles para los ${dayNames[dayOfWeek]}${branchId ? ' en esta sucursal' : ''}. Por favor, selecciona otro día u horario.`
+          error: errorMessage,
+          details: {
+            reason: errorReason,
+            dayOfWeek,
+            branchId,
+            specialistId: specialistIdForSchedule,
+            suggestion: 'Configura horarios para el especialista o ajusta los horarios de la sucursal'
+          }
         });
       }
 
@@ -649,11 +737,21 @@ class AppointmentController {
 
       if (!isWithinSchedule) {
         const availableRanges = schedules.map(s => `${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)}`).join(', ');
-        const sourceType = schedules[0]._isBranchHours ? 'del negocio' : 'del especialista';
+        const sourceType = schedules[0]._isBranchHours ? 'de la sucursal' : 'del especialista';
+        const requestedTime = appointmentTime.substring(0, 5);
         
         return res.status(400).json({
           success: false,
-          error: `No hay disponibilidad a las ${appointmentTime.substring(0, 5)}. Horarios ${sourceType}: ${availableRanges}`
+          error: `El horario ${requestedTime} no está disponible. Horarios ${sourceType} para este día: ${availableRanges}`,
+          details: {
+            reason: 'TIME_OUT_OF_SCHEDULE',
+            requestedTime,
+            availableRanges: schedules.map(s => ({
+              start: s.startTime.substring(0, 5),
+              end: s.endTime.substring(0, 5)
+            })),
+            sourceType: schedules[0]._isBranchHours ? 'branch' : 'specialist'
+          }
         });
       }
 
@@ -695,25 +793,144 @@ class AppointmentController {
         });
       }
 
-      // Consultar precio personalizado del especialista para este servicio
-      const specialistService = await SpecialistService.findOne({
-        where: {
-          specialistId: specialistProfile.id, // Usar el SpecialistProfile.id para buscar precios
-          serviceId,
-          isActive: true
+      // 🎯 VALIDACIÓN DE SESIONES MULTISESIÓN Y MANTENIMIENTO
+      let sessionNumber = 1;
+      let sessionInfo = null;
+      
+      if (service.isPackage) {
+        console.log('🎁 Servicio es un paquete:', service.packageType);
+        
+        // Contar todas las sesiones del cliente para este servicio (excepto canceladas)
+        const previousSessions = await Appointment.count({
+          where: {
+            businessId,
+            clientId: client.id,
+            serviceId,
+            status: {
+              [Op.in]: ['COMPLETED', 'CONFIRMED', 'IN_PROGRESS', 'PENDING']
+            }
+          }
+        });
+        
+        sessionNumber = previousSessions + 1;
+        console.log(`📊 Cliente tiene ${previousSessions} sesiones previas, esta será la sesión #${sessionNumber}`);
+        
+        const packageConfig = service.packageConfig || {};
+        
+        if (service.packageType === 'MULTI_SESSION') {
+          const totalSessions = packageConfig.sessions || 1;
+          
+          // Validar que no exceda el número de sesiones
+          if (sessionNumber > totalSessions) {
+            return res.status(400).json({
+              success: false,
+              error: `El cliente ya completó todas las sesiones de este servicio (${totalSessions} de ${totalSessions})`,
+              details: {
+                reason: 'MAX_SESSIONS_REACHED',
+                totalSessions,
+                completedSessions: previousSessions,
+                serviceId: service.id,
+                serviceName: service.name
+              }
+            });
+          }
+          
+          sessionInfo = {
+            type: 'MULTI_SESSION',
+            sessionNumber,
+            totalSessions,
+            remainingSessions: totalSessions - sessionNumber
+          };
+          
+          console.log(`✅ Sesión ${sessionNumber}/${totalSessions} - Quedan ${sessionInfo.remainingSessions} sesiones`);
+          
+        } else if (service.packageType === 'WITH_MAINTENANCE') {
+          const maintenanceSessions = packageConfig.maintenanceSessions || 0;
+          const totalSessions = 1 + maintenanceSessions; // 1 sesión principal + N mantenimientos
+          
+          // Determinar si es sesión principal o mantenimiento
+          const isMainSession = sessionNumber === 1;
+          
+          // Validar que no exceda el número de sesiones
+          if (sessionNumber > totalSessions) {
+            return res.status(400).json({
+              success: false,
+              error: `El cliente ya completó todas las sesiones de este servicio (${totalSessions} de ${totalSessions})`,
+              details: {
+                reason: 'MAX_SESSIONS_REACHED',
+                totalSessions,
+                completedSessions: previousSessions,
+                serviceId: service.id,
+                serviceName: service.name,
+                maintenanceSessions
+              }
+            });
+          }
+          
+          sessionInfo = {
+            type: 'WITH_MAINTENANCE',
+            sessionNumber,
+            totalSessions,
+            isMainSession,
+            maintenanceNumber: isMainSession ? null : sessionNumber - 1,
+            remainingSessions: totalSessions - sessionNumber
+          };
+          
+          console.log(`✅ Sesión ${sessionNumber}/${totalSessions} - ${isMainSession ? 'PRINCIPAL' : `MANTENIMIENTO #${sessionInfo.maintenanceNumber}`}`);
         }
-      });
+      }
 
-      // Usar precio personalizado si existe, sino usar el precio del servicio
-      const finalPrice = specialistService && specialistService.customPrice !== null 
-        ? specialistService.customPrice 
-        : service.price;
+      // Consultar precio personalizado del especialista para este servicio
+      // Para BUSINESS_SPECIALIST, usar el precio base del servicio (sin personalización)
+      let specialistService = null;
+      
+      if (specialistProfile) {
+        specialistService = await SpecialistService.findOne({
+          where: {
+            specialistId: specialistProfile.id, // Usar el SpecialistProfile.id para buscar precios
+            serviceId,
+            isActive: true
+          }
+        });
+      }
+
+      // 💰 CÁLCULO DE PRECIO SEGÚN TIPO DE SESIÓN
+      let finalPrice = service.price;
+      
+      if (service.isPackage && sessionInfo) {
+        const packageConfig = service.packageConfig || {};
+        const pricing = packageConfig.pricing || {};
+        
+        if (service.packageType === 'MULTI_SESSION') {
+          // Para multisesión, usar pricePerSession si existe
+          if (service.pricePerSession) {
+            finalPrice = service.pricePerSession;
+          } else if (pricing.perSession) {
+            finalPrice = parseFloat(pricing.perSession);
+          }
+          console.log(`💰 Precio por sesión (MULTI_SESSION): ${finalPrice}`);
+          
+        } else if (service.packageType === 'WITH_MAINTENANCE') {
+          // Para WITH_MAINTENANCE, distinguir entre principal y mantenimiento
+          if (sessionInfo.isMainSession) {
+            finalPrice = pricing.mainSession ? parseFloat(pricing.mainSession) : service.price;
+            console.log(`💰 Precio sesión principal: ${finalPrice}`);
+          } else {
+            finalPrice = pricing.maintenancePrice ? parseFloat(pricing.maintenancePrice) : service.price;
+            console.log(`💰 Precio mantenimiento: ${finalPrice}`);
+          }
+        }
+      } else if (specialistService && specialistService.customPrice !== null) {
+        // Usar precio personalizado del especialista si no es paquete
+        finalPrice = specialistService.customPrice;
+        console.log(`💰 Precio personalizado especialista: ${finalPrice}`);
+      }
 
       // Generar número de cita único
       const appointmentNumber = `CITA-${Date.now()}`;
 
-      // Crear la cita
-      const appointment = await Appointment.create({
+      // Crear la cita con información de sesión si aplica
+      const appointmentData = {
         businessId,
         clientId: client.id,
         specialistId: specialist.id, // Usar el User.id del especialista
@@ -726,7 +943,14 @@ class AppointmentController {
         status: 'PENDING',
         notes,
         clientNotes
-      });
+      };
+      
+      // Agregar metadata de sesión si es un paquete
+      if (sessionInfo) {
+        appointmentData.sessionMetadata = sessionInfo;
+      }
+      
+      const appointment = await Appointment.create(appointmentData);
 
       // Obtener la cita creada con relaciones
       const createdAppointment = await Appointment.findByPk(appointment.id, {
@@ -734,7 +958,7 @@ class AppointmentController {
           {
             model: Service,
             as: 'service', // Agregar el alias
-            attributes: ['id', 'name', 'duration', 'price']
+            attributes: ['id', 'name', 'duration', 'price', 'isPackage', 'packageType', 'packageConfig', 'pricePerSession']
           },
           {
             model: Client,
@@ -754,12 +978,20 @@ class AppointmentController {
           }
         ]
       });
-
-      res.status(201).json({
+      
+      // Agregar información de sesión en la respuesta
+      const response = {
         success: true,
         message: 'Cita creada exitosamente',
-        data: createdAppointment
-      });
+        data: createdAppointment.toJSON()
+      };
+      
+      if (sessionInfo) {
+        response.data.sessionInfo = sessionInfo;
+        response.message = `Cita creada exitosamente - Sesión ${sessionInfo.sessionNumber}/${sessionInfo.totalSessions}`;
+      }
+
+      res.status(201).json(response);
 
     } catch (error) {
       console.error('Error creando cita:', error);
@@ -776,12 +1008,21 @@ class AppointmentController {
    */
   static async updateAppointmentStatus(req, res) {
     try {
-      const { appointmentId } = req.params;
-      const { businessId } = req.query;
+      const { id } = req.params; // La ruta usa :id, no :appointmentId
       const { status, notes, cancelReason } = req.body;
+      
+      // Obtener businessId del query o del usuario autenticado
+      const businessId = req.query.businessId || req.user?.businessId;
+      
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: 'businessId es requerido'
+        });
+      }
 
       const where = {
-        id: appointmentId,
+        id: id,
         businessId
       };
 
@@ -790,7 +1031,7 @@ class AppointmentController {
         where.specialistId = req.specialist.id;
         
         // Validar estados permitidos para especialista
-        const allowedStatuses = ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'NO_SHOW'];
+        const allowedStatuses = ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'NO_SHOW', 'CANCELED'];
         if (!allowedStatuses.includes(status)) {
           return res.status(400).json({
             success: false,

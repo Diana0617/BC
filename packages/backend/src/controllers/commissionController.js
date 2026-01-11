@@ -4,13 +4,235 @@ const {
   Service, 
   Business,
   BusinessRule,
-  RuleTemplate
+  RuleTemplate,
+  Appointment,
+  CommissionDetail,
+  CommissionPaymentRequest,
+  User,
+  Client,
+  BusinessExpense,
+  BusinessExpenseCategory,
+  FinancialMovement
 } = require('../models');
+const { Op } = require('sequelize');
+const { startOfMonth, endOfMonth, format } = require('date-fns');
+const BusinessExpenseController = require('./BusinessExpenseController');
 
 /**
  * @controller CommissionController
  * @description Gestión de comisiones a nivel de negocio y servicios
  */
+
+/**
+ * Obtener resumen de comisiones del especialista (para dashboard)
+ * GET /api/commissions/summary?specialistId=xxx&businessId=xxx
+ */
+exports.getSpecialistCommissionSummary = async (req, res) => {
+  try {
+    const { specialistId, businessId } = req.query;
+
+    if (!specialistId) {
+      return res.status(400).json({
+        success: false,
+        message: 'specialistId es requerido'
+      });
+    }
+
+    // Período: mes actual
+    const now = new Date();
+    const periodStart = startOfMonth(now);
+    const periodEnd = endOfMonth(now);
+
+    // Obtener turnos completados en el mes
+    const completedAppointments = await Appointment.findAll({
+      where: {
+        specialistId,
+        ...(businessId && { businessId }),
+        status: 'COMPLETED',
+        completedAt: {
+          [Op.between]: [periodStart, periodEnd]
+        }
+      },
+      include: [
+        {
+          model: Service,
+          as: 'service',
+          attributes: ['id', 'name', 'price']
+        }
+      ]
+    });
+
+    // Calcular comisiones generadas
+    let pending = 0;
+    let thisMonth = 0;
+    
+    completedAppointments.forEach(appointment => {
+      const price = parseFloat(appointment.totalAmount || appointment.service?.price || 0);
+      const commissionRate = 50; // Por defecto 50%, después se puede obtener de config
+      const commission = (price * commissionRate) / 100;
+      
+      pending += commission;
+      thisMonth += commission;
+    });
+
+    // Obtener comisiones ya pagadas (si existen)
+    const paidCommissions = await CommissionDetail.sum('commissionAmount', {
+      where: {
+        serviceDate: {
+          [Op.between]: [periodStart, periodEnd]
+        },
+        paymentStatus: 'PAID'
+      },
+      include: [
+        {
+          model: Appointment,
+          as: 'appointment',
+          where: { specialistId },
+          required: true,
+          attributes: []
+        }
+      ]
+    }) || 0;
+
+    const paid = paidCommissions;
+    pending = pending - paid;
+
+    // Obtener solicitudes pendientes
+    const requestedPayments = await CommissionPaymentRequest.findAll({
+      where: {
+        specialistId,
+        status: {
+          [Op.in]: ['SUBMITTED', 'APPROVED']
+        }
+      }
+    });
+
+    const requested = requestedPayments.reduce((sum, req) => sum + parseFloat(req.totalAmount), 0);
+
+    // Último pago
+    const lastPayment = await CommissionPaymentRequest.findOne({
+      where: {
+        specialistId,
+        status: 'PAID'
+      },
+      order: [['paidAt', 'DESC']],
+      attributes: ['paidAt', 'totalAmount']
+    });
+
+    res.json({
+      success: true,
+      data: {
+        pending: Math.round(pending * 100) / 100,
+        requested: Math.round(requested * 100) / 100,
+        paid: Math.round(paid * 100) / 100,
+        total: Math.round((pending + paid) * 100) / 100,
+        thisMonth: Math.round(thisMonth * 100) / 100,
+        lastPayment: lastPayment ? {
+          date: lastPayment.paidAt,
+          amount: lastPayment.totalAmount
+        } : null
+      }
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo resumen de comisiones:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener resumen de comisiones',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Obtener historial de comisiones paginado
+ * GET /api/commissions/history?specialistId=xxx&businessId=xxx&page=1&limit=20
+ */
+exports.getCommissionHistory = async (req, res) => {
+  try {
+    const { specialistId, businessId, page = 1, limit = 20, status, startDate, endDate, search } = req.query;
+
+    if (!specialistId) {
+      return res.status(400).json({
+        success: false,
+        message: 'specialistId es requerido'
+      });
+    }
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    
+    // Construir filtros
+    const where = {
+      specialistId,
+      ...(businessId && { businessId })
+    };
+
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+
+    if (startDate && endDate) {
+      where.paidAt = {
+        [Op.between]: [new Date(startDate), new Date(endDate)]
+      };
+    }
+
+    // Obtener solicitudes de pago con paginación
+    const { rows: payments, count } = await CommissionPaymentRequest.findAndCountAll({
+      where,
+      include: [
+        {
+          model: CommissionDetail,
+          as: 'details',
+          include: [
+            {
+              model: Appointment,
+              as: 'appointment',
+              include: [
+                {
+                  model: Service,
+                  as: 'service',
+                  attributes: ['id', 'name']
+                },
+                {
+                  model: Client,
+                  as: 'client',
+                  attributes: ['id', 'firstName', 'lastName']
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      order: [['paidAt', 'DESC']],
+      limit: parseInt(limit),
+      offset
+    });
+
+    const totalPages = Math.ceil(count / parseInt(limit));
+
+    res.json({
+      success: true,
+      data: {
+        commissions: payments,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: count,
+          totalPages
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo historial de comisiones:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener historial de comisiones',
+      error: error.message
+    });
+  }
+};
 
 /**
  * Obtener configuración de comisiones del negocio
@@ -519,20 +741,6 @@ exports.calculateCommission = async (req, res) => {
 };
 
 // ==================== NUEVOS MÉTODOS PARA GESTIÓN DE PAGOS ====================
-
-const { Op } = require('sequelize');
-const { 
-  CommissionPaymentRequest, 
-  CommissionDetail,
-  User,
-  Client,
-  Appointment,
-  BusinessExpense,
-  BusinessExpenseCategory,
-  FinancialMovement
-} = require('../models');
-const BusinessExpenseController = require('./BusinessExpenseController');
-const { format, startOfMonth, endOfMonth } = require('date-fns');
 
 /**
  * Obtener resumen de comisiones por especialista

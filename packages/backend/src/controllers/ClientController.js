@@ -659,7 +659,7 @@ class ClientController {
           {
             model: Service,
             as: 'service',
-            attributes: ['id', 'name', 'category', 'duration', 'requiresConsent']
+            attributes: ['id', 'name', 'category', 'duration', 'requiresConsent', 'isPackage', 'packageType', 'packageConfig', 'pricePerSession']
           },
           {
             model: User,
@@ -681,6 +681,48 @@ class ClientController {
         ],
         order: [['startTime', 'DESC']],
         limit: 50 // Últimas 50 citas
+      });
+      
+      // 📊 Calcular progreso de sesiones para servicios multisesión
+      const serviceSessionProgress = {};
+      
+      appointments.forEach(apt => {
+        if (apt.service && apt.service.isPackage && apt.status !== 'CANCELED') {
+          const serviceId = apt.service.id;
+          
+          if (!serviceSessionProgress[serviceId]) {
+            const packageConfig = apt.service.packageConfig || {};
+            let totalSessions = 1;
+            
+            if (apt.service.packageType === 'MULTI_SESSION') {
+              totalSessions = packageConfig.sessions || 1;
+            } else if (apt.service.packageType === 'WITH_MAINTENANCE') {
+              totalSessions = 1 + (packageConfig.maintenanceSessions || 0);
+            }
+            
+            serviceSessionProgress[serviceId] = {
+              serviceName: apt.service.name,
+              packageType: apt.service.packageType,
+              totalSessions,
+              completedSessions: 0,
+              confirmedSessions: 0,
+              allSessions: []
+            };
+          }
+          
+          if (apt.status === 'COMPLETED') {
+            serviceSessionProgress[serviceId].completedSessions++;
+          } else if (apt.status === 'CONFIRMED' || apt.status === 'IN_PROGRESS') {
+            serviceSessionProgress[serviceId].confirmedSessions++;
+          }
+          
+          serviceSessionProgress[serviceId].allSessions.push({
+            appointmentId: apt.id,
+            date: apt.startTime,
+            status: apt.status,
+            sessionNumber: serviceSessionProgress[serviceId].completedSessions + serviceSessionProgress[serviceId].confirmedSessions
+          });
+        }
       });
 
       // 2. Obtener todos los consentimientos firmados
@@ -768,37 +810,73 @@ class ClientController {
           totalConsents: consents.length,
           availableVouchers: vouchers.filter(v => v.status === 'ACTIVE' && new Date(v.expiresAt) > new Date()).length
         },
-        appointments: appointments.map(apt => ({
-          id: apt.id,
-          appointmentNumber: apt.appointmentNumber,
-          startTime: apt.startTime,
-          endTime: apt.endTime,
-          status: apt.status,
-          service: apt.service ? {
-            id: apt.service.id,
-            name: apt.service.name,
-            category: apt.service.category,
-            duration: apt.service.duration
-          } : null,
-          specialist: apt.specialist ? {
-            id: apt.specialist.id,
-            name: `${apt.specialist.firstName} ${apt.specialist.lastName}`
-          } : null,
-          evidence: apt.evidence || { before: [], after: [], documents: [] },
-          specialistNotes: apt.specialistNotes,
-          rating: apt.rating,
-          feedback: apt.feedback,
-          hasConsent: apt.hasConsent,
-          consentSignature: apt.consentSignature ? {
-            id: apt.consentSignature.id,
-            signedAt: apt.consentSignature.signedAt,
-            pdfUrl: apt.consentSignature.signedPdfUrl,
-            template: apt.consentSignature.template
-          } : null,
-          totalAmount: apt.totalAmount,
-          paidAmount: apt.paidAmount,
-          paymentStatus: apt.paymentStatus
+        // Agregar progreso de servicios multisesión
+        serviceProgress: Object.values(serviceSessionProgress).map(progress => ({
+          serviceName: progress.serviceName,
+          packageType: progress.packageType,
+          totalSessions: progress.totalSessions,
+          completedSessions: progress.completedSessions,
+          confirmedSessions: progress.confirmedSessions,
+          remainingSessions: progress.totalSessions - progress.completedSessions - progress.confirmedSessions,
+          progressPercentage: Math.round(((progress.completedSessions + progress.confirmedSessions) / progress.totalSessions) * 100),
+          isComplete: (progress.completedSessions + progress.confirmedSessions) >= progress.totalSessions
         })),
+        appointments: appointments.map(apt => {
+          const baseApt = {
+            id: apt.id,
+            appointmentNumber: apt.appointmentNumber,
+            startTime: apt.startTime,
+            endTime: apt.endTime,
+            status: apt.status,
+            service: apt.service ? {
+              id: apt.service.id,
+              name: apt.service.name,
+              category: apt.service.category,
+              duration: apt.service.duration,
+              isPackage: apt.service.isPackage,
+              packageType: apt.service.packageType
+            } : null,
+            specialist: apt.specialist ? {
+              id: apt.specialist.id,
+              name: `${apt.specialist.firstName} ${apt.specialist.lastName}`
+            } : null,
+            evidence: apt.evidence || { before: [], after: [], documents: [] },
+            specialistNotes: apt.specialistNotes,
+            rating: apt.rating,
+            feedback: apt.feedback,
+            hasConsent: apt.hasConsent,
+            consentSignature: apt.consentSignature ? {
+              id: apt.consentSignature.id,
+              signedAt: apt.consentSignature.signedAt,
+              pdfUrl: apt.consentSignature.signedPdfUrl,
+              template: apt.consentSignature.template
+            } : null,
+            totalAmount: apt.totalAmount,
+            paidAmount: apt.paidAmount,
+            paymentStatus: apt.paymentStatus
+          };
+          
+          // Agregar información de sesión si tiene sessionMetadata
+          if (apt.sessionMetadata) {
+            baseApt.sessionInfo = apt.sessionMetadata;
+          } else if (apt.service && apt.service.isPackage) {
+            // Calcular información de sesión basada en el progreso
+            const serviceId = apt.service.id;
+            const progress = serviceSessionProgress[serviceId];
+            if (progress) {
+              const sessionIndex = progress.allSessions.findIndex(s => s.appointmentId === apt.id);
+              if (sessionIndex >= 0) {
+                baseApt.sessionInfo = {
+                  sessionNumber: sessionIndex + 1,
+                  totalSessions: progress.totalSessions,
+                  type: apt.service.packageType
+                };
+              }
+            }
+          }
+          
+          return baseApt;
+        }),
         consents: consents.map(consent => ({
           id: consent.id,
           signedAt: consent.signedAt,

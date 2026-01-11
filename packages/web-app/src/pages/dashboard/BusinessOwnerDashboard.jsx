@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import { 
   ChartBarIcon, 
   CalendarIcon, 
@@ -62,6 +63,7 @@ const QuickSummaryCard = ({ title, items, icon: Icon, color }) => (
 )
 
 const BusinessOwnerDashboard = () => {
+  const navigate = useNavigate()
   const { user, business } = useSelector(state => state.auth)
   const [refreshing, setRefreshing] = useState(false)
   const [selectedPeriod, setSelectedPeriod] = useState('today') // today, week, month
@@ -302,7 +304,10 @@ const BusinessOwnerDashboard = () => {
               <UserGroupIcon className="h-5 w-5 mr-2" />
               Ver Clientes
             </button>
-            <button className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg">
+            <button 
+              onClick={() => navigate('/specialist/cash-register')}
+              className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg"
+            >
               <BanknotesIcon className="h-5 w-5 mr-2" />
               Caja
             </button>

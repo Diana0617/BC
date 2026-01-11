@@ -51,13 +51,14 @@ class CashRegisterController {
         });
       }
 
-      // BUSINESS no usa caja (solo visualiza reportes)
+      // BUSINESS puede gestionar caja (ver y cerrar turnos de todos)
       if (userRole === 'BUSINESS') {
         return res.json({
           success: true,
           data: {
-            shouldUse: false,
-            reason: 'Los dueños del negocio no gestionan caja directamente'
+            shouldUse: true,
+            reason: 'Gestionas la caja de todos los especialistas',
+            canManageAllShifts: true
           }
         });
       }
@@ -118,11 +119,13 @@ class CashRegisterController {
   /**
    * Obtener turno activo del usuario
    * GET /api/cash-register/active-shift?businessId={bizId}
+   * BUSINESS puede ver el turno más reciente de cualquier usuario
    */
   static async getActiveShift(req, res) {
     try {
       const { businessId } = req.query;
       const userId = req.user.id;
+      const userRole = req.user.role;
 
       if (!businessId) {
         return res.status(400).json({
@@ -131,12 +134,19 @@ class CashRegisterController {
         });
       }
 
+      // BUSINESS puede ver cualquier turno activo del negocio
+      const whereClause = {
+        businessId,
+        status: 'OPEN'
+      };
+      
+      // Si no es BUSINESS, solo ver su propio turno
+      if (userRole !== 'BUSINESS') {
+        whereClause.userId = userId;
+      }
+
       const activeShift = await CashRegisterShift.findOne({
-        where: {
-          businessId,
-          userId,
-          status: 'OPEN'
-        },
+        where: whereClause,
         include: [
           {
             model: User,
@@ -334,12 +344,14 @@ class CashRegisterController {
    * Cerrar turno actual
    * POST /api/cash-register/close-shift
    * Body: { businessId, actualClosingBalance, closingNotes? }
+   * BUSINESS puede cerrar cualquier turno, otros solo el suyo
    */
   static async closeShift(req, res) {
     const transaction = await sequelize.transaction();
 
     try {
       const userId = req.user.id;
+      const userRole = req.user.role;
       const { businessId, actualClosingBalance, closingNotes } = req.body;
 
       if (!businessId) {
@@ -358,13 +370,19 @@ class CashRegisterController {
         });
       }
 
+      // BUSINESS puede cerrar cualquier turno, otros solo el suyo
+      const whereClause = {
+        businessId,
+        status: 'OPEN'
+      };
+
+      if (userRole !== 'BUSINESS') {
+        whereClause.userId = userId;
+      }
+
       // Buscar turno activo
       const activeShift = await CashRegisterShift.findOne({
-        where: {
-          businessId,
-          userId,
-          status: 'OPEN'
-        },
+        where: whereClause,
         transaction
       });
 
@@ -372,15 +390,15 @@ class CashRegisterController {
         await transaction.rollback();
         return res.status(404).json({
           success: false,
-          error: 'No tienes un turno abierto'
+          error: userRole === 'BUSINESS' ? 'No hay turnos abiertos para cerrar' : 'No tienes un turno abierto'
         });
       }
 
-      // Calcular resumen final
+      // Calcular resumen final (usar el userId del turno, no del usuario que cierra)
       const summary = await CashRegisterController._calculateShiftSummary(
         activeShift.id,
         businessId,
-        userId,
+        activeShift.userId, // Usar el userId del turno
         activeShift.openedAt,
         transaction
       );
@@ -556,6 +574,7 @@ class CashRegisterController {
     try {
       const { businessId } = req.query;
       const userId = req.user.id;
+      const userRole = req.user.role;
 
       if (!businessId) {
         return res.status(400).json({
@@ -571,12 +590,18 @@ class CashRegisterController {
         userRole: req.user.role
       });
 
+      // BUSINESS puede ver cualquier turno activo, otros solo el suyo
+      const whereClause = {
+        businessId,
+        status: 'OPEN'
+      };
+
+      if (userRole !== 'BUSINESS') {
+        whereClause.userId = userId;
+      }
+
       const activeShift = await CashRegisterShift.findOne({
-        where: {
-          businessId,
-          userId,
-          status: 'OPEN'
-        }
+        where: whereClause
       });
 
       console.log('🔍 getShiftSummary - Turno encontrado:', activeShift ? {
@@ -607,7 +632,7 @@ class CashRegisterController {
 
         return res.status(404).json({
           success: false,
-          error: 'No tienes un turno abierto',
+          error: userRole === 'BUSINESS' ? 'No hay turnos abiertos en el negocio' : 'No tienes un turno abierto',
           debug: {
             searchedUserId: userId,
             openShiftsFound: anyOpenShift.length
@@ -618,7 +643,7 @@ class CashRegisterController {
       const summary = await CashRegisterController._calculateShiftSummary(
         activeShift.id,
         businessId,
-        userId,
+        activeShift.userId, // Usar el userId del turno, no del que consulta
         activeShift.openedAt
       );
 

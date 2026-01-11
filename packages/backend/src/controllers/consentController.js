@@ -436,6 +436,15 @@ exports.signConsent = async (req, res) => {
       status: 'ACTIVE'
     });
 
+    // Si hay appointmentId, actualizar hasConsent en el appointment
+    if (appointmentId) {
+      await Appointment.update(
+        { hasConsent: true },
+        { where: { id: appointmentId, businessId } }
+      );
+      console.log(`✅ Actualizado hasConsent=true para appointment ${appointmentId}`);
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Consentimiento firmado exitosamente',

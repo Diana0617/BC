@@ -272,6 +272,7 @@ const scheduleRoutes = require('./routes/schedules');
 const timeSlotRoutes = require('./routes/time-slots');
 const calendarRoutes = require('./routes/calendar');
 const commissionRoutes = require('./routes/commissionRoutes');
+const commissionPublicRoutes = require('./routes/commissionPublicRoutes');
 const consentRoutes = require('./routes/consentRoutes');
 const specialistRoutes = require('./routes/specialistRoutes');
 const permissionRoutes = require('./routes/permissions');
@@ -304,6 +305,7 @@ app.use('/api/business/:businessId/suppliers', supplierRoutes); // Rutas de prov
 app.use('/api/business', supplierCatalogRoutes); // Rutas de catálogo de proveedores
 app.use('/api/business/:businessId/clients', clientRoutes); // Rutas de clientes del negocio
 app.use('/api/business/:businessId', commissionRoutes); // Rutas de comisiones
+app.use('/api/commissions', commissionPublicRoutes); // Rutas públicas de comisiones para especialistas
 app.use('/api/business/:businessId', consentRoutes); // Rutas de consentimientos
 app.use('/api/permissions', permissionRoutes); // Rutas de permisos
 app.use('/api/treatment-plans', treatmentPlanRoutes); // Rutas de tratamientos multi-sesión

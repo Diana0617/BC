@@ -47,13 +47,24 @@ class SpecialistServiceController {
         });
       }
 
-      // Verificar que el especialista existe y pertenece al negocio
-      const specialist = await SpecialistProfile.findOne({
+      // El specialistId puede ser userId o specialistProfileId
+      // Primero intentamos encontrar por userId
+      let specialist = await SpecialistProfile.findOne({
         where: {
-          id: specialistId,
+          userId: specialistId,
           businessId: businessId || userBusinessId
         }
       });
+
+      // Si no se encuentra, intentar por specialistProfileId
+      if (!specialist) {
+        specialist = await SpecialistProfile.findOne({
+          where: {
+            id: specialistId,
+            businessId: businessId || userBusinessId
+          }
+        });
+      }
 
       if (!specialist) {
         return res.status(404).json({
@@ -64,7 +75,7 @@ class SpecialistServiceController {
 
       // Solo el especialista mismo, BUSINESS u OWNER pueden ver
       // Permitir también a RECEPTIONIST y otros roles de staff
-      const allowedRoles = ['BUSINESS', 'OWNER', 'RECEPTIONIST'];
+      const allowedRoles = ['BUSINESS', 'OWNER', 'RECEPTIONIST', 'BUSINESS_SPECIALIST', 'SPECIALIST'];
       const isAllowedRole = allowedRoles.includes(role);
       const isOwnProfile = userId === specialist.userId;
       
@@ -98,6 +109,8 @@ class SpecialistServiceController {
         ],
         order: [['createdAt', 'DESC']]
       });
+
+      console.log(`✅ Found ${specialistServices.length} services for specialist ${specialist.userId}`);
 
       return res.status(200).json({
         success: true,

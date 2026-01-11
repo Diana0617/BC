@@ -1472,4 +1472,31 @@ router.get('/me/business-constraints', authenticateToken, requireSpecialist, Spe
  */
 router.put('/me/schedules/:branchId', authenticateToken, requireSpecialist, SpecialistController.updateBranchSchedule);
 
+/**
+ * @swagger
+ * /api/specialists/{specialistId}/branches:
+ *   get:
+ *     summary: Obtener sucursales donde atiende un especialista
+ *     tags: [Specialists]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: specialistId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del especialista (userId)
+ *       - in: query
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del negocio
+ *     responses:
+ *       200:
+ *         description: Lista de sucursales del especialista
+ */
+router.get('/:specialistId/branches', authenticateToken, SpecialistController.getSpecialistBranches);
+
 module.exports = router;

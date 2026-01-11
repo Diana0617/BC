@@ -369,11 +369,35 @@ const requireSpecialistOrReceptionist = async (req, res, next) => {
         businessId: req.user.businessId,
         branchIds: req.user.branchIds || []
       };
-      // Evitar acceso cruzado para especialistas puros (no BUSINESS_SPECIALIST)
+      // Para especialistas puros, cargar y usar su specialistProfile.id
       if (req.user.role === 'SPECIALIST') {
-        if (req.body.specialistId || req.params.specialistId) {
-          delete req.body.specialistId;
-          delete req.params.specialistId;
+        try {
+          // Cargar el SpecialistProfile si no está en req.user
+          if (!req.user.specialistProfile) {
+            const { SpecialistProfile } = require('../models');
+            const specialistProfile = await SpecialistProfile.findOne({
+              where: {
+                userId: req.user.id,
+                businessId: req.user.businessId
+              }
+            });
+            
+            if (specialistProfile) {
+              req.user.specialistProfile = specialistProfile;
+              console.log('✅ SpecialistProfile cargado:', specialistProfile.id);
+            }
+          }
+          
+          // Establecer el specialistId al specialistProfile.id del usuario logueado
+          if (req.user.specialistProfile && req.user.specialistProfile.id) {
+            req.body.specialistId = req.user.specialistProfile.id;
+            req.params.specialistId = req.user.specialistProfile.id;
+            console.log('✅ specialistId establecido a:', req.body.specialistId);
+          } else {
+            console.warn('⚠️ No se encontró SpecialistProfile para userId:', req.user.id);
+          }
+        } catch (error) {
+          console.error('❌ Error cargando SpecialistProfile:', error);
         }
       }
     }

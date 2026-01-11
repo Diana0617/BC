@@ -40,9 +40,16 @@ import OwnerReports from './pages/owner/reports/OwnerReports'
 
 // Business Pages
 import BusinessProfile from './pages/business/profile/BusinessProfile.jsx'
+import BusinessOwnerDashboard from './pages/dashboard/BusinessOwnerDashboard.jsx'
 import ConsentTemplatesPage from './pages/ConsentTemplatesPage.jsx'
 import InventoryDashboard from './pages/business/inventory/InventoryDashboard.jsx'
 import ClientsPage from './pages/clients/ClientsPage.jsx'
+
+// Specialist Pages
+import SpecialistDashboard from './pages/specialist/SpecialistDashboard.jsx'
+import CommissionsPage from './pages/specialist/CommissionsPage.jsx'
+import CashRegisterPage from './pages/specialist/CashRegisterPage.jsx'
+import ConsentsPage from './pages/specialist/ConsentsPage.jsx'
 
 // Public Pages
 import LandingPage from './pages/public/LandingPage'
@@ -230,11 +237,11 @@ function AppLayout() {
           window.history.replaceState({}, document.title, window.location.origin);
           
           // Determinar ruta de redirección
-          let redirectPath = '/business/profile';
+          let redirectPath = '/dashboard';
           if (userData?.role === 'OWNER') {
             redirectPath = '/owner/dashboard';
-          } else if (userData?.role === 'BUSINESS' || userData?.role === 'BUSINESS_SPECIALIST') {
-            redirectPath = '/business/profile';
+          } else if (userData?.role === 'BUSINESS') {
+            redirectPath = '/business/dashboard';
           } else {
             redirectPath = '/dashboard';
           }
@@ -296,11 +303,11 @@ function AppLayout() {
           window.history.replaceState({}, document.title, window.location.origin);
           
           // Determinar ruta de redirección
-          let redirectPath = '/business/profile';
+          let redirectPath = '/business/dashboard';
           if (userData?.role === 'OWNER') {
             redirectPath = '/owner/dashboard';
           } else if (userData?.role === 'BUSINESS' || userData?.role === 'BUSINESS_SPECIALIST') {
-            redirectPath = '/business/profile';
+            redirectPath = '/business/dashboard';
           } else {
             redirectPath = '/dashboard';
           }
@@ -441,6 +448,14 @@ function AppLayout() {
           
           {/* Business routes - Always register routes, protect inside components */}
           <Route 
+            path="/business/dashboard" 
+            element={
+              isAuthenticated && user?.role === 'BUSINESS'
+                ? <BusinessOwnerDashboard /> 
+                : <Navigate to="/" replace />
+            } 
+          />
+          <Route 
             path="/business/profile" 
             element={
               isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST'].includes(user?.role)
@@ -473,6 +488,40 @@ function AppLayout() {
             } 
           />
           
+          {/* Specialist routes - for BUSINESS_SPECIALIST, RECEPTIONIST_SPECIALIST, and SPECIALIST */}
+          <Route 
+            path="/specialist/dashboard" 
+            element={
+              isAuthenticated && ['BUSINESS_SPECIALIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST'].includes(user?.role)
+                ? <SpecialistDashboard /> 
+                : <Navigate to="/" replace />
+            } 
+          />
+          <Route 
+            path="/specialist/commissions" 
+            element={
+              isAuthenticated && ['BUSINESS_SPECIALIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST'].includes(user?.role)
+                ? <CommissionsPage /> 
+                : <Navigate to="/" replace />
+            } 
+          />
+          <Route 
+            path="/specialist/cash-register" 
+            element={
+              isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST'].includes(user?.role)
+                ? <CashRegisterPage /> 
+                : <Navigate to="/" replace />
+            } 
+          />
+          <Route 
+            path="/specialist/consents" 
+            element={
+              isAuthenticated && ['BUSINESS_SPECIALIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST'].includes(user?.role)
+                ? <ConsentsPage /> 
+                : <Navigate to="/" replace />
+            } 
+          />
+          
           {/* Redirect non-business users trying to access business routes */}
           <Route 
             path="/business/*" 
@@ -488,7 +537,7 @@ function AppLayout() {
                 : <Navigate to={
                     isAuthenticated 
                       ? (user?.role === 'OWNER' ? "/owner/dashboard" : 
-                         user?.role === 'BUSINESS' ? "/business/profile" : 
+                         user?.role === 'BUSINESS' ? "/business/dashboard" : 
                          "/")
                       : "/"
                   } replace />
@@ -501,7 +550,7 @@ function AppLayout() {
               path="/" 
               element={<Navigate to={
                 user?.role === 'OWNER' ? "/owner/dashboard" : 
-                user?.role === 'BUSINESS' ? "/business/profile" : 
+                user?.role === 'BUSINESS' ? "/business/dashboard" : 
                 "/dashboard"
               } replace />} 
             />
@@ -513,7 +562,7 @@ function AppLayout() {
             element={<Navigate to={
               isAuthenticated 
                 ? (user?.role === 'OWNER' ? "/owner/dashboard" : 
-                   user?.role === 'BUSINESS' ? "/business/profile" : 
+                   user?.role === 'BUSINESS' ? "/business/dashboard" : 
                    "/dashboard")
                 : "/"
             } replace />} 

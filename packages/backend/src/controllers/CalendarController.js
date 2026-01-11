@@ -315,10 +315,12 @@ class CalendarController {
           },
           {
             model: Service,
+            as: 'service',
             attributes: ['id', 'name', 'duration', 'price', 'category']
           },
           {
             model: Client,
+            as: 'client',
             attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
           }
         ],
@@ -328,20 +330,20 @@ class CalendarController {
       // Formatear eventos
       const events = appointments.map(apt => ({
         id: apt.id,
-        title: `${apt.Client.firstName} ${apt.Client.lastName} - ${apt.Service.name}`,
+        title: `${apt.client.firstName} ${apt.client.lastName} - ${apt.service.name}`,
         start: apt.startTime,
         end: apt.endTime,
         status: apt.status,
-        backgroundColor: this.getStatusColor(apt.status),
+        backgroundColor: CalendarController.getStatusColor(apt.status),
         extendedProps: {
           appointmentId: apt.id,
           branchName: apt.branch?.name,
           branchId: apt.branch?.id,
           branchAddress: apt.branch?.address,
-          clientName: `${apt.Client.firstName} ${apt.Client.lastName}`,
-          clientPhone: apt.Client.phone,
-          serviceName: apt.Service.name,
-          servicePrice: apt.Service.price,
+          clientName: `${apt.client.firstName} ${apt.client.lastName}`,
+          clientPhone: apt.client.phone,
+          serviceName: apt.service.name,
+          servicePrice: apt.service.price,
           totalAmount: apt.totalAmount,
           hasConsent: apt.hasConsent,
           notes: apt.notes
@@ -365,6 +367,7 @@ class CalendarController {
         success: true,
         data: {
           events,
+          appointments, // Agregar appointments raw para uso en dashboards
           total: appointments.length,
           byBranch: Object.values(byBranch),
           dateRange: {

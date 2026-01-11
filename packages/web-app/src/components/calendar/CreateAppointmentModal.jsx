@@ -38,11 +38,24 @@ const CreateAppointmentModal = ({
   const business = useSelector(state => state.business?.currentBusiness)
   const token = useSelector(state => state.auth?.token)
   const user = useSelector(state => state.auth?.user)
-  const businessId = business?.id
+  // Para SPECIALIST, usar user.businessId; para BUSINESS, usar business.id
+  const businessId = user?.businessId || business?.id
   
-  // Si es BUSINESS_SPECIALIST, él mismo es el especialista
-  const isBusinessSpecialist = user?.role === 'BUSINESS_SPECIALIST'
-  const autoSpecialistId = isBusinessSpecialist ? user?.id : null
+  // Si es BUSINESS_SPECIALIST o SPECIALIST, él mismo es el especialista
+  const isAutoSpecialist = user?.role === 'BUSINESS_SPECIALIST' || user?.role === 'SPECIALIST'
+  // Para SPECIALIST usar specialistProfile.id, para BUSINESS_SPECIALIST usar user.id
+  const autoSpecialistId = isAutoSpecialist 
+    ? (user?.role === 'SPECIALIST' && user?.specialistProfile?.id ? user.specialistProfile.id : user?.id)
+    : null
+  
+  // Debug logging
+  console.log('🔍 [CreateAppointmentModal] User data:', {
+    role: user?.role,
+    userId: user?.id,
+    specialistProfileId: user?.specialistProfile?.id,
+    autoSpecialistId,
+    isAutoSpecialist
+  })
   
   const [formData, setFormData] = useState({
     // Datos del cliente
@@ -75,19 +88,33 @@ const CreateAppointmentModal = ({
   const [searchTimeout, setSearchTimeout] = useState(null)
 
   // Estados para filtrado de servicios
-  const [filteredServices, setFilteredServices] = useState(services)
+  const [filteredServices, setFilteredServices] = useState([])
   const [loadingSpecialistServices, setLoadingSpecialistServices] = useState(false)
+
+  // Inicializar servicios filtrados
+  useEffect(() => {
+    if (services && services.length > 0 && filteredServices.length === 0) {
+      setFilteredServices(services)
+    }
+  }, [services, filteredServices.length])
 
   // Resetear form cuando se abre/cierra
   useEffect(() => {
     if (isOpen) {
+      // Recalcular autoSpecialistId por si el user cambió
+      const currentAutoSpecialistId = isAutoSpecialist 
+        ? (user?.role === 'SPECIALIST' && user?.specialistProfile?.id ? user.specialistProfile.id : user?.id)
+        : null
+      
+      console.log('🔄 [CreateAppointmentModal] Resetting form with autoSpecialistId:', currentAutoSpecialistId)
+      
       setFormData({
         clientId: null,
         clientName: '',
         clientPhone: '',
         clientEmail: '',
         branchId: initialData.branchId || '',
-        specialistId: initialData.specialistId || autoSpecialistId || '',
+        specialistId: initialData.specialistId || currentAutoSpecialistId || '',
         serviceId: '',
         date: initialData.date || new Date().toISOString().split('T')[0],
         startTime: initialData.startTime || '09:00',
@@ -101,7 +128,7 @@ const CreateAppointmentModal = ({
       setErrors({})
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen])
+  }, [isOpen, user?.id, user?.role, user?.specialistProfile?.id])
 
   // Auto-calcular endTime cuando cambia servicio
   useEffect(() => {
@@ -173,13 +200,27 @@ const CreateAppointmentModal = ({
   // Cargar servicios del especialista cuando cambie
   useEffect(() => {
     if (formData.specialistId && businessId && token) {
-      loadSpecialistServices(formData.specialistId)
-    } else {
+      // Si es BUSINESS_SPECIALIST, mostrar todos los servicios del negocio
+      // porque es dueño y puede ofrecer cualquier servicio
+      if (user?.role === 'BUSINESS_SPECIALIST') {
+        console.log('🔧 [WEB] BUSINESS_SPECIALIST detected, showing all services')
+        // Solo actualizar si realmente cambió
+        if (JSON.stringify(filteredServices) !== JSON.stringify(services)) {
+          setFilteredServices(services)
+        }
+      } else {
+        // Para SPECIALIST y otros roles, cargar servicios específicos
+        console.log('🔧 [WEB] Loading services for specialist:', formData.specialistId)
+        loadSpecialistServices(formData.specialistId)
+      }
+    } else if (formData.specialistId === '' || !formData.specialistId) {
       // Si no hay especialista, mostrar todos los servicios
-      setFilteredServices(services)
+      if (JSON.stringify(filteredServices) !== JSON.stringify(services)) {
+        setFilteredServices(services)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.specialistId, businessId, token, services])
+  }, [formData.specialistId, businessId, token, user?.role])
 
   /**
    * Buscar clientes en el backend
@@ -373,7 +414,8 @@ const CreateAppointmentModal = ({
       newErrors.branchId = 'Sucursal es requerida'
     }
 
-    if (!formData.specialistId) {
+    // Validar especialista (solo si no es auto-asignado)
+    if (!formData.specialistId && !isAutoSpecialist) {
       newErrors.specialistId = 'Especialista es requerido'
     }
 
@@ -414,7 +456,14 @@ const CreateAppointmentModal = ({
       onClose()
     } catch (error) {
       console.error('Error creando cita:', error)
-      alert('Error al crear la cita. Por favor intenta nuevamente.')
+      // Mostrar el mensaje de error del servidor o uno genérico
+      const errorMessage = error.message || 'Error al crear la cita. Por favor intenta nuevamente.'
+      setErrors({ submit: errorMessage })
+      // Scroll al inicio del modal para que el usuario vea el error
+      const modalContent = document.querySelector('.max-h-\\[90vh\\]')
+      if (modalContent) {
+        modalContent.scrollTop = 0
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -441,6 +490,19 @@ const CreateAppointmentModal = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-6">
+          {/* Error general del servidor */}
+          {errors.submit && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+              <svg className="h-5 w-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-red-800">Error al crear la cita</h3>
+                <p className="text-sm text-red-700 mt-1">{errors.submit}</p>
+              </div>
+            </div>
+          )}
+          
           {/* Datos del Cliente */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -678,7 +740,7 @@ const CreateAppointmentModal = ({
                 )}
               </div>
 
-              {isBusinessSpecialist ? (
+              {isAutoSpecialist ? (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Especialista
@@ -690,7 +752,7 @@ const CreateAppointmentModal = ({
                     </span>
                   </div>
                   <p className="text-xs text-purple-600 mt-1">
-                    ✓ Como dueño-especialista, las citas se asignan automáticamente a ti
+                    ✓ Las citas se asignan automáticamente a ti
                   </p>
                 </div>
               ) : (

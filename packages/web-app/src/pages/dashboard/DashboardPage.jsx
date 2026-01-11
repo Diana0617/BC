@@ -6,6 +6,7 @@ import SubscriptionWarningBanner from '../../components/SubscriptionWarningBanne
 import BusinessSpecialistDashboard from './BusinessSpecialistDashboard.jsx'
 import BusinessOwnerDashboard from './BusinessOwnerDashboard.jsx'
 import ReceptionistDashboard from './ReceptionistDashboard.jsx'
+import SpecialistDashboard from '../specialist/SpecialistDashboard.jsx'
 
 const DashboardPage = () => {
   const dispatch = useDispatch()
@@ -34,13 +35,18 @@ const DashboardPage = () => {
       return <BusinessOwnerDashboard />
     }
     
-    // Business Specialist Dashboard
+    // Business Specialist Dashboard - usar el nuevo dashboard completo
     if (user?.role === 'BUSINESS_SPECIALIST') {
-      return <BusinessSpecialistDashboard />
+      return <SpecialistDashboard />
+    }
+
+    // Specialist Dashboard - también usar el nuevo dashboard
+    if (user?.role === 'SPECIALIST' || user?.role === 'RECEPTIONIST_SPECIALIST') {
+      return <SpecialistDashboard />
     }
 
     // Receptionist Dashboard
-    if (user?.role === 'RECEPTIONIST' || user?.role === 'RECEPTIONIST_SPECIALIST') {
+    if (user?.role === 'RECEPTIONIST') {
       return <ReceptionistDashboard />
     }
 
