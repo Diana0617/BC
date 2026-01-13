@@ -80,7 +80,12 @@ export { default as whatsappTokenSlice } from './whatsappTokenSlice';
 export { default as whatsappTemplatesSlice } from './whatsappTemplatesSlice';
 export { default as whatsappMessagesSlice } from './whatsappMessagesSlice';
 export { default as whatsappWebhookEventsSlice } from './whatsappWebhookEventsSlice';
+// 📦 PRODUCTS & INVENTORY SYSTEM SLICES
+export { default as productsSlice } from './productsSlice';
 
+// 💰 SALES SYSTEM SLICES
+export { default as salesSlice } from './salesSlice';
+export { default as procedureSupplySlice } from './procedureSupplySlice';
 // �💳 ADVANCE PAYMENT EXPORTS
 export {
   // Thunks

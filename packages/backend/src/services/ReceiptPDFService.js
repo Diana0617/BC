@@ -9,9 +9,10 @@ class ReceiptPDFService {
    * Generar PDF de recibo para cliente
    * @param {Object} receipt - Recibo del modelo Receipt
    * @param {Object} business - Negocio
+   * @param {Array} items - Items/productos de la venta (opcional)
    * @returns {Promise<Buffer>} - Buffer del PDF generado
    */
-  static async generateReceiptPDF(receipt, business) {
+  static async generateReceiptPDF(receipt, business, items = []) {
     return new Promise((resolve, reject) => {
       try {
         console.log('📄 [ReceiptPDFService] Iniciando generación de PDF...');
@@ -82,30 +83,86 @@ class ReceiptPDFService {
           .text(`Email: ${receipt.clientEmail || 'N/A'}`, 100, doc.y)
           .moveDown(1);
 
-        // ============= INFORMACIÓN DEL SERVICIO =============
-        doc
-          .fontSize(12)
-          .font('Helvetica-Bold')
-          .text('DETALLES DEL SERVICIO', { underline: true })
-          .moveDown(0.5);
-
-        doc
-          .font('Helvetica')
-          .fontSize(10)
-          .text(`Servicio: ${receipt.serviceName}`, 100, doc.y)
-          .text(`Fecha: ${this._formatDate(receipt.serviceDate)}`, 100, doc.y)
-          .text(`Hora: ${receipt.serviceTime}`, 100, doc.y)
-          .text(`Especialista: ${receipt.specialistName}`, 100, doc.y);
-
-        if (receipt.serviceDescription) {
+        // ============= PRODUCTOS/SERVICIOS =============
+        if (items && items.length > 0) {
           doc
-            .moveDown(0.5)
-            .text(`Descripción:`, 100, doc.y, { continued: false })
-            .fontSize(9)
-            .text(receipt.serviceDescription, 120, doc.y, { width: 400 });
-        }
+            .fontSize(12)
+            .font('Helvetica-Bold')
+            .text('DETALLE DE PRODUCTOS/SERVICIOS', { underline: true })
+            .moveDown(0.5);
 
-        doc.moveDown(1.5);
+          // Tabla de productos
+          const tableTop = doc.y;
+          const itemX = 70;
+          const qtyX = 320;
+          const priceX = 390;
+          const totalX = 480;
+
+          // Encabezados de tabla
+          doc
+            .fontSize(10)
+            .font('Helvetica-Bold')
+            .text('Producto', itemX, tableTop)
+            .text('Cant.', qtyX, tableTop)
+            .text('Precio', priceX, tableTop)
+            .text('Total', totalX, tableTop);
+
+          // Línea debajo de encabezados
+          doc
+            .moveTo(itemX, doc.y + 5)
+            .lineTo(540, doc.y + 5)
+            .stroke();
+
+          let yPos = doc.y + 15;
+
+          // Iterar productos
+          items.forEach(item => {
+            const productName = item.product?.name || item.productName || 'Producto';
+            const quantity = item.quantity || 1;
+            const price = parseFloat(item.unitPrice || 0);
+            const itemTotal = parseFloat(item.total || 0);
+
+            doc
+              .font('Helvetica')
+              .fontSize(9)
+              .text(productName, itemX, yPos, { width: 240 })
+              .text(quantity.toString(), qtyX, yPos)
+              .text(`$${this._formatMoney(price)}`, priceX, yPos)
+              .text(`$${this._formatMoney(itemTotal)}`, totalX, yPos);
+
+            yPos = doc.y + 5;
+          });
+
+          doc.y = yPos;
+          doc.moveDown(1);
+        } else if (receipt.serviceName) {
+          // Mostrar información del servicio si no hay productos (recibos de citas)
+          doc
+            .fontSize(12)
+            .font('Helvetica-Bold')
+            .text('DETALLES DEL SERVICIO', { underline: true })
+            .moveDown(0.5);
+
+          doc
+            .font('Helvetica')
+            .fontSize(10)
+            .text(`Servicio: ${receipt.serviceName}`, 100, doc.y)
+            .text(`Fecha: ${this._formatDate(receipt.serviceDate)}`, 100, doc.y)
+            .text(`Hora: ${receipt.serviceTime}`, 100, doc.y)
+            .text(`Especialista: ${receipt.specialistName}`, 100, doc.y);
+
+          if (receipt.serviceDescription) {
+            doc
+              .moveDown(0.5)
+              .text(`Descripción:`, 100, doc.y, { continued: false })
+              .fontSize(9)
+              .text(receipt.serviceDescription, 120, doc.y, { width: 400 });
+          }
+
+          doc.moveDown(1.5);
+        } else {
+          doc.moveDown(0.5);
+        }
 
         // ============= DESGLOSE FINANCIERO =============
         doc

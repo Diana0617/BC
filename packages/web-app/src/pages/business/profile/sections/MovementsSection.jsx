@@ -514,7 +514,10 @@ const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, get
                 {movements.map((movement) => (
                   <tr key={movement.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {format(new Date(movement.createdAt), 'dd/MM/yyyy HH:mm', { locale: es })}
+                      {movement.transactionDate 
+                        ? movement.transactionDate.split('-').reverse().join('/')
+                        : format(new Date(movement.createdAt), 'dd/MM/yyyy', { locale: es })
+                      }
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       <div>{movement.description}</div>

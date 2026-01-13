@@ -47,19 +47,50 @@ const ExpenseFormWebView = () => {
     // Desde URL params
     const urlParams = new URLSearchParams(window.location.search);
     const bId = urlParams.get('businessId');
+    const token = urlParams.get('token');
     
     if (bId) {
       setBusinessId(bId);
       dispatch(fetchExpenseCategories({ businessId: bId }));
     }
 
+    // Si viene token en la URL, guardarlo en sessionStorage
+    if (token) {
+      sessionStorage.setItem('bc_auth_token', token);
+      // También en el objeto global para compatibilidad
+      window.__BC_AUTH_TOKEN__ = token;
+      console.log('✅ Token recibido vía URL y guardado');
+    }
+
     // Escuchar mensajes desde React Native
     const handleMessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        
+        // Recibir businessId
         if (data.type === 'BUSINESS_ID' && data.businessId) {
           setBusinessId(data.businessId);
           dispatch(fetchExpenseCategories({ businessId: data.businessId }));
+        }
+        
+        // Recibir token de autenticación
+        if (data.type === 'AUTH_TOKEN' && data.token) {
+          sessionStorage.setItem('bc_auth_token', data.token);
+          window.__BC_AUTH_TOKEN__ = data.token;
+          console.log('✅ Token recibido vía mensaje y guardado');
+        }
+
+        // Recibir ambos en un solo mensaje
+        if (data.type === 'INIT' || data.type === 'CONFIG') {
+          if (data.businessId) {
+            setBusinessId(data.businessId);
+            dispatch(fetchExpenseCategories({ businessId: data.businessId }));
+          }
+          if (data.token) {
+            sessionStorage.setItem('bc_auth_token', data.token);
+            window.__BC_AUTH_TOKEN__ = data.token;
+            console.log('✅ Token recibido en init y guardado');
+          }
         }
       } catch (error) {
         console.error('Error parsing message:', error);

@@ -62,6 +62,8 @@ import whatsappWebhookEventsReducer from './slices/whatsappWebhookEventsSlice';
 import businessWompiPaymentReducer from './slices/businessWompiPaymentSlice';
 // 📦 PRODUCTS & INVENTORY SYSTEM REDUCERS
 import productsReducer from './slices/productsSlice';
+import salesReducer from './slices/salesSlice';
+import procedureSupplyReducer from './slices/procedureSupplySlice';
 // 💰 CASH REGISTER & RECEIPTS SYSTEM REDUCERS
 import cashRegisterReducer from './slices/cashRegisterSlice';
 import receiptReducer from './slices/receiptSlice';
@@ -138,6 +140,8 @@ export const createStore = (preloadedState = {}) => {
       businessWompiPayment: businessWompiPaymentReducer,
       // 📦 PRODUCTS & INVENTORY SYSTEM REDUCERS
       products: productsReducer,
+      sales: salesReducer,
+      procedureSupply: procedureSupplyReducer,
       // 💰 CASH REGISTER & RECEIPTS SYSTEM REDUCERS
       cashRegister: cashRegisterReducer,
       receipt: receiptReducer,

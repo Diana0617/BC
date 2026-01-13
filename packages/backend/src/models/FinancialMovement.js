@@ -51,6 +51,12 @@ const FinancialMovement = sequelize.define('FinancialMovement', {
     },
    
   },
+  transactionDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+    defaultValue: DataTypes.NOW,
+    comment: 'Fecha real de la transacción (no la fecha de creación del registro)'
+  },
   amount: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,

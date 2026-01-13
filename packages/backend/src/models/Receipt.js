@@ -43,7 +43,7 @@ const Receipt = sequelize.define('Receipt', {
   
   appointmentId: {
     type: DataTypes.UUID,
-    allowNull: false,
+    allowNull: true, // Permitir null porque puede ser de venta o cita
     references: {
       model: 'appointments',
       key: 'id'
@@ -51,9 +51,19 @@ const Receipt = sequelize.define('Receipt', {
     comment: 'Cita asociada al recibo'
   },
   
+  saleId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'sales',
+      key: 'id'
+    },
+    comment: 'Venta asociada al recibo'
+  },
+  
   specialistId: {
     type: DataTypes.UUID,
-    allowNull: false,
+    allowNull: true, // Permitir null para ventas
     references: {
       model: 'users',
       key: 'id'

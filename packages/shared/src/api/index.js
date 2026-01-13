@@ -114,6 +114,18 @@ import whatsappApi from './whatsappApi';
 export { default as businessWompiPaymentApi } from './businessWompiPaymentApi';
 import businessWompiPaymentApi from './businessWompiPaymentApi';
 
+// 📦 PRODUCTS & INVENTORY SYSTEM API
+export { productsApi } from './productsApi';
+import { productsApi } from './productsApi';
+
+// 💰 SALES SYSTEM API
+export { salesApi } from './salesApi';
+import { salesApi } from './salesApi';
+
+// 💉 PROCEDURE SUPPLY SYSTEM API
+export { procedureSupplyApi } from './procedureSupplyApi';
+import { procedureSupplyApi } from './procedureSupplyApi';
+
 // Export all OWNER APIs as a group
 export const ownerApis = {
   ownerApi,
@@ -161,6 +173,12 @@ export const businessApis = {
   whatsappApi,
   // Business Wompi Payment Config API
   businessWompiPaymentApi,
+  // Products & Inventory System API
+  productsApi,
+  // Sales System API
+  salesApi,
+  // Procedure Supply System API
+  procedureSupplyApi,
   // Loyalty System API
   loyaltyApi
 };

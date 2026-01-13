@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import {
   XMarkIcon,
   CalendarIcon,
@@ -13,6 +13,8 @@ import {
   DocumentTextIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline'
+import { fetchProducts } from '@shared/store/slices/productsSlice'
+import ProductSelector from '../sales/ProductSelector'
 
 /**
  * CreateAppointmentModal - Modal para crear una nueva cita
@@ -35,9 +37,11 @@ const CreateAppointmentModal = ({
   services = []
 }) => {
   // Redux state
+  const dispatch = useDispatch()
   const business = useSelector(state => state.business?.currentBusiness)
   const token = useSelector(state => state.auth?.token)
   const user = useSelector(state => state.auth?.user)
+  const { products } = useSelector(state => state.products)
   // Para SPECIALIST, usar user.businessId; para BUSINESS, usar business.id
   const businessId = user?.businessId || business?.id
   
@@ -96,12 +100,27 @@ const CreateAppointmentModal = ({
   const [filteredServices, setFilteredServices] = useState([])
   const [loadingSpecialistServices, setLoadingSpecialistServices] = useState(false)
 
+  // Estados para productos/ventas
+  const [selectedProducts, setSelectedProducts] = useState([])
+  const [showProductsSection, setShowProductsSection] = useState(false)
+
   // Inicializar servicios filtrados
   useEffect(() => {
     if (services && services.length > 0 && filteredServices.length === 0) {
       setFilteredServices(services)
     }
   }, [services, filteredServices.length])
+
+  // Cargar productos al abrir el modal
+  useEffect(() => {
+    if (isOpen && businessId) {
+      dispatch(fetchProducts({ 
+        businessId,
+        productType: 'FOR_SALE,BOTH',
+        isActive: true
+      }))
+    }
+  }, [isOpen, businessId, dispatch])
 
   // Resetear form cuando se abre/cierra
   useEffect(() => {
@@ -130,6 +149,8 @@ const CreateAppointmentModal = ({
       setClientResults([])
       setShowClientDropdown(false)
       setIsNewClient(false)
+      setSelectedProducts([])
+      setShowProductsSection(false)
       setErrors({})
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -581,7 +602,13 @@ const CreateAppointmentModal = ({
 
     setIsSubmitting(true)
     try {
-      await onCreate(formData)
+      // Agregar productos al formData si hay seleccionados
+      const dataToSubmit = {
+        ...formData,
+        ...(selectedProducts.length > 0 && { productsSold: selectedProducts })
+      }
+      
+      await onCreate(dataToSubmit)
       onClose()
     } catch (error) {
       console.error('Error creando cita:', error)
@@ -1115,6 +1142,49 @@ const CreateAppointmentModal = ({
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Agregar notas adicionales sobre la cita..."
                 />
+              </div>
+
+              {/* Sección de Productos/Ventas */}
+              <div className="sm:col-span-2">
+                <div className="border-t border-gray-200 pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Productos/Ventas
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowProductsSection(!showProductsSection)}
+                      className="text-sm text-pink-600 hover:text-pink-700 font-medium"
+                    >
+                      {showProductsSection ? 'Ocultar' : 'Agregar Productos'}
+                    </button>
+                  </div>
+                  
+                  {showProductsSection && (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-sm text-gray-600 mb-4">
+                        Registra los productos vendidos durante esta cita
+                      </p>
+                      <ProductSelector
+                        products={products || []}
+                        selectedItems={selectedProducts}
+                        onItemsChange={setSelectedProducts}
+                        allowQuantityEdit={true}
+                        allowPriceEdit={false}
+                        showStock={true}
+                        title="Productos Vendidos"
+                      />
+                    </div>
+                  )}
+                  
+                  {!showProductsSection && selectedProducts.length > 0 && (
+                    <div className="bg-pink-50 border border-pink-200 rounded-lg p-3">
+                      <p className="text-sm text-pink-800">
+                        ✓ {selectedProducts.length} producto(s) agregado(s) - Total: ${selectedProducts.reduce((sum, item) => sum + item.total, 0).toLocaleString('es-CO')}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

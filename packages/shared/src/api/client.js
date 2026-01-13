@@ -18,15 +18,26 @@ class ApiClient {
       let token;
       if (isReactNative) {
         token = await StorageHelper.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+        console.log('🔑 getAuthToken (RN):', token ? `${token.substring(0, 20)}...` : 'NULL');
       } else {
         token = StorageHelper.getItem(STORAGE_KEYS.AUTH_TOKEN);
+        console.log('🔑 getAuthToken (Web) from StorageHelper:', token ? `${token.substring(0, 20)}...` : 'NULL');
+        
+        // Debug: verificar localStorage y sessionStorage directamente
+        if (typeof window !== 'undefined') {
+          const localToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+          const sessionToken = sessionStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+          console.log('🔍 localStorage.bc_auth_token:', localToken ? `${localToken.substring(0, 20)}...` : 'NULL');
+          console.log('🔍 sessionStorage.bc_auth_token:', sessionToken ? `${sessionToken.substring(0, 20)}...` : 'NULL');
+        }
       }
 
       if (!token && typeof window !== 'undefined') {
         token = window.__BC_AUTH_TOKEN__ || null;
+        console.log('🔑 getAuthToken from window.__BC_AUTH_TOKEN__:', token ? `${token.substring(0, 20)}...` : 'NULL');
       }
       
-     
+      console.log('🔑 getAuthToken FINAL:', token ? `${token.substring(0, 20)}...` : 'NULL');
       return token;
     } catch (error) {
       console.warn('Error getting auth token:', error);

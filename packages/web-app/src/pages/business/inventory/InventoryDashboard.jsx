@@ -19,6 +19,7 @@ import BranchInventoryView from './stock/BranchInventoryView';
 import PurchaseInvoices from './purchases/PurchaseInvoices';
 import ProductManagement from './products/ProductManagement';
 import SupplierCatalog from './catalog/SupplierCatalog';
+import SalesPage from '../../sales/SalesPage';
 
 const InventoryDashboard = () => {
   const navigate = useNavigate();
@@ -76,7 +77,7 @@ const InventoryDashboard = () => {
       name: 'Ventas',
       icon: TruckIcon,
       description: 'Ventas de productos',
-      component: <ComingSoonPlaceholder title="Ventas" />
+      component: <SalesPage />
     },
     {
       id: 'movimientos',

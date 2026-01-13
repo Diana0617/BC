@@ -787,7 +787,7 @@ exports.getSpecialistsSummary = async (req, res) => {
             businessId,
             specialistId: specialist.id,
             status: 'COMPLETED',
-            date: {
+            startTime: {
               [Op.between]: [periodStart, periodEnd]
             }
           },
@@ -795,7 +795,7 @@ exports.getSpecialistsSummary = async (req, res) => {
             {
               model: Service,
               as: 'service',
-              attributes: ['id', 'name', 'price', 'commissionPercentage']
+              attributes: ['id', 'name', 'price']
             }
           ]
         });
@@ -805,7 +805,8 @@ exports.getSpecialistsSummary = async (req, res) => {
 
         completedAppointments.forEach(appointment => {
           const price = parseFloat(appointment.finalPrice || appointment.service?.price || 0);
-          const commissionRate = appointment.service?.commissionPercentage || 50;
+          // Obtener la tasa de comisión de la configuración del negocio o usar 50% por defecto
+          const commissionRate = 50; // Puede venir de specialist_services o configuración del negocio
           const commissionAmount = (price * commissionRate) / 100;
           generated += commissionAmount;
           servicesCount++;
@@ -911,7 +912,7 @@ exports.getSpecialistDetails = async (req, res) => {
         businessId,
         specialistId,
         status: 'COMPLETED',
-        date: {
+        startTime: {
           [Op.between]: [periodStart, periodEnd]
         }
       },
@@ -932,20 +933,20 @@ exports.getSpecialistDetails = async (req, res) => {
           required: false
         }
       ],
-      order: [['date', 'DESC']]
+      order: [['startTime', 'DESC']]
     });
 
     // Calcular detalles de comisiones
     const commissionDetails = appointments.map(appointment => {
       const price = parseFloat(appointment.finalPrice || appointment.service?.price || 0);
-      const commissionRate = appointment.service?.commissionPercentage || 50;
+      const commissionRate = 50; // Tasa por defecto, puede venir de configuración del negocio
       const commissionAmount = (price * commissionRate) / 100;
       const isPaid = appointment.commissionDetails && appointment.commissionDetails.length > 0 
         && appointment.commissionDetails[0].paymentStatus === 'PAID';
 
       return {
         appointmentId: appointment.id,
-        date: appointment.date,
+        date: appointment.startTime,
         client: appointment.client ? {
           id: appointment.client.id,
           name: appointment.client.name,
@@ -1121,7 +1122,7 @@ exports.payCommission = async (req, res) => {
     const commissionDetailsCreated = [];
     for (const appointment of appointments) {
       const price = parseFloat(appointment.finalPrice || appointment.service?.price || 0);
-      const commissionRate = appointment.service?.commissionPercentage || 50;
+      const commissionRate = 50; // Tasa por defecto, puede venir de configuración del negocio
       const commissionAmount = (price * commissionRate) / 100;
 
       const detail = await CommissionDetail.create({
@@ -1129,7 +1130,7 @@ exports.payCommission = async (req, res) => {
         appointmentId: appointment.id,
         serviceId: appointment.serviceId,
         clientId: appointment.clientId,
-        serviceDate: appointment.date,
+        serviceDate: appointment.startTime,
         serviceName: appointment.service?.name || 'Servicio',
         servicePrice: price,
         commissionRate,

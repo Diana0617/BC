@@ -30,6 +30,7 @@ const ExpenseFormModal = ({
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
   const [errors, setErrors] = useState({});
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
     if (expense) {
@@ -52,6 +53,13 @@ const ExpenseFormModal = ({
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Si cambió la categoría, buscar sus detalles
+    if (name === 'categoryId' && value) {
+      const category = categories.find(cat => cat.id === value);
+      setSelectedCategory(category);
+    }
+    
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -133,16 +141,23 @@ const ExpenseFormModal = ({
 
     const submitData = new FormData();
     
-    // Append form data
+    // Append form data - incluir todos los campos, no solo los truthy
     Object.keys(formData).forEach(key => {
-      if (formData[key]) {
-        submitData.append(key, formData[key]);
+      const value = formData[key];
+      if (value !== null && value !== undefined && value !== '') {
+        submitData.append(key, value);
       }
     });
 
     // Append file if selected
     if (selectedFile) {
       submitData.append('receipt', selectedFile);
+    }
+
+    // Debug log
+    console.log('📤 Enviando FormData con campos:');
+    for (let pair of submitData.entries()) {
+      console.log(`  ${pair[0]}: ${pair[1]}`);
     }
 
     await onSubmit(submitData, expense?.id);
@@ -203,7 +218,7 @@ const ExpenseFormModal = ({
                   }`}
                 >
                   <option value="">Selecciona una categoría</option>
-                  {categories.map(cat => (
+                  {Array.isArray(categories) && categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
@@ -211,6 +226,23 @@ const ExpenseFormModal = ({
                   <p className="mt-1 text-sm text-red-600">{errors.categoryId}</p>
                 )}
               </div>
+
+              {/* Mensaje de recomendación si la categoría requiere comprobante */}
+              {selectedCategory?.requiresReceipt && !selectedFile && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start">
+                  <svg className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-blue-800">
+                      Comprobante recomendado
+                    </p>
+                    <p className="text-xs text-blue-600 mt-0.5">
+                      La categoría "{selectedCategory.name}" recomienda adjuntar un comprobante de pago
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Monto y Fecha */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

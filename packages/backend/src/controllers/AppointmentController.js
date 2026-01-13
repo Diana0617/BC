@@ -1102,6 +1102,76 @@ class AppointmentController {
         response.message = `Cita creada exitosamente - Sesión ${sessionInfo.sessionNumber}/${sessionInfo.totalSessions}`;
       }
 
+      // 🛒 PROCESAR PRODUCTOS VENDIDOS DURANTE LA CITA (si existen)
+      const { productsSold } = req.body;
+      if (productsSold && Array.isArray(productsSold) && productsSold.length > 0) {
+        console.log('🛒 Procesando productos vendidos durante la cita:', productsSold.length, 'items');
+        
+        try {
+          const SaleController = require('./SaleController');
+          
+          // Calcular total de productos
+          const productsTotal = productsSold.reduce((sum, item) => sum + (item.total || 0), 0);
+          
+          // Crear venta asociada a la cita
+          const saleData = {
+            businessId,
+            branchId: branchId || null,
+            userId: specialist.id,
+            clientId: client.id,
+            items: productsSold.map(item => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice || item.product?.price,
+              discount: item.discount || 0,
+              discountType: item.discountType || 'NONE',
+              discountValue: item.discountValue || 0
+            })),
+            discountType: 'NONE',
+            discount: 0,
+            paymentMethod: 'CASH', // Por defecto, puede cambiarse
+            paidAmount: productsTotal,
+            notes: `Venta durante cita ${appointment.id}`,
+            shiftId: null,
+            appointmentId: appointment.id // Vinculamos con la cita
+          };
+
+          // Crear la venta
+          const mockReq = {
+            body: saleData,
+            user: req.user
+          };
+          
+          const mockRes = {
+            status: function(code) {
+              this.statusCode = code;
+              return this;
+            },
+            json: function(data) {
+              this.responseData = data;
+              return data;
+            }
+          };
+
+          await SaleController.createSale(mockReq, mockRes);
+
+          if (mockRes.statusCode === 201 && mockRes.responseData?.success) {
+            console.log('✅ Venta de productos creada exitosamente:', mockRes.responseData.data.sale?.id);
+            response.data.productSale = {
+              id: mockRes.responseData.data.sale?.id,
+              total: productsTotal,
+              itemsCount: productsSold.length
+            };
+          } else {
+            console.error('⚠️ Error al crear venta de productos:', mockRes.responseData);
+          }
+        } catch (saleError) {
+          console.error('⚠️ Error procesando venta de productos:', saleError);
+          // No fallar toda la cita si falla la venta, solo advertir
+          response.warning = 'Cita creada pero hubo un problema al registrar la venta de productos';
+        }
+      }
+
       res.status(201).json(response);
 
     } catch (error) {

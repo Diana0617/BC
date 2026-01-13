@@ -301,6 +301,9 @@ class BusinessExpenseController {
    */
   static async createExpense(req, res) {
     try {
+      console.log('📝 [createExpense] req.body:', req.body);
+      console.log('📝 [createExpense] req.file:', req.file);
+      
       const businessId = req.tenancy.businessId || req.user.businessId;
       const {
         categoryId,
@@ -328,18 +331,19 @@ class BusinessExpenseController {
       });
 
       if (!category) {
+        console.log('❌ Categoría no encontrada:', categoryId);
         return res.status(404).json({
           success: false,
           message: 'Categoría no encontrada'
         });
       }
 
-      // Verificar si la categoría requiere comprobante
+      console.log('✅ Categoría encontrada:', category.name, '| requiresReceipt:', category.requiresReceipt, '| req.file:', !!req.file);
+
+      // Advertir si la categoría recomienda comprobante pero no se proporcionó
+      // (no bloqueamos la creación, solo advertencia)
       if (category.requiresReceipt && !req.file) {
-        return res.status(400).json({
-          success: false,
-          message: 'Esta categoría requiere comprobante de pago obligatorio'
-        });
+        console.log('⚠️ La categoría recomienda comprobante pero no se proporcionó (permitiendo continuar)');
       }
 
       const expenseData = {
@@ -391,24 +395,54 @@ class BusinessExpenseController {
       const expense = await BusinessExpense.create(expenseData);
 
       // Crear movimiento financiero asociado
-      await FinancialMovement.create({
+      console.log('🔄 Intentando crear FinancialMovement con datos:', {
         businessId,
         userId: req.user.id,
         type: 'EXPENSE',
+        category: 'BUSINESS_EXPENSE',
         businessExpenseCategoryId: categoryId,
         businessExpenseId: expense.id,
         amount: parseFloat(amount),
-        currency: expenseData.currency,
-        description: description,
-        notes: notes,
-        paymentMethod: paymentMethod || 'CASH',
-        transactionId: transactionReference,
-        status: 'PENDING',
-        dueDate: dueDate,
-        receiptUrl: expenseData.receiptUrl,
-        taxAmount: expenseData.taxAmount,
-        taxRate: expenseData.taxRate
+        paymentMethod: paymentMethod || 'CASH'
       });
+
+      try {
+        const financialMovement = await FinancialMovement.create({
+          businessId,
+          userId: req.user.id,
+          type: 'EXPENSE',
+          category: 'BUSINESS_EXPENSE',
+          businessExpenseCategoryId: categoryId,
+          businessExpenseId: expense.id,
+          transactionDate: expenseDate || new Date().toISOString().split('T')[0],
+          amount: parseFloat(amount),
+          currency: 'COP',
+          description: description,
+          notes: notes,
+          paymentMethod: paymentMethod || 'CASH',
+          transactionId: transactionReference,
+          status: 'COMPLETED',
+          dueDate: dueDate,
+          receiptUrl: expenseData.receiptUrl,
+          taxAmount: expenseData.taxAmount || 0,
+          taxRate: expenseData.taxRate || 0
+        });
+
+        console.log('✅ FinancialMovement creado para gasto:', {
+          id: financialMovement.id,
+          type: financialMovement.type,
+          category: financialMovement.category,
+          amount: financialMovement.amount,
+          businessId: financialMovement.businessId
+        });
+      } catch (fmError) {
+        console.error('❌ Error creando FinancialMovement:', fmError);
+        console.error('❌ Error details:', {
+          message: fmError.message,
+          name: fmError.name,
+          errors: fmError.errors
+        });
+      }
 
       res.status(201).json({
         success: true,
@@ -539,6 +573,21 @@ class BusinessExpenseController {
         updatedBy: req.user.id
       });
 
+      // Actualizar movimiento financiero asociado si cambió el monto o descripción
+      if (req.body.amount || req.body.description || req.body.paymentMethod) {
+        await FinancialMovement.update(
+          {
+            amount: req.body.amount ? parseFloat(req.body.amount) : expense.amount,
+            description: req.body.description || expense.description,
+            paymentMethod: req.body.paymentMethod || expense.paymentMethod,
+            notes: req.body.notes || expense.notes
+          },
+          {
+            where: { businessExpenseId: expense.id }
+          }
+        );
+      }
+
       res.json({
         success: true,
         message: 'Gasto actualizado exitosamente',
@@ -586,6 +635,16 @@ class BusinessExpenseController {
         isActive: false,
         updatedBy: req.user.id
       });
+
+      // Cancelar movimiento financiero asociado
+      await FinancialMovement.update(
+        {
+          status: 'CANCELLED'
+        },
+        {
+          where: { businessExpenseId: expense.id }
+        }
+      );
 
       res.json({
         success: true,

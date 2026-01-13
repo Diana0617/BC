@@ -33,6 +33,11 @@ const AppointmentService = require('./AppointmentService');
 const AppointmentPayment = require('./AppointmentPayment');
 const PasswordResetToken = require('./PasswordResetToken');
 
+// Modelos de ventas
+const Sale = require('./Sale');
+const SaleItem = require('./SaleItem');
+const ProcedureSupply = require('./ProcedureSupply');
+
 // Modelos de configuración del negocio
 const SpecialistProfile = require('./SpecialistProfile');
 const SpecialistBranchSchedule = require('./SpecialistBranchSchedule');
@@ -745,6 +750,14 @@ Appointment.hasOne(Receipt, {
   foreignKey: 'appointmentId', 
   as: 'receipt' 
 });
+Sale.hasMany(Receipt, { 
+  foreignKey: 'saleId', 
+  as: 'receipts' 
+});
+Receipt.belongsTo(Sale, { 
+  foreignKey: 'saleId', 
+  as: 'sale' 
+});
 User.hasMany(Receipt, { 
   foreignKey: 'specialistId', 
   as: 'specialistReceipts' 
@@ -841,6 +854,152 @@ User.hasMany(InventoryMovement, {
 InventoryMovement.belongsTo(User, {
   foreignKey: 'specialistId',
   as: 'specialist'
+});
+
+// ================================
+// SALE RELATIONSHIPS
+// ================================
+
+// Sale - Business
+Business.hasMany(Sale, {
+  foreignKey: 'businessId',
+  as: 'sales'
+});
+Sale.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+
+// Sale - Branch
+Branch.hasMany(Sale, {
+  foreignKey: 'branchId',
+  as: 'sales'
+});
+Sale.belongsTo(Branch, {
+  foreignKey: 'branchId',
+  as: 'branch'
+});
+
+// Sale - User (quien registra)
+User.hasMany(Sale, {
+  foreignKey: 'userId',
+  as: 'sales'
+});
+Sale.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+
+// Sale - Client
+Client.hasMany(Sale, {
+  foreignKey: 'clientId',
+  as: 'sales'
+});
+Sale.belongsTo(Client, {
+  foreignKey: 'clientId',
+  as: 'client'
+});
+
+// Sale - Receipt
+Sale.belongsTo(Receipt, {
+  foreignKey: 'receiptId',
+  as: 'receipt'
+});
+
+// Sale - SaleItems
+Sale.hasMany(SaleItem, {
+  foreignKey: 'saleId',
+  as: 'items'
+});
+SaleItem.belongsTo(Sale, {
+  foreignKey: 'saleId',
+  as: 'sale'
+});
+
+// SaleItem - Product
+Product.hasMany(SaleItem, {
+  foreignKey: 'productId',
+  as: 'saleItems'
+});
+SaleItem.belongsTo(Product, {
+  foreignKey: 'productId',
+  as: 'product'
+});
+
+// SaleItem - InventoryMovement
+SaleItem.belongsTo(InventoryMovement, {
+  foreignKey: 'inventoryMovementId',
+  as: 'inventoryMovement'
+});
+
+// ================================
+// PROCEDURE SUPPLY RELATIONSHIPS
+// ================================
+
+// ProcedureSupply - Business
+Business.hasMany(ProcedureSupply, {
+  foreignKey: 'businessId',
+  as: 'procedureSupplies'
+});
+ProcedureSupply.belongsTo(Business, {
+  foreignKey: 'businessId',
+  as: 'business'
+});
+
+// ProcedureSupply - Branch
+Branch.hasMany(ProcedureSupply, {
+  foreignKey: 'branchId',
+  as: 'procedureSupplies'
+});
+ProcedureSupply.belongsTo(Branch, {
+  foreignKey: 'branchId',
+  as: 'branch'
+});
+
+// ProcedureSupply - Appointment
+Appointment.hasMany(ProcedureSupply, {
+  foreignKey: 'appointmentId',
+  as: 'supplies'
+});
+ProcedureSupply.belongsTo(Appointment, {
+  foreignKey: 'appointmentId',
+  as: 'appointment'
+});
+
+// ProcedureSupply - Specialist
+User.hasMany(ProcedureSupply, {
+  foreignKey: 'specialistId',
+  as: 'procedureSupplies'
+});
+ProcedureSupply.belongsTo(User, {
+  foreignKey: 'specialistId',
+  as: 'specialist'
+});
+
+// ProcedureSupply - Product
+Product.hasMany(ProcedureSupply, {
+  foreignKey: 'productId',
+  as: 'procedureSupplies'
+});
+ProcedureSupply.belongsTo(Product, {
+  foreignKey: 'productId',
+  as: 'product'
+});
+
+// ProcedureSupply - InventoryMovement
+ProcedureSupply.belongsTo(InventoryMovement, {
+  foreignKey: 'inventoryMovementId',
+  as: 'inventoryMovement'
+});
+
+// ProcedureSupply - RegisteredBy User
+User.hasMany(ProcedureSupply, {
+  foreignKey: 'registeredBy',
+  as: 'registeredSupplies'
+});
+ProcedureSupply.belongsTo(User, {
+  foreignKey: 'registeredBy',
+  as: 'registeredByUser'
 });
 
 // InventoryMovement - Appointment relationships
@@ -1139,6 +1298,26 @@ CashRegisterShift.belongsTo(Branch, {
 Branch.hasMany(CashRegisterShift, {
   foreignKey: 'branchId',
   as: 'cashRegisterShifts'
+});
+
+// CashRegisterShift - Sale
+CashRegisterShift.hasMany(Sale, {
+  foreignKey: 'shiftId',
+  as: 'sales'
+});
+Sale.belongsTo(CashRegisterShift, {
+  foreignKey: 'shiftId',
+  as: 'shift'
+});
+
+// CashRegisterShift - ProcedureSupply
+CashRegisterShift.hasMany(ProcedureSupply, {
+  foreignKey: 'shiftId',
+  as: 'procedureSupplies'
+});
+ProcedureSupply.belongsTo(CashRegisterShift, {
+  foreignKey: 'shiftId',
+  as: 'shift'
 });
 
 // Voucher - Customer (User)
@@ -1746,6 +1925,10 @@ module.exports = {
   Product,
   InventoryMovement,
   BranchStock,
+  // Modelos de ventas
+  Sale,
+  SaleItem,
+  ProcedureSupply,
   // Modelos de proveedores
   Supplier,
   SupplierContact,

@@ -30,7 +30,18 @@ export { default as businessBranchesApi } from './api/businessBranchesApi.js';
 export * from './api/appointmentApi.js';
 // 📦 PRODUCTS & INVENTORY APIs
 export * from './api/productsApi.js';
-// 💳 ADVANCE PAYMENT SYSTEM APIs
+
+// 👥 CLIENTS API
+export * from './api/clientsApi.js';
+
+// 🎁 LOYALTY & VOUCHERS APIs
+export * from './api/loyaltyApi.js';
+export * from './api/voucherApi.js';
+
+// 💰 SALES SYSTEM APIs
+export * from './api/salesApi.js';
+export * from './api/procedureSupplyApi.js';
+// �💳 ADVANCE PAYMENT SYSTEM APIs
 export * from './api/advancePaymentApi.js';
 // 🔐 BUSINESS VALIDATION SYSTEM APIs
 export * from './api/businessValidationApi.js';
@@ -83,7 +94,10 @@ export * from './store/slices/appointmentCalendarSlice.js';
 export * from './store/slices/timeSlotSlice.js';
 // 📦 PRODUCTS & INVENTORY SLICES
 export * from './store/slices/productsSlice.js';
-// 📊 FINANCIAL MOVEMENTS & REPORTS SLICES
+// � SALES SYSTEM SLICES
+export * from './store/slices/salesSlice.js';
+export * from './store/slices/procedureSupplySlice.js';
+// �📊 FINANCIAL MOVEMENTS & REPORTS SLICES
 export * from './store/slices/financialMovementsSlice.js';
 // 💸 BUSINESS EXPENSES & COMMISSIONS SLICES
 export * from './store/slices/businessExpensesSlice.js';

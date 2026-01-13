@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
 import { 
   XMarkIcon, 
@@ -12,18 +12,27 @@ import {
   CurrencyDollarIcon,
   MapPinIcon,
   PhoneIcon,
-  EnvelopeIcon
+  EnvelopeIcon,
+  BeakerIcon,
+  ShoppingCartIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import AppointmentWorkflowModal from './AppointmentWorkflowModal';
+import AppointmentSuppliesTab from './AppointmentSuppliesTab';
+import ProductSelector from '../../sales/ProductSelector';
+import { fetchProducts } from '@shared/store/slices/productsSlice';
+import { createSale } from '@shared/store/slices/salesSlice';
 
 /**
  * Modal de detalles de cita para especialistas
  * Incluye todas las transiciones de estado y validaciones
  */
 export default function AppointmentDetailsModal({ isOpen, appointment, businessId, onClose, onUpdate }) {
+  const dispatch = useDispatch();
   const { token } = useSelector(state => state.auth);
+  const { user } = useSelector(state => state.auth);
+  const { products } = useSelector(state => state.products);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
   const [showCancelForm, setShowCancelForm] = useState(false);
@@ -31,12 +40,25 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
   const [appointmentDetails, setAppointmentDetails] = useState(appointment);
   const [showWorkflowModal, setShowWorkflowModal] = useState(false);
   const [workflowAction, setWorkflowAction] = useState(null);
+  const [activeTab, setActiveTab] = useState('details');
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [savingSale, setSavingSale] = useState(false);
+  const [activeShiftId, setActiveShiftId] = useState(null);
 
   useEffect(() => {
     if (isOpen && appointment?.id) {
       loadAppointmentDetails();
+      loadActiveShift();
+      // Cargar productos para ventas
+      if (businessId) {
+        dispatch(fetchProducts({ 
+          businessId,
+          productType: 'FOR_SALE,BOTH',
+          isActive: true
+        }));
+      }
     }
-  }, [isOpen, appointment?.id]);
+  }, [isOpen, appointment?.id, businessId, dispatch]);
 
   const loadAppointmentDetails = async () => {
     if (!token) return;
@@ -60,6 +82,30 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
       console.error('Error loading appointment details:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadActiveShift = async () => {
+    if (!token || !businessId) return;
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/cash-register/active-shift?businessId=${businessId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (!response.ok) return;
+      
+      const result = await response.json();
+      if (result.success && result.data?.hasActiveShift && result.data?.shift) {
+        setActiveShiftId(result.data.shift.id);
+      }
+    } catch (error) {
+      console.log('No hay turno activo o error al cargar:', error);
     }
   };
 
@@ -173,8 +219,53 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
     }
   };
 
+  const handleSaveSale = async () => {
+    if (selectedProducts.length === 0) {
+      toast.error('Debes agregar al menos un producto');
+      return;
+    }
+
+    try {
+      setSavingSale(true);
+      
+      const saleData = {
+        branchId: appointmentDetails.branchId || null,
+        clientId: appointmentDetails.clientId,
+        shiftId: activeShiftId || null, // Asociar con el turno activo
+        items: selectedProducts.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          discountType: 'NONE',
+          discountValue: 0
+        })),
+        discountType: 'NONE',
+        discountValue: 0,
+        paymentMethod: 'CASH',
+        paidAmount: selectedProducts.reduce((sum, item) => sum + item.total, 0),
+        notes: `Venta durante turno ${appointmentDetails.appointmentNumber || appointmentDetails.id}`,
+        appointmentId: appointmentDetails.id
+      };
+
+      await dispatch(createSale(saleData)).unwrap();
+      
+      toast.success('Venta registrada exitosamente' + (activeShiftId ? ' y asociada al turno de caja' : ''));
+      setSelectedProducts([]);
+      setActiveTab('details');
+    } catch (error) {
+      console.error('Error guardando venta:', error);
+      toast.error(error.message || 'Error al registrar la venta');
+    } finally {
+      setSavingSale(false);
+    }
+  };
+
   if (!isOpen) return null;
   
+  const tabs = [
+    { id: 'details', name: 'Detalles', icon: ClockIcon },
+    { id: 'supplies', name: 'Consumo de Productos', icon: BeakerIcon },
+    { id: 'sales', name: 'Ventas', icon: ShoppingCartIcon }
+  ];
   // Validar que appointmentDetails existe antes de renderizar
   if (!appointmentDetails) {
     return null;
@@ -228,6 +319,24 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
                 </span>
               )}
             </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 mt-4">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    activeTab === tab.id
+                      ? 'bg-white text-blue-600 font-semibold'
+                      : 'text-white hover:bg-white/10'
+                  }`}
+                >
+                  <tab.icon className="w-5 h-5" />
+                  {tab.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Body */}
@@ -235,6 +344,36 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : activeTab === 'supplies' ? (
+              <AppointmentSuppliesTab
+                appointmentId={appointmentDetails.id}
+                specialistId={appointmentDetails.specialistId}
+                branchId={appointmentDetails.branchId}
+              />
+            ) : activeTab === 'sales' ? (
+              <div className="space-y-4">
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    💰 Registra los productos vendidos durante este turno. La venta se vinculará automáticamente con la cita y el cliente.
+                  </p>
+                </div>
+                {!activeShiftId && (
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ <strong>No hay turno de caja activo.</strong> La venta se registrará pero no aparecerá en el cierre de caja. Para asociarla con un turno, primero abre un turno en la sección de Caja.
+                    </p>
+                  </div>
+                )}
+                <ProductSelector
+                  products={products || []}
+                  selectedItems={selectedProducts}
+                  onItemsChange={setSelectedProducts}
+                  allowQuantityEdit={true}
+                  allowPriceEdit={false}
+                  showStock={true}
+                  title="Productos Vendidos"
+                />
               </div>
             ) : (
               <div className="space-y-4">
@@ -346,7 +485,47 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
             )}
           </div>
 
-          {/* Footer - Acciones */}
+          {/* Footer - Acciones según el tab activo */}
+          {activeTab === 'sales' ? (
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  {selectedProducts.length > 0 ? (
+                    <>
+                      <span className="font-semibold">{selectedProducts.length}</span> producto(s) • Total: <span className="font-bold text-gray-900">${selectedProducts.reduce((sum, item) => sum + item.total, 0).toLocaleString('es-CO')}</span>
+                    </>
+                  ) : (
+                    'No hay productos agregados'
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setActiveTab('details')}
+                    className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSaveSale}
+                    disabled={savingSale || selectedProducts.length === 0}
+                    className="px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {savingSale ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCartIcon className="w-5 h-5" />
+                        Registrar Venta
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === 'details' && (
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
             <div className="flex items-center justify-end gap-3">
               {/* Botón Cancelar (siempre visible excepto si ya está cancelado o completado) */}
@@ -459,6 +638,7 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
               )}
             </div>
           </div>
+          )}
         </div>
       </div>
 

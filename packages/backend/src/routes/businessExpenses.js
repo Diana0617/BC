@@ -1,5 +1,5 @@
 const express = require('express');
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 const BusinessExpenseController = require('../controllers/BusinessExpenseController');
 const { authenticateToken } = require('../middleware/auth');
 const tenancyMiddleware = require('../middleware/tenancy');

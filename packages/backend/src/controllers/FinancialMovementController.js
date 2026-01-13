@@ -25,20 +25,16 @@ class FinancialMovementController {
       // Construir filtros
       const where = { businessId };
 
-      // Filtro por rango de fechas
+      // Filtro por rango de fechas (usando transactionDate)
       if (startDate || endDate) {
-        where.createdAt = {};
+        where.transactionDate = {};
         
         if (startDate) {
-          const start = new Date(startDate);
-          start.setHours(0, 0, 0, 0);
-          where.createdAt[Op.gte] = start;
+          where.transactionDate[Op.gte] = startDate;
         }
         
         if (endDate) {
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
-          where.createdAt[Op.lte] = end;
+          where.transactionDate[Op.lte] = endDate;
         }
       }
 
@@ -76,9 +72,19 @@ class FinancialMovementController {
             required: false
           }
         ],
-        order: [['createdAt', 'DESC']],
+        order: [['transactionDate', 'DESC'], ['createdAt', 'DESC']],
         limit: 500 // Límite para no sobrecargar
       });
+
+      console.log(`📊 [FinancialMovements] Total encontrados: ${movements.length}`);
+      console.log(`📊 [FinancialMovements] Tipos:`, movements.reduce((acc, m) => {
+        acc[m.type] = (acc[m.type] || 0) + 1;
+        return acc;
+      }, {}));
+      console.log(`📊 [FinancialMovements] Categorías:`, movements.reduce((acc, m) => {
+        if (m.category) acc[m.category] = (acc[m.category] || 0) + 1;
+        return acc;
+      }, {}));
 
       // Calcular totales
       const totals = movements.reduce((acc, movement) => {

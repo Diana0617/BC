@@ -17,7 +17,7 @@ export const fetchExpenses = createAsyncThunk(
       });
 
       const response = await apiClient.get(`/api/business/${businessId}/expenses?${params.toString()}`);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Error al obtener gastos');
     }
@@ -32,7 +32,7 @@ export const fetchExpenseCategories = createAsyncThunk(
   async ({ businessId }, { rejectWithValue }) => {
     try {
       const response = await apiClient.get(`/api/business/${businessId}/expenses/categories`);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Error al obtener categorías');
     }
@@ -46,25 +46,26 @@ export const createExpense = createAsyncThunk(
   'businessExpenses/create',
   async ({ businessId, expenseData }, { rejectWithValue }) => {
     try {
-      const formData = new FormData();
-      
-      // Agregar campos al FormData
-      Object.keys(expenseData).forEach(key => {
-        if (expenseData[key] !== null && expenseData[key] !== undefined) {
-          if (key === 'file' && expenseData[key] instanceof File) {
-            formData.append('file', expenseData[key]);
-          } else {
-            formData.append(key, expenseData[key]);
+      // Si expenseData ya es FormData, usarlo directamente
+      let formData;
+      if (expenseData instanceof FormData) {
+        formData = expenseData;
+      } else {
+        // Si no, crear FormData desde el objeto
+        formData = new FormData();
+        Object.keys(expenseData).forEach(key => {
+          if (expenseData[key] !== null && expenseData[key] !== undefined) {
+            if (key === 'file' && expenseData[key] instanceof File) {
+              formData.append('receipt', expenseData[key]);
+            } else {
+              formData.append(key, expenseData[key]);
+            }
           }
-        }
-      });
+        });
+      }
 
-      
-      const response = await apiClient.post(`/api/business/${businessId}/expenses`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });      return response.data;
+      const response = await apiClient.post(`/api/business/${businessId}/expenses`, formData);
+      return response.data.data || response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Error al crear gasto');
     }
@@ -78,24 +79,26 @@ export const updateExpense = createAsyncThunk(
   'businessExpenses/update',
   async ({ businessId, expenseId, expenseData }, { rejectWithValue }) => {
     try {
-      const formData = new FormData();
-      
-      Object.keys(expenseData).forEach(key => {
-        if (expenseData[key] !== null && expenseData[key] !== undefined) {
-          if (key === 'file' && expenseData[key] instanceof File) {
-            formData.append('file', expenseData[key]);
-          } else {
-            formData.append(key, expenseData[key]);
+      // Si expenseData ya es FormData, usarlo directamente
+      let formData;
+      if (expenseData instanceof FormData) {
+        formData = expenseData;
+      } else {
+        // Si no, crear FormData desde el objeto
+        formData = new FormData();
+        Object.keys(expenseData).forEach(key => {
+          if (expenseData[key] !== null && expenseData[key] !== undefined) {
+            if (key === 'file' && expenseData[key] instanceof File) {
+              formData.append('receipt', expenseData[key]);
+            } else {
+              formData.append(key, expenseData[key]);
+            }
           }
-        }
-      });
+        });
+      }
 
-      
-      const response = await apiClient.put(`/api/business/${businessId}/expenses/${expenseId}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });      return response.data;
+      const response = await apiClient.put(`/api/business/${businessId}/expenses/${expenseId}`, formData);
+      return response.data.data || response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Error al actualizar gasto');
     }
