@@ -56,10 +56,26 @@ export default function PendingPayments({ shiftId }) {
 
       const data = await response.json();
       
+      // Determinar qué estructura tiene la respuesta
+      let appointmentsList = [];
+      if (Array.isArray(data)) {
+        appointmentsList = data;
+      } else if (data.data?.appointments && Array.isArray(data.data.appointments)) {
+        appointmentsList = data.data.appointments;
+      } else if (data.data && Array.isArray(data.data)) {
+        appointmentsList = data.data;
+      } else if (data.appointments && Array.isArray(data.appointments)) {
+        appointmentsList = data.appointments;
+      }
+      
+      console.log('📋 Turnos pendientes cargados:', appointmentsList.length);
+      
       // Filtrar solo IN_PROGRESS y COMPLETED
-      const filteredAppointments = (data.data || data.appointments || []).filter(
+      const filteredAppointments = appointmentsList.filter(
         apt => apt.status === 'IN_PROGRESS' || apt.status === 'COMPLETED'
       );
+      
+      console.log('✅ Turnos filtrados (IN_PROGRESS/COMPLETED):', filteredAppointments.length);
       
       setAppointments(filteredAppointments);
     } catch (error) {
@@ -84,10 +100,10 @@ export default function PendingPayments({ shiftId }) {
     }).format(amount || 0);
   };
 
-  const formatDateTime = (date, time) => {
-    if (!date) return 'N/A';
+  const formatDateTime = (dateTimeString) => {
+    if (!dateTimeString) return 'N/A';
     try {
-      const dateTime = time ? new Date(`${date}T${time}`) : new Date(date);
+      const dateTime = new Date(dateTimeString);
       return format(dateTime, "d MMM yyyy, HH:mm", { locale: es });
     } catch {
       return 'N/A';
@@ -234,7 +250,7 @@ export default function PendingPayments({ shiftId }) {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-600">
                         <CalendarIcon className="w-4 h-4 mr-1" />
-                        {formatDateTime(appointment.date, appointment.time)}
+                        {formatDateTime(appointment.startTime)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

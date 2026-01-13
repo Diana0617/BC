@@ -371,20 +371,26 @@ Receipt.createFromAppointment = async function(appointmentData, paymentData, opt
       businessId: appointmentData.businessId,
       appointmentId: appointmentData.id,
       specialistId: appointmentData.specialistId,
-      userId: appointmentData.userId,
+      userId: appointmentData.clientId, // Appointment has clientId, Receipt expects userId
       
       // Información del especialista
-      specialistName: appointmentData.specialist?.name || 'N/A',
+      specialistName: appointmentData.specialist ? 
+        `${appointmentData.specialist.firstName} ${appointmentData.specialist.lastName}` : 
+        'N/A',
       specialistCode: appointmentData.specialist?.code || null,
       
       // Información del cliente
-      clientName: appointmentData.user?.name || 'N/A',
-      clientPhone: appointmentData.user?.phone || null,
-      clientEmail: appointmentData.user?.email || null,
+      clientName: appointmentData.client ? 
+        `${appointmentData.client.firstName} ${appointmentData.client.lastName}` : 
+        'N/A',
+      clientPhone: appointmentData.client?.phone || null,
+      clientEmail: appointmentData.client?.email || null,
       
-      // Fechas
-      serviceDate: appointmentData.date,
-      serviceTime: appointmentData.time,
+      // Fechas - extraer de startTime
+      serviceDate: appointmentData.startTime ? new Date(appointmentData.startTime) : new Date(),
+      serviceTime: appointmentData.startTime ? 
+        new Date(appointmentData.startTime).toTimeString().substring(0, 5) : 
+        '00:00',
       issueDate: new Date(),
       
       // Información del servicio

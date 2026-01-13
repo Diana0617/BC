@@ -35,6 +35,7 @@ class AppointmentController {
         page = 1,
         limit = 10,
         status,
+        paymentStatus,
         specialistId,
         date,
         startDate,
@@ -78,6 +79,10 @@ class AppointmentController {
       // Filtros adicionales
       if (status) {
         where.status = status;
+      }
+
+      if (paymentStatus) {
+        where.paymentStatus = paymentStatus;
       }
 
       if (date) {
@@ -302,6 +307,14 @@ class AppointmentController {
             attributes: ['id', 'name', 'duration', 'price', 'category']
           },
           {
+            model: Service,
+            as: 'services', // Múltiples servicios
+            through: { 
+              attributes: ['price', 'duration', 'order'],
+              as: 'appointmentService'
+            }
+          },
+          {
             model: Client,
             as: 'client',
             attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
@@ -377,6 +390,7 @@ class AppointmentController {
         clientEmail,
         specialistId,
         serviceId,
+        serviceIds, // Array de servicios para múltiples servicios
         startTime,
         endTime,
         duration,
@@ -384,6 +398,9 @@ class AppointmentController {
         clientNotes,
         branchId
       } = req.body;
+      
+      // Determinar qué servicios usar: array o single
+      const servicesToValidate = serviceIds && serviceIds.length > 0 ? serviceIds : (serviceId ? [serviceId] : []);
       
       console.log('📋 [createAppointment] Valores extraídos:', {
         businessId,
@@ -393,11 +410,54 @@ class AppointmentController {
         branchId
       });
 
+      // Validar servicios primero para obtener duración total
+      if (!servicesToValidate || servicesToValidate.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Debe proporcionar al menos un servicio'
+        });
+      }
+      
+      // Validar todos los servicios y calcular totales
+      console.log('🔍 Validando servicios:', { servicesToValidate, businessId });
+      const services = [];
+      let totalDuration = 0;
+      let totalAmount = 0;
+      
+      for (const sId of servicesToValidate) {
+        const service = await Service.findOne({
+          where: {
+            id: sId,
+            businessId,
+            isActive: true
+          }
+        });
+
+        if (!service) {
+          console.log('❌ Servicio no encontrado o no activo:', sId);
+          return res.status(400).json({
+            success: false,
+            error: `Servicio ${sId} no válido para este negocio`
+          });
+        }
+        
+        services.push(service);
+        totalDuration += service.duration;
+        totalAmount += parseFloat(service.price);
+        console.log('✅ Servicio válido:', service.id, service.name);
+      }
+      
+      // Usar el primer servicio como referencia para cálculos de sesión (si aplica)
+      const service = services[0];
+      console.log('📊 Total duración:', totalDuration, 'minutos, Total monto:', totalAmount);
+
       // Calcular endTime si viene duration pero no endTime
       let calculatedEndTime = endTime;
-      if (!calculatedEndTime && duration && startTime) {
+      const effectiveDuration = duration || totalDuration; // Usar la suma de duraciones si no viene duration
+      if (!calculatedEndTime && effectiveDuration && startTime) {
         const start = new Date(startTime);
-        calculatedEndTime = new Date(start.getTime() + duration * 60000); // duration en minutos
+        calculatedEndTime = new Date(start.getTime() + effectiveDuration * 60000); // duration en minutos
+        console.log('⏱️ Duración calculada:', effectiveDuration, 'minutos');
       }
 
       // Buscar o crear cliente
@@ -483,6 +543,28 @@ class AppointmentController {
         }
       });
 
+      console.log('🔍 Buscando BUSINESS_SPECIALIST:', {
+        specialistId,
+        businessId,
+        found: !!businessSpecialistUser
+      });
+
+      // Verificar si es el propio BUSINESS (dueño del negocio)
+      const businessOwner = await User.findOne({
+        where: {
+          id: specialistId,
+          businessId,
+          status: 'ACTIVE',
+          role: 'BUSINESS'
+        }
+      });
+
+      console.log('🔍 Buscando BUSINESS owner:', {
+        specialistId,
+        businessId,
+        found: !!businessOwner
+      });
+
       let specialist;
       let specialistProfile = null; // Declarar en el scope externo
       
@@ -490,6 +572,10 @@ class AppointmentController {
         // Es un BUSINESS_SPECIALIST, no necesita SpecialistProfile
         specialist = businessSpecialistUser;
         console.log('✅ BUSINESS_SPECIALIST válido:', specialist.id);
+      } else if (businessOwner) {
+        // Es el BUSINESS owner, puede atender sus propios turnos
+        specialist = businessOwner;
+        console.log('✅ BUSINESS owner válido:', specialist.id);
       } else {
         // Buscar el SpecialistProfile para especialistas regulares
         const SpecialistProfile = require('../models/SpecialistProfile');
@@ -521,24 +607,8 @@ class AppointmentController {
         console.log('✅ Especialista válido:', specialist.id);
       }
 
-      // Validar que el servicio pertenezca al negocio
-      console.log('🔍 Buscando servicio:', { serviceId, businessId });
-      const service = await Service.findOne({
-        where: {
-          id: serviceId,
-          businessId,
-          isActive: true
-        }
-      });
-
-      if (!service) {
-        console.log('❌ Servicio no encontrado o no activo');
-        return res.status(400).json({
-          success: false,
-          error: 'Servicio no válido para este negocio'
-        });
-      }
-      console.log('✅ Servicio válido:', service.id);
+      // Los servicios ya fueron validados al principio
+      // Continuar con validación de sucursal
 
       // Validar sucursal si se proporciona
       if (branchId) {
@@ -562,9 +632,9 @@ class AppointmentController {
 
         console.log('🔍 Verificando acceso del especialista a la sucursal');
         
-        // BUSINESS_SPECIALIST (dueño del negocio) tiene acceso a todas las sucursales
-        if (specialist.role === 'BUSINESS_SPECIALIST') {
-          console.log('✅ BUSINESS_SPECIALIST tiene acceso automático a todas las sucursales');
+        // BUSINESS y BUSINESS_SPECIALIST (propietarios del negocio) tienen acceso a todas las sucursales
+        if (['BUSINESS', 'BUSINESS_SPECIALIST'].includes(specialist.role)) {
+          console.log('✅ BUSINESS/BUSINESS_SPECIALIST tiene acceso automático a todas las sucursales');
         } else {
           // Verificar que el especialista regular tenga acceso a esa sucursal
           const specialistBranchAccess = await UserBranch.findOne({
@@ -929,17 +999,26 @@ class AppointmentController {
       // Generar número de cita único
       const appointmentNumber = `CITA-${Date.now()}`;
 
+      // 💰 CÁLCULO FINAL DE PRECIO
+      // Si hay múltiples servicios, usar el total calculado
+      // Si es un servicio de paquete, usar el precio calculado de sesión
+      let finalTotalAmount = totalAmount;
+      if (services.length === 1 && finalPrice !== service.price) {
+        // Si es solo un servicio y tiene precio especial (paquete o personalizado), usar ese precio
+        finalTotalAmount = finalPrice;
+      }
+
       // Crear la cita con información de sesión si aplica
       const appointmentData = {
         businessId,
         clientId: client.id,
         specialistId: specialist.id, // Usar el User.id del especialista
-        serviceId,
+        serviceId: services[0].id, // Mantener el primer servicio para backward compatibility
         branchId: branchId || null, // Campo opcional
         appointmentNumber,
         startTime: new Date(startTime),
         endTime: calculatedEndTime,
-        totalAmount: finalPrice,
+        totalAmount: finalTotalAmount,
         status: 'PENDING',
         notes,
         clientNotes
@@ -951,13 +1030,37 @@ class AppointmentController {
       }
       
       const appointment = await Appointment.create(appointmentData);
+      console.log('✅ Cita creada:', appointment.id);
 
-      // Obtener la cita creada con relaciones
+      // 🔗 CREAR REGISTROS EN APPOINTMENTSERVICE PARA CADA SERVICIO
+      const AppointmentService = require('../models/AppointmentService');
+      for (let i = 0; i < services.length; i++) {
+        const svc = services[i];
+        
+        // Determinar el precio individual
+        let servicePrice = parseFloat(svc.price);
+        
+        // Si es el primer servicio y tiene precio especial, usar ese
+        if (i === 0 && finalPrice !== service.price && services.length === 1) {
+          servicePrice = finalPrice;
+        }
+        
+        await AppointmentService.create({
+          appointmentId: appointment.id,
+          serviceId: svc.id,
+          price: servicePrice,
+          duration: svc.duration,
+          order: i
+        });
+        console.log(`✅ AppointmentService creado: ${svc.name}, precio: ${servicePrice}, duración: ${svc.duration}min`);
+      }
+
+      // Obtener la cita creada con relaciones incluyendo los servicios
       const createdAppointment = await Appointment.findByPk(appointment.id, {
         include: [
           {
             model: Service,
-            as: 'service', // Agregar el alias
+            as: 'service', // Servicio principal para backward compatibility
             attributes: ['id', 'name', 'duration', 'price', 'isPackage', 'packageType', 'packageConfig', 'pricePerSession']
           },
           {
@@ -975,6 +1078,14 @@ class AppointmentController {
             as: 'branch',
             attributes: ['id', 'name', 'code'],
             required: false
+          },
+          {
+            model: Service,
+            as: 'services', // Todos los servicios asociados
+            through: { 
+              attributes: ['price', 'duration', 'order'],
+              as: 'appointmentService'
+            }
           }
         ]
       });
@@ -2432,6 +2543,14 @@ class AppointmentController {
             attributes: ['name', 'price', 'duration']
           },
           {
+            model: Service,
+            as: 'services', // Múltiples servicios
+            through: { 
+              attributes: ['price', 'duration', 'order'],
+              as: 'appointmentService'
+            }
+          },
+          {
             model: User,
             as: 'specialist',
             attributes: ['firstName', 'lastName']
@@ -2488,6 +2607,157 @@ class AppointmentController {
     }
   }
 
+  /**
+   * Obtener historial de citas de un cliente
+   * GET /api/appointments/client/:clientId?businessId={bizId}&includeReceipt=true&includePaymentInfo=true
+   */
+  static async getClientAppointments(req, res) {
+    try {
+      const { clientId } = req.params;
+      const { businessId, includeReceipt, includePaymentInfo } = req.query;
+
+      if (!clientId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Se requiere el ID del cliente'
+        });
+      }
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Se requiere el ID del negocio'
+        });
+      }
+
+      // Construir includes dinámicamente
+      const includes = [
+        {
+          model: Service,
+          as: 'service',
+          attributes: ['id', 'name', 'description', 'price', 'duration']
+        },
+        {
+          model: Service,
+          as: 'services', // Múltiples servicios
+          through: { 
+            attributes: ['price', 'duration', 'order'],
+            as: 'appointmentService'
+          }
+        },
+        {
+          model: User,
+          as: 'specialist',
+          attributes: ['id', 'firstName', 'lastName', 'email']
+        }
+      ];
+
+      // Solo agregar paidBy si se solicita explícitamente
+      if (includePaymentInfo === 'true') {
+        includes.push({
+          model: User,
+          as: 'paidBy',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+          required: false
+        });
+      }
+
+      // Incluir recibo si se solicita
+      if (includeReceipt === 'true') {
+        const Receipt = require('../models/Receipt');
+        includes.push({
+          model: Receipt,
+          as: 'receipt',
+          required: false,
+          attributes: ['id', 'receiptNumber', 'totalAmount', 'createdAt']
+        });
+      }
+
+      // Obtener citas del cliente
+      const appointments = await Appointment.findAll({
+        where: {
+          clientId: clientId,
+          businessId: businessId
+        },
+        include: includes,
+        subQuery: false, // Forzar JOINs en lugar de subquery para manejar múltiples asociaciones User
+        order: [['startTime', 'DESC']],
+        attributes: [
+          'id',
+          'startTime',
+          'endTime',
+          'status',
+          'paymentStatus',
+          'totalAmount',
+          'paidAmount',
+          'discountAmount',
+          'notes',
+          'createdAt'
+        ]
+      });
+
+      return res.json({
+        success: true,
+        data: appointments,
+        count: appointments.length
+      });
+
+    } catch (error) {
+      console.error('Error al obtener historial de citas del cliente:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Error al obtener historial de citas'
+      });
+    }
+  }
 }
+
+/**
+ * Procesar turnos sin asistencia (No Shows)
+ * POST /api/appointments/process-no-shows
+ * Admin only - para ejecutar manualmente
+ */
+AppointmentController.processNoShows = async (req, res) => {
+  try {
+    const CronJobManager = require('../utils/CronJobManager');
+    
+    const result = await CronJobManager.runManualNoShowProcess();
+
+    return res.json(result);
+
+  } catch (error) {
+    console.error('Error procesando No Shows:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error procesando turnos sin asistencia',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Obtener estadísticas de No Shows
+ * GET /api/appointments/no-show-stats/:businessId
+ */
+AppointmentController.getNoShowStats = async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    const { days } = req.query;
+
+    const CronJobManager = require('../utils/CronJobManager');
+    
+    const result = await CronJobManager.getNoShowStats(businessId, parseInt(days) || 30);
+
+    return res.json(result);
+
+  } catch (error) {
+    console.error('Error obteniendo estadísticas de No Show:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error obteniendo estadísticas',
+      error: error.message
+    });
+  }
+};
 
 module.exports = AppointmentController;

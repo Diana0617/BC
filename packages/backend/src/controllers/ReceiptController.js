@@ -1,6 +1,7 @@
 const Receipt = require('../models/Receipt');
 const Appointment = require('../models/Appointment');
 const User = require('../models/User');
+const Client = require('../models/Client');
 const Business = require('../models/Business');
 const { Op } = require('sequelize');
 
@@ -15,18 +16,28 @@ class ReceiptController {
   static async createFromAppointment(req, res) {
     try {
       const { appointmentId } = req.params;
-      const { paymentData } = req.body;
+      let { paymentData } = req.body;
+      
+      console.log('🧾 [ReceiptController] createFromAppointment - appointmentId:', appointmentId);
+      console.log('🧾 [ReceiptController] paymentData from body:', paymentData);
       
       // Validar que la cita existe y está pagada
+      console.log('🔍 [ReceiptController] Buscando appointment...');
       const appointment = await Appointment.findByPk(appointmentId, {
         include: [
-          { model: User, as: 'specialist', attributes: ['id', 'name', 'code'] },
-          { model: User, as: 'user', attributes: ['id', 'name', 'phone', 'email'] },
+          { model: User, as: 'specialist', attributes: ['id', 'firstName', 'lastName'] },
+          { model: Client, as: 'client', attributes: ['id', 'firstName', 'lastName', 'phone', 'email'] },
           { model: Business, as: 'business', attributes: ['id', 'name'] }
         ]
       });
       
+      console.log('🔍 [ReceiptController] Appointment encontrado:', appointment ? 'Sí' : 'No');
+      if (appointment) {
+        console.log('🔍 [ReceiptController] Status:', appointment.status, 'PaymentStatus:', appointment.paymentStatus);
+      }
+      
       if (!appointment) {
+        console.log('❌ [ReceiptController] Cita no encontrada');
         return res.status(404).json({
           success: false,
           message: 'Cita no encontrada'
@@ -34,40 +45,111 @@ class ReceiptController {
       }
       
       if (appointment.status !== 'COMPLETED' || appointment.paymentStatus !== 'PAID') {
+        console.log('❌ [ReceiptController] Estado inválido - status:', appointment.status, 'paymentStatus:', appointment.paymentStatus);
         return res.status(400).json({
           success: false,
           message: 'La cita debe estar completada y pagada para generar un recibo'
         });
       }
       
-      // Verificar que no existe ya un recibo para esta cita
+      console.log('✅ [ReceiptController] Cita válida, verificando si ya existe recibo...');
+      
+      // Verificar que no existe ya un recibo para esta cita (ANTES de construir paymentData)
       const existingReceipt = await Receipt.findOne({
-        where: { appointmentId: appointment.id }
+        where: { appointmentId: appointment.id },
+        include: [
+          { model: Business, as: 'business', attributes: ['id', 'name', 'address', 'phone'] },
+          { model: User, as: 'specialist', attributes: ['id', 'firstName', 'lastName', 'email'] },
+          { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email', 'phone'] },
+          { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName'] }
+        ]
       });
       
       if (existingReceipt) {
-        return res.status(400).json({
-          success: false,
+        console.log('⚠️ [ReceiptController] Ya existe un recibo para esta cita:', existingReceipt.id);
+        return res.status(200).json({
+          success: true,
           message: 'Ya existe un recibo para esta cita',
-          data: existingReceipt.getSummary()
+          data: existingReceipt
         });
       }
       
+      // Si no se proporcionó paymentData en el body, construirlo desde la cita
+      if (!paymentData) {
+        console.log('🔧 [ReceiptController] Construyendo paymentData desde la cita...');
+        paymentData = {
+          amount: appointment.paidAmount || 0,
+          method: appointment.paymentMethodId || 'CASH',
+          transactionId: appointment.paymentTransactionId,
+          reference: appointment.paymentReference
+        };
+        console.log('🔧 [ReceiptController] paymentData construido:', paymentData);
+      }
+      
+      console.log('🆕 [ReceiptController] Creando nuevo recibo...');
+      const appointmentJSON = appointment.toJSON();
+      console.log('🔍 [ReceiptController] Appointment data keys:', Object.keys(appointmentJSON));
+      console.log('🔍 [ReceiptController] userId:', appointmentJSON.userId);
+      console.log('🔍 [ReceiptController] clientId:', appointmentJSON.clientId);
+      console.log('🔍 [ReceiptController] startTime:', appointmentJSON.startTime);
+      
       // Crear el recibo
       const receipt = await Receipt.createFromAppointment(
-        appointment.toJSON(),
+        appointmentJSON,
         paymentData,
         { createdBy: req.user.id }
       );
       
+      console.log('✅ [ReceiptController] Recibo creado exitosamente:', receipt.id);
+      
+      // Recargar el recibo con todas las relaciones
+      const receiptWithRelations = await Receipt.findByPk(receipt.id, {
+        include: [
+          { model: Business, as: 'business', attributes: ['id', 'name', 'address', 'phone'] },
+          { model: User, as: 'specialist', attributes: ['id', 'firstName', 'lastName', 'email'] },
+          { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email', 'phone'] },
+          { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName'] }
+        ]
+      });
+      
+      console.log('📤 [ReceiptController] Enviando respuesta con recibo:', receiptWithRelations.receiptNumber);
       res.status(201).json({
         success: true,
         message: 'Recibo creado exitosamente',
-        data: receipt
+        data: receiptWithRelations
       });
       
     } catch (error) {
-      console.error('Error creating receipt:', error);
+      console.error('❌ [ReceiptController] Error creating receipt:', error);
+      console.error('❌ [ReceiptController] Error stack:', error.stack);
+      
+      // Si es un error de constraint único (duplicate key), retornar el recibo existente
+      if (error.name === 'SequelizeUniqueConstraintError' || 
+          error.message?.includes('receipts_appointment_id_unique')) {
+        console.log('⚠️ [ReceiptController] Recibo duplicado detectado por constraint, buscando existente...');
+        try {
+          const { appointmentId } = req.params;
+          const existingReceipt = await Receipt.findOne({
+            where: { appointmentId },
+            include: [
+              { model: Business, as: 'business', attributes: ['id', 'name', 'address', 'phone'] },
+              { model: User, as: 'specialist', attributes: ['id', 'firstName', 'lastName', 'email'] },
+              { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email', 'phone'] },
+              { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName'] }
+            ]
+          });
+          if (existingReceipt) {
+            return res.status(200).json({
+              success: true,
+              message: 'Ya existe un recibo para esta cita',
+              data: existingReceipt
+            });
+          }
+        } catch (findError) {
+          console.error('❌ [ReceiptController] Error buscando recibo existente:', findError);
+        }
+      }
+      
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor'
@@ -395,6 +477,118 @@ class ReceiptController {
       
     } catch (error) {
       console.error('Error fetching receipt statistics:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Generar PDF del recibo
+   * GET /api/receipts/:id/pdf
+   */
+  static async generatePDF(req, res) {
+    try {
+      const { id } = req.params;
+      
+      // Obtener recibo con relaciones
+      const receipt = await Receipt.findByPk(id, {
+        include: [
+          { 
+            model: Business, 
+            as: 'business', 
+            attributes: ['id', 'name', 'address', 'phone', 'email', 'logo'] 
+          },
+          { 
+            model: User, 
+            as: 'specialist', 
+            attributes: ['id', 'firstName', 'lastName', 'email'] 
+          },
+          { 
+            model: User, 
+            as: 'user', 
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone'] 
+          },
+          { 
+            model: Appointment, 
+            as: 'appointment', 
+            attributes: ['id', 'startTime'] 
+          }
+        ]
+      });
+      
+      if (!receipt) {
+        return res.status(404).json({
+          success: false,
+          message: 'Recibo no encontrado'
+        });
+      }
+      
+      // Generar PDF usando el servicio
+      console.log('📄 [ReceiptController] Generando PDF para recibo:', receipt.receiptNumber);
+      const ReceiptPDFService = require('../services/ReceiptPDFService');
+      const receiptData = receipt.toJSON();
+      
+      console.log('🔍 [ReceiptController] Receipt data keys:', Object.keys(receiptData));
+      console.log('🔍 [ReceiptController] Business data:', receiptData.business);
+      
+      const pdfBuffer = await ReceiptPDFService.generateReceiptPDF(
+        receiptData,
+        receiptData.business
+      );
+      
+      console.log('✅ [ReceiptController] PDF generado exitosamente, tamaño:', pdfBuffer.length, 'bytes');
+      
+      // Enviar PDF como respuesta
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="recibo-${receipt.receiptNumber}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.setHeader('Cache-Control', 'no-cache');
+      
+      console.log('📤 [ReceiptController] Enviando PDF al cliente...');
+      return res.end(pdfBuffer, 'binary');
+      
+    } catch (error) {
+      console.error('Error generating receipt PDF:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al generar el PDF del recibo'
+      });
+    }
+  }
+
+  /**
+   * Obtener recibo por appointmentId
+   */
+  static async getByAppointment(req, res) {
+    try {
+      const { appointmentId } = req.params;
+      
+      const receipt = await Receipt.findOne({
+        where: { appointmentId },
+        include: [
+          { model: Business, as: 'business', attributes: ['id', 'name', 'address', 'phone'] },
+          { model: User, as: 'specialist', attributes: ['id', 'firstName', 'lastName', 'email'] },
+          { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email', 'phone'] },
+          { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName'] }
+        ]
+      });
+      
+      if (!receipt) {
+        return res.status(404).json({
+          success: false,
+          message: 'No se encontró un recibo para esta cita'
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: receipt
+      });
+      
+    } catch (error) {
+      console.error('Error obteniendo recibo por cita:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor'

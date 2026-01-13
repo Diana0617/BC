@@ -665,19 +665,8 @@ class ClientController {
             model: User,
             as: 'specialist',
             attributes: ['id', 'firstName', 'lastName', 'email']
-          },
-          {
-            model: ConsentSignature,
-            as: 'consentSignature',
-            attributes: ['id', 'signedAt', 'signedPdfUrl'],
-            include: [
-              {
-                model: ConsentTemplate,
-                as: 'template',
-                attributes: ['id', 'title', 'version']
-              }
-            ]
           }
+          // ConsentSignature relación no está definida en modelo Appointment
         ],
         order: [['startTime', 'DESC']],
         limit: 50 // Últimas 50 citas
@@ -735,16 +724,33 @@ class ClientController {
           {
             model: ConsentTemplate,
             as: 'template',
-            attributes: ['id', 'title', 'version', 'category']
+            attributes: ['id', 'name', 'version', 'category']
           },
           {
             model: Service,
             as: 'service',
             attributes: ['id', 'name']
+          },
+          {
+            model: Appointment,
+            as: 'appointment',
+            attributes: ['id', 'startTime'],
+            include: [
+              {
+                model: Service,
+                as: 'service',
+                attributes: ['id', 'name']
+              }
+            ]
           }
         ],
         order: [['signedAt', 'DESC']]
       });
+
+      console.log('🔍 Consents encontrados:', consents.length);
+      if (consents.length > 0) {
+        console.log('🔍 Primer consent:', JSON.stringify(consents[0], null, 2));
+      }
 
       // 3. Obtener historial de cancelaciones
       const cancellations = await Appointment.findAll({
@@ -877,21 +883,37 @@ class ClientController {
           
           return baseApt;
         }),
-        consents: consents.map(consent => ({
-          id: consent.id,
-          signedAt: consent.signedAt,
-          pdfUrl: consent.signedPdfUrl,
-          template: consent.template ? {
-            id: consent.template.id,
-            title: consent.template.title,
-            version: consent.template.version,
-            category: consent.template.category
-          } : null,
-          service: consent.service ? {
-            id: consent.service.id,
-            name: consent.service.name
-          } : null
-        })),
+        consents: consents.map(consent => {
+          // Si no hay servicio directo, intentar obtenerlo del appointment
+          let serviceData = null;
+          if (consent.service) {
+            serviceData = {
+              id: consent.service.id,
+              name: consent.service.name
+            };
+          } else if (consent.appointment?.service) {
+            serviceData = {
+              id: consent.appointment.service.id,
+              name: consent.appointment.service.name
+            };
+          }
+
+          const formatted = {
+            id: consent.id,
+            signedAt: consent.signedAt,
+            pdfUrl: consent.signedPdfUrl,
+            template: consent.template ? {
+              id: consent.template.id,
+              name: consent.template.name,
+              version: consent.template.version,
+              category: consent.template.category
+            } : null,
+            service: serviceData,
+            appointmentId: consent.appointmentId
+          };
+          console.log('🔍 Consent formateado:', JSON.stringify(formatted, null, 2));
+          return formatted;
+        }),
         cancellations: cancellations.map(cancel => ({
           id: cancel.id,
           appointmentDate: cancel.startTime,

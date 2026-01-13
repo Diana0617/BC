@@ -29,6 +29,7 @@ const SupplierEvaluation = require('./SupplierEvaluation');
 const SupplierCatalogItem = require('./SupplierCatalogItem');
 const BranchStock = require('./BranchStock');
 const Appointment = require('./Appointment');
+const AppointmentService = require('./AppointmentService');
 const AppointmentPayment = require('./AppointmentPayment');
 const PasswordResetToken = require('./PasswordResetToken');
 
@@ -488,6 +489,46 @@ User.hasMany(Appointment, {
 Service.hasMany(Appointment, { 
   foreignKey: 'serviceId', 
   as: 'appointments' 
+});
+
+// ================================
+// APPOINTMENT SERVICES - Relaciones many-to-many
+// ================================
+
+// Appointment - AppointmentService - Service (muchos a muchos)
+Appointment.belongsToMany(Service, {
+  through: AppointmentService,
+  foreignKey: 'appointmentId',
+  otherKey: 'serviceId',
+  as: 'services'
+});
+
+Service.belongsToMany(Appointment, {
+  through: AppointmentService,
+  foreignKey: 'serviceId',
+  otherKey: 'appointmentId',
+  as: 'appointmentsThrough'
+});
+
+// Relaciones directas para acceder a AppointmentService
+Appointment.hasMany(AppointmentService, {
+  foreignKey: 'appointmentId',
+  as: 'appointmentServices'
+});
+
+AppointmentService.belongsTo(Appointment, {
+  foreignKey: 'appointmentId',
+  as: 'appointment'
+});
+
+AppointmentService.belongsTo(Service, {
+  foreignKey: 'serviceId',
+  as: 'service'
+});
+
+Service.hasMany(AppointmentService, {
+  foreignKey: 'serviceId',
+  as: 'appointmentServiceEntries'
 });
 
 // ================================
@@ -1700,6 +1741,7 @@ module.exports = {
   BusinessClient,
   Service,
   Appointment,
+  AppointmentService,
   AppointmentPayment,
   Product,
   InventoryMovement,

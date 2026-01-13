@@ -12,8 +12,9 @@ import {
  * Registro de monto inicial y validaciones
  */
 export default function CashRegisterOpening({ 
-  specialistId,
+  
   businessId,
+  token,
   onSuccess,
   onCancel 
 }) {
@@ -95,31 +96,50 @@ export default function CashRegisterOpening({
     setLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/cash-register/open`,
+        `${import.meta.env.VITE_API_URL}/api/cash-register/open-shift`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            specialistId,
             businessId,
-            openingAmount: amount,
-            notes: formData.notes,
+            branchId: null, // TODO: Agregar selección de sucursal si es necesario
+            openingBalance: amount,
+            openingNotes: formData.notes || null,
             denominationBreakdown: showBreakdown ? formData.denominationBreakdown : null
           })
         }
       );
 
-      if (!response.ok) throw new Error('Error opening cash register');
-
       const data = await response.json();
+
+      if (!response.ok) {
+        // Si ya hay un turno abierto, mostrar mensaje específico
+        if (response.status === 400 && data.error?.includes('turno abierto')) {
+          const shouldGoToShift = window.confirm(
+            'Ya tienes un turno abierto.\n\n¿Deseas ir al turno activo?'
+          );
+          if (shouldGoToShift && data.debug?.existingShiftId) {
+            // Redirigir al turno existente
+            onSuccess?.({ shift: { id: data.debug.existingShiftId } });
+            return;
+          } else if (shouldGoToShift) {
+            // Si no hay ID, simplemente cerrar el modal
+            onSuccess?.(null);
+            return;
+          }
+          return;
+        }
+        throw new Error(data.error || 'Error opening cash register');
+      }
+
       alert('Turno de caja abierto exitosamente');
       onSuccess?.(data);
     } catch (error) {
       console.error('Error opening cash register:', error);
-      alert('Error al abrir el turno. Intenta nuevamente.');
+      alert(error.message || 'Error al abrir el turno. Intenta nuevamente.');
     } finally {
       setLoading(false);
     }
@@ -172,8 +192,7 @@ export default function CashRegisterOpening({
               min="0"
               step="1000"
               required
-              disabled={showBreakdown}
-              className="w-full pl-8 pr-4 py-3 text-lg font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full pl-8 pr-4 py-3 text-lg font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="0"
             />
           </div>
@@ -191,15 +210,22 @@ export default function CashRegisterOpening({
           className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors flex items-center justify-center gap-2"
         >
           <CurrencyDollarIcon className="w-5 h-5" />
-          {showBreakdown ? 'Ocultar Desglose' : 'Agregar Desglose de Denominaciones'}
+          {showBreakdown ? 'Ocultar Desglose' : 'Agregar Desglose de Denominaciones (Opcional)'}
         </button>
 
         {/* Desglose de Denominaciones */}
         {showBreakdown && (
           <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-            <h4 className="font-semibold text-gray-900 mb-3">
-              Desglose por Denominación
-            </h4>
+            <div className="flex items-start gap-2 mb-3">
+              <div>
+                <h4 className="font-semibold text-gray-900">
+                  Desglose por Denominación
+                </h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  Cuenta cuántos billetes y monedas de cada tipo tienes. El sistema calculará el total automáticamente.
+                </p>
+              </div>
+            </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {denominations.map(denom => (

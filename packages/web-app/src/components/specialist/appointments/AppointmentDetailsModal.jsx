@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
 import { 
   XMarkIcon, 
   CheckCircleIcon, 
@@ -105,10 +106,10 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
 
       const data = await response.json();
       setAppointmentDetails(prev => ({ ...prev, status: 'CONFIRMED' }));
-      alert('Turno confirmado correctamente');
+      toast.success('Turno confirmado correctamente');
       onUpdate();
     } catch (error) {
-      alert(error.message || 'No se pudo confirmar el turno');
+      toast.error(error.message || 'No se pudo confirmar el turno');
     } finally {
       setActionLoading(null);
     }
@@ -135,7 +136,7 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
 
   const handleCancel = async () => {
     if (!cancelReason.trim()) {
-      alert('Por favor ingresa un motivo de cancelación');
+      toast.error('Por favor ingresa un motivo de cancelación');
       return;
     }
 
@@ -162,17 +163,22 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
       setAppointmentDetails(prev => ({ ...prev, status: 'CANCELED' }));
       setShowCancelForm(false);
       setCancelReason('');
-      alert('Turno cancelado correctamente');
+      toast.success('Turno cancelado correctamente');
       onUpdate();
       onClose();
     } catch (error) {
-      alert(error.message || 'No se pudo cancelar el turno');
+      toast.error(error.message || 'No se pudo cancelar el turno');
     } finally {
       setActionLoading(null);
     }
   };
 
   if (!isOpen) return null;
+  
+  // Validar que appointmentDetails existe antes de renderizar
+  if (!appointmentDetails) {
+    return null;
+  }
 
   const startDate = new Date(appointmentDetails.startTime);
   const endDate = new Date(appointmentDetails.endTime);

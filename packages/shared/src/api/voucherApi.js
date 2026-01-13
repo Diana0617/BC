@@ -16,7 +16,7 @@ import apiClient from './client';
  * @returns {Promise} Lista de vouchers activos
  */
 export const getMyVouchers = () => {
-  return apiClient.get('/vouchers/my-vouchers');
+  return apiClient.get('/api/vouchers/my-vouchers');
 };
 
 /**
@@ -25,7 +25,7 @@ export const getMyVouchers = () => {
  * @returns {Promise} Información del voucher si es válido
  */
 export const validateVoucher = (voucherCode) => {
-  return apiClient.get(`/vouchers/validate/${voucherCode}`);
+  return apiClient.get(`/api/vouchers/validate/${voucherCode}`);
 };
 
 /**
@@ -36,7 +36,7 @@ export const validateVoucher = (voucherCode) => {
  * @returns {Promise} Resultado de la aplicación
  */
 export const applyVoucher = (data) => {
-  return apiClient.post('/vouchers/apply', data);
+  return apiClient.post('/api/vouchers/apply', data);
 };
 
 /**
@@ -44,7 +44,7 @@ export const applyVoucher = (data) => {
  * @returns {Promise} Estado del bloqueo
  */
 export const checkBlockStatus = () => {
-  return apiClient.get('/vouchers/check-block-status');
+  return apiClient.get('/api/vouchers/check-block-status');
 };
 
 /**
@@ -53,7 +53,7 @@ export const checkBlockStatus = () => {
  * @returns {Promise} Historial de cancelaciones
  */
 export const getCancellationHistory = (days = 30) => {
-  return apiClient.get('/vouchers/cancellation-history', {
+  return apiClient.get('/api/vouchers/cancellation-history', {
     params: { days }
   });
 };
@@ -74,7 +74,7 @@ export const getCancellationHistory = (days = 30) => {
  * @returns {Promise} Lista paginada de vouchers
  */
 export const listBusinessVouchers = (params = {}) => {
-  return apiClient.get('/vouchers/business/list', { params });
+  return apiClient.get('/api/vouchers/business/list', { params });
 };
 
 /**
@@ -85,7 +85,7 @@ export const listBusinessVouchers = (params = {}) => {
  * @returns {Promise} Voucher cancelado
  */
 export const cancelVoucher = (voucherId, data) => {
-  return apiClient.post(`/vouchers/business/cancel/${voucherId}`, data);
+  return apiClient.post(`/api/vouchers/business/cancel/${voucherId}`, data);
 };
 
 /**
@@ -98,7 +98,7 @@ export const cancelVoucher = (voucherId, data) => {
  * @returns {Promise} Voucher creado
  */
 export const createManualVoucher = (data) => {
-  return apiClient.post('/vouchers/business/create-manual', data);
+  return apiClient.post('/api/vouchers/business/create-manual', data);
 };
 
 /**
@@ -108,7 +108,7 @@ export const createManualVoucher = (data) => {
  * @returns {Promise} Lista de bloqueos
  */
 export const listBlockedCustomers = (params = {}) => {
-  return apiClient.get('/vouchers/business/blocks', { params });
+  return apiClient.get('/api/vouchers/business/blocks', { params });
 };
 
 /**
@@ -119,7 +119,7 @@ export const listBlockedCustomers = (params = {}) => {
  * @returns {Promise} Bloqueo actualizado
  */
 export const liftBlock = (blockId, data) => {
-  return apiClient.post(`/vouchers/business/lift-block/${blockId}`, data);
+  return apiClient.post(`/api/vouchers/business/lift-block/${blockId}`, data);
 };
 
 /**
@@ -129,7 +129,7 @@ export const liftBlock = (blockId, data) => {
  * @returns {Promise} Estadísticas del cliente
  */
 export const getCustomerStats = (customerId, days = 30) => {
-  return apiClient.get(`/vouchers/business/customer-stats/${customerId}`, {
+  return apiClient.get(`/api/vouchers/business/customer-stats/${customerId}`, {
     params: { days }
   });
 };
@@ -146,7 +146,7 @@ export const getCustomerStats = (customerId, days = 30) => {
  * @returns {Promise} Resultado de la limpieza
  */
 export const cleanupExpired = () => {
-  return apiClient.post('/vouchers/cleanup');
+  return apiClient.post('/api/vouchers/cleanup');
 };
 
 /**

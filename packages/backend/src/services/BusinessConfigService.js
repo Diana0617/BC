@@ -131,15 +131,20 @@ class BusinessConfigService {
       console.log('🔍 getSpecialists - businessId:', businessId);
       console.log('🔍 getSpecialists - filters:', filters);
       
-      // Buscar en Users en lugar de SpecialistProfile para incluir recepcionistas
+      // Buscar en Users en lugar de SpecialistProfile para incluir recepcionistas, business y business_specialist
       const userWhereClause = { 
         businessId,
-        role: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST', 'RECEPTIONIST']
+        role: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST', 'RECEPTIONIST', 'BUSINESS', 'BUSINESS_SPECIALIST']
       };
 
       // Filtro por userId específico
       if (filters.userId) {
         userWhereClause.id = filters.userId;
+      }
+
+      // Filtrar por status del usuario si se especifica isActive
+      if (filters.isActive !== undefined) {
+        userWhereClause.status = filters.isActive ? 'ACTIVE' : 'INACTIVE';
       }
 
       const profileWhereClause = {};
@@ -659,9 +664,20 @@ class BusinessConfigService {
   async deleteSpecialist(profileId) {
     try {
       // Primero intentar encontrar el perfil de especialista
-      const profile = await SpecialistProfile.findByPk(profileId);
+      const profile = await SpecialistProfile.findByPk(profileId, {
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['id', 'role']
+        }]
+      });
       
       if (profile) {
+        // Validar que no sea BUSINESS o BUSINESS_SPECIALIST
+        if (profile.user && ['BUSINESS', 'BUSINESS_SPECIALIST'].includes(profile.user.role)) {
+          throw new Error('No se puede eliminar al propietario del negocio o especialistas administrativos');
+        }
+        
         // Si tiene perfil, desactivar el perfil y el usuario
         await profile.update({ isActive: false, status: 'INACTIVE' });
         
@@ -678,6 +694,11 @@ class BusinessConfigService {
         const user = await User.findByPk(profileId);
         if (!user) {
           throw new Error('Usuario no encontrado');
+        }
+        
+        // Validar que no sea BUSINESS o BUSINESS_SPECIALIST
+        if (['BUSINESS', 'BUSINESS_SPECIALIST'].includes(user.role)) {
+          throw new Error('No se puede eliminar al propietario del negocio o especialistas administrativos');
         }
         
         // Soft delete - solo desactivar el usuario

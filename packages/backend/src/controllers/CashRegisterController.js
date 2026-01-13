@@ -1,7 +1,6 @@
 const { 
   CashRegisterShift,
   Appointment,
-  AppointmentPayment,
   User,
   Business,
   Branch,
@@ -834,45 +833,42 @@ class CashRegisterController {
     summary.appointments.totalAmount = appointments.reduce((sum, a) => sum + parseFloat(a.totalAmount || 0), 0);
     summary.appointments.paidAmount = appointments.reduce((sum, a) => sum + parseFloat(a.paidAmount || 0), 0);
 
-    // Obtener pagos del turno
-    const appointmentIds = appointments.map(a => a.id);
-    
-    if (appointmentIds.length > 0) {
-      const payments = await AppointmentPayment.findAll({
-        where: {
-          appointmentId: { [Op.in]: appointmentIds },
-          businessId,
-          status: 'COMPLETED',
-          paymentDate: {
-            [Op.gte]: openedAt
-          }
-        },
-        attributes: ['id', 'amount', 'paymentMethodType', 'paymentMethodName'],
-        transaction
-      });
-
-      // Agrupar por método de pago
-      payments.forEach(payment => {
-        const method = payment.paymentMethodType || 'OTHER';
-        const amount = parseFloat(payment.amount);
-        
-        if (!summary.paymentMethods[method]) {
-          summary.paymentMethods[method] = {
-            count: 0,
-            total: 0
-          };
+    // Obtener movimientos financieros del turno (ingresos)
+    const FinancialMovement = require('../models/FinancialMovement');
+    const movements = await FinancialMovement.findAll({
+      where: {
+        businessId,
+        type: 'INCOME',
+        status: 'COMPLETED',
+        createdAt: {
+          [Op.gte]: openedAt
         }
-        
-        summary.paymentMethods[method].count++;
-        summary.paymentMethods[method].total += amount;
+      },
+      attributes: ['id', 'amount', 'paymentMethod', 'category'],
+      transaction
+    });
 
-        if (method === 'CASH') {
-          summary.totalCash += amount;
-        } else {
-          summary.totalNonCash += amount;
-        }
-      });
-    }
+    // Agrupar por método de pago
+    movements.forEach(movement => {
+      const method = movement.paymentMethod || 'OTHER';
+      const amount = parseFloat(movement.amount);
+      
+      if (!summary.paymentMethods[method]) {
+        summary.paymentMethods[method] = {
+          count: 0,
+          total: 0
+        };
+      }
+      
+      summary.paymentMethods[method].count++;
+      summary.paymentMethods[method].total += amount;
+
+      if (method === 'CASH') {
+        summary.totalCash += amount;
+      } else {
+        summary.totalNonCash += amount;
+      }
+    });
 
     // TODO: Agregar ventas de productos si tienes ese módulo
     // const productSales = await ProductSale.findAll({ ... });
@@ -1092,6 +1088,243 @@ class CashRegisterController {
       return res.status(500).json({
         success: false,
         error: 'Error al marcar recibo'
+      });
+    }
+  }
+
+  /**
+   * Obtener movimientos del turno (recibos y gastos)
+   * GET /api/cash-register/shift/:shiftId/movements?businessId={bizId}
+   */
+  static async getShiftMovements(req, res) {
+    try {
+      const { shiftId } = req.params;
+      const { businessId } = req.query;
+
+      if (!businessId || !shiftId) {
+        return res.status(400).json({
+          success: false,
+          error: 'businessId y shiftId son requeridos'
+        });
+      }
+
+      // Obtener el turno para conocer el período
+      const shift = await CashRegisterShift.findOne({
+        where: { id: shiftId, businessId }
+      });
+
+      if (!shift) {
+        return res.status(404).json({
+          success: false,
+          error: 'Turno no encontrado'
+        });
+      }
+
+      // Construir filtro de fechas
+      const dateFilter = {
+        [Op.gte]: shift.openedAt
+      };
+      
+      if (shift.closedAt) {
+        dateFilter[Op.lte] = shift.closedAt;
+      }
+
+      // Obtener recibos (ingresos) del turno
+      const receipts = await Receipt.findAll({
+        where: {
+          businessId,
+          status: 'ACTIVE',
+          createdAt: dateFilter
+        },
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'firstName', 'lastName']
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
+      // Obtener gastos del turno
+      const BusinessExpense = require('../models/BusinessExpense');
+      const BusinessExpenseCategory = require('../models/BusinessExpenseCategory');
+      const expenses = await BusinessExpense.findAll({
+        where: {
+          businessId,
+          isActive: true,
+          createdAt: dateFilter
+        },
+        include: [
+          {
+            model: BusinessExpenseCategory,
+            as: 'category',
+            attributes: ['id', 'name', 'color', 'icon']
+          },
+          {
+            model: User,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName']
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
+      // Formatear recibos como movimientos
+      const receiptMovements = receipts.map(receipt => ({
+        id: receipt.id,
+        type: 'INCOME',
+        category: 'APPOINTMENT',
+        description: `Pago de cita - ${receipt.serviceName}`,
+        amount: receipt.totalAmount,
+        paymentMethod: receipt.paymentMethod,
+        referenceId: receipt.appointmentId,
+        clientName: receipt.clientName,
+        createdAt: receipt.createdAt,
+        receiptNumber: receipt.receiptNumber,
+        source: 'RECEIPT'
+      }));
+
+      // Formatear gastos como movimientos
+      const expenseMovements = expenses.map(expense => ({
+        id: expense.id,
+        type: 'EXPENSE',
+        category: expense.category?.name || 'Gasto',
+        categoryColor: expense.category?.color,
+        categoryIcon: expense.category?.icon,
+        description: expense.description,
+        amount: expense.amount,
+        paymentMethod: expense.paymentMethod,
+        vendor: expense.vendor,
+        referenceId: expense.id,
+        createdAt: expense.createdAt,
+        expenseDate: expense.expenseDate,
+        source: 'EXPENSE'
+      }));
+
+      // Combinar y ordenar por fecha
+      const allMovements = [...receiptMovements, ...expenseMovements]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      // Calcular totales
+      const totalIncome = receiptMovements.reduce((sum, m) => sum + parseFloat(m.amount), 0);
+      const totalExpenses = expenseMovements.reduce((sum, m) => sum + parseFloat(m.amount), 0);
+
+      return res.json({
+        success: true,
+        data: {
+          movements: allMovements,
+          summary: {
+            totalIncome,
+            totalExpenses,
+            incomeCount: receiptMovements.length,
+            expenseCount: expenseMovements.length,
+            netBalance: totalIncome - totalExpenses
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error obteniendo movimientos del turno:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Error al obtener movimientos del turno'
+      });
+    }
+  }
+
+  /**
+   * Obtener detalle de un turno específico
+   * GET /api/cash-register/shift/:shiftId?businessId={bizId}
+   */
+  static async getShiftDetail(req, res) {
+    try {
+      const { shiftId } = req.params;
+      const { businessId } = req.query;
+
+      if (!businessId || !shiftId) {
+        return res.status(400).json({
+          success: false,
+          error: 'businessId y shiftId son requeridos'
+        });
+      }
+
+      const shift = await CashRegisterShift.findOne({
+        where: { id: shiftId, businessId },
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'firstName', 'lastName', 'email']
+          },
+          {
+            model: Branch,
+            as: 'branch',
+            attributes: ['id', 'name', 'code']
+          }
+        ]
+      });
+
+      if (!shift) {
+        return res.status(404).json({
+          success: false,
+          error: 'Turno no encontrado'
+        });
+      }
+
+      // Construir filtro de fechas
+      const dateFilter = {
+        [Op.gte]: shift.openedAt
+      };
+      
+      if (shift.closedAt) {
+        dateFilter[Op.lte] = shift.closedAt;
+      }
+
+      // Obtener recibos del turno
+      const receipts = await Receipt.findAll({
+        where: {
+          businessId,
+          status: 'ACTIVE',
+          createdAt: dateFilter
+        },
+        attributes: ['id', 'totalAmount', 'paymentMethod']
+      });
+
+      // Obtener gastos del turno
+      const BusinessExpense = require('../models/BusinessExpense');
+      const expenses = await BusinessExpense.findAll({
+        where: {
+          businessId,
+          isActive: true,
+          createdAt: dateFilter
+        },
+        attributes: ['id', 'amount', 'paymentMethod']
+      });
+
+      // Calcular totales
+      const totalIncome = receipts.reduce((sum, r) => sum + parseFloat(r.totalAmount), 0);
+      const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
+      return res.json({
+        success: true,
+        data: {
+          ...shift.toJSON(),
+          openingBalance: parseFloat(shift.openingBalance || 0),
+          totalIncome,
+          totalExpenses,
+          incomeCount: receipts.length,
+          expenseCount: expenses.length,
+          movementsCount: receipts.length + expenses.length,
+          expectedClosingBalance: parseFloat(shift.openingBalance || 0) + totalIncome - totalExpenses
+        }
+      });
+
+    } catch (error) {
+      console.error('Error obteniendo detalle del turno:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Error al obtener detalle del turno'
       });
     }
   }

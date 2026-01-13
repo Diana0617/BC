@@ -22,6 +22,16 @@ router.post('/from-appointment/:appointmentId',
 );
 
 /**
+ * GET /api/receipts/from-appointment/:appointmentId
+ * Obtener recibo existente de una cita
+ * Acceso: Especialista, Recepcionista, Propietario, Business
+ */
+router.get('/from-appointment/:appointmentId', 
+  allStaffRoles,
+  ReceiptController.getByAppointment
+);
+
+/**
  * GET /api/receipts/:id
  * Obtener recibo por ID
  * Acceso: Staff del negocio
@@ -103,6 +113,16 @@ router.put('/:id/sent-whatsapp',
 router.get('/business/:businessId/statistics', 
   businessAndOwner,
   ReceiptController.getStatistics
+);
+
+/**
+ * GET /api/receipts/:id/pdf
+ * Generar y descargar PDF del recibo
+ * Acceso: Staff del negocio
+ */
+router.get('/:id/pdf', 
+  allStaffRoles,
+  ReceiptController.generatePDF
 );
 
 module.exports = router;

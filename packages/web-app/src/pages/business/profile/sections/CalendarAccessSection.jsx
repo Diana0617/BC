@@ -27,7 +27,7 @@ import {
 import businessSpecialistsApi from '@shared/api/businessSpecialistsApi'
 import appointmentApi from '@shared/api/appointmentApi'
 import FullCalendarView from '../../../../components/calendar/FullCalendarView'
-import AppointmentDetailModal from '../../../../components/calendar/AppointmentDetailModal'
+import AppointmentDetailsModal from '../../../../components/specialist/appointments/AppointmentDetailsModal'
 import CreateAppointmentModal from '../../../../components/calendar/CreateAppointmentModal'
 
 const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
@@ -846,8 +846,15 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
               appointments={calendarAppointments}
               initialDate={currentMonth}
               onEventClick={(eventData) => {
-                setSelectedAppointment(eventData.appointment)
-                setShowDetailModal(true)
+                console.log('🖱️ Click en evento del calendario:', eventData)
+                const appointment = eventData.extendedProps?.appointment || eventData.appointment
+                console.log('📋 Appointment data:', appointment)
+                if (appointment) {
+                  setSelectedAppointment(appointment)
+                  setShowDetailModal(true)
+                } else {
+                  console.error('❌ No se encontró el appointment en eventData')
+                }
               }}
               onDateClick={(dateData) => {
                 setCreateModalData({ 
@@ -1046,42 +1053,16 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
       )}
       
       {/* Modales */}
-      <AppointmentDetailModal
+      <AppointmentDetailsModal
         isOpen={showDetailModal}
-        onClose={() => setShowDetailModal(false)}
         appointment={selectedAppointment}
-        onUpdate={async (data) => {
-          try {
-            await appointmentApi.updateAppointment(selectedAppointment.id, data)
-            toast.success('Cita actualizada exitosamente')
-            loadAppointments() // Recargar calendario
-            setShowDetailModal(false)
-          } catch (error) {
-            console.error('Error actualizando cita:', error)
-            toast.error('Error al actualizar la cita')
-          }
+        businessId={currentBusiness?.id}
+        onClose={() => {
+          setShowDetailModal(false)
+          setSelectedAppointment(null)
         }}
-        onCancel={async (reason) => {
-          try {
-            await appointmentApi.cancelAppointment(selectedAppointment.id, reason)
-            toast.success('Cita cancelada exitosamente')
-            loadAppointments()
-            setShowDetailModal(false)
-          } catch (error) {
-            console.error('Error cancelando cita:', error)
-            toast.error('Error al cancelar la cita')
-          }
-        }}
-        onComplete={async () => {
-          try {
-            await appointmentApi.completeAppointment(selectedAppointment.id)
-            toast.success('Cita completada exitosamente')
-            loadAppointments()
-            setShowDetailModal(false)
-          } catch (error) {
-            console.error('Error completando cita:', error)
-            toast.error('Error al completar la cita')
-          }
+        onUpdate={() => {
+          loadAppointments() // Recargar calendario después de actualizar
         }}
       />
 
@@ -1110,12 +1091,34 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
             console.log('📝 Creando cita con datos:', appointmentData)
             await appointmentApi.createAppointment(appointmentData)
-            toast.success('Cita creada exitosamente')
+            toast.success('✅ Cita creada exitosamente')
             loadAppointments()
             setShowCreateModal(false)
           } catch (error) {
             console.error('Error creando cita:', error)
-            toast.error(error.response?.data?.error || 'Error al crear la cita')
+            
+            // Extraer mensaje de error
+            let errorMessage = error.response?.data?.error || error.message || 'Error al crear la cita'
+            
+            // Mejorar mensajes específicos
+            if (errorMessage.includes('ya completó todas las sesiones')) {
+              const match = errorMessage.match(/(\d+) de (\d+)/)
+              if (match) {
+                errorMessage = `⚠️ Sesiones completadas (${match[1]}/${match[2]}). El cliente necesita un nuevo paquete.`
+              } else {
+                errorMessage = '⚠️ El cliente completó todas las sesiones. Necesita un nuevo paquete.'
+              }
+            } else if (errorMessage.includes('no tiene acceso a la sucursal')) {
+              errorMessage = '⚠️ El especialista no tiene acceso a esta sucursal'
+            } else if (errorMessage.includes('horario')) {
+              errorMessage = '⚠️ El horario seleccionado no está disponible'
+            } else if (errorMessage.includes('conflicto') || errorMessage.includes('ocupado')) {
+              errorMessage = '⚠️ Ya existe una cita en este horario'
+            }
+            
+            toast.error(errorMessage)
+            // Propagar el error para que el modal lo muestre también
+            throw new Error(errorMessage)
           }
         }}
       />

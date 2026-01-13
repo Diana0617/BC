@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable no-unused-vars */
+import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { 
   ArrowDownTrayIcon,
   ArrowUpTrayIcon,
@@ -7,19 +9,24 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   BanknotesIcon,
-  ListBulletIcon
+  ListBulletIcon,
+  ChartBarIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import PendingPayments from './PendingPayments';
 
 /**
- * Lista de movimientos de caja (ingresos y egresos)
+ * Lista de movimientos de caja con resumen (ingresos y egresos)
  * Con filtros, paginación y gestión de turnos pendientes
  */
 export default function CashRegisterMovements({ shiftId }) {
-  const [activeView, setActiveView] = useState('pending'); // 'pending' | 'movements'
+  const { token, user } = useSelector(state => state.auth);
+  const [activeView, setActiveView] = useState('pending'); // 'pending' | 'movements' | 'summary'
   const [movements, setMovements] = useState([]);
+  const [shiftData, setShiftData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -31,10 +38,42 @@ export default function CashRegisterMovements({ shiftId }) {
   useEffect(() => {
     if (activeView === 'movements') {
       loadMovements();
+    } else if (activeView === 'summary') {
+      loadShiftData();
     }
   }, [shiftId, page, filters, activeView]);
 
+  const loadShiftData = async () => {
+    if (!shiftId || !user?.businessId) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/cash-register/shift/${shiftId}?businessId=${user.businessId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      if (!response.ok) throw new Error('Error loading shift data');
+
+      const data = await response.json();
+      setShiftData(data);
+    } catch (error) {
+      console.error('Error loading shift data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadMovements = async () => {
+    if (!shiftId) {
+      console.log('⚠️ No hay caja abierta para cargar movimientos');
+      return;
+    }
+    
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -49,7 +88,7 @@ export default function CashRegisterMovements({ shiftId }) {
         `${import.meta.env.VITE_API_URL}/api/cash-register/movements?${params}`,
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${token}`
           }
         }
       );
@@ -61,7 +100,6 @@ export default function CashRegisterMovements({ shiftId }) {
       setTotalPages(data.totalPages);
     } catch (error) {
       console.error('Error loading movements:', error);
-      alert('Error al cargar los movimientos');
     } finally {
       setLoading(false);
     }

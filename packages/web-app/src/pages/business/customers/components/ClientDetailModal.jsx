@@ -17,7 +17,11 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   PencilIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  DocumentArrowDownIcon,
+  CurrencyDollarIcon,
+  UserCircleIcon,
+  PrinterIcon
 } from '@heroicons/react/24/outline';
 import {
   fetchCustomerStats,
@@ -30,6 +34,7 @@ import {
   selectOperationLoading
 } from '@shared/store/selectors/voucherSelectors';
 import toast from 'react-hot-toast';
+import { apiClient } from '@shared/api/client';
 import EditClientModal from './EditClientModal';
 import CreateVoucherModal from './CreateVoucherModal';
 import VouchersList from './VouchersList';
@@ -172,7 +177,7 @@ const ClientDetailModal = ({ client, onClose, onCreateVoucher, onClientUpdated }
             {activeTab === 'appointments' && <AppointmentsTab client={client} />}
             {activeTab === 'consents' && <ConsentsTab client={client} />}
             {activeTab === 'vouchers' && <VouchersTab client={client} onCreateVoucher={onCreateVoucher} />}
-            {activeTab === 'stats' && <StatsTab stats={customerStats} history={cancellationHistory} />}
+            {activeTab === 'stats' && <StatsTab client={client} />}
           </div>
 
           {/* Footer */}
@@ -368,11 +373,100 @@ const InfoTab = ({ client, onLiftBlock }) => {
 };
 
 /**
- * Tab de Citas
+ * Tab de Citas con historial completo
  */
 const AppointmentsTab = ({ client }) => {
-  // TODO: Obtener historial real de citas del cliente
-  const appointments = client.appointments || [];
+  const { currentBusiness } = useSelector(state => state.business);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(null);
+
+  useEffect(() => {
+    loadAppointments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client.id]);
+
+  const loadAppointments = async () => {
+    setLoading(true);
+    try {
+      const response = await apiClient.get(
+        `/api/appointments/client/${client.id}`,
+        {
+          params: { 
+            businessId: currentBusiness?.id,
+            includeReceipt: true
+            // Removido temporalmente: includePaymentInfo: true
+          }
+        }
+      );
+
+      if (response.data.success) {
+        setAppointments(response.data.data || response.data.appointments || []);
+      }
+    } catch (error) {
+      console.error('Error loading appointments:', error);
+      toast.error('Error al cargar el historial de citas');
+      setAppointments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadReceipt = async (receiptId, receiptNumber) => {
+    setDownloadingReceipt(receiptId);
+    try {
+      const response = await apiClient.get(
+        `/api/receipts/${receiptId}/pdf`,
+        {
+          responseType: 'blob'
+        }
+      );
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `recibo-${receiptNumber || receiptId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('✅ Recibo descargado');
+    } catch (error) {
+      console.error('Error downloading receipt:', error);
+      toast.error('❌ Error al descargar el recibo');
+    } finally {
+      setDownloadingReceipt(null);
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0
+    }).format(amount || 0);
+  };
+
+  const formatDateTime = (dateTime) => {
+    return new Date(dateTime).toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mr-3"></div>
+        <span className="text-gray-600">Cargando historial...</span>
+      </div>
+    );
+  }
 
   if (appointments.length === 0) {
     return (
@@ -388,56 +482,197 @@ const AppointmentsTab = ({ client }) => {
 
   return (
     <div className="space-y-4">
+      {/* Header con estadísticas rápidas */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+          <div className="text-xs text-blue-600 font-medium">Total</div>
+          <div className="text-2xl font-bold text-blue-700">{appointments.length}</div>
+        </div>
+        <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+          <div className="text-xs text-green-600 font-medium">Completadas</div>
+          <div className="text-2xl font-bold text-green-700">
+            {appointments.filter(a => a.status === 'COMPLETED').length}
+          </div>
+        </div>
+        <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+          <div className="text-xs text-red-600 font-medium">Canceladas</div>
+          <div className="text-2xl font-bold text-red-700">
+            {appointments.filter(a => a.status === 'CANCELED').length}
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de citas */}
       {appointments.map((appointment) => (
-        <div key={appointment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center">
-                {appointment.status === 'completed' ? (
-                  <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
-                ) : appointment.status === 'cancelled' ? (
-                  <XCircleIcon className="h-5 w-5 text-red-500 mr-2" />
-                ) : (
-                  <ClockIcon className="h-5 w-5 text-yellow-500 mr-2" />
-                )}
-                <h5 className="text-sm font-medium text-gray-900">
+        <div 
+          key={appointment.id} 
+          className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+        >
+          {/* Header de la cita */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2">
+              {appointment.status === 'COMPLETED' ? (
+                <CheckCircleIcon className="h-5 w-5 text-green-500 flex-shrink-0" />
+              ) : appointment.status === 'CANCELED' ? (
+                <XCircleIcon className="h-5 w-5 text-red-500 flex-shrink-0" />
+              ) : (
+                <ClockIcon className="h-5 w-5 text-yellow-500 flex-shrink-0" />
+              )}
+              <div>
+                <h5 className="text-sm font-semibold text-gray-900">
                   {appointment.service?.name || 'Servicio'}
                 </h5>
-              </div>
-              <div className="mt-2 space-y-1 text-sm text-gray-600">
-                <p>
-                  <span className="font-medium">Fecha:</span>{' '}
-                  {new Date(appointment.dateTime).toLocaleDateString('es-ES', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
-                {appointment.specialist && (
-                  <p>
-                    <span className="font-medium">Especialista:</span>{' '}
-                    {appointment.specialist.name}
-                  </p>
-                )}
-                <p>
-                  <span className="font-medium">Precio:</span>{' '}
-                  ${appointment.price?.toLocaleString('es-CO')}
+                <p className="text-xs text-gray-500">
+                  {formatDateTime(appointment.startTime || appointment.dateTime)}
                 </p>
               </div>
             </div>
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              appointment.status === 'completed' 
+              appointment.status === 'COMPLETED' 
                 ? 'bg-green-100 text-green-800'
-                : appointment.status === 'cancelled'
+                : appointment.status === 'CANCELED'
                 ? 'bg-red-100 text-red-800'
                 : 'bg-yellow-100 text-yellow-800'
             }`}>
-              {appointment.status === 'completed' ? 'Completada' :
-               appointment.status === 'cancelled' ? 'Cancelada' : 'Pendiente'}
+              {appointment.status === 'COMPLETED' ? 'Completada' :
+               appointment.status === 'CANCELED' ? 'Cancelada' : 
+               appointment.status === 'SCHEDULED' ? 'Programada' : 'Pendiente'}
             </span>
           </div>
+
+          {/* Información principal */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            {/* Especialista que atendió */}
+            {appointment.specialist && (
+              <div className="flex items-center gap-2 text-sm">
+                <UserCircleIcon className="h-4 w-4 text-indigo-600" />
+                <div>
+                  <span className="text-gray-500">Atendió:</span>
+                  <span className="ml-1 font-medium text-gray-900">
+                    {appointment.specialist.firstName} {appointment.specialist.lastName}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Precio del servicio */}
+            <div className="flex items-center gap-2 text-sm">
+              <CurrencyDollarIcon className="h-4 w-4 text-green-600" />
+              <div>
+                <span className="text-gray-500">Precio:</span>
+                <span className="ml-1 font-medium text-gray-900">
+                  {formatCurrency(appointment.totalAmount || appointment.price)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Información de pago (si está pagado) */}
+          {appointment.paymentStatus === 'PAID' && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircleIcon className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-900">Pago Completado</span>
+                  </div>
+
+                  {/* Monto pagado */}
+                  <div className="text-sm text-green-700">
+                    <span className="font-medium">Monto:</span> {formatCurrency(appointment.paidAmount)}
+                  </div>
+
+                  {/* Usuario que cobró */}
+                  {appointment.paidBy && (
+                    <div className="text-sm text-green-700">
+                      <span className="font-medium">Cobró:</span> {appointment.paidBy.firstName} {appointment.paidBy.lastName}
+                    </div>
+                  )}
+
+                  {/* Método de pago */}
+                  {appointment.paymentMethod && (
+                    <div className="text-sm text-green-700">
+                      <span className="font-medium">Método:</span> {appointment.paymentMethod}
+                    </div>
+                  )}
+
+                  {/* Recibo */}
+                  {appointment.receipt && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <DocumentTextIcon className="h-4 w-4 text-green-600" />
+                      <span className="text-xs text-green-700">
+                        Recibo #{appointment.receipt.receiptNumber}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Botón de descarga */}
+                {appointment.receipt && (
+                  <button
+                    onClick={() => handleDownloadReceipt(
+                      appointment.receipt.id, 
+                      appointment.receipt.receiptNumber
+                    )}
+                    disabled={downloadingReceipt === appointment.receipt.id}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+                  >
+                    {downloadingReceipt === appointment.receipt.id ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                        <span>Descargando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <DocumentArrowDownIcon className="h-4 w-4" />
+                        <span>Descargar</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Estado de pago pendiente */}
+          {appointment.paymentStatus === 'PENDING' && appointment.status === 'COMPLETED' && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-3">
+              <div className="flex items-center gap-2">
+                <ExclamationTriangleIcon className="h-4 w-4 text-yellow-600" />
+                <span className="text-sm font-medium text-yellow-900">Pago Pendiente</span>
+              </div>
+              <p className="text-xs text-yellow-700 mt-1">
+                Esta cita está completada pero aún no se ha registrado el pago.
+              </p>
+            </div>
+          )}
+
+          {/* Pago parcial */}
+          {appointment.paymentStatus === 'PARTIAL_PAID' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CurrencyDollarIcon className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-900">Pago Parcial</span>
+                  </div>
+                  <p className="text-xs text-blue-700 mt-1">
+                    Pagado: {formatCurrency(appointment.paidAmount)} de {formatCurrency(appointment.totalAmount)}
+                  </p>
+                  <p className="text-xs text-blue-700">
+                    Pendiente: {formatCurrency((appointment.totalAmount || 0) - (appointment.paidAmount || 0))}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Notas (si existen) */}
+          {appointment.notes && (
+            <div className="mt-3 text-xs text-gray-600 bg-gray-50 rounded p-2">
+              <span className="font-medium">Notas:</span> {appointment.notes}
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -454,7 +689,44 @@ const VouchersTab = ({ client, onCreateVoucher }) => {
 /**
  * Tab de Estadísticas
  */
-const StatsTab = ({ stats, history }) => {
+const StatsTab = ({ client }) => {
+  const [history, setHistory] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const { currentBusiness } = useSelector(state => state.business);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!client?.id || !currentBusiness?.id) return;
+      
+      setLoading(true);
+      try {
+        const response = await apiClient.get(
+          `/api/business/${currentBusiness.id}/clients/${client.id}/history`
+        );
+        
+        setHistory(response.data?.data || null);
+      } catch (error) {
+        console.error('Error loading client history:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHistory();
+  }, [client, currentBusiness]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mr-3"></div>
+        <span className="text-gray-600">Cargando estadísticas...</span>
+      </div>
+    );
+  }
+
+  const stats = history?.statistics || {};
+  const cancellations = history?.cancellations || [];
+
   return (
     <div className="space-y-6">
       {/* Métricas principales */}
@@ -464,25 +736,36 @@ const StatsTab = ({ stats, history }) => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="text-sm text-gray-500">Tasa de Cancelación</div>
             <div className="mt-1 text-2xl font-bold text-gray-900">
-              {stats?.cancellationRate || 0}%
+              {stats.totalAppointments > 0 
+                ? Math.round((stats.canceledAppointments / stats.totalAppointments) * 100)
+                : 0}%
             </div>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="text-sm text-gray-500">Tasa de Asistencia</div>
             <div className="mt-1 text-2xl font-bold text-green-600">
-              {stats?.attendanceRate || 0}%
+              {stats.totalAppointments > 0 
+                ? Math.round((stats.completedAppointments / stats.totalAppointments) * 100)
+                : 0}%
             </div>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="text-sm text-gray-500">Tiempo Promedio de Cancelación</div>
             <div className="mt-1 text-2xl font-bold text-gray-900">
-              {stats?.avgCancellationHours || 0}h
+              {cancellations.length > 0 
+                ? Math.round(
+                    cancellations.reduce((acc, c) => {
+                      const hours = Math.abs(new Date(c.canceledAt) - new Date(c.appointmentDate)) / 36e5;
+                      return acc + hours;
+                    }, 0) / cancellations.length
+                  )
+                : 0}h
             </div>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="text-sm text-gray-500">Valor Total en Vouchers</div>
             <div className="mt-1 text-2xl font-bold text-green-600">
-              ${(stats?.totalVoucherValue || 0).toLocaleString('es-CO')}
+              ${(stats.availableVouchers || 0).toLocaleString('es-CO')}
             </div>
           </div>
         </div>
@@ -493,27 +776,44 @@ const StatsTab = ({ stats, history }) => {
         <h4 className="text-sm font-medium text-gray-900 mb-4">
           Historial de Cancelaciones Recientes
         </h4>
-        {!history || history.length === 0 ? (
+        {!cancellations || cancellations.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-8">
             No hay cancelaciones recientes
           </p>
         ) : (
           <div className="space-y-2">
-            {history.slice(0, 5).map((cancellation) => (
-              <div key={cancellation.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
-                <div className="text-sm">
-                  <span className="font-medium text-gray-900">
-                    {new Date(cancellation.cancelledAt).toLocaleDateString('es-ES')}
-                  </span>
-                  <span className="text-gray-500 ml-2">
-                    ({cancellation.hoursBeforeBooking}h antes)
-                  </span>
+            {cancellations.slice(0, 5).map((cancellation) => (
+              <div key={cancellation.id} className="flex items-start justify-between py-3 px-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <CalendarDaysIcon className="h-4 w-4 text-gray-400" />
+                    <span className="font-medium text-gray-900 text-sm">
+                      {new Date(cancellation.appointmentDate).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs text-gray-500">
+                    Cancelado el {new Date(cancellation.canceledAt).toLocaleDateString('es-ES')}
+                  </div>
+                  {cancellation.service && (
+                    <div className="mt-1 text-xs text-gray-600">
+                      Servicio: {cancellation.service.name}
+                    </div>
+                  )}
+                  {cancellation.reason && (
+                    <div className="mt-1 text-xs text-gray-500 italic">
+                      Motivo: {cancellation.reason}
+                    </div>
+                  )}
+                  {cancellation.canceledBy && (
+                    <div className="mt-1 text-xs text-gray-500">
+                      Por: {cancellation.canceledBy.name}
+                    </div>
+                  )}
                 </div>
-                {cancellation.voucherGenerated && (
-                  <span className="text-xs text-green-600 font-medium">
-                    Voucher generado
-                  </span>
-                )}
               </div>
             ))}
           </div>
@@ -537,19 +837,16 @@ const ConsentsTab = ({ client }) => {
       
       setLoading(true);
       try {
-        const response = await fetch(
-          `/api/business/${currentBusiness.id}/clients/${client.id}/history`,
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          }
+        const response = await apiClient.get(
+          `/api/business/${currentBusiness.id}/clients/${client.id}/history`
         );
         
-        if (response.ok) {
-          const data = await response.json();
-          setConsents(data.data?.consents || []);
-        }
+        console.log('🔍 Frontend - Respuesta completa:', response.data);
+        console.log('🔍 Frontend - Data anidada:', response.data?.data);
+        console.log('🔍 Frontend - Consents recibidos:', response.data?.data?.consents);
+        console.log('🔍 Frontend - Cantidad de consents:', response.data?.data?.consents?.length);
+        
+        setConsents(response.data?.data?.consents || []);
       } catch (error) {
         console.error('Error loading consents:', error);
       } finally {
@@ -605,7 +902,7 @@ const ConsentsTab = ({ client }) => {
                 <div className="flex items-center space-x-2 mb-2">
                   <DocumentTextIcon className="h-5 w-5 text-indigo-600" />
                   <h4 className="text-sm font-medium text-gray-900">
-                    {consent.template?.title || 'Consentimiento'}
+                    {consent.template?.name || 'Consentimiento'}
                   </h4>
                   {consent.template?.version && (
                     <span className="text-xs text-gray-500">
@@ -649,22 +946,30 @@ const ConsentsTab = ({ client }) => {
               </div>
 
               <div className="ml-4 flex flex-col space-y-2">
-                {consent.pdfUrl && (
-                  <a
-                    href={consent.pdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors"
-                  >
-                    <DocumentTextIcon className="h-4 w-4 mr-1" />
-                    Ver PDF
-                  </a>
-                )}
-                {consent.pdfGeneratedAt && (
-                  <span className="text-xs text-green-600 flex items-center">
-                    <CheckCircleIcon className="h-3 w-3 mr-1" />
-                    PDF generado
-                  </span>
+                {consent.pdfUrl ? (
+                  <>
+                    <a
+                      href={consent.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors"
+                    >
+                      <DocumentTextIcon className="h-4 w-4 mr-1" />
+                      Ver PDF
+                    </a>
+                    <button
+                      onClick={() => window.open(consent.pdfUrl, '_blank')}
+                      className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
+                    >
+                      <PrinterIcon className="h-4 w-4 mr-1" />
+                      Imprimir
+                    </button>
+                  </>
+                ) : (
+                  <div className="text-xs text-amber-600 flex items-center">
+                    <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
+                    PDF no generado
+                  </div>
                 )}
               </div>
             </div>

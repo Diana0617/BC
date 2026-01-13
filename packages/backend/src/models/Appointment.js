@@ -283,6 +283,20 @@ Appointment.associate = (models) => {
     foreignKey: 'canceledBy',
     as: 'canceledByUser'
   });
+
+  // Relación con el usuario que procesó el pago
+  Appointment.belongsTo(models.User, {
+    foreignKey: 'paidByUserId',
+    as: 'paidBy'
+  });
+
+  // Relación con Receipt (uno a uno)
+  if (models.Receipt) {
+    Appointment.hasOne(models.Receipt, {
+      foreignKey: 'appointmentId',
+      as: 'receipt'
+    });
+  }
 };
 
 module.exports = Appointment;

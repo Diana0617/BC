@@ -71,6 +71,10 @@ export default function AppointmentCard({ appointment, onClick }) {
     
   const serviceName = appointment.service?.name || appointment.serviceName || 'Sin servicio';
   
+  const specialistName = appointment.specialist 
+    ? `${appointment.specialist.firstName} ${appointment.specialist.lastName}`
+    : appointment.specialistName || null;
+  
   const StatusIcon = getStatusIcon(appointment.status);
 
   return (
@@ -97,11 +101,40 @@ export default function AppointmentCard({ appointment, onClick }) {
             </h3>
           </div>
 
-          {/* Servicio */}
-          <div className="flex items-center gap-2 text-gray-600">
-            <TagIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
-            <p className="text-sm truncate">{serviceName}</p>
+          {/* Servicio(s) */}
+          <div className="space-y-1">
+            {appointment.services && appointment.services.length > 0 ? (
+              // Múltiples servicios
+              appointment.services.map((service, index) => (
+                <div key={service.id || index} className="flex items-center gap-2 text-gray-600">
+                  <TagIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <p className="text-sm truncate">
+                    {index > 0 && '+ '}
+                    {service.name}
+                    {service.appointmentService && (
+                      <span className="text-xs text-gray-500 ml-1">
+                        (${service.appointmentService.price?.toLocaleString('es-CO')} • {service.appointmentService.duration}min)
+                      </span>
+                    )}
+                  </p>
+                </div>
+              ))
+            ) : (
+              // Servicio único (backward compatibility)
+              <div className="flex items-center gap-2 text-gray-600">
+                <TagIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                <p className="text-sm truncate">{serviceName}</p>
+              </div>
+            )}
           </div>
+
+          {/* Especialista (si está disponible) */}
+          {specialistName && (
+            <div className="flex items-center gap-2 text-gray-500 mt-1">
+              <UserIcon className="w-4 h-4 flex-shrink-0" />
+              <p className="text-xs truncate">Con: {specialistName}</p>
+            </div>
+          )}
 
           {/* Monto si está completado */}
           {appointment.status === 'COMPLETED' && appointment.totalAmount && (

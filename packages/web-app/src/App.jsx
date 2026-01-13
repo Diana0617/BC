@@ -480,6 +480,14 @@ function AppLayout() {
             } 
           />
           <Route 
+            path="/business/cash-register" 
+            element={
+              isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'].includes(user?.role)
+                ? <CashRegisterPage /> 
+                : <Navigate to="/" replace />
+            } 
+          />
+          <Route 
             path="/clients" 
             element={
               isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST'].includes(user?.role)
@@ -508,7 +516,7 @@ function AppLayout() {
           <Route 
             path="/specialist/cash-register" 
             element={
-              isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST'].includes(user?.role)
+              isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST'].includes(user?.role)
                 ? <CashRegisterPage /> 
                 : <Navigate to="/" replace />
             } 

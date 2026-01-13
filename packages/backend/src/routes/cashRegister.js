@@ -87,4 +87,95 @@ router.post(
   CashRegisterController.markReceiptSent
 );
 
+// Obtener detalle de un turno específico con totales
+router.get(
+  '/shift/:shiftId',
+  authenticateToken,
+  CashRegisterController.getShiftDetail
+);
+
+// Obtener movimientos del turno (recibos y gastos)
+router.get(
+  '/shift/:shiftId/movements',
+  authenticateToken,
+  CashRegisterController.getShiftMovements
+);
+
+// ==================== LEGACY - Mantener por compatibilidad ====================
+
+// Obtener movimientos financieros (DEPRECATED - usar /shift/:shiftId/movements)
+router.get(
+  '/movements',
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { businessId, shiftId, page = 1, limit = 20, type, search } = req.query;
+      
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: 'businessId es requerido'
+        });
+      }
+
+      const FinancialMovement = require('../models/FinancialMovement');
+      const { Op } = require('sequelize');
+
+      const offset = (page - 1) * limit;
+      const where = { businessId };
+
+      // Filtrar por tipo si se especifica
+      if (type && type !== 'all') {
+        where.type = type;
+      }
+
+      // Búsqueda por descripción o referencia
+      if (search) {
+        where[Op.or] = [
+          { description: { [Op.iLike]: `%${search}%` } },
+          { reference: { [Op.iLike]: `%${search}%` } }
+        ];
+      }
+
+      // Si hay shiftId, filtrar por fecha del turno
+      if (shiftId) {
+        const CashRegisterShift = require('../models/CashRegisterShift');
+        const shift = await CashRegisterShift.findByPk(shiftId);
+        
+        if (shift) {
+          where.createdAt = {
+            [Op.gte]: shift.openedAt
+          };
+          
+          if (shift.closedAt) {
+            where.createdAt[Op.lte] = shift.closedAt;
+          }
+        }
+      }
+
+      const { count, rows: movements } = await FinancialMovement.findAndCountAll({
+        where,
+        order: [['createdAt', 'DESC']],
+        limit: parseInt(limit),
+        offset
+      });
+
+      return res.json({
+        success: true,
+        movements,
+        totalPages: Math.ceil(count / limit),
+        currentPage: parseInt(page),
+        total: count
+      });
+
+    } catch (error) {
+      console.error('Error obteniendo movimientos:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Error al obtener movimientos'
+      });
+    }
+  }
+);
+
 module.exports = router;

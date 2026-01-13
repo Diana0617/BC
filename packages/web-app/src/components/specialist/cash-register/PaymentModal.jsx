@@ -7,6 +7,7 @@ import {
   CheckCircleIcon,
   ReceiptPercentIcon
 } from '@heroicons/react/24/outline';
+import ReceiptActions from '../payments/ReceiptActions';
 
 /**
  * Modal para procesar el pago de un turno
@@ -22,6 +23,7 @@ export default function PaymentModal({
   const { user, token } = useSelector(state => state.auth);
   const [loading, setLoading] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([]);
+  const [paymentSuccessful, setPaymentSuccessful] = useState(false);
   const [formData, setFormData] = useState({
     paymentMethodId: '',
     amount: 0,
@@ -31,22 +33,30 @@ export default function PaymentModal({
 
   useEffect(() => {
     if (isOpen && appointment) {
+      // Reset estado de pago exitoso
+      setPaymentSuccessful(false);
+      
+      // Asegurar que los valores sean números
+      const totalAmount = parseFloat(appointment.totalAmount) || 0;
+      const currentDiscount = parseFloat(appointment.discountAmount) || 0;
+      
       // Calcular el monto a pagar (total - descuento previo)
-      const amountToPay = (appointment.totalAmount || 0) - (appointment.discountAmount || 0);
+      const amountToPay = totalAmount - currentDiscount;
       setFormData({
         paymentMethodId: '',
         amount: amountToPay,
-        discount: appointment.discountAmount || 0,
+        discount: 0, // No incluir el descuento anterior aquí, está en appointment.discountAmount
         notes: ''
       });
       loadPaymentMethods();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, appointment]);
 
   const loadPaymentMethods = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/payment-methods?businessId=${user.businessId}`,
+        `${import.meta.env.VITE_API_URL}/api/business/${user.businessId}/payment-methods`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -103,7 +113,7 @@ export default function PaymentModal({
         throw new Error(error.message || 'Error al procesar el pago');
       }
 
-      const paymentData = await paymentResponse.json();
+      await paymentResponse.json(); // paymentData
 
       // 2. Registrar movimiento de caja (si hay caja abierta)
       if (shiftId) {
@@ -129,14 +139,23 @@ export default function PaymentModal({
         );
       }
 
-      alert('Pago procesado correctamente');
-      onSuccess?.();
+      // Establecer pago exitoso ANTES del alert para que el modal cambie inmediatamente
+      setPaymentSuccessful(true);
+      
+      // No cerrar el modal para mostrar las opciones de recibo
     } catch (error) {
       console.error('Error processing payment:', error);
       alert(error.message || 'Error al procesar el pago');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClose = () => {
+    if (paymentSuccessful) {
+      onSuccess?.();
+    }
+    onClose();
   };
 
   const formatCurrency = (amount) => {
@@ -170,11 +189,20 @@ export default function PaymentModal({
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <BanknotesIcon className="w-6 h-6" />
-            <h2 className="text-xl font-bold">Procesar Pago</h2>
+            {paymentSuccessful ? (
+              <>
+                <CheckCircleIcon className="w-6 h-6" />
+                <h2 className="text-xl font-bold">Pago Completado</h2>
+              </>
+            ) : (
+              <>
+                <BanknotesIcon className="w-6 h-6" />
+                <h2 className="text-xl font-bold">Procesar Pago</h2>
+              </>
+            )}
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading}
             className="text-white hover:bg-white/20 rounded-lg p-1 transition-colors"
           >
@@ -183,7 +211,37 @@ export default function PaymentModal({
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {paymentSuccessful ? (
+          <div className="p-6 space-y-6">
+            {/* Mensaje de éxito */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <CheckCircleIcon className="w-8 h-8 text-green-600" />
+                <div>
+                  <h3 className="font-semibold text-green-900">¡Pago Registrado!</h3>
+                  <p className="text-sm text-green-700">
+                    El pago se procesó correctamente y se registró en caja.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Componente de Recibo */}
+            <ReceiptActions 
+              appointmentId={appointment.id}
+              businessId={user.businessId}
+            />
+
+            {/* Botón para cerrar */}
+            <button
+              onClick={handleClose}
+              className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Información del Turno */}
           <div className="bg-gray-50 rounded-lg p-4 space-y-2">
             <h3 className="font-semibold text-gray-900 mb-3">Información del Turno</h3>
@@ -302,7 +360,7 @@ export default function PaymentModal({
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={loading}
               className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
@@ -327,6 +385,7 @@ export default function PaymentModal({
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

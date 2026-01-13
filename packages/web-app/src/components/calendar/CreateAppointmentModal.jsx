@@ -67,7 +67,8 @@ const CreateAppointmentModal = ({
     // Datos de la cita
     branchId: initialData.branchId || '',
     specialistId: initialData.specialistId || autoSpecialistId || '',
-    serviceId: '',
+    serviceId: '', // Mantener para backward compatibility
+    serviceIds: [], // Array de servicios seleccionados
     date: initialData.date || new Date().toISOString().split('T')[0],
     startTime: initialData.startTime || '09:00',
     endTime: initialData.endTime || '10:00',
@@ -78,6 +79,10 @@ const CreateAppointmentModal = ({
 
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Estados para servicios seleccionados
+  const [selectedServices, setSelectedServices] = useState([])
+  const [currentServiceId, setCurrentServiceId] = useState('') // Para el dropdown
   
   // Estados para búsqueda de clientes
   const [clientSearch, setClientSearch] = useState('')
@@ -399,6 +404,129 @@ const CreateAppointmentModal = ({
     }
   }
 
+  /**
+   * Agregar un servicio a la lista
+   */
+  const handleAddService = () => {
+    if (!currentServiceId) return
+    
+    // Verificar que no esté ya agregado
+    if (selectedServices.some(s => s.id === currentServiceId)) {
+      return
+    }
+    
+    // Buscar el servicio completo
+    const service = filteredServices.find(s => s.id === currentServiceId)
+    if (!service) return
+    
+    const newService = {
+      ...service,
+      order: selectedServices.length
+    }
+    
+    setSelectedServices(prev => [...prev, newService])
+    
+    // Actualizar formData
+    const newServiceIds = [...selectedServices.map(s => s.id), service.id]
+    setFormData(prev => ({
+      ...prev,
+      serviceIds: newServiceIds,
+      serviceId: newServiceIds[0] // Mantener el primero para backward compatibility
+    }))
+    
+    // Limpiar el dropdown
+    setCurrentServiceId('')
+    
+    // Calcular nueva duración total y actualizar endTime
+    calculateTotalDuration([...selectedServices, newService])
+  }
+
+  /**
+   * Eliminar un servicio de la lista
+   */
+  const handleRemoveService = (serviceId) => {
+    const newServices = selectedServices.filter(s => s.id !== serviceId)
+    setSelectedServices(newServices)
+    
+    // Actualizar formData
+    const newServiceIds = newServices.map(s => s.id)
+    setFormData(prev => ({
+      ...prev,
+      serviceIds: newServiceIds,
+      serviceId: newServiceIds[0] || '' // Mantener el primero o vacío
+    }))
+    
+    // Recalcular duración
+    calculateTotalDuration(newServices)
+  }
+
+  /**
+   * Mover un servicio hacia arriba en el orden
+   */
+  const handleMoveServiceUp = (index) => {
+    if (index === 0) return
+    
+    const newServices = [...selectedServices]
+    const temp = newServices[index]
+    newServices[index] = newServices[index - 1]
+    newServices[index - 1] = temp
+    
+    // Actualizar order
+    newServices.forEach((s, i) => s.order = i)
+    
+    setSelectedServices(newServices)
+  }
+
+  /**
+   * Mover un servicio hacia abajo en el orden
+   */
+  const handleMoveServiceDown = (index) => {
+    if (index === selectedServices.length - 1) return
+    
+    const newServices = [...selectedServices]
+    const temp = newServices[index]
+    newServices[index] = newServices[index + 1]
+    newServices[index + 1] = temp
+    
+    // Actualizar order
+    newServices.forEach((s, i) => s.order = i)
+    
+    setSelectedServices(newServices)
+  }
+
+  /**
+   * Calcular duración total y actualizar endTime
+   */
+  const calculateTotalDuration = (services) => {
+    if (services.length === 0) {
+      return
+    }
+    
+    const totalMinutes = services.reduce((sum, s) => sum + (s.duration || 0), 0)
+    
+    // Actualizar endTime basado en startTime + totalDuration
+    if (formData.startTime) {
+      const [hours, minutes] = formData.startTime.split(':').map(Number)
+      const startDate = new Date()
+      startDate.setHours(hours, minutes, 0, 0)
+      
+      const endDate = new Date(startDate.getTime() + totalMinutes * 60000)
+      const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`
+      
+      setFormData(prev => ({
+        ...prev,
+        endTime
+      }))
+    }
+  }
+
+  /**
+   * Calcular precio total de todos los servicios
+   */
+  const calculateTotalPrice = () => {
+    return selectedServices.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0)
+  }
+
   const validate = () => {
     const newErrors = {}
 
@@ -419,8 +547,9 @@ const CreateAppointmentModal = ({
       newErrors.specialistId = 'Especialista es requerido'
     }
 
-    if (!formData.serviceId) {
-      newErrors.serviceId = 'Servicio es requerido'
+    // Validar que haya al menos un servicio seleccionado
+    if (selectedServices.length === 0 && !formData.serviceId) {
+      newErrors.serviceId = 'Debe seleccionar al menos un servicio'
     }
 
     if (!formData.date) {
@@ -456,9 +585,33 @@ const CreateAppointmentModal = ({
       onClose()
     } catch (error) {
       console.error('Error creando cita:', error)
-      // Mostrar el mensaje de error del servidor o uno genérico
-      const errorMessage = error.message || 'Error al crear la cita. Por favor intenta nuevamente.'
+      
+      // Extraer mensaje de error del servidor
+      let errorMessage = 'Error al crear la cita. Por favor intenta nuevamente.'
+      
+      if (error.message) {
+        errorMessage = error.message
+        
+        // Mejorar mensajes específicos para el usuario
+        if (errorMessage.includes('ya completó todas las sesiones')) {
+          // Extraer información de sesiones si está disponible
+          const match = errorMessage.match(/(\d+) de (\d+)/)
+          if (match) {
+            errorMessage = `El cliente ya completó todas las sesiones de este paquete (${match[1]} de ${match[2]}). Para continuar, debe adquirir un nuevo paquete.`
+          } else {
+            errorMessage = 'El cliente ya completó todas las sesiones disponibles de este paquete. Debe adquirir uno nuevo para continuar.'
+          }
+        } else if (errorMessage.includes('no tiene acceso a la sucursal')) {
+          errorMessage = 'El especialista seleccionado no tiene acceso a esta sucursal. Por favor selecciona otro especialista o cambia la sucursal.'
+        } else if (errorMessage.includes('horario')) {
+          errorMessage = 'El horario seleccionado no está disponible. Por favor elige otro horario.'
+        } else if (errorMessage.includes('conflicto') || errorMessage.includes('ocupado')) {
+          errorMessage = 'Ya existe una cita en este horario. Por favor selecciona otro horario.'
+        }
+      }
+      
       setErrors({ submit: errorMessage })
+      
       // Scroll al inicio del modal para que el usuario vea el error
       const modalContent = document.querySelector('.max-h-\\[90vh\\]')
       if (modalContent) {
@@ -769,11 +922,13 @@ const CreateAppointmentModal = ({
                     }`}
                   >
                     <option value="">Seleccionar especialista</option>
-                    {specialists.map(specialist => (
-                      <option key={specialist.id} value={specialist.id}>
-                        {specialist.firstName} {specialist.lastName}
-                      </option>
-                    ))}
+                    {specialists
+                      .filter(specialist => specialist.isActive !== false && specialist.status !== 'INACTIVE')
+                      .map(specialist => (
+                        <option key={specialist.id} value={specialist.id}>
+                          {specialist.firstName} {specialist.lastName}
+                        </option>
+                      ))}
                   </select>
                   {errors.specialistId && (
                     <p className="text-red-500 text-xs mt-1">{errors.specialistId}</p>
@@ -783,28 +938,132 @@ const CreateAppointmentModal = ({
 
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Servicio *
+                  Servicios *
                 </label>
-                <select
-                  name="serviceId"
-                  value={formData.serviceId}
-                  onChange={handleChange}
-                  disabled={loadingSpecialistServices}
-                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.serviceId ? 'border-red-500' : 'border-gray-300'
-                  } ${loadingSpecialistServices ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <option value="">
-                    {loadingSpecialistServices ? 'Cargando servicios...' : 'Seleccionar servicio'}
-                  </option>
-                  {filteredServices.map(service => (
-                    <option key={service.id} value={service.id}>
-                      {service.name} - ${service.price?.toLocaleString('es-CO')} ({service.duration} min)
+                
+                {/* Lista de servicios seleccionados */}
+                {selectedServices.length > 0 && (
+                  <div className="mb-3 space-y-2">
+                    {selectedServices.map((service, index) => (
+                      <div
+                        key={service.id}
+                        className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3"
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <span className="text-sm font-semibold text-blue-600">
+                            #{index + 1}
+                          </span>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                            <p className="text-xs text-gray-600">
+                              ${service.price?.toLocaleString('es-CO')} • {service.duration} min
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Botones de orden */}
+                        <div className="flex items-center gap-1 mr-2">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveServiceUp(index)}
+                            disabled={index === 0}
+                            className={`p-1 rounded hover:bg-blue-100 ${
+                              index === 0 ? 'opacity-30 cursor-not-allowed' : ''
+                            }`}
+                            title="Mover arriba"
+                          >
+                            <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveServiceDown(index)}
+                            disabled={index === selectedServices.length - 1}
+                            className={`p-1 rounded hover:bg-blue-100 ${
+                              index === selectedServices.length - 1 ? 'opacity-30 cursor-not-allowed' : ''
+                            }`}
+                            title="Mover abajo"
+                          >
+                            <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+                        
+                        {/* Botón eliminar */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveService(service.id)}
+                          className="p-1 rounded hover:bg-red-100"
+                          title="Eliminar servicio"
+                        >
+                          <XMarkIcon className="h-5 w-5 text-red-600" />
+                        </button>
+                      </div>
+                    ))}
+                    
+                    {/* Resumen totales */}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-700">Total:</span>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-green-700">
+                            ${calculateTotalPrice().toLocaleString('es-CO')}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0)} minutos totales
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Selector para agregar servicio */}
+                <div className="flex gap-2">
+                  <select
+                    value={currentServiceId}
+                    onChange={(e) => setCurrentServiceId(e.target.value)}
+                    disabled={loadingSpecialistServices}
+                    className={`flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.serviceId && selectedServices.length === 0 ? 'border-red-500' : 'border-gray-300'
+                    } ${loadingSpecialistServices ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <option value="">
+                      {loadingSpecialistServices ? 'Cargando servicios...' : 'Seleccionar servicio'}
                     </option>
-                  ))}
-                </select>
-                {errors.serviceId && (
+                    {filteredServices
+                      .filter(s => !selectedServices.some(sel => sel.id === s.id))
+                      .map(service => (
+                        <option key={service.id} value={service.id}>
+                          {service.name} - ${service.price?.toLocaleString('es-CO')} ({service.duration} min)
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleAddService}
+                    disabled={!currentServiceId || loadingSpecialistServices}
+                    className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 ${
+                      !currentServiceId || loadingSpecialistServices ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Agregar
+                  </button>
+                </div>
+                
+                {errors.serviceId && selectedServices.length === 0 && (
                   <p className="text-red-500 text-xs mt-1">{errors.serviceId}</p>
+                )}
+                
+                {selectedServices.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    💡 Puedes agregar múltiples servicios para una misma cita
+                  </p>
                 )}
               </div>
 

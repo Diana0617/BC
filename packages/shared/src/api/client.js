@@ -54,6 +54,7 @@ class ApiClient {
     const url = `${this.baseURL}${endpoint}`;
     let headers = await this.buildHeaders(options.headers);
     let body = options.body;
+    const responseType = options.responseType || 'json'; // 'json' o 'blob'
 
     // Detect FormData and adjust headers/body
     if (body instanceof FormData) {
@@ -82,7 +83,8 @@ class ApiClient {
       hasAuthHeader: !!headers.Authorization,
       authPreview: headers.Authorization ? `${headers.Authorization.substring(0, 20)}...` : null,
       contentType: headers['Content-Type'] || null,
-      isFormData: body instanceof FormData
+      isFormData: body instanceof FormData,
+      responseType
     };
     console.log('ApiClient request:', requestDebug);
     if (typeof window !== 'undefined' && window.__BC_DEBUG_LOG) {
@@ -102,11 +104,18 @@ class ApiClient {
 
       clearTimeout(timeoutId);
 
-      // Parse JSON response
+      // Parse response based on responseType
       let data;
       try {
-        data = await response.json();
+        if (responseType === 'blob') {
+          // Para PDFs y archivos binarios
+          data = await response.blob();
+        } else {
+          // Por defecto, parsear como JSON
+          data = await response.json();
+        }
       } catch (parseError) {
+        console.warn('Error parsing response:', parseError);
         data = null;
       }
 
@@ -134,10 +143,21 @@ class ApiClient {
 
   // HTTP Methods
   async get(endpoint, options = {}) {
-    const params = options.params || options;
-    const queryString = new URLSearchParams(params).toString();
+    // Separar opciones de request de parámetros de query
+    const { params, responseType, ...requestOptions } = options;
+    
+    // Si no hay 'params' explícito, usar las opciones como params
+    // EXCEPTO responseType y otras opciones especiales del request
+    const queryParams = params || {};
+    
+    const queryString = new URLSearchParams(queryParams).toString();
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
-    return this.request(url, { method: 'GET' });
+    
+    return this.request(url, { 
+      method: 'GET',
+      responseType,
+      ...requestOptions
+    });
   }
 
   async post(endpoint, data = {}, options = {}) {

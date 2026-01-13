@@ -10,6 +10,7 @@
  * - Notificaciones de próximos vencimientos (9:00 AM)
  * - Recordatorios WhatsApp de citas (cada 15 minutos)
  * - Verificación horaria de recordatorios WhatsApp (cada hora - backup)
+ * - Procesamiento de No Shows (00:00 AM - medianoche)
  */
 
 const cron = require('node-cron');
@@ -153,6 +154,24 @@ class CronJobManager {
       timezone: "America/Bogota"
     });
 
+    // =================================================
+    // PROCESAMIENTO DE NO SHOWS (TURNOS SIN ASISTENCIA)
+    // =================================================
+    
+    // Procesar No Shows - 00:00 (medianoche) todos los días
+    cron.schedule('0 0 * * *', async () => {
+      console.log('🔍 Ejecutando proceso de No Shows...');
+      try {
+        const noShowProcessor = require('../cron/noShowProcessor');
+        const result = await noShowProcessor.processNoShows();
+        console.log('✅ Proceso de No Shows completado:', result);
+      } catch (error) {
+        console.error('❌ Error en proceso de No Shows:', error);
+      }
+    }, {
+      timezone: "America/Bogota"
+    });
+
     // console.log('✅ Cron Jobs inicializados correctamente');
   }
 
@@ -247,6 +266,38 @@ class CronJobManager {
       return result;
     } catch (error) {
       console.error('❌ Error enviando recordatorio inmediato:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Ejecuta procesamiento de No Shows manual (para testing)
+   */
+  static async runManualNoShowProcess() {
+    console.log('🧪 Ejecutando procesamiento de No Shows manual...');
+    try {
+      const noShowProcessor = require('../cron/noShowProcessor');
+      const result = await noShowProcessor.processNoShows();
+      console.log('✅ Procesamiento de No Shows completado:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error en procesamiento de No Shows manual:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene estadísticas de No Shows para un negocio (para testing/reportes)
+   */
+  static async getNoShowStats(businessId, days = 30) {
+    console.log(`🧪 Obteniendo estadísticas de No Shows para negocio ${businessId}...`);
+    try {
+      const noShowProcessor = require('../cron/noShowProcessor');
+      const result = await noShowProcessor.getNoShowStats(businessId, days);
+      console.log('✅ Estadísticas de No Shows obtenidas:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error obteniendo estadísticas de No Shows:', error);
       throw error;
     }
   }

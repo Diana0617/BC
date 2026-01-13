@@ -14,13 +14,25 @@ class ReceiptPDFService {
   static async generateReceiptPDF(receipt, business) {
     return new Promise((resolve, reject) => {
       try {
+        console.log('📄 [ReceiptPDFService] Iniciando generación de PDF...');
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
         const chunks = [];
 
         // Capturar el PDF en memoria
-        doc.on('data', chunk => chunks.push(chunk));
-        doc.on('end', () => resolve(Buffer.concat(chunks)));
-        doc.on('error', reject);
+        doc.on('data', chunk => {
+          chunks.push(chunk);
+        });
+        
+        doc.on('end', () => {
+          const pdfBuffer = Buffer.concat(chunks);
+          console.log('✅ [ReceiptPDFService] PDF generado, tamaño:', pdfBuffer.length, 'bytes');
+          resolve(pdfBuffer);
+        });
+        
+        doc.on('error', (error) => {
+          console.error('❌ [ReceiptPDFService] Error en generación de PDF:', error);
+          reject(error);
+        });
 
         // ============= ENCABEZADO =============
         doc
@@ -232,9 +244,11 @@ class ReceiptPDFService {
           );
 
         // Finalizar el documento
+        console.log('🏁 [ReceiptPDFService] Finalizando documento PDF...');
         doc.end();
 
       } catch (error) {
+        console.error('❌ [ReceiptPDFService] Error durante generación:', error);
         reject(error);
       }
     });

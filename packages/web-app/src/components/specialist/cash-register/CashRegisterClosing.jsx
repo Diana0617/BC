@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { 
   BanknotesIcon,
   CheckCircleIcon,
@@ -6,7 +7,8 @@ import {
   ClockIcon,
   ExclamationTriangleIcon,
   CurrencyDollarIcon,
-  CalculatorIcon
+  CalculatorIcon,
+  DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
 
 /**
@@ -19,7 +21,9 @@ export default function CashRegisterClosing({
   onSuccess,
   onCancel 
 }) {
+  const { token, user } = useSelector(state => state.auth);
   const [loading, setLoading] = useState(false);
+  const [movements, setMovements] = useState([]);
   const [formData, setFormData] = useState({
     closingAmount: '',
     notes: '',
@@ -56,10 +60,39 @@ export default function CashRegisterClosing({
   ];
 
   useEffect(() => {
+    console.log('CashRegisterClosing - shiftData:', shiftData);
     const closingAmount = parseFloat(formData.closingAmount) || 0;
     const expectedAmount = calculateExpectedAmount();
     setDifference(closingAmount - expectedAmount);
   }, [formData.closingAmount, shiftData]);
+
+  // Cargar movimientos del turno
+  useEffect(() => {
+    const loadMovements = async () => {
+      if (!shiftId || !user?.businessId || !token) return;
+
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/cash-register/shift/${shiftId}/movements?businessId=${user.businessId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Movements loaded for PDF:', result.data?.movements);
+          setMovements(result.data?.movements || []);
+        }
+      } catch (error) {
+        console.error('Error loading movements:', error);
+      }
+    };
+
+    loadMovements();
+  }, [shiftId, user?.businessId, token]);
 
   const calculateBreakdownTotal = () => {
     return denominations.reduce((total, denom) => {
@@ -102,6 +135,219 @@ export default function CashRegisterClosing({
     }).format(amount || 0);
   };
 
+  const downloadPDF = async () => {
+    if (!shiftData) return;
+
+    try {
+      // Importar jsPDF dinámicamente
+      const { jsPDF } = await import('jspdf');
+      const { format } = await import('date-fns');
+      const { es } = await import('date-fns/locale');
+      
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPos = 20;
+
+      // Título
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+      doc.text('Resumen de Cierre de Caja', pageWidth / 2, yPos, { align: 'center' });
+      
+      yPos += 10;
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      const currentDate = format(new Date(), "dd/MM/yyyy, hh:mm a", { locale: es });
+      doc.text(`Fecha: ${currentDate}`, pageWidth / 2, yPos, { align: 'center' });
+      
+      yPos += 15;
+
+      // Información del usuario y fechas del turno
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text('Informacion del Turno', 20, yPos);
+      yPos += 7;
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      
+      if (shiftData.user) {
+        doc.text(`Usuario: ${shiftData.user.firstName} ${shiftData.user.lastName}`, 20, yPos);
+        yPos += 6;
+      }
+      
+      if (shiftData.openedAt) {
+        const openedDate = format(new Date(shiftData.openedAt), "dd/MM/yyyy, hh:mm a", { locale: es });
+        doc.text(`Apertura: ${openedDate}`, 20, yPos);
+        yPos += 6;
+      }
+      
+      if (shiftData.closedAt) {
+        const closedDate = format(new Date(shiftData.closedAt), "dd/MM/yyyy, hh:mm a", { locale: es });
+        doc.text(`Cierre: ${closedDate}`, 20, yPos);
+        yPos += 6;
+      } else {
+        doc.text(`Cierre: En proceso...`, 20, yPos);
+        yPos += 6;
+      }
+
+      yPos += 5;
+
+      // Información del turno
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text('Resumen del Turno', 20, yPos);
+      
+      yPos += 7;
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      
+      const lines = [
+        `Balance Inicial: ${formatCurrency(shiftData.openingBalance)}`,
+        `Total Ingresos: +${formatCurrency(shiftData.totalIncome)}`,
+        `Total Egresos: -${formatCurrency(shiftData.totalExpenses)}`,
+        `Numero de Movimientos: ${shiftData.movementsCount || 0}`,
+        ``,
+        `Monto Esperado: ${formatCurrency(expectedAmount)}`
+      ];
+
+      lines.forEach(line => {
+        doc.text(line, 20, yPos);
+        yPos += 6;
+      });
+
+      if (formData.closingAmount) {
+        yPos += 3;
+        doc.setFont(undefined, 'bold');
+        doc.text(`Monto Real en Caja: ${formatCurrency(parseFloat(formData.closingAmount))}`, 20, yPos);
+        yPos += 6;
+        
+        const diffText = difference > 0 ? 'Sobrante' : difference < 0 ? 'Faltante' : 'Cuadrado';
+        doc.text(`Diferencia (${diffText}): ${formatCurrency(Math.abs(difference))}`, 20, yPos);
+        yPos += 8;
+      }
+
+      // Detalle de Movimientos
+      if (movements && movements.length > 0) {
+        yPos += 5;
+        
+        // Verificar si hay espacio para el título, si no, nueva página
+        if (yPos > pageHeight - 40) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text('Detalle de Movimientos', 20, yPos);
+        yPos += 8;
+
+        doc.setFontSize(9);
+        
+        // Encabezado de tabla
+        doc.setFont(undefined, 'bold');
+        doc.text('Tipo', 20, yPos);
+        doc.text('Descripcion', 45, yPos);
+        doc.text('Fecha/Hora', 120, yPos);
+        doc.text('Monto', 165, yPos);
+        yPos += 4;
+        
+        // Línea divisoria
+        doc.setDrawColor(100, 100, 100);
+        doc.line(20, yPos, pageWidth - 20, yPos);
+        yPos += 5;
+
+        doc.setFont(undefined, 'normal');
+
+        // Movimientos
+        movements.forEach((movement, index) => {
+          // Verificar si necesitamos una nueva página
+          if (yPos > pageHeight - 20) {
+            doc.addPage();
+            yPos = 20;
+            
+            // Repetir encabezado
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'bold');
+            doc.text('Tipo', 20, yPos);
+            doc.text('Descripcion', 45, yPos);
+            doc.text('Fecha/Hora', 120, yPos);
+            doc.text('Monto', 165, yPos);
+            yPos += 4;
+            doc.setDrawColor(100, 100, 100);
+            doc.line(20, yPos, pageWidth - 20, yPos);
+            yPos += 5;
+            doc.setFont(undefined, 'normal');
+          }
+
+          const tipo = movement.type === 'INCOME' ? 'Ingreso' : 'Egreso';
+          const descripcion = movement.description.length > 30 
+            ? movement.description.substring(0, 27) + '...' 
+            : movement.description;
+          const fecha = format(new Date(movement.createdAt), "dd/MM HH:mm", { locale: es });
+          const monto = `${movement.type === 'INCOME' ? '+' : '-'}${formatCurrency(movement.amount)}`;
+
+          doc.text(tipo, 20, yPos);
+          doc.text(descripcion, 45, yPos);
+          doc.text(fecha, 120, yPos);
+          doc.text(monto, 165, yPos);
+          
+          yPos += 6;
+
+          // Línea sutil cada 5 movimientos
+          if ((index + 1) % 5 === 0 && (index + 1) < movements.length) {
+            doc.setDrawColor(220, 220, 220);
+            doc.line(20, yPos - 1, pageWidth - 20, yPos - 1);
+            yPos += 2;
+          }
+        });
+
+        yPos += 5;
+      }
+
+      // Notas
+      if (formData.notes) {
+        // Verificar espacio para notas
+        if (yPos > pageHeight - 30) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        yPos += 5;
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text('Notas:', 20, yPos);
+        yPos += 7;
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        const splitNotes = doc.splitTextToSize(formData.notes, pageWidth - 40);
+        doc.text(splitNotes, 20, yPos);
+      }
+
+      // Footer
+      const totalPages = doc.internal.pages.length - 1;
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(128, 128, 128);
+        doc.text(
+          `Pagina ${i} de ${totalPages}`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+      }
+
+      // Guardar PDF
+      const fileName = `cierre-caja-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`;
+      doc.save(fileName);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error al generar el PDF: ' + error.message);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -122,23 +368,25 @@ export default function CashRegisterClosing({
     setLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/cash-register/close/${shiftId}`,
+        `${import.meta.env.VITE_API_URL}/api/cash-register/close-shift`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            closingAmount: amount,
-            notes: formData.notes,
-            denominationBreakdown: showBreakdown ? formData.denominationBreakdown : null,
-            difference: difference
+            businessId: user.businessId,
+            actualClosingBalance: amount,
+            closingNotes: formData.notes || null
           })
         }
       );
 
-      if (!response.ok) throw new Error('Error closing shift');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error closing shift');
+      }
 
       const data = await response.json();
       alert('Turno de caja cerrado exitosamente');
@@ -152,7 +400,7 @@ export default function CashRegisterClosing({
   };
 
   const expectedAmount = calculateExpectedAmount();
-  const hasDifference = Math.abs(difference) > 0;
+  
 
   return (
     <div className="space-y-6">
@@ -172,6 +420,28 @@ export default function CashRegisterClosing({
       {/* Resumen del Turno */}
       <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
         <h4 className="font-semibold text-gray-900 mb-4">Resumen del Turno</h4>
+        
+        {/* Información del usuario y fechas */}
+        {(shiftData?.user || shiftData?.openedAt) && (
+          <div className="mb-4 pb-4 border-b border-blue-200">
+            {shiftData.user && (
+              <p className="text-sm text-gray-600 mb-1">
+                <span className="font-medium">Usuario:</span> {shiftData.user.firstName} {shiftData.user.lastName}
+              </p>
+            )}
+            {shiftData.openedAt && (
+              <p className="text-sm text-gray-600 mb-1">
+                <span className="font-medium">Apertura:</span> {new Date(shiftData.openedAt).toLocaleString('es-CO')}
+              </p>
+            )}
+            {shiftData.closedAt && (
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Cierre:</span> {new Date(shiftData.closedAt).toLocaleString('es-CO')}
+              </p>
+            )}
+          </div>
+        )}
+        
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-600">Balance Inicial</p>
@@ -360,34 +630,48 @@ export default function CashRegisterClosing({
         )}
 
         {/* Botones */}
-        <div className="flex items-center gap-3 pt-4">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            <XMarkIcon className="w-5 h-5" />
-            Cancelar
-          </button>
-          
-          <button
-            type="submit"
-            disabled={loading || !formData.closingAmount}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-semibold hover:from-red-700 hover:to-rose-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                Cerrando...
-              </>
-            ) : (
-              <>
-                <CheckCircleIcon className="w-5 h-5" />
-                Cerrar Turno
-              </>
-            )}
-          </button>
+        <div className="space-y-3 pt-4">
+          {/* Botón Descargar PDF */}
+          {shiftData && (
+            <button
+              type="button"
+              onClick={downloadPDF}
+              className="w-full px-6 py-3 border-2 border-blue-500 text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+            >
+              <DocumentArrowDownIcon className="w-5 h-5" />
+              Descargar Resumen PDF
+            </button>
+          )}
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={loading}
+              className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <XMarkIcon className="w-5 h-5" />
+              Cancelar
+            </button>
+            
+            <button
+              type="submit"
+              disabled={loading || !formData.closingAmount}
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-semibold hover:from-red-700 hover:to-rose-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Cerrando...
+                </>
+              ) : (
+                <>
+                  <CheckCircleIcon className="w-5 h-5" />
+                  Cerrar Turno
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </form>
     </div>

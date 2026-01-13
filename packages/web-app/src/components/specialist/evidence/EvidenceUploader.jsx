@@ -1,4 +1,6 @@
 import React, { useState, useRef } from 'react';
+import { useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
 import { 
   PhotoIcon, 
   XMarkIcon,
@@ -17,6 +19,7 @@ export default function EvidenceUploader({
   onUploadComplete,
   existingEvidence = []
 }) {
+  const { token } = useSelector(state => state.auth);
   const [evidence, setEvidence] = useState(existingEvidence);
   const [uploading, setUploading] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -59,55 +62,38 @@ export default function EvidenceUploader({
     try {
       setUploading(true);
 
-      // Preparar FormData
+      // Preparar FormData para enviar al backend
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', 'beauty_control');
-      formData.append('folder', `appointments/${appointmentId}/evidence`);
+      formData.append('type', type);
 
-      // Subir a Cloudinary
+      // Enviar al backend que manejará la subida a Cloudinary
       const response = await fetch(
-        'https://api.cloudinary.com/v1_1/dxfgdwmwd/upload',
+        `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentId}/evidence/upload`,
         {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
           body: formData
         }
       );
 
-      if (!response.ok) throw new Error('Error subiendo archivo');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error subiendo archivo');
+      }
 
-      const data = await response.json();
-
-      // Guardar en base de datos
-      const saveResponse = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentId}/evidence`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            type,
-            url: data.secure_url,
-            publicId: data.public_id,
-            format: data.format
-          })
-        }
-      );
-
-      if (!saveResponse.ok) throw new Error('Error guardando evidencia');
-
-      const savedEvidence = await saveResponse.json();
+      const savedEvidence = await response.json();
       
-      setEvidence(prev => [...prev, savedEvidence.evidence]);
+      setEvidence(prev => [...prev, savedEvidence.data]);
       
       if (onUploadComplete) {
-        onUploadComplete(savedEvidence.evidence);
+        onUploadComplete(savedEvidence.data);
       }
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Error al subir el archivo');
+      toast.error(error.message || 'Error al subir el archivo');
     } finally {
       setUploading(false);
     }
@@ -122,7 +108,7 @@ export default function EvidenceUploader({
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${token}`
           }
         }
       );
@@ -132,7 +118,7 @@ export default function EvidenceUploader({
       setEvidence(prev => prev.filter(e => e.id !== evidenceItem.id));
     } catch (error) {
       console.error('Error deleting evidence:', error);
-      alert('Error al eliminar la evidencia');
+      toast.error('Error al eliminar la evidencia');
     }
   };
 
@@ -153,8 +139,17 @@ export default function EvidenceUploader({
           disabled={uploading || evidence.length >= maxFiles}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <ArrowUpTrayIcon className="w-5 h-5" />
-          Subir Foto
+          {uploading ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              Subiendo...
+            </>
+          ) : (
+            <>
+              <ArrowUpTrayIcon className="w-5 h-5" />
+              Subir Foto
+            </>
+          )}
         </button>
         <input
           ref={fileInputRef}

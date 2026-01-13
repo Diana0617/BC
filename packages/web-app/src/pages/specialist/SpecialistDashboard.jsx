@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -409,89 +411,10 @@ export default function SpecialistDashboard() {
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <button
-              onClick={() => navigate('/specialist/commissions')}
-              className="bg-white/20 backdrop-blur-sm rounded-lg p-3 hover:bg-white/30 transition-colors text-left"
-            >
-              <ChartBarIcon className="w-6 h-6 mb-1" />
-              <p className="text-sm font-semibold">Comisiones</p>
-              <p className="text-xs opacity-80">Gestionar pagos</p>
-            </button>
-            
-            <button
-              onClick={() => navigate('/specialist/cash-register')}
-              className="bg-white/20 backdrop-blur-sm rounded-lg p-3 hover:bg-white/30 transition-colors text-left"
-            >
-              <BanknotesIcon className="w-6 h-6 mb-1" />
-              <p className="text-sm font-semibold">Caja</p>
-              <p className="text-xs opacity-80">Abrir/cerrar turno</p>
-            </button>
-            
-            <button
-              onClick={() => navigate('/specialist/consents')}
-              className="bg-white/20 backdrop-blur-sm rounded-lg p-3 hover:bg-white/30 transition-colors text-left"
-            >
-              <DocumentTextIcon className="w-6 h-6 mb-1" />
-              <p className="text-sm font-semibold">Consentimientos</p>
-              <p className="text-xs opacity-80">Formularios</p>
-            </button>
-            
-            <button
-              onClick={() => navigate('/clients')}
-              className="bg-white/20 backdrop-blur-sm rounded-lg p-3 hover:bg-white/30 transition-colors text-left"
-            >
-              <UserGroupIcon className="w-6 h-6 mb-1" />
-              <p className="text-sm font-semibold">Clientes</p>
-              <p className="text-xs opacity-80">Ver lista</p>
-            </button>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CalendarIcon className="w-4 h-4" />
-                <p className="text-xs font-medium">Total</p>
-              </div>
-              <p className="text-2xl font-bold">{stats.total}</p>
-              <p className="text-xs opacity-80">turnos</p>
-            </div>
-
-            <div className="bg-green-500/30 backdrop-blur-sm rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircleIcon className="w-4 h-4" />
-                <p className="text-xs font-medium">Completados</p>
-              </div>
-              <p className="text-2xl font-bold">{stats.completed}</p>
-              <p className="text-xs opacity-80">turnos</p>
-            </div>
-
-            <div className="bg-yellow-500/30 backdrop-blur-sm rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <ClockIcon className="w-4 h-4" />
-                <p className="text-xs font-medium">En Progreso</p>
-              </div>
-              <p className="text-2xl font-bold">{stats.inProgress}</p>
-              <p className="text-xs opacity-80">turnos</p>
-            </div>
-
-            <div className="bg-blue-500/30 backdrop-blur-sm rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CurrencyDollarIcon className="w-4 h-4" />
-                <p className="text-xs font-medium">Comisiones</p>
-              </div>
-              <p className="text-xl font-bold">
-                ${stats.totalCommissions.toLocaleString('es-CO')}
-              </p>
-              <p className="text-xs opacity-80">ganadas</p>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - CALENDARIO PRIMERO */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Column Principal - Agenda */}
@@ -636,6 +559,86 @@ export default function SpecialistDashboard() {
             {/* Resumen de Comisiones */}
             <CommissionSummary specialistId={user?.id} businessId={user?.businessId} />
           </div>
+        </div>
+
+        {/* Stats Cards - Debajo del Calendario */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <CalendarIcon className="w-5 h-5 text-blue-600" />
+              <p className="text-sm font-medium text-gray-600">Total</p>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+            <p className="text-xs text-gray-500">turnos</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircleIcon className="w-5 h-5 text-green-600" />
+              <p className="text-sm font-medium text-gray-600">Completados</p>
+            </div>
+            <p className="text-3xl font-bold text-green-600">{stats.completed}</p>
+            <p className="text-xs text-gray-500">turnos</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <ClockIcon className="w-5 h-5 text-yellow-600" />
+              <p className="text-sm font-medium text-gray-600">En Progreso</p>
+            </div>
+            <p className="text-3xl font-bold text-yellow-600">{stats.inProgress}</p>
+            <p className="text-xs text-gray-500">turnos</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <CurrencyDollarIcon className="w-5 h-5 text-blue-600" />
+              <p className="text-sm font-medium text-gray-600">Comisiones</p>
+            </div>
+            <p className="text-2xl font-bold text-blue-600">
+              ${stats.totalCommissions.toLocaleString('es-CO')}
+            </p>
+            <p className="text-xs text-gray-500">ganadas</p>
+          </div>
+        </div>
+
+        {/* Quick Actions - Debajo de Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <button
+            onClick={() => navigate('/specialist/commissions')}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all text-left"
+          >
+            <ChartBarIcon className="w-6 h-6 text-blue-600 mb-2" />
+            <p className="text-sm font-semibold text-gray-900">Comisiones</p>
+            <p className="text-xs text-gray-500">Gestionar pagos</p>
+          </button>
+          
+          <button
+            onClick={() => navigate('/specialist/cash-register')}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all text-left"
+          >
+            <BanknotesIcon className="w-6 h-6 text-green-600 mb-2" />
+            <p className="text-sm font-semibold text-gray-900">Caja</p>
+            <p className="text-xs text-gray-500">Abrir/cerrar turno</p>
+          </button>
+          
+          <button
+            onClick={() => navigate('/specialist/consents')}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all text-left"
+          >
+            <DocumentTextIcon className="w-6 h-6 text-purple-600 mb-2" />
+            <p className="text-sm font-semibold text-gray-900">Consentimientos</p>
+            <p className="text-xs text-gray-500">Formularios</p>
+          </button>
+          
+          <button
+            onClick={() => navigate('/clients')}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all text-left"
+          >
+            <UserGroupIcon className="w-6 h-6 text-pink-600 mb-2" />
+            <p className="text-sm font-semibold text-gray-900">Clientes</p>
+            <p className="text-xs text-gray-500">Ver lista</p>
+          </button>
         </div>
       </div>
 

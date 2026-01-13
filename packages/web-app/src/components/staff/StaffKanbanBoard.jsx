@@ -307,7 +307,7 @@ const StaffKanbanBoard = ({
                               )}
                             </button>
                           )}
-                          {onDelete && (
+                          {onDelete && !['BUSINESS', 'BUSINESS_SPECIALIST'].includes(staff.role) && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();

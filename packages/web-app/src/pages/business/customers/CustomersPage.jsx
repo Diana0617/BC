@@ -25,6 +25,7 @@ import {
   PlusIcon
 } from '@heroicons/react/24/outline';
 import { fetchBusinessVouchers } from '@beautycontrol/shared';
+import { apiClient } from '@shared/api/client';
 import ClientList from './components/ClientList';
 import ClientDetailModal from './components/ClientDetailModal';
 import CreateManualVoucherModal from './components/CreateManualVoucherModal';
@@ -63,16 +64,21 @@ const CustomersPage = () => {
   const loadClientsData = async () => {
     setLoading(true);
     try {
-      // TODO: Implementar API call para obtener clientes
-      // const result = await dispatch(fetchBusinessClients({ 
-      //   businessId: currentBusiness.id,
-      //   ...filters 
-      // }));
+      const params = {
+        page: 1,
+        limit: 1000, // Cargar todos para filtrado local
+        status: 'all'
+      };
+
+      const response = await apiClient.get(
+        `/api/business/${currentBusiness.id}/clients`, 
+        { params }
+      );
       
-      // Por ahora datos mock
-      setClients([]);
+      setClients(response.data.data || []);
     } catch (error) {
       console.error('Error cargando clientes:', error);
+      setClients([]);
     } finally {
       setLoading(false);
     }

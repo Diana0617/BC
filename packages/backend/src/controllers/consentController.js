@@ -8,6 +8,10 @@ const {
   User
 } = require('../models');
 const { Op } = require('sequelize');
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
+const { uploadConsentDocument } = require('../config/cloudinary');
 
 /**
  * @controller ConsentController
@@ -445,9 +449,32 @@ exports.signConsent = async (req, res) => {
       console.log(`✅ Actualizado hasConsent=true para appointment ${appointmentId}`);
     }
 
+    // Cargar relaciones necesarias para generar el PDF
+    await signature.reload({
+      include: [
+        {
+          model: ConsentTemplate,
+          as: 'template'
+        },
+        {
+          model: Client,
+          as: 'customer'
+        },
+        {
+          model: Business,
+          as: 'business'
+        }
+      ]
+    });
+
+    // Generar PDF automáticamente (en background, no esperar)
+    generateConsentPDF(signature).catch(error => {
+      console.error('Error generando PDF en background:', error);
+    });
+
     return res.status(201).json({
       success: true,
-      message: 'Consentimiento firmado exitosamente',
+      message: 'Consentimiento firmado exitosamente. PDF en generación.',
       data: signature
     });
 
@@ -705,4 +732,177 @@ exports.getSignaturePDF = async (req, res) => {
       error: error.message
     });
   }
+};
+
+/**
+ * Función helper para generar PDF del consentimiento
+ * @param {Object} signature - Objeto ConsentSignature con todos los datos
+ * @returns {Promise<String>} - URL del PDF en Cloudinary
+ */
+async function generateConsentPDF(signature) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Crear documento PDF
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      });
+
+      // Crear archivo temporal
+      const tempDir = path.join(__dirname, '../../temp');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      
+      const tempFilePath = path.join(tempDir, `consent_${signature.id}.pdf`);
+      const writeStream = fs.createWriteStream(tempFilePath);
+
+      doc.pipe(writeStream);
+
+      // Encabezado con información del negocio
+      if (signature.business) {
+        doc.fontSize(18).font('Helvetica-Bold').text(signature.business.name || 'Beauty Control', { align: 'center' });
+        doc.moveDown(0.5);
+        
+        if (signature.business.address || signature.business.phone) {
+          doc.fontSize(10).font('Helvetica');
+          if (signature.business.address) doc.text(signature.business.address, { align: 'center' });
+          if (signature.business.phone) doc.text(`Tel: ${signature.business.phone}`, { align: 'center' });
+          doc.moveDown(1);
+        }
+      }
+
+      // Título del consentimiento
+      doc.fontSize(16).font('Helvetica-Bold')
+        .text('CONSENTIMIENTO INFORMADO', { align: 'center', underline: true });
+      doc.moveDown(1);
+
+      // Información del template
+      if (signature.template) {
+        doc.fontSize(12).font('Helvetica-Bold').text(`Tipo: ${signature.template.name}`, { align: 'center' });
+        doc.fontSize(10).font('Helvetica').text(`Versión: ${signature.templateVersion}`, { align: 'center' });
+        doc.moveDown(1);
+      }
+
+      // Línea separadora
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+      doc.moveDown(1);
+
+      // Información del paciente
+      doc.fontSize(12).font('Helvetica-Bold').text('DATOS DEL PACIENTE');
+      doc.fontSize(10).font('Helvetica');
+      if (signature.customer) {
+        doc.text(`Nombre: ${signature.customer.name || 'N/A'}`);
+        if (signature.customer.email) doc.text(`Email: ${signature.customer.email}`);
+        if (signature.customer.phone) doc.text(`Teléfono: ${signature.customer.phone}`);
+        if (signature.customer.documentNumber) doc.text(`Documento: ${signature.customer.documentNumber}`);
+      }
+      doc.moveDown(1);
+
+      // Contenido del consentimiento (extraer texto del HTML)
+      doc.fontSize(12).font('Helvetica-Bold').text('CONSENTIMIENTO');
+      doc.fontSize(10).font('Helvetica');
+      
+      // Convertir HTML a texto plano (remover tags)
+      let textContent = signature.templateContent
+        .replace(/<style[^>]*>.*?<\/style>/gis, '')
+        .replace(/<script[^>]*>.*?<\/script>/gis, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Limitar longitud y agregar al PDF
+      const maxLength = 2000;
+      if (textContent.length > maxLength) {
+        textContent = textContent.substring(0, maxLength) + '...';
+      }
+      
+      doc.text(textContent, { align: 'justify' });
+      doc.moveDown(1.5);
+
+      // Campos editables completados
+      if (signature.editableFieldsData && Object.keys(signature.editableFieldsData).length > 0) {
+        doc.fontSize(12).font('Helvetica-Bold').text('INFORMACIÓN ADICIONAL');
+        doc.fontSize(10).font('Helvetica');
+        
+        Object.entries(signature.editableFieldsData).forEach(([key, value]) => {
+          doc.text(`${key}: ${value}`);
+        });
+        doc.moveDown(1);
+      }
+
+      // Fecha y firma
+      doc.moveDown(2);
+      doc.fontSize(12).font('Helvetica-Bold').text('FIRMA Y ACEPTACIÓN');
+      doc.fontSize(10).font('Helvetica');
+      doc.text(`Fecha de firma: ${new Date(signature.signedAt).toLocaleString('es-AR')}`);
+      doc.text(`Firmado por: ${signature.signedBy}`);
+      doc.moveDown(1);
+
+      // Agregar imagen de la firma si existe
+      if (signature.signatureData) {
+        try {
+          // Convertir base64 a buffer
+          const base64Data = signature.signatureData.replace(/^data:image\/\w+;base64,/, '');
+          const imageBuffer = Buffer.from(base64Data, 'base64');
+          
+          // Agregar imagen al PDF
+          doc.image(imageBuffer, {
+            fit: [200, 100],
+            align: 'left'
+          });
+          doc.moveDown(0.5);
+        } catch (imgError) {
+          console.error('Error al agregar firma al PDF:', imgError);
+          doc.text('[Firma digital registrada]');
+        }
+      }
+
+      // Footer
+      doc.fontSize(8).font('Helvetica')
+        .text(`Documento generado el ${new Date().toLocaleString('es-AR')}`, 50, doc.page.height - 50, {
+          align: 'center'
+        });
+
+      // Finalizar documento
+      doc.end();
+
+      // Esperar a que termine de escribirse el archivo
+      writeStream.on('finish', async () => {
+        try {
+          // Subir a Cloudinary
+          const uploadResult = await uploadConsentDocument(tempFilePath, signature.businessId, signature.id);
+          
+          // Eliminar archivo temporal
+          fs.unlinkSync(tempFilePath);
+          
+          // Actualizar signature con la URL del PDF
+          await signature.update({
+            pdfUrl: uploadResult.secure_url,
+            pdfGeneratedAt: new Date()
+          });
+
+          console.log('✅ PDF generado y subido:', uploadResult.secure_url);
+          resolve(uploadResult.secure_url);
+        } catch (uploadError) {
+          console.error('Error subiendo PDF:', uploadError);
+          reject(uploadError);
+        }
+      });
+
+      writeStream.on('error', (error) => {
+        console.error('Error escribiendo PDF:', error);
+        reject(error);
+      });
+
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      reject(error);
+    }
+  });
+}
+
+module.exports = {
+  ...exports,
+  generateConsentPDF
 };

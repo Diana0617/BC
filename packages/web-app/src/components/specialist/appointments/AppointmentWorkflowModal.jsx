@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
 import { 
   XMarkIcon,
   CheckCircleIcon,
@@ -42,30 +43,36 @@ export default function AppointmentWorkflowModal({
     const service = appointment.Service || appointment.service;
     const requiresConsent = service?.requiresConsent || false;
     const templateId = service?.consentTemplateId || null;
+    const alreadyHasConsent = appointment.hasConsent || false;
     
     console.log('🔍 Inicializando workflow:', {
       action,
       requiresConsent,
       templateId,
       serviceName: service?.name,
-      hasConsent: appointment.hasConsent,
+      hasConsent: alreadyHasConsent,
       hasToken: !!token
     });
     
     setConsentRequired(requiresConsent);
+    
+    // Si ya tiene consentimiento firmado, marcarlo como completado
+    if (alreadyHasConsent) {
+      setConsentCompleted(true);
+    }
 
     // Si es para "completar", ir directo a fotos después
     if (action === 'complete') {
       setCurrentStep(4);
     } else if (action === 'start') {
       // Al iniciar: si requiere consentimiento y NO lo tiene, empezar por consentimiento
-      if (requiresConsent && !appointment.hasConsent) {
+      if (requiresConsent && !alreadyHasConsent) {
         setCurrentStep(1); // Consentimiento
       } else {
         setCurrentStep(2); // Fotos antes (ya tiene consentimiento o no lo requiere)
       }
-    } else if (!requiresConsent) {
-      // Si no requiere consentimiento, ir a fotos antes
+    } else if (!requiresConsent || alreadyHasConsent) {
+      // Si no requiere consentimiento o ya lo tiene, ir a fotos antes
       setCurrentStep(2);
     } else {
       setCurrentStep(1);
@@ -102,12 +109,12 @@ export default function AppointmentWorkflowModal({
 
       if (!response.ok) throw new Error('Error iniciando turno');
 
-      alert('Turno iniciado correctamente');
+      toast.success('Turno iniciado correctamente');
       onSuccess?.();
       onClose();
     } catch (error) {
       console.error('Error starting appointment:', error);
-      alert('Error al iniciar el turno');
+      toast.error('Error al iniciar el turno');
     } finally {
       setLoading(false);
     }
@@ -138,12 +145,12 @@ export default function AppointmentWorkflowModal({
 
       if (!response.ok) throw new Error('Error completando turno');
 
-      alert('Turno completado correctamente');
+      toast.success('Turno completado correctamente');
       onSuccess?.();
       onClose();
     } catch (error) {
       console.error('Error completing appointment:', error);
-      alert('Error al completar el turno');
+      toast.error('Error al completar el turno');
     } finally {
       setLoading(false);
     }

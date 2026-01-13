@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { 
   DocumentTextIcon,
   UserIcon,
@@ -61,7 +62,7 @@ export default function ConsentFormView({
       setTemplate(data.data || data);
     } catch (error) {
       console.error('Error loading template:', error);
-      alert('Error al cargar el formulario de consentimiento');
+      toast.error('Error al cargar el formulario de consentimiento');
     }
   };
 
@@ -69,12 +70,12 @@ export default function ConsentFormView({
     e.preventDefault();
 
     if (!signatureData) {
-      alert('Por favor firma el documento');
+      toast.error('Por favor firma el documento');
       return;
     }
 
     if (!acceptTerms) {
-      alert('Debes aceptar los términos del consentimiento');
+      toast.error('Debes aceptar los términos del consentimiento');
       return;
     }
 
@@ -86,10 +87,11 @@ export default function ConsentFormView({
       }
       
       const client = appointment.Client || appointment.client;
+      const service = appointment.Service || appointment.service;
       const clientName = client ? `${client.firstName || ''} ${client.lastName || ''}`.trim() : 'Cliente';
       
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/business/${businessId}/consent-signatures`,
+        `${import.meta.env.VITE_API_URL}/api/appointments/${appointment.id}/consent?businessId=${businessId}`,
         {
           method: 'POST',
           headers: {
@@ -97,23 +99,39 @@ export default function ConsentFormView({
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            appointmentId: appointment.id,
-            consentTemplateId: templateId,
-            customerId: appointment.clientId,
-            signatureData,
-            signedBy: clientName
+            clientData: {
+              clientName,
+              clientId: client?.idNumber || '',
+              signature: signatureData,
+              agreedToTerms: true,
+              agreedToTreatment: true,
+              agreedToPhotos: true,
+              editableFields: {} // Campos dinámicos del template (vacío por ahora)
+            },
+            serviceInfo: {
+              serviceName: service?.name || '',
+              serviceId: appointment.serviceId
+            },
+            consentTemplate: {
+              id: templateId,
+              version: '1.0'
+            },
+            capturedBy: clientName
           })
         }
       );
 
-      if (!response.ok) throw new Error('Error saving consent');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error saving consent');
+      }
 
       const data = await response.json();
-      alert('Consentimiento guardado exitosamente');
+      toast.success('Consentimiento guardado exitosamente');
       onSuccess?.(data);
     } catch (error) {
       console.error('Error saving consent:', error);
-      alert('Error al guardar el consentimiento. Intenta nuevamente.');
+      toast.error(error.message || 'Error al guardar el consentimiento. Intenta nuevamente.');
     } finally {
       setLoading(false);
     }

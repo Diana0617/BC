@@ -47,6 +47,54 @@ class SpecialistServiceController {
         });
       }
 
+      // Verificar si el especialista es el BUSINESS owner
+      const businessUser = await User.findOne({
+        where: {
+          id: specialistId,
+          businessId: businessId || userBusinessId,
+          role: 'BUSINESS',
+          status: 'ACTIVE'
+        }
+      });
+
+      // Si es BUSINESS, devolver todos los servicios del negocio
+      if (businessUser) {
+        console.log('✅ BUSINESS owner detectado - devolviendo todos los servicios del negocio');
+        
+        const whereClause = { businessId: businessId || userBusinessId };
+        if (isActive !== undefined) {
+          whereClause.isActive = isActive === 'true';
+        }
+
+        const services = await Service.findAll({
+          where: whereClause,
+          order: [['createdAt', 'DESC']]
+        });
+
+        // Transformar al formato esperado por el frontend
+        const formattedServices = services.map(service => ({
+          id: service.id,
+          specialistId: businessUser.id,
+          serviceId: service.id,
+          isActive: service.isActive,
+          service: {
+            id: service.id,
+            name: service.name,
+            description: service.description,
+            price: service.price,
+            duration: service.duration,
+            category: service.category
+          },
+          createdAt: service.createdAt,
+          updatedAt: service.updatedAt
+        }));
+
+        return res.status(200).json({
+          success: true,
+          data: formattedServices
+        });
+      }
+
       // El specialistId puede ser userId o specialistProfileId
       // Primero intentamos encontrar por userId
       let specialist = await SpecialistProfile.findOne({

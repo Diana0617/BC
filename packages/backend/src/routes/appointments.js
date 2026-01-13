@@ -4,6 +4,8 @@ const AppointmentController = require('../controllers/AppointmentController');
 const { authenticateToken } = require('../middleware/auth');
 const { Appointment, Service, ConsentSignature, ConsentTemplate, Client, Business } = require('../models');
 const { generateConsentPDF } = require('../utils/consentPdfGenerator');
+const CloudinaryService = require('../services/CloudinaryService');
+const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 // const tenancyMiddleware = require('../middleware/tenancy');
@@ -14,6 +16,22 @@ router.use(authenticateToken);
 // router.use(tenancyMiddleware);
 // router.use(allStaffRoles);
 
+// Configuración de multer para evidencias
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten imágenes (JPG, PNG, WEBP)'), false);
+    }
+  }
+});
+
 // Obtener lista de citas
 router.get('/', AppointmentController.getAppointments);
 
@@ -22,6 +40,15 @@ router.get('/summary/today', AppointmentController.getTodaySummary);
 
 // Obtener citas por rango de fechas (debe ir ANTES de '/:id' para evitar conflictos)
 router.get('/date-range', AppointmentController.getAppointmentsByDateRange);
+
+// Procesar turnos sin asistencia (No Shows) - Admin only
+router.post('/process-no-shows', AppointmentController.processNoShows);
+
+// Obtener estadísticas de No Shows
+router.get('/no-show-stats/:businessId', AppointmentController.getNoShowStats);
+
+// Obtener historial de citas de un cliente específico
+router.get('/client/:clientId', AppointmentController.getClientAppointments);
 
 // Crear nueva cita
 router.post('/', AppointmentController.createAppointment);
@@ -244,7 +271,21 @@ router.post('/:id/payment', async (req, res) => {
       where.specialistId = req.specialist.id;
     }
 
-    const appointment = await Appointment.findOne({ where });
+    const appointment = await Appointment.findOne({ 
+      where,
+      include: [
+        {
+          model: Service,
+          as: 'service',
+          attributes: ['id', 'name', 'price']
+        },
+        {
+          model: Client,
+          as: 'client',
+          attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
+        }
+      ]
+    });
 
     if (!appointment) {
       return res.status(404).json({
@@ -261,9 +302,14 @@ router.post('/:id/payment', async (req, res) => {
       });
     }
 
+    // Convertir a números y limpiar cualquier formato
+    const numericAmount = parseFloat(amount) || 0;
+    const numericDiscount = parseFloat(discount) || 0;
+    const currentDiscount = parseFloat(appointment.discountAmount) || 0;
+
     // Calcular el monto total con descuento
-    const totalDiscount = (appointment.discountAmount || 0) + (discount || 0);
-    const finalAmount = Math.max(0, amount - (discount || 0));
+    const totalDiscount = currentDiscount + numericDiscount;
+    const finalAmount = Math.max(0, numericAmount - numericDiscount);
 
     // Actualizar appointment con información de pago
     await appointment.update({
@@ -273,6 +319,43 @@ router.post('/:id/payment', async (req, res) => {
       paymentMethodId,
       paidAt: new Date(),
       specialistNotes: notes || appointment.specialistNotes
+    });
+
+    // 💰 Crear registro en FinancialMovement
+    const FinancialMovement = require('../models/FinancialMovement');
+    const BusinessPaymentConfig = require('../models/BusinessPaymentConfig');
+    
+    // Obtener el método de pago para extraer su tipo (CASH, CARD, etc.)
+    let paymentMethodType = 'CASH'; // default
+    try {
+      const paymentConfig = await BusinessPaymentConfig.findOne({
+        where: { businessId }
+      });
+      
+      if (paymentConfig && paymentConfig.paymentMethods) {
+        const method = paymentConfig.paymentMethods.find(m => m.id === paymentMethodId);
+        if (method && method.type) {
+          paymentMethodType = method.type;
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ No se pudo obtener el tipo de método de pago, usando CASH por defecto');
+    }
+    
+    await FinancialMovement.create({
+      businessId,
+      type: 'INCOME',
+      category: 'APPOINTMENT',
+      amount: finalAmount,
+      paymentMethod: paymentMethodType,
+      description: `Pago de cita - ${appointment.service?.name || 'Servicio'}`,
+      referenceId: appointment.id,
+      referenceType: 'APPOINTMENT',
+      transactionId: paymentMethodId, // Guardamos el ID del método de pago personalizado aquí
+      userId: req.user.id,
+      clientId: appointment.clientId,
+      status: 'COMPLETED',
+      notes: notes || null
     });
 
     console.log('✅ Pago procesado exitosamente:', {
@@ -297,7 +380,120 @@ router.post('/:id/payment', async (req, res) => {
   }
 });
 
-// Subir evidencia de cita
+// Subir archivo de evidencia a Cloudinary
+router.post('/:id/evidence/upload', upload.single('file'), async (req, res) => {
+  let tempFilePath = null;
+  
+  try {
+    const { id } = req.params;
+    const businessId = req.query.businessId || req.user?.businessId;
+    const { type } = req.body; // 'before' | 'after' | 'process'
+
+    if (!businessId) {
+      return res.status(400).json({
+        success: false,
+        error: 'businessId es requerido'
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'Archivo requerido'
+      });
+    }
+
+    const where = { id, businessId };
+
+    // Aplicar filtros de acceso según el rol
+    if (req.specialist) {
+      where.specialistId = req.specialist.id;
+    }
+
+    const appointment = await Appointment.findOne({ where });
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Turno no encontrado'
+      });
+    }
+
+    // Escribir buffer a archivo temporal
+    const uploadsDir = path.join(__dirname, '../../uploads/temp');
+    await fs.mkdir(uploadsDir, { recursive: true });
+    
+    const tempFileName = `evidence_${Date.now()}_${Math.random().toString(36).substring(7)}${path.extname(req.file.originalname)}`;
+    tempFilePath = path.join(uploadsDir, tempFileName);
+    
+    await fs.writeFile(tempFilePath, req.file.buffer);
+
+    // Subir a Cloudinary usando el servicio existente
+    const evidenceType = type || 'before';
+    const uploadResult = await CloudinaryService.uploadAppointmentEvidence(
+      tempFilePath,
+      id,
+      evidenceType
+    );
+    
+    // El servicio ya elimina el archivo temporal, marcarlo como null
+    tempFilePath = null;
+
+    if (!uploadResult.success) {
+      throw new Error(uploadResult.error || 'Error al subir evidencia a Cloudinary');
+    }
+
+    const evidenceData = {
+      url: uploadResult.data.main.url,
+      publicId: uploadResult.data.main.public_id,
+      thumbnail: uploadResult.data.thumbnail.url,
+      type: evidenceType,
+      uploadedAt: new Date(),
+      uploadedBy: req.user.id
+    };
+
+    // Actualizar evidencia en el appointment
+    const currentEvidence = appointment.evidence || { before: [], after: [], process: [] };
+    
+    if (!currentEvidence[evidenceType]) {
+      currentEvidence[evidenceType] = [];
+    }
+    
+    currentEvidence[evidenceType].push(evidenceData);
+
+    await appointment.update({
+      evidence: currentEvidence
+    });
+
+    console.log(`✅ Evidencia subida para turno ${id}:`, evidenceData.url);
+
+    return res.json({
+      success: true,
+      message: 'Evidencia subida exitosamente',
+      data: evidenceData
+    });
+
+  } catch (error) {
+    console.error('Error al subir evidencia:', error);
+    
+    // Limpiar archivo temporal en caso de error
+    if (tempFilePath) {
+      try {
+        await fs.unlink(tempFilePath);
+      } catch (unlinkError) {
+        console.error('Error eliminando archivo temporal:', unlinkError);
+      }
+    }
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Error al subir archivo',
+      details: error.message
+    });
+  }
+});
+
+// Subir evidencia de cita (deprecated - usar /evidence/upload)
 router.post('/:id/evidence', async (req, res) => {
   try {
     const { id } = req.params;
@@ -384,15 +580,32 @@ router.post('/:id/consent', async (req, res) => {
       });
     }
 
+    // Cargar el template de consentimiento
+    const templateId = appointment.service.consentTemplateId;
+    if (!templateId) {
+      return res.status(400).json({
+        success: false,
+        error: 'El servicio no tiene un template de consentimiento configurado'
+      });
+    }
+
+    const template = await ConsentTemplate.findByPk(templateId);
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        error: 'Template de consentimiento no encontrado'
+      });
+    }
+
     // Crear la firma de consentimiento
     const consentSignature = await ConsentSignature.create({
       businessId,
       customerId: appointment.clientId,
-      consentTemplateId: appointment.service.consentTemplateId,
+      consentTemplateId: templateId,
       appointmentId: id,
       serviceId: appointment.serviceId,
-      templateVersion: consentTemplate?.version || '1.0',
-      templateContent: consentTemplate?.content || clientData.consentText,
+      templateVersion: template.version,
+      templateContent: template.content,
       signedBy: clientData.clientName,
       signatureData: clientData.signature, // Firma en base64
       signatureType: 'DIGITAL',
