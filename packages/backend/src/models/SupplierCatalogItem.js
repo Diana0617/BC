@@ -23,6 +23,14 @@ const SupplierCatalogItem = sequelize.define('SupplierCatalogItem', {
       key: 'id'
     }
   },
+  productId: {
+    type: DataTypes.UUID,
+    allowNull: true, // Relación con el producto del inventario
+    references: {
+      model: 'products',
+      key: 'id'
+    }
+  },
   supplierSku: {
     type: DataTypes.STRING,
     allowNull: false

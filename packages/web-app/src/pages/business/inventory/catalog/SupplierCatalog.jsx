@@ -269,9 +269,16 @@ const SupplierCatalog = () => {
               >
                 {/* Imagen */}
                 <div className="aspect-square bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden p-2">
-                  {item.images && item.images.length > 0 ? (
+                  {/* Priorizar imágenes del producto sobre imágenes del catálogo */}
+                  {item.product?.images && item.product.images.length > 0 ? (
                     <img
-                      src={item.images[0].thumbnail?.url || item.images[0].main?.url}
+                      src={item.product.images[0].thumbnail?.url || item.product.images[0].main?.url || item.product.images[0].url}
+                      alt={item.name}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  ) : item.images && item.images.length > 0 ? (
+                    <img
+                      src={item.images[0].thumbnail?.url || item.images[0].main?.url || item.images[0].url}
                       alt={item.name}
                       className="max-w-full max-h-full object-contain"
                     />
@@ -292,16 +299,24 @@ const SupplierCatalog = () => {
                   </p>
                 )}
 
-                {item.category && (
+                {(item.product?.category || item.category) && (
                   <span className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded mb-2">
-                    {item.category}
+                    {item.product?.category || item.category}
                   </span>
                 )}
 
                 <div className="flex items-center justify-between mt-3">
-                  <span className="text-lg font-bold text-gray-900">
-                    ${parseFloat(item.price).toLocaleString('es-CO')}
-                  </span>
+                  {/* Mostrar precio de venta del producto si existe, sino el del catálogo */}
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-gray-900">
+                      ${parseFloat(item.product?.price || item.price).toLocaleString('es-CO')}
+                    </span>
+                    {item.product?.price && item.price !== item.product.price && (
+                      <span className="text-xs text-gray-500">
+                        Costo: ${parseFloat(item.price).toLocaleString('es-CO')}
+                      </span>
+                    )}
+                  </div>
                   <span className={`text-xs px-2 py-1 rounded ${
                     item.available 
                       ? 'bg-green-100 text-green-800' 

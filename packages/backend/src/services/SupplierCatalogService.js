@@ -200,11 +200,18 @@ class SupplierCatalogService {
 
       const result = await SupplierCatalogItem.findAndCountAll({
         where,
-        include: [{
-          model: Supplier,
-          as: 'supplier',
-          attributes: ['id', 'name', 'email', 'phone']
-        }],
+        include: [
+          {
+            model: Supplier,
+            as: 'supplier',
+            attributes: ['id', 'name', 'email', 'phone']
+          },
+          {
+            model: Product,
+            as: 'product',
+            attributes: ['id', 'name', 'sku', 'price', 'cost', 'images', 'category', 'brand', 'currentStock']
+          }
+        ],
         limit: parseInt(limit),
         offset,
         order: [['name', 'ASC']]

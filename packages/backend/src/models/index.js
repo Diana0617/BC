@@ -1145,6 +1145,16 @@ SupplierCatalogItem.belongsTo(Supplier, {
   as: 'supplier' 
 });
 
+// SupplierCatalogItem - Product relationship
+SupplierCatalogItem.belongsTo(Product, {
+  foreignKey: 'productId',
+  as: 'product'
+});
+Product.hasMany(SupplierCatalogItem, {
+  foreignKey: 'productId',
+  as: 'catalogItems'
+});
+
 // FinancialMovement relationships
 FinancialMovement.belongsTo(Business, { 
   foreignKey: 'businessId', 
