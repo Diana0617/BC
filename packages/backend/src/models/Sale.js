@@ -219,23 +219,22 @@ const Sale = sequelize.define('Sale', {
 }, {
   tableName: 'sales',
   timestamps: true,
-  underscored: true,
   indexes: [
     {
-      fields: ['business_id']
+      fields: ['businessId']
     },
     {
-      fields: ['branch_id']
+      fields: ['branchId']
     },
     {
       unique: true,
-      fields: ['sale_number']
+      fields: ['saleNumber']
     },
     {
-      fields: ['user_id']
+      fields: ['userId']
     },
     {
-      fields: ['client_id']
+      fields: ['clientId']
     },
     {
       fields: ['shift_id']

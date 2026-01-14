@@ -77,20 +77,19 @@ const BranchStock = sequelize.define('BranchStock', {
 }, {
   tableName: 'branch_stocks',
   timestamps: true,
-  underscored: true,
   indexes: [
     {
       unique: true,
-      fields: ['branch_id', 'product_id']
+      fields: ['branchId', 'productId']
     },
     {
-      fields: ['business_id']
+      fields: ['businessId']
     },
     {
-      fields: ['branch_id']
+      fields: ['branchId']
     },
     {
-      fields: ['product_id']
+      fields: ['productId']
     },
     {
       name: 'idx_low_stock',

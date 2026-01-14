@@ -73,19 +73,18 @@ const WhatsAppWebhookEvent = sequelize.define('WhatsAppWebhookEvent', {
 }, {
   tableName: 'whatsapp_webhook_events',
   timestamps: true,
-  underscored: true,
   indexes: [
     {
-      fields: ['business_id']
+      fields: ['businessId']
     },
     {
-      fields: ['event_type']
+      fields: ['eventType']
     },
     {
       fields: ['processed']
     },
     {
-      fields: ['message_id']
+      fields: ['messageId']
     },
     {
       fields: ['received_at']

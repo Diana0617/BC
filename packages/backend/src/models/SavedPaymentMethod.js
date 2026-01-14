@@ -90,8 +90,7 @@ const SavedPaymentMethod = sequelize.define('SavedPaymentMethod', {
   ]
 }, {
   tableName: 'saved_payment_methods',
-  timestamps: true,
-  underscored: true
+  timestamps: true
 });
 
 module.exports = SavedPaymentMethod;

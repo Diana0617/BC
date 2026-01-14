@@ -138,16 +138,15 @@ const SaleItem = sequelize.define('SaleItem', {
 }, {
   tableName: 'sale_items',
   timestamps: true,
-  underscored: true,
   indexes: [
     {
-      fields: ['sale_id']
+      fields: ['saleId']
     },
     {
-      fields: ['product_id']
+      fields: ['productId']
     },
     {
-      fields: ['inventory_movement_id']
+      fields: ['inventoryMovementId']
     }
   ],
   hooks: {

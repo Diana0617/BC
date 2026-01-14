@@ -77,19 +77,18 @@ const SupplierInvoicePayment = sequelize.define('SupplierInvoicePayment', {
 }, {
   tableName: 'supplier_invoice_payments',
   timestamps: true,
-  underscored: true,
   indexes: [
     {
-      fields: ['invoice_id']
+      fields: ['invoiceId']
     },
     {
-      fields: ['business_id']
+      fields: ['businessId']
     },
     {
-      fields: ['payment_date']
+      fields: ['paymentDate']
     },
     {
-      fields: ['payment_method']
+      fields: ['paymentMethod']
     }
   ]
 });

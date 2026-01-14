@@ -95,15 +95,14 @@ const WhatsAppMessage = sequelize.define('WhatsAppMessage', {
   }
 }, {
   tableName: 'whatsapp_messages',
-  underscored: true,
   timestamps: true,
   indexes: [
-    { fields: ['business_id'] },
-    { fields: ['client_id'] },
-    { fields: ['appointment_id'] },
-    { fields: ['provider_message_id'] },
+    { fields: ['businessId'] },
+    { fields: ['clientId'] },
+    { fields: ['appointmentId'] },
+    { fields: ['providerMessageId'] },
     { fields: ['status'] },
-    { fields: ['created_at'] }
+    { fields: ['createdAt'] }
   ]
 });
 

@@ -60,18 +60,17 @@ const WhatsAppToken = sequelize.define('WhatsAppToken', {
   }
 }, {
   tableName: 'whatsapp_tokens',
-  underscored: true,
   timestamps: true,
   indexes: [
     {
       unique: true,
-      fields: ['business_id']
+      fields: ['businessId']
     },
     {
-      fields: ['is_active']
+      fields: ['isActive']
     },
     {
-      fields: ['expires_at']
+      fields: ['expiresAt']
     }
   ]
 });

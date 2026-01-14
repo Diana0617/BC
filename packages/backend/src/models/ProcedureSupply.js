@@ -135,19 +135,18 @@ const ProcedureSupply = sequelize.define('ProcedureSupply', {
 }, {
   tableName: 'procedure_supplies',
   timestamps: true,
-  underscored: true,
   indexes: [
     {
-      fields: ['business_id']
+      fields: ['businessId']
     },
     {
-      fields: ['branch_id']
+      fields: ['branchId']
     },
     {
-      fields: ['appointment_id']
+      fields: ['appointmentId']
     },
     {
-      fields: ['shift_id']
+      fields: ['shiftId']
     },
     {
       fields: ['specialist_id']

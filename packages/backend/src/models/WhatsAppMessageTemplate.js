@@ -87,17 +87,16 @@ const WhatsAppMessageTemplate = sequelize.define('WhatsAppMessageTemplate', {
 }, {
   tableName: 'whatsapp_message_templates',
   timestamps: true,
-  underscored: true,
   indexes: [
     {
-      fields: ['business_id']
+      fields: ['businessId']
     },
     {
       fields: ['status']
     },
     {
       unique: true,
-      fields: ['business_id', 'template_name']
+      fields: ['businessId', 'templateName']
     }
   ]
 });
