@@ -118,7 +118,6 @@ const InventoryMovement = sequelize.define('InventoryMovement', {
   appointmentId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'appointment_id',
     references: {
       model: 'appointments',
       key: 'id'
@@ -128,7 +127,6 @@ const InventoryMovement = sequelize.define('InventoryMovement', {
   fromBranchId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'from_branch_id',
     references: {
       model: 'branches',
       key: 'id'
@@ -138,7 +136,6 @@ const InventoryMovement = sequelize.define('InventoryMovement', {
   toBranchId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'to_branch_id',
     references: {
       model: 'branches',
       key: 'id'
