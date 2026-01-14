@@ -197,7 +197,8 @@ class OwnerController {
         ownerPassword,
         subscriptionPlanId,
         billingCycle = 'MONTHLY', // MONTHLY o ANNUAL - default MONTHLY
-        role = 'BUSINESS' // Rol del usuario - default BUSINESS, puede ser BUSINESS_SPECIALIST para plan gratuito
+        role = 'BUSINESS', // Rol del usuario - default BUSINESS, puede ser BUSINESS_SPECIALIST para plan gratuito
+        isLifetime = false // Flag para acceso ilimitado (solo Owner puede crear)
       } = req.body;
 
       console.log('📋 Datos recibidos para crear negocio:', {
@@ -206,7 +207,8 @@ class OwnerController {
         ownerEmail,
         ownerPassword: ownerPassword ? '***PROVIDED***' : 'NOT_PROVIDED',
         subscriptionPlanId,
-        billingCycle
+        billingCycle,
+        isLifetime: isLifetime ? '⭐ LIFETIME ACCESS' : 'STANDARD'
       });
 
       // Verificar si el plan existe
@@ -348,9 +350,11 @@ class OwnerController {
         businessCode: normalizedSubdomain,
         subdomain: normalizedSubdomain,
         ownerId: owner.id,
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        isLifetime: isLifetime, // Acceso ilimitado si está marcado
+        bypassSubscriptionChecks: isLifetime // Bypass automático para LIFETIME
       });
-      console.log('🏢 Negocio creado:', business.id);
+      console.log('🏢 Negocio creado:', business.id, isLifetime ? '⭐ CON ACCESO LIFETIME' : '');
 
       // Actualizar el usuario con el businessId
       await owner.update({ businessId: business.id });

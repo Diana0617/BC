@@ -111,6 +111,18 @@ const Business = sequelize.define('Business', {
     allowNull: true,
     comment: 'Fecha hasta la cual se mantendrán los datos del negocio después de la expiración de suscripción (30 días después del último vencimiento)'
   },
+  isLifetime: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Business de desarrollo/testing con acceso ilimitado sin restricciones de tiempo'
+  },
+  bypassSubscriptionChecks: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Omite todas las validaciones de suscripción (para testing y desarrollo)'
+  },
   currentPlanId: {
     type: DataTypes.UUID,
     allowNull: true,

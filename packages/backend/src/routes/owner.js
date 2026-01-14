@@ -3609,6 +3609,11 @@ router.get('/businesses', OwnerController.getAllBusinesses);
  *                     default: true
  *                     example: true
  *                     description: Enviar email de bienvenida al propietario
+ *                   isLifetime:
+ *                     type: boolean
+ *                     default: false
+ *                     example: false
+ *                     description: Activar acceso ilimitado permanente (solo para desarrollo/testing)
  *           example:
  *             businessData:
  *               businessName: "Elegance Beauty Center"

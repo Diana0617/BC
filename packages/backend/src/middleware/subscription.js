@@ -6,9 +6,22 @@
  * - PENDING: Acceso completo (período de gracia)
  * - OVERDUE: Acceso limitado (solo funciones básicas)
  * - SUSPENDED: Sin acceso (solo consulta de estado)
+ * - LIFETIME: Acceso ilimitado sin restricciones (desarrollo/testing)
  */
 
 const SubscriptionStatusService = require('../services/SubscriptionStatusService');
+const Business = require('../models/Business');
+
+/**
+ * Helper para verificar si un business tiene acceso ilimitado
+ */
+const hasUnlimitedAccess = async (businessId) => {
+  const business = await Business.findByPk(businessId, {
+    attributes: ['isLifetime', 'bypassSubscriptionChecks']
+  });
+  
+  return business && (business.isLifetime || business.bypassSubscriptionChecks);
+};
 
 /**
  * Middleware que requiere suscripción activa (ACTIVE o PENDING)
@@ -17,6 +30,18 @@ const requireActiveSubscription = async (req, res, next) => {
   try {
     // Solo aplica a usuarios con businessId (no OWNER)
     if (!req.user.businessId || req.user.role === 'OWNER') {
+      return next();
+    }
+
+    // 🔑 Verificar acceso ilimitado (LIFETIME)
+    if (await hasUnlimitedAccess(req.user.businessId)) {
+      req.hasUnlimitedAccess = true;
+      req.subscriptionStatus = {
+        status: 'LIFETIME',
+        access: true,
+        level: 'UNLIMITED',
+        message: 'Acceso ilimitado - Cuenta de desarrollo'
+      };
       return next();
     }
 
@@ -55,6 +80,18 @@ const requireFullAccess = async (req, res, next) => {
   try {
     // Solo aplica a usuarios con businessId (no OWNER)
     if (!req.user.businessId || req.user.role === 'OWNER') {
+      return next();
+    }
+
+    // 🔑 Verificar acceso ilimitado (LIFETIME)
+    if (await hasUnlimitedAccess(req.user.businessId)) {
+      req.hasUnlimitedAccess = true;
+      req.subscriptionStatus = {
+        status: 'LIFETIME',
+        access: true,
+        level: 'UNLIMITED',
+        message: 'Acceso ilimitado - Cuenta de desarrollo'
+      };
       return next();
     }
 

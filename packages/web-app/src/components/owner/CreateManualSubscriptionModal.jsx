@@ -28,6 +28,7 @@ const CreateManualSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
     // Suscripción
     subscriptionPlanId: '',
     billingCycle: 'MONTHLY', // MONTHLY o ANNUAL
+    isLifetime: false, // Acceso ilimitado para desarrollo/testing
   })
   
   const [errors, setErrors] = useState({})
@@ -195,6 +196,7 @@ const CreateManualSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
           ownerPassword: '',
           subscriptionPlanId: '',
           billingCycle: 'MONTHLY',
+          isLifetime: false,
         })
         setSubdomainStatus({ checking: false, available: null, message: '' })
         setErrors({})
@@ -484,10 +486,39 @@ const CreateManualSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
               </svg>
               Plan de Suscripción
             </h3>
+            
+            {/* LIFETIME Checkbox - Solo para Owner */}
+            <div className="mb-4 p-3 bg-purple-50 border-2 border-purple-200 rounded-lg">
+              <label className="flex items-start cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="isLifetime"
+                  checked={formData.isLifetime}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isLifetime: e.target.checked }))}
+                  disabled={submitting}
+                  className="mt-1 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                />
+                <div className="ml-3">
+                  <span className="text-sm font-semibold text-purple-900">
+                    🌟 Negocio de Desarrollo/Testing (LIFETIME)
+                  </span>
+                  <p className="text-xs text-purple-700 mt-1">
+                    Otorga acceso ilimitado permanente sin restricciones de suscripción. 
+                    <strong className="block mt-1">⚠️ Solo para negocios de desarrollo, testing o modelos de actualización.</strong>
+                  </p>
+                </div>
+              </label>
+            </div>
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Seleccionar Plan *
               </label>
+              {formData.isLifetime && (
+                <div className="mb-2 p-2 bg-purple-100 border border-purple-300 rounded text-xs text-purple-800">
+                  ℹ️ Con acceso LIFETIME activado, el plan seleccionado es solo informativo. El negocio tendrá acceso ilimitado.
+                </div>
+              )}
               <select
                 name="subscriptionPlanId"
                 value={formData.subscriptionPlanId}
