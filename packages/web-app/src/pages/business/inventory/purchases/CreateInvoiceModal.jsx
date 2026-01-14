@@ -56,6 +56,7 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
     sku: '',
     quantity: 1,
     unitCost: 0,
+    salePrice: 0, // Precio de venta
     createProduct: false,
     productData: {
       name: '',
@@ -176,6 +177,7 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
       sku: '',
       quantity: 1,
       unitCost: 0,
+      salePrice: 0,
       createProduct: false,
       productData: {
         name: '',
@@ -278,6 +280,7 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
           productName: product.name,
           sku: product.sku,
           unitCost: parseFloat(product.cost) || 0,
+          salePrice: parseFloat(product.price) || 0,
           createProduct: false
         };
       }
@@ -286,6 +289,15 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
       if (value) {
         newItems[index].productId = '';
       }
+    } else if (field === 'unitCost') {
+      newItems[index][field] = value;
+      // Sugerir precio de venta solo si aún no se ha establecido manualmente
+      if (newItems[index].salePrice === 0 || !newItems[index].salePriceManuallySet) {
+        newItems[index].salePrice = (parseFloat(value) * 1.3).toFixed(2);
+      }
+    } else if (field === 'salePrice') {
+      newItems[index][field] = value;
+      newItems[index].salePriceManuallySet = true; // Marcar que fue establecido manualmente
     } else if (field.startsWith('productData.')) {
       const dataField = field.split('.')[1];
       newItems[index].productData[dataField] = value;
@@ -408,7 +420,7 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
             category: item.productData.category,
             brand: item.productData.brand,
             unit: item.productData.unit,
-            price: parseFloat(item.unitCost) * 1.3, // 30% markup
+            price: parseFloat(item.salePrice) || (parseFloat(item.unitCost) * 1.3), // Usar precio de venta especificado o calcular 30% markup
             images: item.images || [] // Incluir imágenes del producto
           };
           itemData.productName = item.productData.name;
@@ -417,6 +429,10 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
           itemData.productId = item.productId;
           itemData.productName = item.productName;
           itemData.sku = item.sku;
+          // Incluir precio de venta para actualizar productos existentes si se especificó
+          if (item.salePrice && parseFloat(item.salePrice) > 0) {
+            itemData.salePrice = parseFloat(item.salePrice);
+          }
         }
 
         return itemData;
@@ -914,7 +930,7 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
                       </div>
                     )}
 
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Cantidad <span className="text-red-500">*</span>
@@ -943,7 +959,21 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Total
+                          Precio de Venta <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={item.salePrice}
+                          onChange={(e) => updateItem(index, 'salePrice', e.target.value)}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          min="0"
+                          step="0.01"
+                          placeholder="Auto-calculado con 30% markup"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Total Compra
                         </label>
                         <input
                           type="text"

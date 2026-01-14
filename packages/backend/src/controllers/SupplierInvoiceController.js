@@ -298,6 +298,7 @@ class SupplierInvoiceController {
           sku: item.productData?.sku || item.sku,
           quantity: item.quantity,
           unitCost: item.unitCost,
+          salePrice: item.salePrice, // Incluir precio de venta
           total: item.total || (item.quantity * item.unitCost)
         });
       }
@@ -366,10 +367,17 @@ class SupplierInvoiceController {
         }, { transaction });
 
         // Actualizar stock del producto
-        await product.update({
+        const updateData = {
           currentStock: newStock,
           cost: item.unitCost // Actualizar costo con el último costo de compra
-        }, { transaction });
+        };
+        
+        // Si se proporcionó un precio de venta, actualizarlo también
+        if (item.salePrice && parseFloat(item.salePrice) > 0) {
+          updateData.price = parseFloat(item.salePrice);
+        }
+        
+        await product.update(updateData, { transaction });
 
         console.log(`✅ Stock actualizado: ${product.name} | ${previousStock} → ${newStock} (+${item.quantity})`);
       }
