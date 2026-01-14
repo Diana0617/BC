@@ -451,6 +451,17 @@ class AppointmentController {
       const service = services[0];
       console.log('📊 Total duración:', totalDuration, 'minutos, Total monto:', totalAmount);
 
+      // Validar que la fecha/hora no sea en el pasado
+      const now = new Date();
+      const appointmentStart = new Date(startTime);
+      
+      if (appointmentStart < now) {
+        return res.status(400).json({
+          success: false,
+          error: 'No se pueden crear citas con fecha y hora pasadas'
+        });
+      }
+
       // Calcular endTime si viene duration pero no endTime
       let calculatedEndTime = endTime;
       const effectiveDuration = duration || totalDuration; // Usar la suma de duraciones si no viene duration

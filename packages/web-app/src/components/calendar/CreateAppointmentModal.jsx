@@ -585,6 +585,17 @@ const CreateAppointmentModal = ({
       newErrors.endTime = 'Hora de fin es requerida'
     }
 
+    // Validar que la fecha y hora no sean en el pasado
+    if (formData.date && formData.startTime) {
+      const now = new Date()
+      const appointmentDateTime = new Date(`${formData.date}T${formData.startTime}`)
+      
+      if (appointmentDateTime < now) {
+        newErrors.date = 'No se pueden crear citas con fecha y hora pasadas'
+        newErrors.startTime = 'La hora debe ser futura'
+      }
+    }
+
     if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
       newErrors.endTime = 'Hora de fin debe ser posterior a hora de inicio'
     }
@@ -1103,6 +1114,7 @@ const CreateAppointmentModal = ({
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
+                  min={new Date().toISOString().split('T')[0]}
                   className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                     errors.date ? 'border-red-500' : 'border-gray-300'
                   }`}
