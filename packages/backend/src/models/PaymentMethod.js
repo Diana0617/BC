@@ -45,10 +45,11 @@ const PaymentMethod = sequelize.define('PaymentMethod', {
     type: DataTypes.JSONB,
     allowNull: true,
     comment: 'Información bancaria para transferencias',
-    defaultValue: {},
+    defaultValue: null,
     validate: {
       isValidBankInfo(value) {
-        if (this.type === 'TRANSFER' && value) {
+        // Solo validar si el tipo es TRANSFER y hay valor (no null ni vacío)
+        if (this.type === 'TRANSFER' && value && Object.keys(value).length > 0) {
           const required = ['bankName', 'accountNumber'];
           const missing = required.filter(field => !value[field]);
           if (missing.length > 0) {
@@ -62,10 +63,11 @@ const PaymentMethod = sequelize.define('PaymentMethod', {
     type: DataTypes.JSONB,
     allowNull: true,
     comment: 'Información para pagos QR (Yape, Plin, etc)',
-    defaultValue: {},
+    defaultValue: null,
     validate: {
       isValidQrInfo(value) {
-        if (this.type === 'QR' && value) {
+        // Solo validar si el tipo es QR y hay valor (no null ni vacío)
+        if (this.type === 'QR' && value && Object.keys(value).length > 0) {
           if (!value.phoneNumber && !value.qrImage) {
             throw new Error('Se requiere phoneNumber o qrImage para métodos QR');
           }
@@ -77,7 +79,7 @@ const PaymentMethod = sequelize.define('PaymentMethod', {
     type: DataTypes.JSONB,
     allowNull: true,
     comment: 'Información adicional del método',
-    defaultValue: {}
+    defaultValue: null
   },
   order: {
     type: DataTypes.INTEGER,

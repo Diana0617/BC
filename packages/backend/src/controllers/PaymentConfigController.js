@@ -156,9 +156,9 @@ class PaymentConfigController {
         isActive: true,
         requiresProof: requiresProof || false,
         icon: icon || null,
-        bankInfo: type === 'TRANSFER' ? bankInfo : null,
-        qrInfo: type === 'QR' ? qrInfo : null,
-        metadata: metadata || {},
+        bankInfo: (type === 'TRANSFER' && bankInfo) ? bankInfo : null,
+        qrInfo: (type === 'QR' && qrInfo) ? qrInfo : null,
+        metadata: metadata || null,
         order: order || null
       });
 
