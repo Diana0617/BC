@@ -125,20 +125,19 @@ const CashRegisterShift = sequelize.define('CashRegisterShift', {
 
 }, {
   tableName: 'cash_register_shifts',
-  underscored: true,
   timestamps: true,
   indexes: [
     {
-      fields: ['business_id', 'opened_at']
+      fields: ['businessId', 'openedAt']
     },
     {
-      fields: ['user_id', 'status']
+      fields: ['userId', 'status']
     },
     {
-      fields: ['branch_id', 'opened_at']
+      fields: ['branchId', 'openedAt']
     },
     {
-      fields: ['status', 'opened_at']
+      fields: ['status', 'openedAt']
     }
   ]
 });
