@@ -559,7 +559,9 @@ class AuthController {
           city: user.business.city,
           state: user.business.state,
           country: user.business.country,
-          currentPlan: user.business.currentPlan
+          currentPlan: user.business.currentPlan,
+          isLifetime: user.business.isLifetime,
+          bypassSubscriptionChecks: user.business.bypassSubscriptionChecks
         } : null,
         branches: req.user?.branches || []
       };

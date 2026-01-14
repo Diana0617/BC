@@ -174,6 +174,9 @@ const SubscriptionSection = ({ isSetupMode }) => {
     )
   }
 
+  // 🔑 Verificar si el negocio tiene acceso LIFETIME
+  const hasLifetimeAccess = business?.isLifetime || business?.bypassSubscriptionChecks;
+
   return (
     <div className="space-y-6">
       {/* Header with Status Badge */}
@@ -183,13 +186,32 @@ const SubscriptionSection = ({ isSetupMode }) => {
         </h2>
         <SubscriptionStatusBadge 
           subscription={effectiveSubscription}
+          business={business}
           compact={false}
           showDetails={true}
         />
       </div>
 
-      {/* Alerta para suscripciones suspendidas o vencidas */}
-      {(effectiveSubscription?.status === 'SUSPENDED' || effectiveSubscription?.status === 'OVERDUE') && (
+      {/* Alerta LIFETIME para negocios de desarrollo */}
+      {hasLifetimeAccess && (
+        <div className="bg-purple-50 border-l-4 border-purple-600 rounded-lg p-4">
+          <div className="flex items-start">
+            <InformationCircleIcon className="h-6 w-6 text-purple-600 mr-3 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-purple-900 mb-1">
+                🌟 Acceso LIFETIME - Desarrollo
+              </h3>
+              <p className="text-purple-800">
+                Este negocio tiene acceso ilimitado sin restricciones. 
+                Ideal para desarrollo, testing o demostraciones.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alerta para suscripciones suspendidas o vencidas (solo si NO es LIFETIME) */}
+      {!hasLifetimeAccess && (effectiveSubscription?.status === 'SUSPENDED' || effectiveSubscription?.status === 'OVERDUE') && (
         <div className="bg-red-50 border-l-4 border-red-600 rounded-lg p-4">
           <div className="flex items-start">
             <ExclamationTriangleIcon className="h-6 w-6 text-red-600 mr-3 mt-0.5 flex-shrink-0" />

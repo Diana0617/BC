@@ -12,11 +12,15 @@ import {
  * Componente para mostrar el estado de suscripción con distinción clara entre Trial y Pago
  * 
  * @param {Object} subscription - Objeto de suscripción
+ * @param {Object} business - Objeto de negocio (para verificar LIFETIME)
  * @param {boolean} compact - Mostrar versión compacta
  * @param {boolean} showDetails - Mostrar detalles adicionales (fechas, días restantes)
  */
-const SubscriptionStatusBadge = ({ subscription, compact = false, showDetails = true }) => {
-  if (!subscription) {
+const SubscriptionStatusBadge = ({ subscription, business, compact = false, showDetails = true }) => {
+  // 🔑 Verificar si el negocio tiene acceso LIFETIME
+  const hasLifetimeAccess = business?.isLifetime || business?.bypassSubscriptionChecks;
+
+  if (!subscription && !hasLifetimeAccess) {
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
         <XCircleIcon className="w-4 h-4" />
@@ -48,6 +52,21 @@ const SubscriptionStatusBadge = ({ subscription, compact = false, showDetails = 
   };
 
   const getStatusConfig = () => {
+    // 🌟 LIFETIME - Acceso ilimitado para desarrollo/testing
+    if (hasLifetimeAccess) {
+      return {
+        label: 'LIFETIME - Desarrollo',
+        sublabel: 'Acceso Ilimitado',
+        color: 'bg-purple-100 text-purple-800 border-purple-300',
+        icon: ShieldCheckIcon,
+        iconColor: 'text-purple-600',
+        details: {
+          message: 'Este negocio tiene acceso ilimitado sin restricciones',
+          type: 'info'
+        }
+      };
+    }
+
     const status = subscription.status;
 
     // TRIAL - Trial activo esperando primer pago
