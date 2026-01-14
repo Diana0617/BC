@@ -34,13 +34,11 @@ const Sale = sequelize.define('Sale', {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
-    field: 'sale_number',
     comment: 'Número único de venta: VENTA-TIMESTAMP'
   },
   userId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'user_id',
     references: {
       model: 'users',
       key: 'id'
@@ -50,7 +48,6 @@ const Sale = sequelize.define('Sale', {
   clientId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'client_id',
     references: {
       model: 'clients',
       key: 'id'
@@ -60,7 +57,6 @@ const Sale = sequelize.define('Sale', {
   shiftId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'shift_id',
     references: {
       model: 'cash_register_shifts',
       key: 'id'
@@ -89,13 +85,11 @@ const Sale = sequelize.define('Sale', {
     type: DataTypes.ENUM('PERCENTAGE', 'FIXED', 'NONE'),
     allowNull: false,
     defaultValue: 'NONE',
-    field: 'discount_type',
     comment: 'Tipo de descuento: porcentaje o monto fijo'
   },
   discountValue: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
-    field: 'discount_value',
     comment: 'Valor del descuento (% o monto) antes de calcular'
   },
   tax: {
@@ -111,7 +105,6 @@ const Sale = sequelize.define('Sale', {
     type: DataTypes.DECIMAL(5, 2),
     allowNull: false,
     defaultValue: 0,
-    field: 'tax_percentage',
     comment: 'Porcentaje de impuesto aplicado (ej: 0, 5, 19)'
   },
   total: {
@@ -126,7 +119,6 @@ const Sale = sequelize.define('Sale', {
   paymentMethod: {
     type: DataTypes.ENUM('CASH', 'CARD', 'TRANSFER', 'MIXED', 'OTHER'),
     allowNull: false,
-    field: 'payment_method',
     defaultValue: 'CASH',
     comment: 'Método de pago utilizado'
   },
@@ -134,14 +126,12 @@ const Sale = sequelize.define('Sale', {
     type: DataTypes.JSONB,
     allowNull: true,
     defaultValue: {},
-    field: 'payment_details',
     comment: 'Detalles del pago (si es mixto, referencia de transferencia, etc.)'
   },
   paidAmount: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
     defaultValue: 0,
-    field: 'paid_amount',
     validate: {
       min: 0
     },
@@ -151,7 +141,6 @@ const Sale = sequelize.define('Sale', {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
     defaultValue: 0,
-    field: 'change_amount',
     validate: {
       min: 0
     },
@@ -165,13 +154,11 @@ const Sale = sequelize.define('Sale', {
   },
   cancelledAt: {
     type: DataTypes.DATE,
-    allowNull: true,
-    field: 'cancelled_at'
+    allowNull: true
   },
   cancelledBy: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'cancelled_by',
     references: {
       model: 'users',
       key: 'id'
@@ -179,18 +166,15 @@ const Sale = sequelize.define('Sale', {
   },
   cancellationReason: {
     type: DataTypes.TEXT,
-    allowNull: true,
-    field: 'cancellation_reason'
+    allowNull: true
   },
   refundedAt: {
     type: DataTypes.DATE,
-    allowNull: true,
-    field: 'refunded_at'
+    allowNull: true
   },
   refundedBy: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'refunded_by',
     references: {
       model: 'users',
       key: 'id'
@@ -198,8 +182,7 @@ const Sale = sequelize.define('Sale', {
   },
   refundReason: {
     type: DataTypes.TEXT,
-    allowNull: true,
-    field: 'refund_reason'
+    allowNull: true
   },
   notes: {
     type: DataTypes.TEXT,
@@ -209,7 +192,6 @@ const Sale = sequelize.define('Sale', {
   receiptId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'receipt_id',
     references: {
       model: 'receipts',
       key: 'id'

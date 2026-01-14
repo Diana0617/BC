@@ -15,7 +15,6 @@ const SaleItem = sequelize.define('SaleItem', {
   saleId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'sale_id',
     references: {
       model: 'sales',
       key: 'id'
@@ -25,7 +24,6 @@ const SaleItem = sequelize.define('SaleItem', {
   productId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'product_id',
     references: {
       model: 'products',
       key: 'id'
@@ -42,7 +40,6 @@ const SaleItem = sequelize.define('SaleItem', {
   unitPrice: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
-    field: 'unit_price',
     validate: {
       min: 0
     },
@@ -51,7 +48,6 @@ const SaleItem = sequelize.define('SaleItem', {
   unitCost: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
-    field: 'unit_cost',
     validate: {
       min: 0
     },
@@ -78,13 +74,11 @@ const SaleItem = sequelize.define('SaleItem', {
   discountType: {
     type: DataTypes.ENUM('PERCENTAGE', 'FIXED', 'NONE'),
     allowNull: false,
-    defaultValue: 'NONE',
-    field: 'discount_type'
+    defaultValue: 'NONE'
   },
   discountValue: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
-    field: 'discount_value',
     comment: 'Valor original del descuento antes de calcular'
   },
   tax: {
@@ -100,7 +94,6 @@ const SaleItem = sequelize.define('SaleItem', {
     type: DataTypes.DECIMAL(5, 2),
     allowNull: false,
     defaultValue: 0,
-    field: 'tax_percentage',
     comment: 'Porcentaje de impuesto del producto al momento de venta'
   },
   total: {
@@ -123,7 +116,6 @@ const SaleItem = sequelize.define('SaleItem', {
   inventoryMovementId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'inventory_movement_id',
     references: {
       model: 'inventory_movements',
       key: 'id'
