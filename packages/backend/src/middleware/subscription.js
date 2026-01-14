@@ -142,6 +142,18 @@ const requireBasicAccess = async (req, res, next) => {
       return next();
     }
 
+    // 🔑 Verificar acceso ilimitado (LIFETIME)
+    if (await hasUnlimitedAccess(req.user.businessId)) {
+      req.hasUnlimitedAccess = true;
+      req.subscriptionStatus = {
+        status: 'LIFETIME',
+        access: true,
+        level: 'UNLIMITED',
+        message: 'Acceso ilimitado - Cuenta de desarrollo'
+      };
+      return next();
+    }
+
     const statusInfo = await SubscriptionStatusService.checkBusinessSubscription(req.user.businessId);
 
     if (statusInfo.status === 'SUSPENDED') {
@@ -176,6 +188,20 @@ const addSubscriptionInfo = async (req, res, next) => {
   try {
     // Solo aplica a usuarios con businessId (no OWNER)
     if (!req.user.businessId || req.user.role === 'OWNER') {
+      return next();
+    }
+
+    // 🔑 Verificar acceso ilimitado (LIFETIME)
+    if (await hasUnlimitedAccess(req.user.businessId)) {
+      req.hasUnlimitedAccess = true;
+      req.subscriptionStatus = {
+        status: 'LIFETIME',
+        access: true,
+        level: 'UNLIMITED',
+        message: 'Acceso ilimitado - Cuenta de desarrollo'
+      };
+      res.set('X-Subscription-Status', 'LIFETIME');
+      res.set('X-Access-Level', 'UNLIMITED');
       return next();
     }
 
