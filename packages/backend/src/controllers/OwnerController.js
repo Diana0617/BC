@@ -10,6 +10,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Business = require('../models/Business');
 const User = require('../models/User');
+const Branch = require('../models/Branch');
+const UserBranch = require('../models/UserBranch');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 const BusinessSubscription = require('../models/BusinessSubscription');
 const SubscriptionPayment = require('../models/SubscriptionPayment');
@@ -359,6 +361,30 @@ class OwnerController {
       // Actualizar el usuario con el businessId
       await owner.update({ businessId: business.id });
       console.log('👤 Usuario actualizado con businessId');
+
+      // 🏢 Crear la sucursal principal por defecto
+      console.log('🏢 Creando sucursal principal por defecto...');
+      const mainBranch = await Branch.create({
+        businessId: business.id,
+        name: businessName, // Usar el nombre del negocio
+        code: 'MAIN',
+        address: address || 'Sin dirección',
+        city: city || 'Sin ciudad',
+        country: country || 'Colombia',
+        phone: businessPhone || null,
+        email: businessEmail || null,
+        isActive: true,
+        isMainBranch: true
+      });
+      console.log('🏢 Sucursal principal creada:', mainBranch.id);
+
+      // Asignar la sucursal al usuario owner
+      await UserBranch.create({
+        userId: owner.id,
+        branchId: mainBranch.id,
+        isMainBranch: true
+      });
+      console.log('👤 Usuario asignado a sucursal principal');
 
       // Crear la suscripción
       console.log('📝 Creando suscripción con datos:', {
