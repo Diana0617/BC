@@ -24,8 +24,7 @@ const WhatsAppToken = sequelize.define('WhatsAppToken', {
       key: 'id'
     },
     onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-    field: 'business_id'
+    onDelete: 'CASCADE'
   },
   encryptedToken: {
     type: DataTypes.TEXT,

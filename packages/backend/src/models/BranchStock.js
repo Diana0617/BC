@@ -15,7 +15,6 @@ const BranchStock = sequelize.define('BranchStock', {
   businessId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'business_id',
     references: {
       model: 'businesses',
       key: 'id'
@@ -25,7 +24,6 @@ const BranchStock = sequelize.define('BranchStock', {
   branchId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'branch_id',
     references: {
       model: 'branches',
       key: 'id'
@@ -35,7 +33,6 @@ const BranchStock = sequelize.define('BranchStock', {
   productId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'product_id',
     references: {
       model: 'products',
       key: 'id'

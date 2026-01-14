@@ -146,3 +146,10 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 packages/business-control-mobile/builds/*.apk
 packages/business-control-mobile/builds/*.aab
+
+# Azure connection guides with credentials
+AZURE_POSTGRES_CONNECTION_GUIDE.md
+azure_production_migration.sql
+normalize_*.sql
+cleanup_*.sql
+schema_columns.txt

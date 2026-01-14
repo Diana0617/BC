@@ -21,7 +21,6 @@ const UserBusinessPermission = sequelize.define('UserBusinessPermission', {
   businessId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'business_id',
     references: {
       model: 'businesses',
       key: 'id'

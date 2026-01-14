@@ -20,8 +20,7 @@ const WhatsAppWebhookEvent = sequelize.define('WhatsAppWebhookEvent', {
     references: {
       model: 'businesses',
       key: 'id'
-    },
-    field: 'business_id'
+    }
   },
   eventType: {
     type: DataTypes.STRING(50),

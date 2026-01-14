@@ -20,8 +20,7 @@ const WhatsAppMessage = sequelize.define('WhatsAppMessage', {
     references: {
       model: 'businesses',
       key: 'id'
-    },
-    field: 'business_id'
+    }
   },
   clientId: {
     type: DataTypes.UUID,

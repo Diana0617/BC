@@ -20,8 +20,7 @@ const WhatsAppMessageTemplate = sequelize.define('WhatsAppMessageTemplate', {
     references: {
       model: 'businesses',
       key: 'id'
-    },
-    field: 'business_id'
+    }
   },
   templateName: {
     type: DataTypes.STRING(100),

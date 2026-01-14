@@ -10,7 +10,6 @@ const Client = sequelize.define('Client', {
   businessId: {
     type: DataTypes.UUID,
     allowNull: true, // Permitir NULL temporalmente para clientes existentes
-    field: 'business_id', // 🔑 CRÍTICO: Mapear a snake_case en DB
     references: {
       model: 'businesses',
       key: 'id'

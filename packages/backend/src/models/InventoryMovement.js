@@ -100,7 +100,6 @@ const InventoryMovement = sequelize.define('InventoryMovement', {
   branchId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'branch_id',
     references: {
       model: 'branches',
       key: 'id'
@@ -110,7 +109,6 @@ const InventoryMovement = sequelize.define('InventoryMovement', {
   specialistId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'specialist_id',
     references: {
       model: 'users',
       key: 'id'

@@ -10,7 +10,6 @@ const SupplierInvoicePayment = sequelize.define('SupplierInvoicePayment', {
   invoiceId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'invoice_id',
     references: {
       model: 'supplier_invoices',
       key: 'id'

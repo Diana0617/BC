@@ -30,7 +30,6 @@ const BusinessWompiPaymentConfig = sequelize.define('BusinessWompiPaymentConfig'
     type: DataTypes.UUID,
     allowNull: false,
     unique: true,
-    field: 'business_id',
     references: {
       model: 'businesses',
       key: 'id'

@@ -15,7 +15,6 @@ const ProcedureSupply = sequelize.define('ProcedureSupply', {
   businessId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'business_id',
     references: {
       model: 'businesses',
       key: 'id'
@@ -25,7 +24,6 @@ const ProcedureSupply = sequelize.define('ProcedureSupply', {
   branchId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'branch_id',
     references: {
       model: 'branches',
       key: 'id'
