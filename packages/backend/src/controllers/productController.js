@@ -57,6 +57,7 @@ class ProductController {
 
       // Agregar stock por sucursal
       try {
+        console.log('📊 [ProductController] Aggregating branch stock for businessId:', businessId);
         const BranchStock = require('../models/BranchStock');
         // Usar raw:true para obtener resultados planos y nombres de columnas explícitos
         const branchSums = await BranchStock.findAll({
@@ -68,6 +69,7 @@ class ProductController {
           group: [sequelize.col('productId')],
           raw: true
         });
+        console.log('✅ [ProductController] Branch stock aggregated successfully:', branchSums.length, 'products');
 
         const stockMap = {};
         branchSums.forEach(bs => {

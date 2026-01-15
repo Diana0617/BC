@@ -286,18 +286,24 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
     }
   }, [calendarAppointments])
 
-  // Cargar especialistas de la sucursal seleccionada
+  // Cargar especialistas de la sucursal seleccionada (o todos si no hay sucursal)
   const loadSpecialists = useCallback(async () => {
     const businessId = currentBusiness?.id || user?.businessId;
     
-    if (!businessId || !selectedBranch?.id) return
+    if (!businessId) return
 
     try {
-      console.log('👨‍⚕️ Cargando especialistas de la sucursal:', selectedBranch.name)
-      const response = await businessSpecialistsApi.getSpecialists(businessId, {
-        branchId: selectedBranch.id,
-        isActive: true
-      })
+      const params = { isActive: true };
+      
+      // Si hay sucursal seleccionada, filtrar por sucursal
+      if (selectedBranch?.id) {
+        console.log('👨‍⚕️ Cargando especialistas de la sucursal:', selectedBranch.name)
+        params.branchId = selectedBranch.id;
+      } else {
+        console.log('👨‍⚕️ Cargando todos los especialistas del negocio')
+      }
+      
+      const response = await businessSpecialistsApi.getSpecialists(businessId, params)
       
       const specialistsList = response.data?.specialists || response.data || []
       console.log('✅ Especialistas cargados:', specialistsList.length)
@@ -348,9 +354,9 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   }, [loadAppointments])
 
   useEffect(() => {
-    if (selectedBranch?.id) {
-      loadSpecialists()
-    }
+    // Cargar especialistas siempre que haya un businessId
+    // Si hay sucursal, carga de esa sucursal; si no, carga todos
+    loadSpecialists()
   }, [selectedBranch, loadSpecialists])
 
   useEffect(() => {

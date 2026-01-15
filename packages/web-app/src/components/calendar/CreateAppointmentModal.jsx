@@ -930,6 +930,7 @@ const CreateAppointmentModal = ({
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Especialista *
                   </label>
+                  {console.log('👨‍⚕️ [CreateAppointmentModal] Specialists available:', specialists?.length, specialists)}
                   <select
                     name="specialistId"
                     value={formData.specialistId}
@@ -941,11 +942,14 @@ const CreateAppointmentModal = ({
                     <option value="">Seleccionar especialista</option>
                     {specialists
                       .filter(specialist => specialist.isActive !== false && specialist.status !== 'INACTIVE')
-                      .map(specialist => (
-                        <option key={specialist.id} value={specialist.id}>
-                          {specialist.firstName} {specialist.lastName}
-                        </option>
-                      ))}
+                      .map(specialist => {
+                        console.log('👤 Specialist:', specialist);
+                        return (
+                          <option key={specialist.id} value={specialist.id}>
+                            {specialist.firstName} {specialist.lastName}
+                          </option>
+                        )
+                      })}
                   </select>
                   {errors.specialistId && (
                     <p className="text-red-500 text-xs mt-1">{errors.specialistId}</p>
