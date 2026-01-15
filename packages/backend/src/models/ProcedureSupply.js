@@ -33,7 +33,6 @@ const ProcedureSupply = sequelize.define('ProcedureSupply', {
   appointmentId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'appointment_id',
     references: {
       model: 'appointments',
       key: 'id'
@@ -43,7 +42,6 @@ const ProcedureSupply = sequelize.define('ProcedureSupply', {
   shiftId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'shift_id',
     references: {
       model: 'cash_register_shifts',
       key: 'id'
@@ -53,7 +51,6 @@ const ProcedureSupply = sequelize.define('ProcedureSupply', {
   specialistId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'specialist_id',
     references: {
       model: 'users',
       key: 'id'
@@ -63,7 +60,6 @@ const ProcedureSupply = sequelize.define('ProcedureSupply', {
   productId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'product_id',
     references: {
       model: 'products',
       key: 'id'
