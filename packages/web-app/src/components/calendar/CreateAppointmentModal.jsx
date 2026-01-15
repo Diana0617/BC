@@ -14,6 +14,7 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline'
 import { fetchProducts } from '@shared/store/slices/productsSlice'
+import { apiClient } from '@shared/api/client'
 import ProductSelector from '../sales/ProductSelector'
 
 /**
