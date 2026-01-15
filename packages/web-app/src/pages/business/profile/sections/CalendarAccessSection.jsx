@@ -56,7 +56,7 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   } = useAppointmentCalendar()
 
   // Estado para las tabs
-  const [activeTab, setActiveTab] = useState('horarios') // 'horarios', 'turnos', 'acceso'
+  const [activeTab, setActiveTab] = useState('turnos') // 'horarios', 'turnos', 'acceso'
   
   // Estado para el calendario
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -176,14 +176,8 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
       
       setBranches(branchesData)
       
-      // Si hay al menos una sucursal, seleccionar la primera automáticamente
-      if (branchesData.length > 0) {
-        console.log('🎯 Seleccionando automáticamente la primera sucursal:', branchesData[0])
-        const firstBranch = branchesData[0]
-        setSelectedBranch(firstBranch)
-        // Cargar inmediatamente su horario
-        setTimeout(() => loadBranchSchedule(firstBranch), 100)
-      }
+      // No seleccionar ninguna sucursal por defecto para mostrar todas las citas
+      console.log('📋 Sucursales cargadas, mostrando vista de todas las sucursales')
     } catch (error) {
       console.error('❌ Error cargando sucursales:', error)
       // Solo mostrar toast si es un error real (no de conexión)
@@ -257,7 +251,7 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
     console.log('📅 Cargando citas para:', {
       businessId: businessId,
-      branchId: selectedBranch?.id,
+      branchId: selectedBranch?.id || 'todas',
       month: currentMonth
     })
 
@@ -265,12 +259,18 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
       const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
       const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
       
-      await getByDateRange({
+      const params = {
         businessId: businessId,
-        branchId: selectedBranch?.id,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString()
-      })
+      }
+      
+      // Solo agregar branchId si hay una sucursal seleccionada
+      if (selectedBranch?.id) {
+        params.branchId = selectedBranch.id
+      }
+      
+      await getByDateRange(params)
     } catch (error) {
       console.error('Error cargando citas:', error)
     }
@@ -586,9 +586,38 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Sucursal:
+          Filtrar por sucursal:
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* Opción: Todas las sucursales */}
+          <button
+            onClick={() => setSelectedBranch(null)}
+            className={`${
+              selectedBranch === null
+                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-2 border-blue-600'
+                : 'bg-white border-2 border-gray-200 hover:border-gray-300'
+            } p-4 rounded-lg transition-all duration-200 text-left`}
+          >
+            <div className="flex items-center">
+              <BuildingOfficeIcon className={`h-5 w-5 mr-2 ${
+                selectedBranch === null ? 'text-white' : 'text-gray-500'
+              }`} />
+              <div>
+                <div className={`font-medium ${
+                  selectedBranch === null ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Todas las sucursales
+                </div>
+                <div className={`text-xs ${
+                  selectedBranch === null ? 'text-blue-100' : 'text-gray-500'
+                }`}>
+                  {branches.length} sucursal{branches.length !== 1 ? 'es' : ''}
+                </div>
+              </div>
+            </div>
+          </button>
+          
+          {/* Sucursales individuales */}
           {branches.map((branch, index) => (
             <button
               key={branch.id}
@@ -807,7 +836,7 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 })
                 setShowCreateModal(true)
               }}
-              disabled={!selectedBranch}
+              disabled={branches.length === 0}
               className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               <PlusIcon className="h-5 w-5" />
@@ -845,6 +874,9 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
             <FullCalendarView
               appointments={calendarAppointments}
               initialDate={currentMonth}
+              branches={branches}
+              branchColors={branchColors}
+              showAllBranches={selectedBranch === null}
               onEventClick={(eventData) => {
                 console.log('🖱️ Click en evento del calendario:', eventData)
                 const appointment = eventData.extendedProps?.appointment || eventData.appointment
@@ -874,11 +906,32 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
               height="650px"
             />
             
-            {/* Contador de citas */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-700">
-                📅 {calendarAppointments.length} cita{calendarAppointments.length !== 1 ? 's' : ''} encontrada{calendarAppointments.length !== 1 ? 's' : ''} en este período
-              </p>
+            {/* Contador de citas y leyenda de colores */}
+            <div className="space-y-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700">
+                  📅 {calendarAppointments.length} cita{calendarAppointments.length !== 1 ? 's' : ''} encontrada{calendarAppointments.length !== 1 ? 's' : ''} en este período
+                  {selectedBranch && ` en ${selectedBranch.name}`}
+                </p>
+              </div>
+              
+              {/* Leyenda de colores cuando se muestran todas las sucursales */}
+              {!selectedBranch && branches.length > 1 && (
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                    <BuildingOfficeIcon className="h-4 w-4 mr-2" />
+                    Leyenda de sucursales:
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {branches.map((branch, index) => (
+                      <div key={branch.id} className="flex items-center space-x-2">
+                        <div className={`w-3 h-3 rounded-full ${branchColors[index % branchColors.length].bg} ${branchColors[index % branchColors.length].border} border`}></div>
+                        <span className="text-xs text-gray-700 truncate">{branch.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -888,7 +941,10 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
               <CalendarDaysIcon className="h-16 w-16 mx-auto mb-4 text-gray-400" />
               <p className="text-lg font-medium">No hay citas programadas</p>
               <p className="text-sm mt-2">
-                Selecciona una sucursal y un rango de fechas para ver las citas
+                {selectedBranch 
+                  ? `No hay citas en ${selectedBranch.name} para este período`
+                  : 'No hay citas programadas en ninguna sucursal para este período'
+                }
               </p>
             </div>
           </div>

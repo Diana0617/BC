@@ -14,6 +14,9 @@ import esLocale from '@fullcalendar/core/locales/es'
  * @param {Function} onEventClick - Callback cuando se hace click en un evento
  * @param {Function} onDateSelect - Callback cuando se selecciona un rango de fechas
  * @param {Date} initialDate - Fecha inicial del calendario
+ * @param {Array} branches - Array de sucursales (opcional, para colorear por sucursal)
+ * @param {Array} branchColors - Array de colores Tailwind para sucursales
+ * @param {Boolean} showAllBranches - Si true, colorea eventos por sucursal en lugar de por estado
  */
 const FullCalendarView = ({
   appointments = [],
@@ -21,7 +24,10 @@ const FullCalendarView = ({
   onEventClick,
   onDateSelect,
   initialDate = new Date(),
-  height = 'auto'
+  height = 'auto',
+  branches = [],
+  branchColors = [],
+  showAllBranches = false
 }) => {
   
   // Colores por estado de cita
@@ -38,6 +44,29 @@ const FullCalendarView = ({
     return colors[status] || '#9E9E9E'
   }
   
+  // Obtener color de la sucursal (convierte Tailwind a hex)
+  const getBranchColor = (branchId) => {
+    if (!showAllBranches || !branches.length || !branchId) return null;
+    
+    const branchIndex = branches.findIndex(b => b.id === branchId);
+    if (branchIndex === -1) return null;
+    
+    const colorSet = branchColors[branchIndex % branchColors.length];
+    
+    // Mapeo de colores Tailwind a hex
+    const tailwindToHex = {
+      'bg-blue-100': '#DBEAFE', 'text-blue-800': '#1E40AF',
+      'bg-green-100': '#D1FAE5', 'text-green-800': '#065F46',
+      'bg-purple-100': '#EDE9FE', 'text-purple-800': '#5B21B6',
+      'bg-red-100': '#FEE2E2', 'text-red-800': '#991B1B',
+      'bg-yellow-100': '#FEF3C7', 'text-yellow-800': '#92400E',
+      'bg-indigo-100': '#E0E7FF', 'text-indigo-800': '#3730A3'
+    };
+    
+    // Usar el color de texto (más oscuro) para mejor visibilidad
+    return tailwindToHex[colorSet.text] || '#4B5563';
+  };
+  
   // Transformar appointments al formato de FullCalendar
   const events = useMemo(() => {
     return appointments.map(appointment => {
@@ -50,9 +79,18 @@ const FullCalendarView = ({
         : appointment.clientName || 'Cliente';
       
       const serviceName = appointment.service?.name || appointment.serviceName || 'Servicio';
+      const branchName = appointment.branch?.name || appointment.branchName || 'N/A';
+      const branchId = appointment.branch?.id || appointment.branchId;
       
-      // Usar el color del perfil del especialista, o color por defecto según estado
-      const eventColor = appointment.specialist?.specialistProfile?.profileColor || getStatusColor(appointment.status);
+      // Determinar color del evento
+      let eventColor;
+      if (showAllBranches && branchId) {
+        // Si estamos mostrando todas las sucursales, usar color de sucursal
+        eventColor = getBranchColor(branchId) || getStatusColor(appointment.status);
+      } else {
+        // Si no, usar color del perfil del especialista o color por estado
+        eventColor = appointment.specialist?.specialistProfile?.profileColor || getStatusColor(appointment.status);
+      }
       
       return {
         id: appointment.id,
@@ -72,14 +110,15 @@ const FullCalendarView = ({
           serviceDuration: appointment.service?.duration,
           totalAmount: appointment.totalAmount,
           status: appointment.status,
-          branchName: appointment.branch?.name || appointment.branchName,
+          branchName: branchName,
+          branchId: branchId,
           notes: appointment.notes,
           // Datos adicionales para el detalle
           appointment: appointment
         }
       };
     })
-  }, [appointments])
+  }, [appointments, showAllBranches, branches, branchColors])
 
   // Handler para click en evento
   const handleEventClick = (info) => {
@@ -182,6 +221,11 @@ const FullCalendarView = ({
               <div className="text-xs truncate opacity-90">
                 👤 {props.specialistName}
               </div>
+              {showAllBranches && props.branchName && (
+                <div className="text-xs truncate opacity-90 font-medium">
+                  🏪 {props.branchName}
+                </div>
+              )}
               <div className="text-xs truncate opacity-80">
                 {props.serviceName}
               </div>
@@ -199,7 +243,8 @@ Servicio: ${props.serviceName}
 Duración: ${props.serviceDuration || 'N/A'} min
 Precio: $${props.totalAmount || props.servicePrice || 'N/A'}
 Estado: ${props.status}
-${props.notes ? '\nNotas: ' + props.notes : ''}
+${props.branchName ? 'Sucursal: ' + props.branchName : ''}
+${props.notes ? 'Notas: ' + props.notes : ''}
           `.trim();
         }}
       />
