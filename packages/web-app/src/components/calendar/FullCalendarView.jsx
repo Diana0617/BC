@@ -112,6 +112,7 @@ const FullCalendarView = ({
           status: appointment.status,
           branchName: branchName,
           branchId: branchId,
+          branchColor: eventColor,
           notes: appointment.notes,
           showBranchIndicator: showAllBranches,
           // Datos adicionales para el detalle
@@ -264,10 +265,16 @@ const FullCalendarView = ({
           
           // Vista de mes - versión compacta con indicador de sucursal
           return (
-            <div className="fc-event-custom px-1 cursor-pointer hover:opacity-90 transition-opacity">
-              <div className="text-xs truncate">
+            <div className="fc-event-custom px-1 py-0.5 cursor-pointer hover:opacity-90 transition-opacity">
+              <div 
+                className="text-xs font-semibold truncate"
+                style={{ 
+                  color: props.showBranchIndicator && props.branchColor ? props.branchColor : 'white',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                }}
+              >
                 {props.showBranchIndicator && props.branchName && (
-                  <span className="font-semibold mr-1">🏪</span>
+                  <span className="mr-1">●</span>
                 )}
                 {props.clientName} - {props.serviceName}
               </div>
@@ -354,10 +361,16 @@ ${props.notes ? 'Notas: ' + props.notes : ''}
           border-radius: 0.25rem;
           border-left-width: 4px;
           cursor: pointer;
+          background-color: rgba(255, 255, 255, 0.95) !important;
+          border: 2px solid currentColor !important;
         }
         
         .fc-event:hover {
-          opacity: 0.8;
+          opacity: 0.85;
+        }
+        
+        .fc-daygrid-event {
+          padding: 2px 4px;
         }
         
         .fc-event-custom {
