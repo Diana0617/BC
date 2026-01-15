@@ -218,6 +218,15 @@ class AppointmentController {
             as: 'branch',
             attributes: ['id', 'name', 'code', 'address'],
             required: false
+          },
+          {
+            model: Service,
+            as: 'services', // Todos los servicios asociados
+            through: { 
+              attributes: ['price', 'duration', 'order'],
+              as: 'appointmentService'
+            },
+            attributes: ['id', 'name', 'description', 'duration', 'price', 'category']
           }
         ]
       });

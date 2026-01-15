@@ -1138,11 +1138,24 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
               clientPhone: data.clientPhone,
               clientEmail: data.clientEmail,
               specialistId: data.specialistId,
-              serviceId: data.serviceId,
               branchId: data.branchId,
               startTime: `${data.date}T${data.startTime}:00`,
               endTime: `${data.date}T${data.endTime}:00`,
               notes: data.notes || ''
+            }
+
+            // Manejar múltiples servicios o servicio único
+            if (data.serviceIds && data.serviceIds.length > 0) {
+              // Si hay múltiples servicios, enviarlos como array
+              appointmentData.serviceIds = data.serviceIds
+            } else if (data.serviceId) {
+              // Si solo hay un serviceId (backward compatibility), convertirlo a array
+              appointmentData.serviceIds = [data.serviceId]
+            }
+
+            // Agregar productos si los hay
+            if (data.productsSold && data.productsSold.length > 0) {
+              appointmentData.productsSold = data.productsSold
             }
 
             console.log('📝 Creando cita con datos:', appointmentData)
