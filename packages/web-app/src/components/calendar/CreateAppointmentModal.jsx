@@ -180,28 +180,32 @@ const CreateAppointmentModal = ({
     try {
       setLoadingSpecialistServices(true)
       
-      const response = await fetch(
-        `/api/business/${businessId}/specialists/${specialistId}/services`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+      console.log('📞 [WEB] Calling specialist services API:', `/api/business/${businessId}/specialists/${specialistId}/services`)
+      
+      const response = await apiClient.get(
+        `/api/business/${businessId}/specialists/${specialistId}/services`
       )
 
-      if (response.ok) {
-        const data = await response.json()
-        console.log('🔧 [WEB] Specialist services loaded:', data.data?.length || 0)
-        console.log('🔧 [WEB] First service structure:', data.data?.[0])
-        
+      console.log('✅ [WEB] Specialist services response:', response.data)
+      console.log('🔧 [WEB] Specialist services loaded:', response.data.data?.length || 0)
+      
+      if (response.data.data && Array.isArray(response.data.data)) {
         // Filtrar solo servicios activos
-        const activeServices = (data.data || []).filter(ss => ss.isActive)
+        const activeServices = response.data.data.filter(ss => ss.isActive)
+        
+        console.log('📋 [WEB] Active services:', activeServices.length)
+        console.log('📋 [WEB] First service structure:', activeServices[0])
+        
+        if (activeServices.length === 0) {
+          console.warn('⚠️ [WEB] No services assigned to this specialist')
+          setFilteredServices([])
+          return
+        }
         
         // Mapear a formato compatible con el dropdown de servicios
         // El backend retorna la relación con el objeto 'service' anidado
         const mappedServices = activeServices.map(ss => ({
-          id: ss.serviceId,
+          id: ss.serviceId || ss.id,
           name: ss.service?.name || ss.serviceName || ss.name || 'Servicio sin nombre',
           duration: ss.service?.duration || ss.duration,
           price: ss.customPrice !== null && ss.customPrice !== undefined 
@@ -209,20 +213,34 @@ const CreateAppointmentModal = ({
             : (ss.service?.price || ss.price)
         }))
         
+        console.log('✅ [WEB] Mapped services:', mappedServices.length, mappedServices)
         setFilteredServices(mappedServices)
         
         // Si el servicio actualmente seleccionado no está en la lista, limpiarlo
         if (formData.serviceId && !mappedServices.find(s => s.id === formData.serviceId)) {
           setFormData(prev => ({ ...prev, serviceId: '' }))
         }
+      } else {
+        console.warn('⚠️ [WEB] No services data in response')
+        setFilteredServices([])
       }
     } catch (error) {
       console.error('❌ [WEB] Error loading specialist services:', error)
-      setFilteredServices(services) // Fallback a todos los servicios
+      console.error('❌ [WEB] Error details:', error.response?.data || error.message)
+      
+      // Si hay error 404, significa que el especialista no tiene servicios asignados
+      if (error.response?.status === 404) {
+        console.warn('⚠️ [WEB] Specialist not found or has no services')
+        setFilteredServices([])
+      } else {
+        // Para otros errores, mostrar todos los servicios como fallback
+        console.log('⚠️ [WEB] Falling back to all services')
+        setFilteredServices(services)
+      }
     } finally {
       setLoadingSpecialistServices(false)
     }
-  }, [businessId, token, services, formData.serviceId])
+  }, [businessId, services, formData.serviceId])
 
   // Cargar servicios del especialista cuando cambie
   useEffect(() => {
@@ -232,25 +250,14 @@ const CreateAppointmentModal = ({
       
       console.log('🔧 [WEB] Selected specialist:', selectedSpecialist);
       console.log('🔧 [WEB] Specialist role:', selectedSpecialist?.role);
-      console.log('🔧 [WEB] Specialist user role:', selectedSpecialist?.user?.role);
       
-      // Si el especialista seleccionado es BUSINESS_SPECIALIST o BUSINESS, mostrar todos los servicios
-      // porque es dueño y puede ofrecer cualquier servicio
-      const specialistRole = selectedSpecialist?.role || selectedSpecialist?.user?.role;
-      const isBusinessOwner = specialistRole === 'BUSINESS_SPECIALIST' || specialistRole === 'BUSINESS';
-      
-      if (isBusinessOwner) {
-        console.log('🔧 [WEB] BUSINESS/BUSINESS_SPECIALIST detected, showing all services');
-        if (JSON.stringify(filteredServices) !== JSON.stringify(services)) {
-          setFilteredServices(services);
-        }
-      } else {
-        // Para especialistas regulares (SPECIALIST, RECEPTIONIST_SPECIALIST), cargar servicios específicos
-        console.log('🔧 [WEB] Loading services for specialist:', formData.specialistId);
-        loadSpecialistServices(formData.specialistId);
-      }
+      // SIEMPRE cargar los servicios específicos del especialista seleccionado
+      // independientemente de su rol o del rol del usuario logueado
+      console.log('🔧 [WEB] Loading services for specialist:', formData.specialistId);
+      loadSpecialistServices(formData.specialistId);
     } else if (formData.specialistId === '' || !formData.specialistId) {
       // Si no hay especialista, mostrar todos los servicios
+      console.log('🔧 [WEB] No specialist selected, showing all services');
       if (JSON.stringify(filteredServices) !== JSON.stringify(services)) {
         setFilteredServices(services);
       }
@@ -1055,13 +1062,17 @@ const CreateAppointmentModal = ({
                   <select
                     value={currentServiceId}
                     onChange={(e) => setCurrentServiceId(e.target.value)}
-                    disabled={loadingSpecialistServices}
+                    disabled={loadingSpecialistServices || (formData.specialistId && filteredServices.length === 0)}
                     className={`flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                       errors.serviceId && selectedServices.length === 0 ? 'border-red-500' : 'border-gray-300'
-                    } ${loadingSpecialistServices ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } ${loadingSpecialistServices || (formData.specialistId && filteredServices.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <option value="">
-                      {loadingSpecialistServices ? 'Cargando servicios...' : 'Seleccionar servicio'}
+                      {loadingSpecialistServices 
+                        ? 'Cargando servicios...' 
+                        : (formData.specialistId && filteredServices.length === 0)
+                          ? 'Este especialista no tiene servicios asignados'
+                          : 'Seleccionar servicio'}
                     </option>
                     {filteredServices
                       .filter(s => !selectedServices.some(sel => sel.id === s.id))
@@ -1086,13 +1097,31 @@ const CreateAppointmentModal = ({
                   </button>
                 </div>
                 
+                {/* Mensaje cuando no hay servicios para el especialista */}
+                {formData.specialistId && filteredServices.length === 0 && !loadingSpecialistServices && (
+                  <div className="mt-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ <strong>Este especialista no tiene servicios asignados.</strong>
+                    </p>
+                    <p className="text-xs text-yellow-700 mt-1">
+                      Para crear una cita, primero debes asignar servicios a este especialista desde la sección de Gestión de Especialistas.
+                    </p>
+                  </div>
+                )}
+                
                 {errors.serviceId && selectedServices.length === 0 && (
                   <p className="text-red-500 text-xs mt-1">{errors.serviceId}</p>
                 )}
                 
-                {selectedServices.length === 0 && (
+                {selectedServices.length === 0 && !formData.specialistId && (
                   <p className="text-sm text-gray-500 mt-2">
                     💡 Puedes agregar múltiples servicios para una misma cita
+                  </p>
+                )}
+                
+                {selectedServices.length === 0 && formData.specialistId && filteredServices.length > 0 && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    💡 Selecciona uno o más servicios que el especialista realizará en esta cita
                   </p>
                 )}
               </div>

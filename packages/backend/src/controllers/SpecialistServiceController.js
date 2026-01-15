@@ -47,56 +47,11 @@ class SpecialistServiceController {
         });
       }
 
-      // Verificar si el especialista es el BUSINESS owner
-      const businessUser = await User.findOne({
-        where: {
-          id: specialistId,
-          businessId: businessId || userBusinessId,
-          role: 'BUSINESS',
-          status: 'ACTIVE'
-        }
-      });
-
-      // Si es BUSINESS, devolver todos los servicios del negocio
-      if (businessUser) {
-        console.log('✅ BUSINESS owner detectado - devolviendo todos los servicios del negocio');
-        
-        const whereClause = { businessId: businessId || userBusinessId };
-        if (isActive !== undefined) {
-          whereClause.isActive = isActive === 'true';
-        }
-
-        const services = await Service.findAll({
-          where: whereClause,
-          order: [['createdAt', 'DESC']]
-        });
-
-        // Transformar al formato esperado por el frontend
-        const formattedServices = services.map(service => ({
-          id: service.id,
-          specialistId: businessUser.id,
-          serviceId: service.id,
-          isActive: service.isActive,
-          service: {
-            id: service.id,
-            name: service.name,
-            description: service.description,
-            price: service.price,
-            duration: service.duration,
-            category: service.category
-          },
-          createdAt: service.createdAt,
-          updatedAt: service.updatedAt
-        }));
-
-        return res.status(200).json({
-          success: true,
-          data: formattedServices
-        });
-      }
-
-      // El specialistId puede ser userId o specialistProfileId
-      // Primero intentamos encontrar por userId
+      // El specialistId puede ser:
+      // 1. userId (para BUSINESS, BUSINESS_SPECIALIST)
+      // 2. specialistProfileId (para SPECIALIST, RECEPTIONIST_SPECIALIST)
+      
+      // Intentar encontrar por userId primero (para roles de staff que usan su propio userId)
       let specialist = await SpecialistProfile.findOne({
         where: {
           userId: specialistId,
@@ -114,34 +69,53 @@ class SpecialistServiceController {
         });
       }
 
+      // Si aún no existe, verificar si es un usuario BUSINESS/BUSINESS_SPECIALIST sin SpecialistProfile
+      let targetUserId = null;
+      
       if (!specialist) {
-        return res.status(404).json({
-          success: false,
-          error: 'Especialista no encontrado'
+        // Verificar si el specialistId es directamente un userId de BUSINESS o BUSINESS_SPECIALIST
+        const staffUser = await User.findOne({
+          where: {
+            id: specialistId,
+            businessId: businessId || userBusinessId,
+            role: { [Op.in]: ['BUSINESS', 'BUSINESS_SPECIALIST'] },
+            status: 'ACTIVE'
+          }
         });
+        
+        if (staffUser) {
+          console.log('✅ Staff user (BUSINESS/BUSINESS_SPECIALIST) detectado:', staffUser.role);
+          targetUserId = staffUser.id;
+        } else {
+          return res.status(404).json({
+            success: false,
+            error: 'Especialista no encontrado'
+          });
+        }
+      } else {
+        targetUserId = specialist.userId;
       }
 
       // Solo el especialista mismo, BUSINESS u OWNER pueden ver
       // Permitir también a RECEPTIONIST y otros roles de staff
       const allowedRoles = ['BUSINESS', 'OWNER', 'RECEPTIONIST', 'BUSINESS_SPECIALIST', 'SPECIALIST'];
       const isAllowedRole = allowedRoles.includes(role);
-      const isOwnProfile = userId === specialist.userId;
+      const isOwnProfile = userId === targetUserId;
       
       if (!isAllowedRole && !isOwnProfile) {
-        console.log('❌ Acceso denegado - Role:', role, 'UserId:', userId, 'Specialist.userId:', specialist.userId);
+        console.log('❌ Acceso denegado - Role:', role, 'UserId:', userId, 'Target userId:', targetUserId);
         return res.status(403).json({
           success: false,
           error: 'No tienes permiso para ver estos servicios',
-          debug: { role, userId, specialistUserId: specialist.userId }
+          debug: { role, userId, targetUserId }
         });
       }
 
       console.log('✅ Acceso permitido - Role:', role, 'IsOwnProfile:', isOwnProfile);
 
-      // Buscar servicios del especialista
-      // ⚠️ IMPORTANTE: La tabla specialist_services.specialistId referencia a users.id
-      // No a specialist_profiles.id, entonces usamos specialist.userId
-      const whereClause = { specialistId: specialist.userId };
+      // Buscar servicios del especialista en SpecialistService
+      // ⚠️ IMPORTANTE: Ahora TODOS los roles (incluyendo BUSINESS) deben tener servicios asignados
+      const whereClause = { specialistId: targetUserId };
       if (isActive !== undefined) {
         whereClause.isActive = isActive === 'true';
       }
@@ -158,7 +132,7 @@ class SpecialistServiceController {
         order: [['createdAt', 'DESC']]
       });
 
-      console.log(`✅ Found ${specialistServices.length} services for specialist ${specialist.userId}`);
+      console.log(`✅ Found ${specialistServices.length} services for specialist ${targetUserId}`);
 
       return res.status(200).json({
         success: true,
