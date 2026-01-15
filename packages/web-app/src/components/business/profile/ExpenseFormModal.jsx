@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import {
   XMarkIcon,
   CloudArrowUpIcon,
   DocumentIcon,
-  TrashIcon
+  TrashIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
+import { selectUserBranches, selectUserHasMultipleBranches } from '@shared';
 
 const ExpenseFormModal = ({
   isOpen,
@@ -16,8 +19,12 @@ const ExpenseFormModal = ({
   loading = false,
   isWebView = false // Para identificar si viene desde mobile
 }) => {
+  const userBranches = useSelector(selectUserBranches);
+  const hasMultipleBranches = useSelector(selectUserHasMultipleBranches);
+
   const [formData, setFormData] = useState({
     categoryId: '',
+    branchId: '', // Sucursal del gasto
     amount: '',
     expenseDate: format(new Date(), 'yyyy-MM-dd'),
     description: '',
@@ -36,6 +43,7 @@ const ExpenseFormModal = ({
     if (expense) {
       setFormData({
         categoryId: expense.categoryId || '',
+        branchId: expense.branchId || '',
         amount: expense.amount || '',
         expenseDate: expense.expenseDate ? format(new Date(expense.expenseDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
         description: expense.description || '',
@@ -203,6 +211,33 @@ const ExpenseFormModal = ({
           {/* Form */}
           <form onSubmit={handleSubmit} className="px-6 py-6">
             <div className="space-y-4">
+              {/* Sucursal (solo si tiene múltiples) */}
+              {hasMultipleBranches && (
+                <div>
+                  <label htmlFor="branchId" className="block text-sm font-medium text-gray-700 mb-1">
+                    <BuildingOfficeIcon className="w-4 h-4 inline mr-1" />
+                    Sucursal
+                  </label>
+                  <select
+                    id="branchId"
+                    name="branchId"
+                    value={formData.branchId}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  >
+                    <option value="">Gasto general del negocio</option>
+                    {userBranches.map(ub => (
+                      <option key={ub.branchId} value={ub.branchId}>
+                        {ub.branch?.name || 'Sucursal sin nombre'}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Si no seleccionas sucursal, el gasto será general del negocio
+                  </p>
+                </div>
+              )}
+
               {/* Categoría */}
               <div>
                 <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">

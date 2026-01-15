@@ -8,11 +8,13 @@ import {
   ArrowRightStartOnRectangleIcon,
   ArrowLeftEndOnRectangleIcon,
   ArrowLeftIcon,
-  HomeIcon
+  HomeIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline'
 import CashRegisterOpening from '../../components/specialist/cash-register/CashRegisterOpening'
 import CashRegisterClosing from '../../components/specialist/cash-register/CashRegisterClosing'
 import CashRegisterMovementsUnified from '../../components/specialist/cash-register/CashRegisterMovementsUnified'
+import { selectUserBranches, selectUserHasMultipleBranches } from '@shared'
 
 const CashRegisterPage = () => {
   const navigate = useNavigate()
@@ -20,22 +22,29 @@ const CashRegisterPage = () => {
   const [activeCashRegister, setActiveCashRegister] = useState(null)
   const [shiftData, setShiftData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [selectedBranchId, setSelectedBranchId] = useState(null)
   const { user, token } = useSelector(state => state.auth)
+  const userBranches = useSelector(selectUserBranches)
+  const hasMultipleBranches = useSelector(selectUserHasMultipleBranches)
 
   const checkActiveCashRegister = useCallback(async () => {
     if (!token || !user?.businessId) return;
     
     try {
       setLoading(true)
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/cash-register/active-shift?businessId=${user.businessId}`,
-        {
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+      let url = `${import.meta.env.VITE_API_URL}/api/cash-register/active-shift?businessId=${user.businessId}`;
+      
+      // Si hay múltiples sucursales y se seleccionó una, filtrar por ella
+      if (hasMultipleBranches && selectedBranchId) {
+        url += `&branchId=${selectedBranchId}`;
+      }
+      
+      const response = await fetch(url, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      )
+      })
       
       if (response.ok) {
         const result = await response.json()
@@ -56,11 +65,11 @@ const CashRegisterPage = () => {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [token, user?.businessId, hasMultipleBranches, selectedBranchId])
 
   useEffect(() => {
     checkActiveCashRegister()
-  }, [checkActiveCashRegister])
+  }, [checkActiveCashRegister, selectedBranchId])
 
   const loadShiftData = useCallback(async () => {
     if (!activeCashRegister?.id || !token || !user?.businessId) return;
@@ -186,6 +195,34 @@ const CashRegisterPage = () => {
               )}
             </div>
           </div>
+
+          {/* Branch Selector for Multi-Branch Businesses */}
+          {hasMultipleBranches && (
+            <div className="mt-4 flex items-center gap-3">
+              <label htmlFor="branch-select" className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <BuildingOfficeIcon className="h-5 w-5 text-gray-400" />
+                Sucursal:
+              </label>
+              <select
+                id="branch-select"
+                value={selectedBranchId || ''}
+                onChange={(e) => setSelectedBranchId(e.target.value || null)}
+                className="block rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+              >
+                <option value="">Todas las sucursales</option>
+                {userBranches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+              {selectedBranchId && (
+                <span className="text-xs text-gray-500">
+                  Viendo caja de esta sucursal
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -260,6 +297,7 @@ const CashRegisterPage = () => {
                 <CashRegisterOpening 
                   specialistId={user?.id}
                   businessId={user?.businessId}
+                  branchId={selectedBranchId}
                   token={token}
                   onSuccess={handleCashRegisterOpened} 
                 />

@@ -20,6 +20,15 @@ const BusinessExpense = sequelize.define('BusinessExpense', {
     },
     comment: 'Negocio al que pertenece el gasto'
   },
+  branchId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'branches',
+      key: 'id'
+    },
+    comment: 'Sucursal específica del gasto (null = gasto general del negocio)'
+  },
   categoryId: {
     type: DataTypes.UUID,
     allowNull: false,
@@ -239,6 +248,9 @@ const BusinessExpense = sequelize.define('BusinessExpense', {
       fields: ['businessId', 'isActive']
     },
     {
+      fields: ['businessId', 'branchId']
+    },
+    {
       fields: ['businessId', 'categoryId']
     },
     {
@@ -246,6 +258,9 @@ const BusinessExpense = sequelize.define('BusinessExpense', {
     },
     {
       fields: ['businessId', 'expenseDate']
+    },
+    {
+      fields: ['branchId', 'expenseDate']
     },
     {
       fields: ['vendor']

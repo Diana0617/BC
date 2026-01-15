@@ -5,7 +5,8 @@ import {
   LockClosedIcon, 
   ClockIcon,
   ChevronRightIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 
@@ -128,6 +129,12 @@ export default function CashRegisterCard({ businessId }) {
         {/* Detalles del turno activo */}
         {hasActiveShift && activeShift && (
           <div className="space-y-2 mt-4 pt-4 border-t border-white/30">
+            {activeShift.branch && (
+              <div className="flex items-center gap-2 text-white mb-2">
+                <BuildingOfficeIcon className="w-4 h-4 opacity-80" />
+                <span className="text-sm font-medium">{activeShift.branch.name}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between text-white">
               <span className="text-sm opacity-80">Balance Inicial:</span>
               <span className="text-base font-bold">

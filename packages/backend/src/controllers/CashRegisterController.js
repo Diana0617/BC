@@ -117,12 +117,13 @@ class CashRegisterController {
 
   /**
    * Obtener turno activo del usuario
-   * GET /api/cash-register/active-shift?businessId={bizId}
+   * GET /api/cash-register/active-shift?businessId={bizId}&branchId={branchId}
    * BUSINESS puede ver el turno más reciente de cualquier usuario
+   * Si branchId está presente, filtra por esa sucursal
    */
   static async getActiveShift(req, res) {
     try {
-      const { businessId } = req.query;
+      const { businessId, branchId } = req.query;
       const userId = req.user.id;
       const userRole = req.user.role;
 
@@ -138,6 +139,11 @@ class CashRegisterController {
         businessId,
         status: 'OPEN'
       };
+      
+      // Filtrar por sucursal si se especifica
+      if (branchId) {
+        whereClause.branchId = branchId;
+      }
       
       // Si no es BUSINESS, solo ver su propio turno
       if (userRole !== 'BUSINESS') {
@@ -176,7 +182,8 @@ class CashRegisterController {
         activeShift.id,
         businessId,
         userId,
-        activeShift.openedAt
+        activeShift.openedAt,
+        activeShift.branchId
       );
 
       return res.json({
@@ -227,24 +234,33 @@ class CashRegisterController {
         });
       }
 
-      // Verificar que no tenga un turno abierto
+      // Verificar que no tenga un turno abierto en la misma sucursal
+      const existingShiftWhere = {
+        businessId,
+        userId,
+        status: 'OPEN'
+      };
+      
+      // Si hay branchId, validar que no tenga turno abierto en ESA sucursal
+      if (branchId) {
+        existingShiftWhere.branchId = branchId;
+      }
+
       const existingShift = await CashRegisterShift.findOne({
-        where: {
-          businessId,
-          userId,
-          status: 'OPEN'
-        },
+        where: existingShiftWhere,
         transaction
       });
 
       console.log('🔍 openShift - Verificando turno existente:', {
         businessId,
+        branchId: branchId || 'SIN_SUCURSAL',
         userId,
         userEmail: req.user.email,
         userRole: req.user.role,
         existingShift: existingShift ? {
           id: existingShift.id,
           shiftNumber: existingShift.shiftNumber,
+          branchId: existingShift.branchId,
           openedAt: existingShift.openedAt
         } : 'NINGUNO'
       });
@@ -253,28 +269,38 @@ class CashRegisterController {
         await transaction.rollback();
         return res.status(400).json({
           success: false,
-          error: 'Ya tienes un turno abierto. Debes cerrarlo antes de abrir uno nuevo.',
+          error: branchId 
+            ? 'Ya tienes un turno abierto en esta sucursal. Debes cerrarlo antes de abrir uno nuevo.' 
+            : 'Ya tienes un turno abierto. Debes cerrarlo antes de abrir uno nuevo.',
           debug: {
             existingShiftId: existingShift.id,
+            branchId: existingShift.branchId,
             openedAt: existingShift.openedAt
           }
         });
       }
 
-      // Generar número de turno (secuencial del día)
+      // Generar número de turno (secuencial del día por sucursal)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
+      const todayShiftsWhere = {
+        businessId,
+        openedAt: {
+          [Op.gte]: today,
+          [Op.lt]: tomorrow
+        }
+      };
+      
+      // Si hay sucursal, contar solo los turnos de esa sucursal
+      if (branchId) {
+        todayShiftsWhere.branchId = branchId;
+      }
+
       const todayShifts = await CashRegisterShift.count({
-        where: {
-          businessId,
-          openedAt: {
-            [Op.gte]: today,
-            [Op.lt]: tomorrow
-          }
-        },
+        where: todayShiftsWhere,
         transaction
       });
 
@@ -399,6 +425,7 @@ class CashRegisterController {
         businessId,
         activeShift.userId, // Usar el userId del turno
         activeShift.openedAt,
+        activeShift.branchId, // Filtrar por sucursal del turno
         transaction
       );
 
@@ -512,7 +539,8 @@ class CashRegisterController {
         activeShift.id,
         businessId,
         userId,
-        activeShift.openedAt
+        activeShift.openedAt,
+        activeShift.branchId // Filtrar por sucursal del turno
       );
 
       // Calcular balance esperado (necesario para el PDF)
@@ -643,7 +671,8 @@ class CashRegisterController {
         activeShift.id,
         businessId,
         activeShift.userId, // Usar el userId del turno, no del que consulta
-        activeShift.openedAt
+        activeShift.openedAt,
+        activeShift.branchId // Filtrar por sucursal del turno
       );
 
       return res.json({
@@ -667,11 +696,11 @@ class CashRegisterController {
 
   /**
    * Obtener historial de turnos
-   * GET /api/cash-register/shifts-history?businessId={bizId}&page=1&limit=20
+   * GET /api/cash-register/shifts-history?businessId={bizId}&branchId={branchId}&page=1&limit=20
    */
   static async getShiftsHistory(req, res) {
     try {
-      const { businessId, page = 1, limit = 20, status, startDate, endDate } = req.query;
+      const { businessId, branchId, page = 1, limit = 20, status, startDate, endDate } = req.query;
       const userId = req.user.id;
       const userRole = req.user.role;
 
@@ -684,6 +713,11 @@ class CashRegisterController {
 
       const offset = (page - 1) * limit;
       const where = { businessId };
+
+      // Filtrar por sucursal si se especifica
+      if (branchId) {
+        where.branchId = branchId;
+      }
 
       // Filtro de usuario según rol
       if (userRole === 'SPECIALIST' || userRole === 'BUSINESS_SPECIALIST' || userRole === 'RECEPTIONIST' || userRole === 'RECEPTIONIST_SPECIALIST') {
@@ -795,8 +829,9 @@ class CashRegisterController {
   /**
    * FUNCIÓN AUXILIAR: Calcular resumen del turno
    * Obtiene todas las transacciones desde que se abrió el turno
+   * Si branchId está presente, filtra por esa sucursal
    */
-  static async _calculateShiftSummary(shiftId, businessId, userId, openedAt, transaction = null) {
+  static async _calculateShiftSummary(shiftId, businessId, userId, openedAt, branchId = null, transaction = null) {
     const summary = {
       appointments: {
         total: 0,
@@ -814,15 +849,23 @@ class CashRegisterController {
       totalNonCash: 0
     };
 
+    // Construir filtros de citas
+    const appointmentWhere = {
+      businessId,
+      specialistId: userId,
+      startTime: {
+        [Op.gte]: openedAt
+      }
+    };
+    
+    // Si hay sucursal, filtrar por ella
+    if (branchId) {
+      appointmentWhere.branchId = branchId;
+    }
+
     // Obtener citas del turno
     const appointments = await Appointment.findAll({
-      where: {
-        businessId,
-        specialistId: userId,
-        startTime: {
-          [Op.gte]: openedAt
-        }
-      },
+      where: appointmentWhere,
       attributes: ['id', 'status', 'totalAmount', 'paidAmount', 'paymentStatus'],
       transaction
     });
@@ -833,17 +876,25 @@ class CashRegisterController {
     summary.appointments.totalAmount = appointments.reduce((sum, a) => sum + parseFloat(a.totalAmount || 0), 0);
     summary.appointments.paidAmount = appointments.reduce((sum, a) => sum + parseFloat(a.paidAmount || 0), 0);
 
+    // Construir filtros de movimientos financieros
+    const movementWhere = {
+      businessId,
+      type: 'INCOME',
+      status: 'COMPLETED',
+      createdAt: {
+        [Op.gte]: openedAt
+      }
+    };
+    
+    // Si hay sucursal, filtrar por ella
+    if (branchId) {
+      movementWhere.branchId = branchId;
+    }
+
     // Obtener movimientos financieros del turno (ingresos)
     const FinancialMovement = require('../models/FinancialMovement');
     const movements = await FinancialMovement.findAll({
-      where: {
-        businessId,
-        type: 'INCOME',
-        status: 'COMPLETED',
-        createdAt: {
-          [Op.gte]: openedAt
-        }
-      },
+      where: movementWhere,
       attributes: ['id', 'amount', 'paymentMethod', 'category'],
       transaction
     });

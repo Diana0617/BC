@@ -28,9 +28,13 @@ export const checkShouldUseCashRegister = createAsyncThunk(
  */
 export const getActiveShift = createAsyncThunk(
   'cashRegister/getActiveShift',
-  async ({ businessId }, { rejectWithValue }) => {
+  async ({ businessId, branchId }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get('/api/cash-register/active-shift', { businessId });
+      const params = { businessId };
+      if (branchId) {
+        params.branchId = branchId;
+      }
+      const response = await apiClient.get('/api/cash-register/active-shift', params);
       return response.data.data;
     } catch (error) {
       // Si no hay turno activo, retornar null (no es un error)
@@ -67,9 +71,13 @@ export const openShift = createAsyncThunk(
  */
 export const getShiftSummary = createAsyncThunk(
   'cashRegister/getShiftSummary',
-  async ({ businessId }, { rejectWithValue }) => {
+  async ({ businessId, branchId }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get('/api/cash-register/shift-summary', { businessId });
+      const params = { businessId };
+      if (branchId) {
+        params.branchId = branchId;
+      }
+      const response = await apiClient.get('/api/cash-register/shift-summary', params);
       return response.data.data;
     } catch (error) {
       return rejectWithValue({ error: error.message || 'Error al obtener resumen' });
@@ -80,11 +88,14 @@ export const getShiftSummary = createAsyncThunk(
 /**
  * Generar PDF de cierre (antes de cerrar turno)
  * Nota: Este thunk solo valida que el PDF se puede generar.
- * El PDF real se debe descargar directamente desde el componente.
- */
-export const generateClosingPDF = createAsyncThunk(
-  'cashRegister/generateClosingPDF',
-  async ({ businessId }, { rejectWithValue }) => {
+ * El PDF real se deb, branchId }, { rejectWithValue }) => {
+    try {
+      // Para PDFs, necesitamos hacer fetch directo con blob response
+      const token = await apiClient.getAuthToken();
+      let url = `${apiClient.baseURL}/api/cash-register/generate-closing-pdf?businessId=${businessId}`;
+      if (branchId) {
+        url += `&branchId=${branchId}`;
+      }
     try {
       // Para PDFs, necesitamos hacer fetch directo con blob response
       const token = await apiClient.getAuthToken();
@@ -128,16 +139,20 @@ export const closeShift = createAsyncThunk(
 
 /**
  * Obtener historial de turnos
- */
-export const getShiftsHistory = createAsyncThunk(
-  'cashRegister/getShiftsHistory',
-  async ({ businessId, page = 1, limit = 20, status, startDate, endDate }, { rejectWithValue }) => {
+ */branchId, page = 1, limit = 20, status, startDate, endDate }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get('/api/cash-register/shifts-history', {
+      const params = {
         businessId,
         page,
         limit,
         status,
+        startDate,
+        endDate
+      };
+      if (branchId) {
+        params.branchId = branchId;
+      }
+      const response = await apiClient.get('/api/cash-register/shifts-history', params status,
         startDate,
         endDate
       });
@@ -146,9 +161,13 @@ export const getShiftsHistory = createAsyncThunk(
       return rejectWithValue({ error: error.message || 'Error al obtener historial' });
     }
   }
-);
-
-/**
+);, branchId }, { rejectWithValue }) => {
+    try {
+      const params = { businessId };
+      if (branchId) {
+        params.branchId = branchId;
+      }
+      const response = await apiClient.get('/api/cash-register/last-closed-shift', params
  * Obtener último turno cerrado (para balance inicial)
  */
 export const getLastClosedShift = createAsyncThunk(

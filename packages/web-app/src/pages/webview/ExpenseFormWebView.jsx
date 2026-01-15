@@ -4,14 +4,17 @@ import {
   fetchExpenseCategories,
   createExpense,
   selectExpenseCategories,
-  selectExpensesLoading
+  selectExpensesLoading,
+  selectUserBranches,
+  selectUserHasMultipleBranches
 } from '@shared';
 import {
   CloudArrowUpIcon,
   DocumentIcon,
   TrashIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 
@@ -24,6 +27,8 @@ const ExpenseFormWebView = () => {
   const dispatch = useDispatch();
   const categories = useSelector(selectExpenseCategories);
   const loading = useSelector(selectExpensesLoading);
+  const userBranches = useSelector(selectUserBranches);
+  const hasMultipleBranches = useSelector(selectUserHasMultipleBranches);
 
   const [businessId, setBusinessId] = useState(null);
   const [formData, setFormData] = useState({
@@ -34,7 +39,8 @@ const ExpenseFormWebView = () => {
     vendor: '',
     paymentMethod: 'CASH',
     receiptNumber: '',
-    notes: ''
+    notes: '',
+    branchId: ''
   });
 
   const [selectedFile, setSelectedFile] = useState(null);
@@ -231,7 +237,8 @@ const ExpenseFormWebView = () => {
           vendor: '',
           paymentMethod: 'CASH',
           receiptNumber: '',
-          notes: ''
+          notes: '',
+          branchId: ''
         });
         setSelectedFile(null);
         setFilePreview(null);
@@ -388,6 +395,33 @@ const ExpenseFormWebView = () => {
                 <p className="mt-1 text-sm text-red-600">{errors.description}</p>
               )}
             </div>
+
+            {/* Sucursal (si hay múltiples) */}
+            {hasMultipleBranches && (
+              <div>
+                <label htmlFor="branchId" className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  <BuildingOfficeIcon className="h-5 w-5 text-gray-400" />
+                  Sucursal
+                </label>
+                <select
+                  id="branchId"
+                  name="branchId"
+                  value={formData.branchId}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                >
+                  <option value="">Gasto general del negocio</option>
+                  {userBranches.map(branch => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Si no seleccionas sucursal, el gasto será general del negocio
+                </p>
+              </div>
+            )}
 
             {/* Proveedor */}
             <div>

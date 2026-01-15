@@ -104,6 +104,7 @@ const MovementsSection = () => {
     } else if (activeTab === 'expenses') {
       dispatch(fetchExpenses({
         businessId: currentBusiness.id,
+        branchId: expenseFilters.branchId || undefined,
         filters: {
           ...expenseFilters,
           startDate: dateRange.startDate,
@@ -157,6 +158,7 @@ const MovementsSection = () => {
       // Reload expenses
       dispatch(fetchExpenses({
         businessId: currentBusiness.id,
+        branchId: expenseFilters.branchId || undefined,
         filters: {
           ...expenseFilters,
           startDate: dateRange.startDate,

@@ -8,13 +8,18 @@ import { apiClient } from '../../api/client';
  */
 export const fetchExpenses = createAsyncThunk(
   'businessExpenses/fetchExpenses',
-  async ({ businessId, filters = {}, page = 1, limit = 20 }, { rejectWithValue }) => {
+  async ({ businessId, branchId, filters = {}, page = 1, limit = 20 }, { rejectWithValue }) => {
     try {
       const params = new URLSearchParams({
         page,
         limit,
         ...filters
       });
+      
+      // Agregar branchId si está presente
+      if (branchId) {
+        params.append('branchId', branchId);
+      }
 
       const response = await apiClient.get(`/api/business/${businessId}/expenses?${params.toString()}`);
       return response.data.data || response.data;

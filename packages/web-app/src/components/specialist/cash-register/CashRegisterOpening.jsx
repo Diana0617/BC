@@ -14,6 +14,7 @@ import {
 export default function CashRegisterOpening({ 
   
   businessId,
+  branchId,
   token,
   onSuccess,
   onCancel 
@@ -105,7 +106,7 @@ export default function CashRegisterOpening({
           },
           body: JSON.stringify({
             businessId,
-            branchId: null, // TODO: Agregar selección de sucursal si es necesario
+            branchId: branchId || null,
             openingBalance: amount,
             openingNotes: formData.notes || null,
             denominationBreakdown: showBreakdown ? formData.denominationBreakdown : null
