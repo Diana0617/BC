@@ -155,18 +155,44 @@ const AppointmentDetailModal = ({
             </div>
           </div>
 
-          {/* Servicio */}
+          {/* Servicio(s) */}
           <div className="bg-purple-50 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-900 mb-2">Servicio</h3>
-            <div className="flex items-center justify-between">
-              <p className="text-gray-900">{appointment.serviceName || 'Sin servicio'}</p>
-              {appointment.servicePrice && (
-                <div className="flex items-center text-purple-700 font-medium">
-                  <CurrencyDollarIcon className="h-4 w-4 mr-1" />
-                  {appointment.servicePrice.toLocaleString('es-CO')}
-                </div>
-              )}
-            </div>
+            <h3 className="font-semibold text-gray-900 mb-2">
+              {appointment.appointment?.services?.length > 1 ? 'Servicios' : 'Servicio'}
+            </h3>
+            
+            {appointment.appointment?.services?.length > 1 ? (
+              <div className="space-y-3">
+                {appointment.appointment.services.map((service, index) => (
+                  <div key={service.id || index} className="border-l-2 border-purple-400 pl-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-gray-900">{service.name}</p>
+                      {service.appointmentService?.price && (
+                        <div className="flex items-center text-purple-700 font-medium ml-2">
+                          <CurrencyDollarIcon className="h-4 w-4 mr-1" />
+                          {parseFloat(service.appointmentService.price).toLocaleString('es-CO')}
+                        </div>
+                      )}
+                    </div>
+                    {service.appointmentService?.duration && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Duración: {service.appointmentService.duration} min
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="text-gray-900">{appointment.serviceName || 'Sin servicio'}</p>
+                {appointment.servicePrice && (
+                  <div className="flex items-center text-purple-700 font-medium">
+                    <CurrencyDollarIcon className="h-4 w-4 mr-1" />
+                    {appointment.servicePrice.toLocaleString('es-CO')}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Especialista */}

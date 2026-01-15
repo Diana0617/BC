@@ -75,7 +75,25 @@ const FullCalendarView = ({
         ? `${appointment.client.firstName} ${appointment.client.lastName}`
         : appointment.clientName || 'Cliente';
       
-      const serviceName = appointment.service?.name || appointment.serviceName || 'Servicio';
+      // Obtener nombre(s) del servicio - usar services array si está disponible, sino el singular
+      let serviceName;
+      let servicesList = [];
+      
+      if (appointment.services && Array.isArray(appointment.services) && appointment.services.length > 0) {
+        // Si hay múltiples servicios, mostrarlos todos
+        servicesList = appointment.services.map(s => s.name);
+        if (servicesList.length > 1) {
+          // Mostrar primer servicio + cantidad adicional
+          serviceName = `${servicesList[0]} (+${servicesList.length - 1} más)`;
+        } else {
+          serviceName = servicesList[0];
+        }
+      } else {
+        // Backward compatibility: usar el campo singular
+        serviceName = appointment.service?.name || appointment.serviceName || 'Servicio';
+        servicesList = [serviceName];
+      }
+      
       const branchName = appointment.branch?.name || appointment.branchName || 'N/A';
       const branchId = appointment.branch?.id || appointment.branchId;
       
@@ -106,6 +124,7 @@ const FullCalendarView = ({
           specialistName: specialistName,
           specialistId: appointment.specialist?.id,
           serviceName: serviceName,
+          servicesList: servicesList, // Array con todos los nombres de servicios
           servicePrice: appointment.service?.price || appointment.servicePrice,
           serviceDuration: appointment.service?.duration,
           totalAmount: appointment.totalAmount,

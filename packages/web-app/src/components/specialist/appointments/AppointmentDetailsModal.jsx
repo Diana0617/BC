@@ -277,11 +277,17 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
   // Soportar ambos formatos: Client/client y Service/service
   const client = appointmentDetails.Client || appointmentDetails.client;
   const service = appointmentDetails.Service || appointmentDetails.service;
+  const services = appointmentDetails.services || [];
   
   const clientName = client 
     ? `${client.firstName} ${client.lastName}`
     : appointmentDetails.clientName || 'Cliente no especificado';
-  const serviceName = service?.name || appointmentDetails.serviceName || 'Servicio no especificado';
+  
+  // Determinar si hay múltiples servicios
+  const hasMultipleServices = services.length > 1;
+  const serviceName = hasMultipleServices 
+    ? `${services.length} servicios` 
+    : (service?.name || appointmentDetails.serviceName || 'Servicio no especificado');
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -412,17 +418,51 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
                   )}
                 </div>
 
-                {/* Servicio */}
+                {/* Servicio(s) */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <TagIcon className="w-5 h-5 text-gray-600" />
-                    <span className="font-semibold text-gray-900">Servicio</span>
+                    <span className="font-semibold text-gray-900">
+                      {hasMultipleServices ? 'Servicios' : 'Servicio'}
+                    </span>
                   </div>
-                  <p className="text-gray-900">{serviceName}</p>
-                  {service?.duration && (
-                    <p className="text-gray-600 text-sm mt-1">
-                      Duración: {service.duration} min
-                    </p>
+                  
+                  {hasMultipleServices ? (
+                    <div className="space-y-3">
+                      {services.map((svc, index) => (
+                        <div key={svc.id || index} className="border-l-2 border-blue-400 pl-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <p className="text-gray-900 font-medium">{svc.name}</p>
+                              {svc.appointmentService?.duration && (
+                                <p className="text-gray-600 text-sm mt-1">
+                                  Duración: {svc.appointmentService.duration} min
+                                </p>
+                              )}
+                            </div>
+                            {svc.appointmentService?.price && (
+                              <p className="text-gray-900 font-semibold ml-2">
+                                ${parseFloat(svc.appointmentService.price).toLocaleString('es-CO')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      <div className="border-t pt-2 mt-2">
+                        <p className="text-gray-600 text-sm">
+                          Duración total: {services.reduce((sum, s) => sum + (s.appointmentService?.duration || 0), 0)} min
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-gray-900">{serviceName}</p>
+                      {service?.duration && (
+                        <p className="text-gray-600 text-sm mt-1">
+                          Duración: {service.duration} min
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
 
