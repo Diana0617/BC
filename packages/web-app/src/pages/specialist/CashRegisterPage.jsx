@@ -27,9 +27,14 @@ const CashRegisterPage = () => {
   const hasMultipleBranches = useSelector(selectUserHasMultipleBranches)
   
   // Si hay múltiples sucursales, inicializar con la primera
-  const [selectedBranchId, setSelectedBranchId] = useState(
-    hasMultipleBranches && userBranches.length > 0 ? userBranches[0].id : null
-  )
+  const [selectedBranchId, setSelectedBranchId] = useState(null)
+  
+  // Efecto para inicializar selectedBranchId cuando se carguen las sucursales
+  useEffect(() => {
+    if (hasMultipleBranches && userBranches.length > 0 && !selectedBranchId) {
+      setSelectedBranchId(userBranches[0].id)
+    }
+  }, [hasMultipleBranches, userBranches, selectedBranchId])
 
   const checkActiveCashRegister = useCallback(async () => {
     if (!token || !user?.businessId) return;
