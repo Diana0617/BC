@@ -1112,7 +1112,7 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
       <AppointmentDetailsModal
         isOpen={showDetailModal}
         appointment={selectedAppointment}
-        businessId={currentBusiness?.id}
+        businessId={currentBusiness?.id || user?.businessId}
         onClose={() => {
           setShowDetailModal(false)
           setSelectedAppointment(null)
