@@ -279,37 +279,15 @@ const CreateAppointmentModal = ({
       
       console.log('📞 [WEB] Calling API:', `/api/business/${businessId}/clients/search?q=${searchTerm}`)
       
-      const response = await fetch(
-        `/api/business/${businessId}/clients/search?q=${encodeURIComponent(searchTerm)}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+      const response = await apiClient.get(
+        `/api/business/${businessId}/clients/search?q=${encodeURIComponent(searchTerm)}`
       )
 
-      console.log('📡 [WEB] Response status:', response.status)
-      console.log('📄 [WEB] Response headers:', response.headers.get('content-type'))
-
-      if (response.ok) {
-        const responseText = await response.text()
-        console.log('📝 [WEB] Response text (first 200 chars):', responseText.substring(0, 200))
-        
-        try {
-          const data = JSON.parse(responseText)
-          console.log('📊 [WEB] Results:', data.data?.length || 0, 'clients found')
-          console.log('📋 [WEB] Data:', data.data)
-          setClientResults(data.data || [])
-          setShowClientDropdown(true)
-          console.log('✅ [WEB] Dropdown should be visible now')
-        } catch (parseError) {
-          console.error('❌ [WEB] JSON Parse Error:', parseError)
-          console.error('📄 [WEB] Response was:', responseText.substring(0, 500))
-        }
-      } else {
-        console.error('❌ [WEB] Response not OK:', response.status)
-      }
+      console.log('📊 [WEB] Results:', response.data?.length || 0, 'clients found')
+      console.log('📋 [WEB] Data:', response.data)
+      setClientResults(response.data || [])
+      setShowClientDropdown(true)
+      console.log('✅ [WEB] Dropdown should be visible now')
     } catch (error) {
       console.error('❌ [WEB] Error searching clients:', error)
       setClientResults([])
