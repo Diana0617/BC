@@ -22,10 +22,14 @@ const CashRegisterPage = () => {
   const [activeCashRegister, setActiveCashRegister] = useState(null)
   const [shiftData, setShiftData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [selectedBranchId, setSelectedBranchId] = useState(null)
   const { user, token } = useSelector(state => state.auth)
   const userBranches = useSelector(selectUserBranches)
   const hasMultipleBranches = useSelector(selectUserHasMultipleBranches)
+  
+  // Si hay múltiples sucursales, inicializar con la primera
+  const [selectedBranchId, setSelectedBranchId] = useState(
+    hasMultipleBranches && userBranches.length > 0 ? userBranches[0].id : null
+  )
 
   const checkActiveCashRegister = useCallback(async () => {
     if (!token || !user?.businessId) return;
@@ -206,21 +210,19 @@ const CashRegisterPage = () => {
               <select
                 id="branch-select"
                 value={selectedBranchId || ''}
-                onChange={(e) => setSelectedBranchId(e.target.value || null)}
+                onChange={(e) => setSelectedBranchId(e.target.value)}
                 className="block rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                required
               >
-                <option value="">Todas las sucursales</option>
                 {userBranches.map((branch) => (
                   <option key={branch.id} value={branch.id}>
                     {branch.name}
                   </option>
                 ))}
               </select>
-              {selectedBranchId && (
-                <span className="text-xs text-gray-500">
-                  Viendo caja de esta sucursal
-                </span>
-              )}
+              <span className="text-xs text-gray-500">
+                Viendo caja de esta sucursal
+              </span>
             </div>
           )}
         </div>

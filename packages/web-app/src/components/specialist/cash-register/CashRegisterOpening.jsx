@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { 
   BanknotesIcon,
   CheckCircleIcon,
   XMarkIcon,
   ClockIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
+import { selectUserBranches, selectUserHasMultipleBranches } from '@shared';
 
 /**
  * Formulario para abrir turno de caja
@@ -19,6 +22,12 @@ export default function CashRegisterOpening({
   onSuccess,
   onCancel 
 }) {
+  const userBranches = useSelector(selectUserBranches);
+  const hasMultipleBranches = useSelector(selectUserHasMultipleBranches);
+  
+  // Encontrar el nombre de la sucursal seleccionada
+  const selectedBranch = branchId ? userBranches.find(b => b.id === branchId) : null;
+  
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     openingAmount: '',
@@ -159,6 +168,14 @@ export default function CashRegisterOpening({
         <p className="text-gray-600">
           Registra el monto inicial para comenzar tu turno
         </p>
+        {hasMultipleBranches && selectedBranch && (
+          <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-purple-50 border border-purple-200 rounded-lg">
+            <BuildingOfficeIcon className="w-5 h-5 text-purple-600" />
+            <span className="text-sm font-medium text-purple-900">
+              Sucursal: {selectedBranch.name}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Información */}

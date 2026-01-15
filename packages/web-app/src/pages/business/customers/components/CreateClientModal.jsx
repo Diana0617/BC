@@ -72,6 +72,7 @@ const CreateClientModal = ({ onClose, onSuccess }) => {
 
     if (formData.phone) {
       // Limpiar teléfono para validar solo dígitos
+      // eslint-disable-next-line no-useless-escape
       const cleanPhone = formData.phone.replace(/[\s\-\(\)\+]/g, '');
       if (cleanPhone.length < 10 || cleanPhone.length > 15) {
         newErrors.phone = 'El teléfono debe tener entre 10 y 15 dígitos';
