@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import { 
   BanknotesIcon, 
   ClockIcon, 
   ChartBarIcon,
   ArrowRightStartOnRectangleIcon,
-  ArrowLeftEndOnRectangleIcon
+  ArrowLeftEndOnRectangleIcon,
+  ArrowLeftIcon,
+  HomeIcon
 } from '@heroicons/react/24/outline'
 import CashRegisterOpening from '../../components/specialist/cash-register/CashRegisterOpening'
 import CashRegisterClosing from '../../components/specialist/cash-register/CashRegisterClosing'
 import CashRegisterMovementsUnified from '../../components/specialist/cash-register/CashRegisterMovementsUnified'
 
 const CashRegisterPage = () => {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('summary') // 'summary', 'movements', 'open', 'close'
   const [activeCashRegister, setActiveCashRegister] = useState(null)
   const [shiftData, setShiftData] = useState(null)
@@ -135,6 +139,29 @@ const CashRegisterPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Navbar */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/business/dashboard')}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeftIcon className="h-5 w-5" />
+              <span className="text-sm font-medium">Volver al Dashboard</span>
+            </button>
+            <div className="h-5 w-px bg-gray-300"></div>
+            <button
+              onClick={() => navigate('/business/cash-register')}
+              className="flex items-center gap-2 text-purple-600 hover:text-purple-700 transition-colors"
+            >
+              <HomeIcon className="h-5 w-5" />
+              <span className="text-sm font-medium">Inicio</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
