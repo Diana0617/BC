@@ -408,13 +408,21 @@ class AppointmentController {
         branchId
       } = req.body;
       
+      console.log('📥 [createAppointment] serviceId recibido:', serviceId);
+      console.log('📥 [createAppointment] serviceIds recibido:', serviceIds);
+      console.log('📥 [createAppointment] req.body completo:', JSON.stringify(req.body, null, 2));
+      
       // Determinar qué servicios usar: array o single
       const servicesToValidate = serviceIds && serviceIds.length > 0 ? serviceIds : (serviceId ? [serviceId] : []);
+      
+      console.log('📋 [createAppointment] servicesToValidate:', servicesToValidate);
+      console.log('📋 [createAppointment] servicesToValidate.length:', servicesToValidate.length);
       
       console.log('📋 [createAppointment] Valores extraídos:', {
         businessId,
         specialistId,
         serviceId,
+        serviceIds,
         clientId,
         branchId
       });
@@ -1053,9 +1061,17 @@ class AppointmentController {
       console.log('✅ Cita creada:', appointment.id);
 
       // 🔗 CREAR REGISTROS EN APPOINTMENTSERVICE PARA CADA SERVICIO
+      console.log('📋 [createAppointment] Creando AppointmentServices para', services.length, 'servicios');
       const AppointmentService = require('../models/AppointmentService');
       for (let i = 0; i < services.length; i++) {
         const svc = services[i];
+        
+        console.log(`📝 [createAppointment] Servicio ${i + 1}/${services.length}:`, {
+          id: svc.id,
+          name: svc.name,
+          price: svc.price,
+          duration: svc.duration
+        });
         
         // Determinar el precio individual
         let servicePrice = parseFloat(svc.price);
@@ -1065,17 +1081,24 @@ class AppointmentController {
           servicePrice = finalPrice;
         }
         
-        await AppointmentService.create({
+        const appointmentServiceData = {
           appointmentId: appointment.id,
           serviceId: svc.id,
           price: servicePrice,
           duration: svc.duration,
           order: i
-        });
-        console.log(`✅ AppointmentService creado: ${svc.name}, precio: ${servicePrice}, duración: ${svc.duration}min`);
+        };
+        
+        console.log(`💾 [createAppointment] Guardando AppointmentService:`, appointmentServiceData);
+        
+        const createdAS = await AppointmentService.create(appointmentServiceData);
+        console.log(`✅ AppointmentService creado con ID:`, createdAS.id, `- ${svc.name}, precio: ${servicePrice}, duración: ${svc.duration}min, order: ${i}`);
       }
+      
+      console.log('✅ [createAppointment] Todos los AppointmentServices creados exitosamente');
 
       // Obtener la cita creada con relaciones incluyendo los servicios
+      console.log('🔍 [createAppointment] Obteniendo cita con relaciones...');
       const createdAppointment = await Appointment.findByPk(appointment.id, {
         include: [
           {
@@ -1109,6 +1132,13 @@ class AppointmentController {
           }
         ]
       });
+      
+      console.log('📊 [createAppointment] Servicios en la cita:', createdAppointment.services?.length || 0);
+      if (createdAppointment.services) {
+        createdAppointment.services.forEach((svc, idx) => {
+          console.log(`  ${idx + 1}. ${svc.name} (ID: ${svc.id}) - Order: ${svc.appointmentService?.order}`);
+        });
+      }
       
       // Agregar información de sesión en la respuesta
       const response = {

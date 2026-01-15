@@ -123,39 +123,46 @@ const CreateAppointmentModal = ({
     }
   }, [isOpen, businessId, dispatch])
 
+  // Función para resetear todos los estados del formulario
+  const resetForm = useCallback(() => {
+    const currentAutoSpecialistId = isAutoSpecialist 
+      ? (user?.role === 'SPECIALIST' && user?.specialistProfile?.id ? user.specialistProfile.id : user?.id)
+      : null
+    
+    console.log('🔄 [CreateAppointmentModal] Resetting form with autoSpecialistId:', currentAutoSpecialistId)
+    
+    setFormData({
+      clientId: null,
+      clientName: '',
+      clientPhone: '',
+      clientEmail: '',
+      branchId: initialData.branchId || '',
+      specialistId: initialData.specialistId || currentAutoSpecialistId || '',
+      serviceId: '',
+      serviceIds: [],
+      date: initialData.date || new Date().toISOString().split('T')[0],
+      startTime: initialData.startTime || '09:00',
+      endTime: initialData.endTime || '10:00',
+      notes: ''
+    })
+    setClientSearch('')
+    setClientResults([])
+    setShowClientDropdown(false)
+    setIsNewClient(false)
+    setSelectedServices([])
+    setCurrentServiceId('')
+    setSelectedProducts([])
+    setShowProductsSection(false)
+    setErrors({})
+  }, [isAutoSpecialist, user?.role, user?.id, user?.specialistProfile?.id, initialData.branchId, initialData.specialistId, initialData.date, initialData.startTime, initialData.endTime])
+
   // Resetear form cuando se abre/cierra
   useEffect(() => {
     if (isOpen) {
-      // Recalcular autoSpecialistId por si el user cambió
-      const currentAutoSpecialistId = isAutoSpecialist 
-        ? (user?.role === 'SPECIALIST' && user?.specialistProfile?.id ? user.specialistProfile.id : user?.id)
-        : null
-      
-      console.log('🔄 [CreateAppointmentModal] Resetting form with autoSpecialistId:', currentAutoSpecialistId)
-      
-      setFormData({
-        clientId: null,
-        clientName: '',
-        clientPhone: '',
-        clientEmail: '',
-        branchId: initialData.branchId || '',
-        specialistId: initialData.specialistId || currentAutoSpecialistId || '',
-        serviceId: '',
-        date: initialData.date || new Date().toISOString().split('T')[0],
-        startTime: initialData.startTime || '09:00',
-        endTime: initialData.endTime || '10:00',
-        notes: ''
-      })
-      setClientSearch('')
-      setClientResults([])
-      setShowClientDropdown(false)
-      setIsNewClient(false)
-      setSelectedProducts([])
-      setShowProductsSection(false)
-      setErrors({})
+      resetForm()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, user?.id, user?.role, user?.specialistProfile?.id])
+  }, [isOpen])
 
   // Auto-calcular endTime cuando cambia servicio
   useEffect(() => {
@@ -608,13 +615,30 @@ const CreateAppointmentModal = ({
 
     setIsSubmitting(true)
     try {
+      // Construir los serviceIds desde selectedServices
+      const serviceIds = selectedServices.map(s => s.id);
+      
+      console.log('📤 [CreateAppointmentModal] Preparando datos para enviar:');
+      console.log('  - selectedServices:', selectedServices.length, selectedServices);
+      console.log('  - serviceIds construido:', serviceIds);
+      console.log('  - formData.serviceIds:', formData.serviceIds);
+      console.log('  - formData.serviceId:', formData.serviceId);
+      
       // Agregar productos al formData si hay seleccionados
       const dataToSubmit = {
         ...formData,
+        serviceIds: serviceIds, // Usar el array construido desde selectedServices
         ...(selectedProducts.length > 0 && { productsSold: selectedProducts })
       }
       
+      console.log('📦 [CreateAppointmentModal] Data completo a enviar:', dataToSubmit);
+      
       await onCreate(dataToSubmit)
+      
+      // Resetear el formulario antes de cerrar
+      resetForm()
+      
+      // Cerrar el modal
       onClose()
     } catch (error) {
       console.error('Error creando cita:', error)
