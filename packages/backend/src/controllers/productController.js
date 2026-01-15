@@ -61,17 +61,17 @@ class ProductController {
         // Usar raw:true para obtener resultados planos y nombres de columnas explícitos
         const branchSums = await BranchStock.findAll({
           attributes: [
-            [sequelize.col('product_id'), 'productId'],
-            [sequelize.fn('SUM', sequelize.col('current_stock')), 'totalStock']
+            [sequelize.col('productId'), 'productId'],
+            [sequelize.fn('SUM', sequelize.col('currentStock')), 'totalStock']
           ],
-          where: { business_id: businessId },
-          group: [sequelize.col('product_id')],
+          where: { businessId: businessId },
+          group: [sequelize.col('productId')],
           raw: true
         });
 
         const stockMap = {};
         branchSums.forEach(bs => {
-          const pid = bs.productId || bs.product_id;
+          const pid = bs.productId;
           const total = parseInt(bs.totalStock || 0, 10);
           stockMap[pid] = total;
         });
@@ -133,8 +133,8 @@ class ProductController {
       try {
         const BranchStock = require('../models/BranchStock');
         const sums = await BranchStock.findAll({
-          attributes: [[sequelize.fn('SUM', sequelize.col('current_stock')), 'totalStock']],
-          where: { business_id: businessId, product_id: id },
+          attributes: [[sequelize.fn('SUM', sequelize.col('currentStock')), 'totalStock']],
+          where: { businessId: businessId, productId: id },
           raw: true
         });
         const total = sums && sums[0] && (sums[0].totalStock || 0);
