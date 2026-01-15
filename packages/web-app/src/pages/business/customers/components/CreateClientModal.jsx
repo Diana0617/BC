@@ -111,6 +111,15 @@ const CreateClientModal = ({ onClose, onSuccess }) => {
         }
       }
 
+      // Agregar businessId explícitamente
+      cleanData.businessId = currentBusiness.id;
+
+      console.log('📤 Creando cliente con datos:', {
+        url: `/api/business/${currentBusiness.id}/clients`,
+        businessId: currentBusiness.id,
+        cleanData
+      });
+
       const response = await apiClient.post(
         `/api/business/${currentBusiness.id}/clients`,
         cleanData

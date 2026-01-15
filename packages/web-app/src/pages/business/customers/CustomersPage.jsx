@@ -70,14 +70,31 @@ const CustomersPage = () => {
         status: 'all'
       };
 
+      console.log('📥 Cargando clientes con:', {
+        url: `/api/business/${currentBusiness.id}/clients`,
+        businessId: currentBusiness.id,
+        params
+      });
+
       const response = await apiClient.get(
         `/api/business/${currentBusiness.id}/clients`, 
         { params }
       );
       
+      console.log('✅ Respuesta de clientes:', {
+        success: response.data.success,
+        totalClientes: response.data.data?.length || 0,
+        clientes: response.data.data
+      });
+
       setClients(response.data.data || []);
     } catch (error) {
-      console.error('Error cargando clientes:', error);
+      console.error('❌ Error cargando clientes:', error);
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
       setClients([]);
     } finally {
       setLoading(false);
