@@ -88,7 +88,11 @@ export const getShiftSummary = createAsyncThunk(
 /**
  * Generar PDF de cierre (antes de cerrar turno)
  * Nota: Este thunk solo valida que el PDF se puede generar.
- * El PDF real se deb, branchId }, { rejectWithValue }) => {
+ * El PDF real se descarga directamente desde el componente.
+ */
+export const generateClosingPDF = createAsyncThunk(
+  'cashRegister/generateClosingPDF',
+  async ({ businessId, branchId }, { rejectWithValue }) => {
     try {
       // Para PDFs, necesitamos hacer fetch directo con blob response
       const token = await apiClient.getAuthToken();
@@ -96,10 +100,6 @@ export const getShiftSummary = createAsyncThunk(
       if (branchId) {
         url += `&branchId=${branchId}`;
       }
-    try {
-      // Para PDFs, necesitamos hacer fetch directo con blob response
-      const token = await apiClient.getAuthToken();
-      const url = `${apiClient.baseURL}/api/cash-register/generate-closing-pdf?businessId=${businessId}`;
       
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
@@ -139,7 +139,10 @@ export const closeShift = createAsyncThunk(
 
 /**
  * Obtener historial de turnos
- */branchId, page = 1, limit = 20, status, startDate, endDate }, { rejectWithValue }) => {
+ */
+export const getShiftsHistory = createAsyncThunk(
+  'cashRegister/getShiftsHistory',
+  async ({ businessId, branchId, page = 1, limit = 20, status, startDate, endDate }, { rejectWithValue }) => {
     try {
       const params = {
         businessId,
@@ -152,29 +155,22 @@ export const closeShift = createAsyncThunk(
       if (branchId) {
         params.branchId = branchId;
       }
-      const response = await apiClient.get('/api/cash-register/shifts-history', params status,
-        startDate,
-        endDate
-      });
+      const response = await apiClient.get('/api/cash-register/shifts-history', params);
       return response.data.data;
     } catch (error) {
       return rejectWithValue({ error: error.message || 'Error al obtener historial' });
     }
   }
-);, branchId }, { rejectWithValue }) => {
+);
+export const getLastClosedShift = createAsyncThunk(
+  'cashRegister/getLastClosedShift',
+  async ({ businessId, branchId }, { rejectWithValue }) => {
     try {
       const params = { businessId };
       if (branchId) {
         params.branchId = branchId;
       }
-      const response = await apiClient.get('/api/cash-register/last-closed-shift', params
- * Obtener último turno cerrado (para balance inicial)
- */
-export const getLastClosedShift = createAsyncThunk(
-  'cashRegister/getLastClosedShift',
-  async ({ businessId }, { rejectWithValue }) => {
-    try {
-      const response = await apiClient.get('/api/cash-register/last-closed-shift', { businessId });
+      const response = await apiClient.get('/api/cash-register/last-closed-shift', params);
       return response.data.data;
     } catch (error) {
       // Si no hay turno anterior, retornar null (no es un error)
