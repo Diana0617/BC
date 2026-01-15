@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { 
   BanknotesIcon, 
@@ -14,9 +14,10 @@ import {
 import CashRegisterOpening from '../../components/specialist/cash-register/CashRegisterOpening'
 import CashRegisterClosing from '../../components/specialist/cash-register/CashRegisterClosing'
 import CashRegisterMovementsUnified from '../../components/specialist/cash-register/CashRegisterMovementsUnified'
-import { selectUserBranches, selectUserHasMultipleBranches } from '@shared'
+import { selectUserBranches, selectUserHasMultipleBranches, getUserBranches } from '@shared'
 
 const CashRegisterPage = () => {
+  const dispatch = useDispatch()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('summary') // 'summary', 'movements', 'open', 'close'
   const [activeCashRegister, setActiveCashRegister] = useState(null)
@@ -28,6 +29,13 @@ const CashRegisterPage = () => {
   
   // Si hay múltiples sucursales, inicializar con la primera
   const [selectedBranchId, setSelectedBranchId] = useState(null)
+  
+  // Cargar sucursales del usuario al montar el componente
+  useEffect(() => {
+    if (user?.id) {
+      dispatch(getUserBranches({ userId: user.id }))
+    }
+  }, [dispatch, user?.id])
   
   // Efecto para inicializar selectedBranchId cuando se carguen las sucursales
   useEffect(() => {
