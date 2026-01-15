@@ -44,27 +44,24 @@ const FullCalendarView = ({
     return colors[status] || '#9E9E9E'
   }
   
-  // Obtener color de la sucursal (convierte Tailwind a hex)
+  // Obtener color de la sucursal (colores vibrantes y diferenciados)
   const getBranchColor = (branchId) => {
     if (!showAllBranches || !branches.length || !branchId) return null;
     
     const branchIndex = branches.findIndex(b => b.id === branchId);
     if (branchIndex === -1) return null;
     
-    const colorSet = branchColors[branchIndex % branchColors.length];
+    // Colores vibrantes y claramente diferenciables para cada sucursal
+    const branchColorPalette = [
+      '#3B82F6', // Azul brillante
+      '#10B981', // Verde brillante
+      '#8B5CF6', // Púrpura brillante
+      '#EF4444', // Rojo brillante
+      '#F59E0B', // Amarillo/Naranja brillante
+      '#6366F1'  // Índigo brillante
+    ];
     
-    // Mapeo de colores Tailwind a hex
-    const tailwindToHex = {
-      'bg-blue-100': '#DBEAFE', 'text-blue-800': '#1E40AF',
-      'bg-green-100': '#D1FAE5', 'text-green-800': '#065F46',
-      'bg-purple-100': '#EDE9FE', 'text-purple-800': '#5B21B6',
-      'bg-red-100': '#FEE2E2', 'text-red-800': '#991B1B',
-      'bg-yellow-100': '#FEF3C7', 'text-yellow-800': '#92400E',
-      'bg-indigo-100': '#E0E7FF', 'text-indigo-800': '#3730A3'
-    };
-    
-    // Usar el color de texto (más oscuro) para mejor visibilidad
-    return tailwindToHex[colorSet.text] || '#4B5563';
+    return branchColorPalette[branchIndex % branchColorPalette.length];
   };
   
   // Transformar appointments al formato de FullCalendar
@@ -92,8 +89,8 @@ const FullCalendarView = ({
         eventColor = appointment.specialist?.specialistProfile?.profileColor || getStatusColor(appointment.status);
       }
       
-      // Agregar indicador de sucursal al título cuando se muestran todas
-      const titlePrefix = (showAllBranches && branchName) ? `🏪 ${branchName}: ` : '';
+      // Agregar nombre de sucursal al título cuando se muestran todas (sin ícono, solo para tooltip)
+      const titlePrefix = (showAllBranches && branchName) ? `[${branchName}] ` : '';
       
       return {
         id: appointment.id,
@@ -265,16 +262,14 @@ const FullCalendarView = ({
             );
           }
           
-          // Vista de mes - versión compacta con indicador de sucursal en el borde
+          // Vista de mes - versión compacta con indicador de sucursal
           return (
             <div className="fc-event-custom px-1 cursor-pointer hover:opacity-90 transition-opacity">
-              {props.showBranchIndicator && (
-                <div className="text-xs font-semibold">
-                  🏪
-                </div>
-              )}
               <div className="text-xs truncate">
-                {eventInfo.event.title}
+                {props.showBranchIndicator && props.branchName && (
+                  <span className="font-semibold mr-1">🏪</span>
+                )}
+                {props.clientName} - {props.serviceName}
               </div>
             </div>
           );
@@ -357,7 +352,7 @@ ${props.notes ? 'Notas: ' + props.notes : ''}
         
         .fc-event {
           border-radius: 0.25rem;
-          border-left-width: 3px;
+          border-left-width: 4px;
           cursor: pointer;
         }
         
