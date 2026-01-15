@@ -37,7 +37,7 @@ router.get('/business/:businessId',
  *   - status: String (optional)
  */
 router.get('/branch/:branchId',
-  authorizeRole(['OWNER', 'BUSINESS_ADMIN', 'RECEPTIONIST', 'SPECIALIST_RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS_ADMIN', 'RECEPTIONIST', 'SPECIALIST_RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   CalendarController.getBranchCalendar
 );
 
@@ -51,7 +51,7 @@ router.get('/branch/:branchId',
  *   - status: String (optional)
  */
 router.get('/specialist/:specialistId',
-  authorizeRole(['OWNER', 'BUSINESS_ADMIN', 'SPECIALIST', 'SPECIALIST_RECEPTIONIST', 'BUSINESS_SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS_ADMIN', 'SPECIALIST', 'SPECIALIST_RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'BUSINESS_SPECIALIST']),
   CalendarController.getSpecialistCombinedCalendar
 );
 
