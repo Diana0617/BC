@@ -895,7 +895,7 @@ class AppointmentController {
           where: {
             businessId,
             clientId: client.id,
-            serviceId,
+            serviceId: service.id, // Usar service.id que viene del primer servicio validado
             status: {
               [Op.in]: ['COMPLETED', 'CONFIRMED', 'IN_PROGRESS', 'PENDING']
             }
@@ -978,7 +978,7 @@ class AppointmentController {
         specialistService = await SpecialistService.findOne({
           where: {
             specialistId: specialistProfile.id, // Usar el SpecialistProfile.id para buscar precios
-            serviceId,
+            serviceId: service.id, // Usar service.id que viene del primer servicio validado
             isActive: true
           }
         });
