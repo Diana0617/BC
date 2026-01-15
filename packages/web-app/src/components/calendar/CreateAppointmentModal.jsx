@@ -227,27 +227,36 @@ const CreateAppointmentModal = ({
   // Cargar servicios del especialista cuando cambie
   useEffect(() => {
     if (formData.specialistId && businessId && token) {
-      // Si es BUSINESS_SPECIALIST, mostrar todos los servicios del negocio
+      // Buscar el especialista seleccionado en la lista
+      const selectedSpecialist = specialists.find(s => s.id === formData.specialistId);
+      
+      console.log('🔧 [WEB] Selected specialist:', selectedSpecialist);
+      console.log('🔧 [WEB] Specialist role:', selectedSpecialist?.role);
+      console.log('🔧 [WEB] Specialist user role:', selectedSpecialist?.user?.role);
+      
+      // Si el especialista seleccionado es BUSINESS_SPECIALIST o BUSINESS, mostrar todos los servicios
       // porque es dueño y puede ofrecer cualquier servicio
-      if (user?.role === 'BUSINESS_SPECIALIST') {
-        console.log('🔧 [WEB] BUSINESS_SPECIALIST detected, showing all services')
-        // Solo actualizar si realmente cambió
+      const specialistRole = selectedSpecialist?.role || selectedSpecialist?.user?.role;
+      const isBusinessOwner = specialistRole === 'BUSINESS_SPECIALIST' || specialistRole === 'BUSINESS';
+      
+      if (isBusinessOwner) {
+        console.log('🔧 [WEB] BUSINESS/BUSINESS_SPECIALIST detected, showing all services');
         if (JSON.stringify(filteredServices) !== JSON.stringify(services)) {
-          setFilteredServices(services)
+          setFilteredServices(services);
         }
       } else {
-        // Para SPECIALIST y otros roles, cargar servicios específicos
-        console.log('🔧 [WEB] Loading services for specialist:', formData.specialistId)
-        loadSpecialistServices(formData.specialistId)
+        // Para especialistas regulares (SPECIALIST, RECEPTIONIST_SPECIALIST), cargar servicios específicos
+        console.log('🔧 [WEB] Loading services for specialist:', formData.specialistId);
+        loadSpecialistServices(formData.specialistId);
       }
     } else if (formData.specialistId === '' || !formData.specialistId) {
       // Si no hay especialista, mostrar todos los servicios
       if (JSON.stringify(filteredServices) !== JSON.stringify(services)) {
-        setFilteredServices(services)
+        setFilteredServices(services);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.specialistId, businessId, token, user?.role])
+  }, [formData.specialistId, businessId, token, specialists])
 
   /**
    * Buscar clientes en el backend
