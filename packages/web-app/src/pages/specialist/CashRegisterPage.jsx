@@ -21,6 +21,7 @@ const CashRegisterPage = () => {
   const [activeCashRegister, setActiveCashRegister] = useState(null)
   const [shiftData, setShiftData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [businessBranches, setBusinessBranches] = useState([])
   const { user, token } = useSelector(state => state.auth)
   
   // Obtener branches directamente del usuario autenticado con useMemo
@@ -34,14 +35,53 @@ const CashRegisterPage = () => {
   // Si hay múltiples sucursales, inicializar con la primera
   const [selectedBranchId, setSelectedBranchId] = useState(null)
   
+  // Cargar sucursales del negocio si el usuario no tiene branches asignadas
+  useEffect(() => {
+    const loadBusinessBranches = async () => {
+      if (user?.businessId && userBranches.length === 0 && token) {
+        try {
+          console.log('🔍 Usuario sin branches asignadas, cargando branches del negocio...')
+          const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/business/${user.businessId}/branches`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            }
+          )
+          if (response.ok) {
+            const data = await response.json()
+            console.log('✅ Branches del negocio cargadas:', data.data)
+            setBusinessBranches(data.data || [])
+          }
+        } catch (error) {
+          console.error('❌ Error cargando branches del negocio:', error)
+        }
+      }
+    }
+    loadBusinessBranches()
+  }, [user?.businessId, userBranches.length, token])
+  
+  // Determinar qué branches usar: las asignadas al usuario o todas las del negocio
+  const availableBranches = useMemo(() => {
+    return userBranches.length > 0 ? userBranches : businessBranches
+  }, [userBranches, businessBranches])
+  
+  const hasMultipleBranchesAvailable = useMemo(() => {
+    return availableBranches.length > 1
+  }, [availableBranches.length])
+  
+  console.log('🔍 CashRegisterPage - availableBranches:', availableBranches)
+  console.log('🔍 CashRegisterPage - hasMultipleBranchesAvailable:', hasMultipleBranchesAvailable)
+  
   // Efecto para inicializar selectedBranchId cuando se carguen las sucursales
   useEffect(() => {
-    console.log('🔍 Efecto selectedBranchId - hasMultipleBranches:', hasMultipleBranches, 'userBranches:', userBranches.length)
-    if (hasMultipleBranches && userBranches.length > 0 && !selectedBranchId) {
-      console.log('✅ Seleccionando primera sucursal:', userBranches[0])
-      setSelectedBranchId(userBranches[0].id)
+    console.log('🔍 Efecto selectedBranchId - hasMultipleBranchesAvailable:', hasMultipleBranchesAvailable, 'availableBranches:', availableBranches.length)
+    if (hasMultipleBranchesAvailable && availableBranches.length > 0 && !selectedBranchId) {
+      console.log('✅ Seleccionando primera sucursal:', availableBranches[0])
+      setSelectedBranchId(availableBranches[0].id)
     }
-  }, [hasMultipleBranches, userBranches, selectedBranchId])
+  }, [hasMultipleBranchesAvailable, availableBranches, selectedBranchId])
 
   const checkActiveCashRegister = useCallback(async () => {
     if (!token || !user?.businessId) return;
@@ -51,7 +91,7 @@ const CashRegisterPage = () => {
       let url = `${import.meta.env.VITE_API_URL}/api/cash-register/active-shift?businessId=${user.businessId}`;
       
       // Si hay múltiples sucursales y se seleccionó una, filtrar por ella
-      if (hasMultipleBranches && selectedBranchId) {
+      if (hasMultipleBranchesAvailable && selectedBranchId) {
         url += `&branchId=${selectedBranchId}`;
       }
       
@@ -81,7 +121,7 @@ const CashRegisterPage = () => {
     } finally {
       setLoading(false)
     }
-  }, [token, user?.businessId, hasMultipleBranches, selectedBranchId])
+  }, [token, user?.businessId, hasMultipleBranchesAvailable, selectedBranchId])
 
   useEffect(() => {
     checkActiveCashRegister()
@@ -213,7 +253,7 @@ const CashRegisterPage = () => {
           </div>
 
           {/* Branch Selector for Multi-Branch Businesses */}
-          {hasMultipleBranches && (
+          {hasMultipleBranchesAvailable && (
             <div className="mt-4 flex items-center gap-3">
               <label htmlFor="branch-select" className="flex items-center gap-2 text-sm font-medium text-gray-700">
                 <BuildingOfficeIcon className="h-5 w-5 text-gray-400" />
@@ -226,7 +266,7 @@ const CashRegisterPage = () => {
                 className="block rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
                 required
               >
-                {userBranches.map((branch) => (
+                {availableBranches.map((branch) => (
                   <option key={branch.id} value={branch.id}>
                     {branch.name}
                   </option>
