@@ -283,9 +283,9 @@ const CreateAppointmentModal = ({
         `/api/business/${businessId}/clients/search?q=${encodeURIComponent(searchTerm)}`
       )
 
-      console.log('📊 [WEB] Results:', response.data?.length || 0, 'clients found')
-      console.log('📋 [WEB] Data:', response.data)
-      setClientResults(response.data || [])
+      console.log('📊 [WEB] Results:', response.data.data?.length || 0, 'clients found')
+      console.log('📋 [WEB] Data:', response.data.data)
+      setClientResults(response.data.data || [])
       setShowClientDropdown(true)
       console.log('✅ [WEB] Dropdown should be visible now')
     } catch (error) {
