@@ -92,9 +92,12 @@ const FullCalendarView = ({
         eventColor = appointment.specialist?.specialistProfile?.profileColor || getStatusColor(appointment.status);
       }
       
+      // Agregar indicador de sucursal al título cuando se muestran todas
+      const titlePrefix = (showAllBranches && branchName) ? `🏪 ${branchName}: ` : '';
+      
       return {
         id: appointment.id,
-        title: `${clientName} - ${serviceName}`,
+        title: `${titlePrefix}${clientName} - ${serviceName}`,
         start: appointment.startTime,
         end: appointment.endTime,
         backgroundColor: eventColor,
@@ -113,6 +116,7 @@ const FullCalendarView = ({
           branchName: branchName,
           branchId: branchId,
           notes: appointment.notes,
+          showBranchIndicator: showAllBranches,
           // Datos adicionales para el detalle
           appointment: appointment
         }
@@ -208,26 +212,69 @@ const FullCalendarView = ({
         }}
         eventContent={(eventInfo) => {
           const props = eventInfo.event.extendedProps;
-          return (
-            <div className="fc-event-custom px-2 py-1 cursor-pointer hover:opacity-90 transition-opacity">
-              <div className="text-xs font-semibold truncate">
-                {eventInfo.timeText && (
-                  <span className="mr-1">{eventInfo.timeText}</span>
+          const isListView = eventInfo.view.type === 'listWeek';
+          const isDayView = eventInfo.view.type === 'timeGridDay';
+          const isWeekView = eventInfo.view.type === 'timeGridWeek';
+          
+          // Vista de lista - más detalles
+          if (isListView) {
+            return (
+              <div className="fc-event-custom px-2 py-1">
+                <div className="text-sm font-semibold">
+                  {props.clientName}
+                </div>
+                <div className="text-xs text-gray-600">
+                  👤 {props.specialistName}
+                </div>
+                {props.showBranchIndicator && props.branchName && (
+                  <div className="text-xs text-gray-600 font-medium">
+                    🏪 {props.branchName}
+                  </div>
                 )}
+                <div className="text-xs text-gray-500">
+                  {props.serviceName}
+                </div>
               </div>
-              <div className="text-xs font-medium truncate">
-                {props.clientName}
+            );
+          }
+          
+          // Vista de día/semana - detalles completos
+          if (isDayView || isWeekView) {
+            return (
+              <div className="fc-event-custom px-2 py-1 cursor-pointer hover:opacity-90 transition-opacity">
+                <div className="text-xs font-semibold truncate">
+                  {eventInfo.timeText && (
+                    <span className="mr-1">{eventInfo.timeText}</span>
+                  )}
+                </div>
+                <div className="text-xs font-medium truncate">
+                  {props.clientName}
+                </div>
+                <div className="text-xs truncate opacity-90">
+                  👤 {props.specialistName}
+                </div>
+                {props.showBranchIndicator && props.branchName && (
+                  <div className="text-xs truncate opacity-90 font-medium">
+                    🏪 {props.branchName}
+                  </div>
+                )}
+                <div className="text-xs truncate opacity-80">
+                  {props.serviceName}
+                </div>
               </div>
-              <div className="text-xs truncate opacity-90">
-                👤 {props.specialistName}
-              </div>
-              {showAllBranches && props.branchName && (
-                <div className="text-xs truncate opacity-90 font-medium">
-                  🏪 {props.branchName}
+            );
+          }
+          
+          // Vista de mes - versión compacta con indicador de sucursal en el borde
+          return (
+            <div className="fc-event-custom px-1 cursor-pointer hover:opacity-90 transition-opacity">
+              {props.showBranchIndicator && (
+                <div className="text-xs font-semibold">
+                  🏪
                 </div>
               )}
-              <div className="text-xs truncate opacity-80">
-                {props.serviceName}
+              <div className="text-xs truncate">
+                {eventInfo.event.title}
               </div>
             </div>
           );
