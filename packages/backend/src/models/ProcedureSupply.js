@@ -83,13 +83,11 @@ const ProcedureSupply = sequelize.define('ProcedureSupply', {
   unitCost: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
-    field: 'unit_cost',
     comment: 'Costo unitario del producto al momento del consumo'
   },
   totalCost: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: true,
-    field: 'total_cost',
     comment: 'Costo total: quantity * unitCost'
   },
   reason: {
@@ -105,7 +103,6 @@ const ProcedureSupply = sequelize.define('ProcedureSupply', {
   inventoryMovementId: {
     type: DataTypes.UUID,
     allowNull: true,
-    field: 'inventory_movement_id',
     references: {
       model: 'inventory_movements',
       key: 'id'
@@ -115,7 +112,6 @@ const ProcedureSupply = sequelize.define('ProcedureSupply', {
   registeredBy: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'registered_by',
     references: {
       model: 'users',
       key: 'id'
@@ -125,8 +121,7 @@ const ProcedureSupply = sequelize.define('ProcedureSupply', {
   registeredAt: {
     type: DataTypes.DATE,
     allowNull: false,
-    defaultValue: DataTypes.NOW,
-    field: 'registered_at'
+    defaultValue: DataTypes.NOW
   }
 }, {
   tableName: 'procedure_supplies',
@@ -145,19 +140,19 @@ const ProcedureSupply = sequelize.define('ProcedureSupply', {
       fields: ['shiftId']
     },
     {
-      fields: ['specialist_id']
+      fields: ['specialistId']
     },
     {
-      fields: ['product_id']
+      fields: ['productId']
     },
     {
-      fields: ['inventory_movement_id']
+      fields: ['inventoryMovementId']
     },
     {
-      fields: ['registered_at']
+      fields: ['registeredAt']
     },
     {
-      fields: ['business_id', 'specialist_id', 'registered_at']
+      fields: ['businessId', 'specialistId', 'registeredAt']
     }
   ],
   hooks: {
@@ -198,7 +193,7 @@ ProcedureSupply.getTotalConsumption = async function(productId, businessId, star
     },
     attributes: [
       [sequelize.fn('SUM', sequelize.col('quantity')), 'totalQuantity'],
-      [sequelize.fn('SUM', sequelize.col('total_cost')), 'totalCost']
+      [sequelize.fn('SUM', sequelize.col('totalCost')), 'totalCost']
     ],
     raw: true
   });
