@@ -5,7 +5,7 @@
  * Soporta validaciones personalizadas antes de completar citas
  */
 
-const { BusinessRule, Service, Appointment, ConsentSignature } = require('../models');
+const { BusinessRule, RuleTemplate, Service, Appointment, ConsentSignature } = require('../models');
 const { Op } = require('sequelize');
 
 class BusinessRuleService {
@@ -163,6 +163,62 @@ class BusinessRuleService {
     } catch (error) {
       console.error('Error obteniendo reglas del negocio:', error);
       return [];
+    }
+  }
+
+  /**
+   * Obtener el valor de una regla específica para un negocio
+   * @param {UUID} businessId - ID del negocio
+   * @param {string} ruleKey - Key de la regla (ej: 'RESERVAS_ONLINE_HABILITADAS')
+   * @returns {any} El valor de la regla (customValue o defaultValue)
+   */
+  static async getRuleValue(businessId, ruleKey) {
+    try {
+      // Buscar la regla del negocio
+      const businessRule = await BusinessRule.findOne({
+        where: {
+          businessId,
+          isActive: true
+        },
+        include: [
+          {
+            model: RuleTemplate,
+            as: 'ruleTemplate',
+            where: {
+              key: ruleKey
+            },
+            attributes: ['id', 'key', 'defaultValue', 'type']
+          }
+        ]
+      });
+
+      // Si el negocio tiene la regla configurada, usar su valor personalizado
+      if (businessRule && businessRule.customValue !== null && businessRule.customValue !== undefined) {
+        return businessRule.customValue;
+      }
+
+      // Si no tiene regla personalizada, buscar el template y usar el valor por defecto
+      if (businessRule && businessRule.ruleTemplate) {
+        return businessRule.ruleTemplate.defaultValue;
+      }
+
+      // Si el negocio no tiene la regla asignada, buscar el template para obtener el default
+      const ruleTemplate = await RuleTemplate.findOne({
+        where: { key: ruleKey },
+        attributes: ['defaultValue']
+      });
+
+      if (ruleTemplate) {
+        return ruleTemplate.defaultValue;
+      }
+
+      // Si no existe la regla, retornar null
+      console.warn(`Regla '${ruleKey}' no encontrada para negocio ${businessId}`);
+      return null;
+
+    } catch (error) {
+      console.error(`Error obteniendo valor de regla '${ruleKey}':`, error);
+      return null;
     }
   }
 
