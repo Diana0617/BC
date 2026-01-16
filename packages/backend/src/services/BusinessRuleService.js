@@ -144,7 +144,7 @@ class BusinessRuleService {
         },
         include: [
           {
-            association: 'ruleTemplate',
+            association: 'template',
             attributes: ['id', 'key', 'description', 'category', 'defaultValue', 'type']
           }
         ]
@@ -152,11 +152,11 @@ class BusinessRuleService {
 
       return rules.map(rule => ({
         id: rule.id,
-        ruleCode: rule.ruleTemplate?.key,           // 👈 Cambiado de 'code' a 'key'
-        ruleName: rule.ruleTemplate?.description,    // 👈 Cambiado de 'name' a 'description'
-        category: rule.ruleTemplate?.category,
-        value: rule.customValue || rule.ruleTemplate?.defaultValue,
-        valueType: rule.ruleTemplate?.type,          // 👈 Cambiado de 'valueType' a 'type'
+        ruleCode: rule.template?.key,
+        ruleName: rule.template?.description,
+        category: rule.template?.category,
+        value: rule.customValue || rule.template?.defaultValue,
+        valueType: rule.template?.type,
         isActive: rule.isActive
       }));
 
@@ -183,7 +183,7 @@ class BusinessRuleService {
         include: [
           {
             model: RuleTemplate,
-            as: 'ruleTemplate',
+            as: 'template',
             where: {
               key: ruleKey
             },
@@ -198,8 +198,8 @@ class BusinessRuleService {
       }
 
       // Si no tiene regla personalizada, buscar el template y usar el valor por defecto
-      if (businessRule && businessRule.ruleTemplate) {
-        return businessRule.ruleTemplate.defaultValue;
+      if (businessRule && businessRule.template) {
+        return businessRule.template.defaultValue;
       }
 
       // Si el negocio no tiene la regla asignada, buscar el template para obtener el default
