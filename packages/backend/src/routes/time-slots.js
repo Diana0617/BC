@@ -53,7 +53,7 @@ router.use(authenticateToken);
  *         description: Fechas requeridas
  */
 router.get('/availability',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
   [
     query('startDate').isISO8601().withMessage('Fecha de inicio inválida'),
     query('endDate').isISO8601().withMessage('Fecha de fin inválida'),
@@ -72,7 +72,7 @@ router.get('/availability',
  *     tags: [TimeSlots]
  */
 router.get('/next-available',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
   [
     query('specialistId').optional().isInt({ min: 1 }),
     query('duration').optional().isInt({ min: 15, max: 480 }),
@@ -90,7 +90,7 @@ router.get('/next-available',
  *     tags: [TimeSlots]
  */
 router.get('/business-availability',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     query('date').isISO8601().withMessage('Fecha inválida'),
     query('duration').optional().isInt({ min: 15, max: 480 })
@@ -106,7 +106,7 @@ router.get('/business-availability',
  *     tags: [TimeSlots]
  */
 router.get('/:slotId',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
   [
     param('slotId').isInt({ min: 1 }).withMessage('ID de slot inválido')
   ],
@@ -121,7 +121,7 @@ router.get('/:slotId',
  *     tags: [TimeSlots]
  */
 router.post('/:slotId/block',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     param('slotId').isInt({ min: 1 }).withMessage('ID de slot inválido'),
     body('reason').notEmpty().withMessage('Razón del bloqueo requerida'),
@@ -138,7 +138,7 @@ router.post('/:slotId/block',
  *     tags: [TimeSlots]
  */
 router.post('/:slotId/unblock',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     param('slotId').isInt({ min: 1 }).withMessage('ID de slot inválido'),
     body('notes').optional().isString()
@@ -154,7 +154,7 @@ router.post('/:slotId/unblock',
  *     tags: [TimeSlots]
  */
 router.post('/bulk-block',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     body('slotIds').isArray({ min: 1 }).withMessage('Lista de IDs requerida'),
     body('slotIds.*').isInt({ min: 1 }).withMessage('IDs inválidos'),
@@ -172,7 +172,7 @@ router.post('/bulk-block',
  *     tags: [TimeSlots]
  */
 router.post('/block-time-range',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     body('specialistId').isInt({ min: 1 }).withMessage('ID del especialista requerido'),
     body('startDateTime').isISO8601().withMessage('Fecha/hora de inicio inválida'),
@@ -191,7 +191,7 @@ router.post('/block-time-range',
  *     tags: [TimeSlots]
  */
 router.get('/utilization-stats',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     query('startDate').isISO8601().withMessage('Fecha de inicio inválida'),
     query('endDate').isISO8601().withMessage('Fecha de fin inválida'),
@@ -209,7 +209,7 @@ router.get('/utilization-stats',
  *     tags: [TimeSlots]
  */
 router.get('/utilization-report',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     query('startDate').isISO8601().withMessage('Fecha de inicio inválida'),
     query('endDate').isISO8601().withMessage('Fecha de fin inválida'),
@@ -226,7 +226,7 @@ router.get('/utilization-report',
  *     tags: [TimeSlots]
  */
 router.get('/search',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
   [
     query('startDate').isISO8601().withMessage('Fecha de inicio inválida'),
     query('endDate').isISO8601().withMessage('Fecha de fin inválida'),

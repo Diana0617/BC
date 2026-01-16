@@ -137,7 +137,7 @@ router.use(authenticateToken);
  *         description: No autorizado
  */
 router.post('/',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     body('name')
       .notEmpty()
@@ -215,7 +215,7 @@ router.post('/',
  *         description: No autorizado
  */
 router.get('/',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
   [
     query('specialistId').optional().isInt({ min: 1 }),
     query('type').optional().isIn(['REGULAR', 'SPECIAL', 'TEMPORARY']),
@@ -248,7 +248,7 @@ router.get('/',
  *         description: Horario no encontrado
  */
 router.get('/:scheduleId',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
   [
     param('scheduleId').isInt({ min: 1 }).withMessage('ID de horario inválido')
   ],
@@ -296,7 +296,7 @@ router.get('/:scheduleId',
  *         description: Horario no encontrado
  */
 router.put('/:scheduleId',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     param('scheduleId').isInt({ min: 1 }).withMessage('ID de horario inválido'),
     body('name').optional().isLength({ min: 3, max: 100 }),
@@ -381,7 +381,7 @@ router.delete('/:scheduleId',
  *         description: Error de validación
  */
 router.post('/:scheduleId/generate-slots',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     param('scheduleId').isInt({ min: 1 }).withMessage('ID de horario inválido'),
     body('startDate').isISO8601().withMessage('Fecha de inicio inválida'),
@@ -475,7 +475,7 @@ router.post('/bulk-generate',
  *         description: Fecha de inicio requerida
  */
 router.get('/agenda/weekly',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
   [
     query('startDate').isISO8601().withMessage('Fecha de inicio inválida'),
     query('specialistId').optional().isInt({ min: 1 })
@@ -518,7 +518,7 @@ router.get('/agenda/weekly',
  *         description: Año y mes requeridos
  */
 router.get('/agenda/monthly',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST', 'BUSINESS_SPECIALIST']),
   [
     query('year').isInt({ min: 2020, max: 2030 }).withMessage('Año inválido'),
     query('month').isInt({ min: 1, max: 12 }).withMessage('Mes inválido'),
@@ -556,7 +556,7 @@ router.get('/agenda/monthly',
  *         description: Error de validación
  */
 router.post('/validate-weekly',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     body('specialistId').isInt({ min: 1 }).withMessage('ID del especialista requerido'),
     body('weeklySchedule').isObject().withMessage('Configuración semanal requerida')
@@ -606,7 +606,7 @@ router.post('/validate-weekly',
  *         description: Horario original no encontrado
  */
 router.post('/:scheduleId/clone',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     param('scheduleId').isInt({ min: 1 }).withMessage('ID de horario inválido'),
     body('name').notEmpty().withMessage('Nombre del nuevo horario requerido'),
@@ -630,7 +630,7 @@ router.post('/:scheduleId/clone',
  *         description: Lista de plantillas disponibles
  */
 router.get('/templates',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   ScheduleController.getScheduleTemplates
 );
 
@@ -674,7 +674,7 @@ router.get('/templates',
  *         description: Error de validación
  */
 router.post('/from-template',
-  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST']),
+  authorizeRole(['OWNER', 'BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   [
     body('templateId').notEmpty().withMessage('ID de plantilla requerido'),
     body('name').notEmpty().withMessage('Nombre del horario requerido'),
