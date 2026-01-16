@@ -200,8 +200,39 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
   };
 
   const handleComplete = async () => {
-    // Abrir el modal de flujo de trabajo para fotos después
-    setWorkflowAction('complete');
+    try {
+      setActionLoading('complete');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentDetails.id}/status`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            status: 'COMPLETED',
+            businessId: businessId
+          })
+        }
+      );
+
+      if (!response.ok) throw new Error('Error completando turno');
+
+      const data = await response.json();
+      setAppointmentDetails(prev => ({ ...prev, status: 'COMPLETED' }));
+      toast.success('✅ Turno completado');
+      onUpdate();
+    } catch (error) {
+      toast.error(error.message || 'No se pudo completar el turno');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUploadAfterPhoto = () => {
+    // Abrir modal para subir foto de "después"
+    setWorkflowAction('after-photo');
     setShowWorkflowModal(true);
   };
 
@@ -609,6 +640,14 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
                     className="px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-2 text-sm"
                   >
                     📷 Subir foto antes
+                  </button>
+                )}
+                {['IN_PROGRESS', 'COMPLETED'].includes(appointmentDetails.status) && (
+                  <button
+                    onClick={handleUploadAfterPhoto}
+                    className="px-4 py-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors flex items-center gap-2 text-sm"
+                  >
+                    📷 Subir foto después
                   </button>
                 )}
               </div>
