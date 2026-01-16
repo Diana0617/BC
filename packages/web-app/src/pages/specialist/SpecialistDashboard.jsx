@@ -302,17 +302,27 @@ export default function SpecialistDashboard() {
       
       const effectiveBusinessId = user?.businessId || business?.id;
       
-      // Asegurar que specialistId tenga un valor
-      const specialistId = formData.specialistId || 
-                          (user?.role === 'SPECIALIST' && user?.specialistProfile?.id) || 
-                          user?.id;
+      // Determinar el specialistId correcto
+      // Para SPECIALIST y RECEPTIONIST_SPECIALIST, usar specialistProfile.id
+      // Para otros roles, usar el specialistId del formulario o user.id
+      let specialistId = formData.specialistId;
+      
+      if (!specialistId) {
+        if (['SPECIALIST', 'RECEPTIONIST_SPECIALIST'].includes(user?.role) && user?.specialistProfile?.id) {
+          specialistId = user.specialistProfile.id;
+          console.log('✅ Using specialistProfile.id for SPECIALIST/RECEPTIONIST_SPECIALIST:', specialistId);
+        } else {
+          specialistId = user?.id;
+          console.log('⚠️ Using user.id as fallback:', specialistId);
+        }
+      }
       
       if (!specialistId) {
         console.error('❌ No specialistId available');
         throw new Error('No se pudo determinar el especialista');
       }
       
-      console.log('✅ Using specialistId:', specialistId);
+      console.log('✅ Final specialistId:', specialistId);
       
       // Construir payload según lo que espera el backend
       // Convertir a ISO string sin forzar UTC para mantener la hora local
