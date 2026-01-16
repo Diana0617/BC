@@ -150,6 +150,15 @@ const RegisterSupplyModal = ({
     }
 
     // Registrar cada consumo
+    console.log('📦 RegisterSupplyModal - Datos del contexto:', {
+      branchId,
+      appointmentId,
+      shiftId,
+      specialistId,
+      userId: user?.id,
+      suppliesCount: supplies.length
+    });
+
     for (const supply of supplies) {
       const supplyData = {
         branchId: branchId || null,
@@ -163,9 +172,17 @@ const RegisterSupplyModal = ({
         notes: formData.notes
       };
 
+      console.log('🚀 RegisterSupplyModal - Enviando consumo:', {
+        supplyData,
+        productName: supply.product?.name,
+        productSku: supply.product?.sku
+      });
+
       try {
-        await dispatch(createSupply(supplyData)).unwrap();
+        const result = await dispatch(createSupply(supplyData)).unwrap();
+        console.log('✅ RegisterSupplyModal - Consumo registrado:', result);
       } catch (error) {
+        console.error('❌ RegisterSupplyModal - Error al registrar consumo:', error);
         // El error se maneja en el useEffect
         break;
       }
