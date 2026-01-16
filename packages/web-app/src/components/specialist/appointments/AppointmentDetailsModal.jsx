@@ -132,19 +132,20 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
   };
 
   const handleConfirm = async () => {
-    if (!window.confirm('¿Deseas confirmar este turno?')) return;
-
     try {
       setActionLoading('confirm');
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentDetails.id}/cancel`,
+        `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentDetails.id}/status`,
         {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ status: 'CONFIRMED' })
+          body: JSON.stringify({ 
+            status: 'CONFIRMED',
+            businessId: businessId
+          })
         }
       );
 
@@ -152,7 +153,7 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
 
       const data = await response.json();
       setAppointmentDetails(prev => ({ ...prev, status: 'CONFIRMED' }));
-      toast.success('Turno confirmado correctamente');
+      toast.success('✅ Turno confirmado');
       onUpdate();
     } catch (error) {
       toast.error(error.message || 'No se pudo confirmar el turno');
@@ -162,8 +163,39 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
   };
 
   const handleStart = async () => {
-    // Abrir el modal de flujo de trabajo
-    setWorkflowAction('start');
+    try {
+      setActionLoading('start');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentDetails.id}/status`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            status: 'IN_PROGRESS',
+            businessId: businessId
+          })
+        }
+      );
+
+      if (!response.ok) throw new Error('Error iniciando turno');
+
+      const data = await response.json();
+      setAppointmentDetails(prev => ({ ...prev, status: 'IN_PROGRESS' }));
+      toast.success('✅ Turno iniciado');
+      onUpdate();
+    } catch (error) {
+      toast.error(error.message || 'No se pudo iniciar el turno');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUploadBeforePhoto = () => {
+    // Abrir modal para subir foto de "antes"
+    setWorkflowAction('before-photo');
     setShowWorkflowModal(true);
   };
 
@@ -567,115 +599,130 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
             </div>
           ) : activeTab === 'details' && (
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-            <div className="flex items-center justify-end gap-3">
-              {/* Botón Cancelar (siempre visible excepto si ya está cancelado o completado) */}
-              {!['CANCELED', 'COMPLETED'].includes(appointmentDetails.status) && (
-                <>
-                  {showCancelForm ? (
-                    <>
+            <div className="flex items-center justify-between gap-3">
+              {/* Lado izquierdo - Botones opcionales según estado */}
+              <div className="flex items-center gap-2">
+                {['CONFIRMED', 'IN_PROGRESS'].includes(appointmentDetails.status) && (
+                  <button
+                    onClick={handleUploadBeforePhoto}
+                    className="px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-2 text-sm"
+                  >
+                    📷 Subir foto antes
+                  </button>
+                )}
+              </div>
+
+              {/* Lado derecho - Acciones principales */}
+              <div className="flex items-center gap-3">
+                {/* Botón Cancelar (siempre visible excepto si ya está cancelado o completado) */}
+                {!['CANCELED', 'COMPLETED'].includes(appointmentDetails.status) && (
+                  <>
+                    {showCancelForm ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            setShowCancelForm(false);
+                            setCancelReason('');
+                          }}
+                          className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                          Volver
+                        </button>
+                        <button
+                          onClick={handleCancel}
+                          disabled={actionLoading === 'cancel'}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {actionLoading === 'cancel' ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Cancelando...
+                            </>
+                          ) : (
+                            <>
+                              <XCircleIcon className="w-5 h-5" />
+                              Confirmar Cancelación
+                            </>
+                          )}
+                        </button>
+                      </>
+                    ) : (
                       <button
-                        onClick={() => {
-                          setShowCancelForm(false);
-                          setCancelReason('');
-                        }}
-                        className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                        onClick={() => setShowCancelForm(true)}
+                        className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
                       >
-                        Volver
+                        <XCircleIcon className="w-5 h-5" />
+                        Cancelar Turno
                       </button>
+                    )}
+                  </>
+                )}
+
+                {/* Acciones según estado */}
+                {!showCancelForm && (
+                  <>
+                    {appointmentDetails.status === 'PENDING' && (
                       <button
-                        onClick={handleCancel}
-                        disabled={actionLoading === 'cancel'}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        onClick={handleConfirm}
+                        disabled={actionLoading === 'confirm'}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                       >
-                        {actionLoading === 'cancel' ? (
+                        {actionLoading === 'confirm' ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Cancelando...
+                            Confirmando...
                           </>
                         ) : (
                           <>
-                            <XCircleIcon className="w-5 h-5" />
-                            Confirmar Cancelación
+                            <CheckCircleIcon className="w-5 h-5" />
+                            Confirmar
                           </>
                         )}
                       </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => setShowCancelForm(true)}
-                      className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      <XCircleIcon className="w-5 h-5" />
-                      Cancelar Turno
-                    </button>
-                  )}
-                </>
-              )}
+                    )}
 
-              {/* Acciones según estado */}
-              {!showCancelForm && (
-                <>
-                  {appointmentDetails.status === 'PENDING' && (
-                    <button
-                      onClick={handleConfirm}
-                      disabled={actionLoading === 'confirm'}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                    >
-                      {actionLoading === 'confirm' ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Confirmando...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircleIcon className="w-5 h-5" />
-                          Confirmar
-                        </>
-                      )}
-                    </button>
-                  )}
+                    {appointmentDetails.status === 'CONFIRMED' && (
+                      <button
+                        onClick={handleStart}
+                        disabled={actionLoading === 'start'}
+                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {actionLoading === 'start' ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Iniciando...
+                          </>
+                        ) : (
+                          <>
+                            <PlayCircleIcon className="w-5 h-5" />
+                            Iniciar
+                          </>
+                        )}
+                      </button>
+                    )}
 
-                  {appointmentDetails.status === 'CONFIRMED' && (
-                    <button
-                      onClick={handleStart}
-                      disabled={actionLoading === 'start'}
-                      className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                    >
-                      {actionLoading === 'start' ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Iniciando...
-                        </>
-                      ) : (
-                        <>
-                          <PlayCircleIcon className="w-5 h-5" />
-                          Iniciar
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {appointmentDetails.status === 'IN_PROGRESS' && (
-                    <button
-                      onClick={handleComplete}
-                      disabled={actionLoading === 'complete'}
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                    >
-                      {actionLoading === 'complete' ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Completando...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircleIcon className="w-5 h-5" />
-                          Completar
-                        </>
-                      )}
-                    </button>
-                  )}
-                </>
-              )}
+                    {appointmentDetails.status === 'IN_PROGRESS' && (
+                      <button
+                        onClick={handleComplete}
+                        disabled={actionLoading === 'complete'}
+                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {actionLoading === 'complete' ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Completando...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircleIcon className="w-5 h-5" />
+                            Completar
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
           )}
