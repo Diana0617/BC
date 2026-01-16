@@ -483,7 +483,7 @@ class BusinessConfigService {
         const SpecialistService = require('../models/SpecialistService');
         
         const serviceAssignments = profileData.serviceIds.map(serviceId => ({
-          specialistId: profile.id,
+          specialistId: profile.userId,
           serviceId: serviceId,
           businessId: businessId,
           isActive: true
@@ -491,7 +491,7 @@ class BusinessConfigService {
         }));
         
         await SpecialistService.bulkCreate(serviceAssignments, { transaction });
-        console.log(`✅ ${serviceAssignments.length} servicios asignados al especialista ${profile.id}`);
+        console.log(`✅ ${serviceAssignments.length} servicios asignados al especialista ${profile.userId}`);
       }
 
       await transaction.commit();

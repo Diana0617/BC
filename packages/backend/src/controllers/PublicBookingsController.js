@@ -164,15 +164,16 @@ class PublicBookingsController {
       const specialists = await SpecialistProfile.findAll({
         where: whereCondition,
         include: includeOptions,
-        attributes: ['id', 'specialties', 'bio', 'experienceYears'],
-        order: [['user', 'name', 'ASC']]
+        attributes: ['id', 'specialization', 'biography', 'experience', 'skills'],
+        order: [[{ model: User, as: 'user' }, 'name', 'ASC']]
       });
 
       // Formatear respuesta
       const formattedSpecialists = specialists.map(specialist => ({
         id: specialist.id,
         name: specialist.user.name,
-        specialties: specialist.specialties || [],
+        specialization: specialist.specialization,
+        skills: specialist.skills || [],
         branches: specialist.branches?.map(branch => ({
           id: branch.id,
           name: branch.name,
