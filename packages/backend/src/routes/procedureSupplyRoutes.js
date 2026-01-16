@@ -7,14 +7,14 @@ const { roleCheck } = require('../middleware/roleCheck');
 /**
  * Rutas de consumo de productos en procedimientos
  * Todas requieren autenticación
- * Roles permitidos: BUSINESS, BUSINESS_SPECIALIST, RECEPTIONIST, SPECIALIST
+ * Roles permitidos: BUSINESS, BUSINESS_SPECIALIST, RECEPTIONIST, RECEPTIONIST_SPECIALIST, SPECIALIST
  */
 
 // Crear registro de consumo
 router.post(
   '/',
   authenticateToken,
-  roleCheck(['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'SPECIALIST']),
+  roleCheck(['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST']),
   ProcedureSupplyController.createSupply
 );
 
@@ -22,7 +22,7 @@ router.post(
 router.get(
   '/stats',
   authenticateToken,
-  roleCheck(['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST']),
+  roleCheck(['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
   ProcedureSupplyController.getSupplyStats
 );
 
@@ -30,7 +30,7 @@ router.get(
 router.get(
   '/appointment/:appointmentId',
   authenticateToken,
-  roleCheck(['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'SPECIALIST']),
+  roleCheck(['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST']),
   ProcedureSupplyController.getSuppliesByAppointment
 );
 
@@ -38,7 +38,7 @@ router.get(
 router.get(
   '/',
   authenticateToken,
-  roleCheck(['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'SPECIALIST']),
+  roleCheck(['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST']),
   ProcedureSupplyController.getSupplies
 );
 
@@ -46,7 +46,7 @@ router.get(
 router.get(
   '/:id',
   authenticateToken,
-  roleCheck(['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'SPECIALIST']),
+  roleCheck(['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST']),
   ProcedureSupplyController.getSupplyById
 );
 
