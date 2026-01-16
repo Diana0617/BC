@@ -268,13 +268,18 @@ const StockInitial = () => {
             return;
           }
 
-          // Buscar sucursal por ID o nombre
-          const branch = branches.find(
-            b => b.id === branchIdentifier || b.name.toLowerCase() === branchIdentifier.toLowerCase()
-          );
+          // Normalizar el identificador de sucursal (eliminar espacios múltiples y trim)
+          const normalizedIdentifier = branchIdentifier.replace(/\s+/g, ' ').trim();
+
+          // Buscar sucursal por ID o nombre (con normalización)
+          const branch = branches.find(b => {
+            const normalizedBranchName = b.name.replace(/\s+/g, ' ').trim();
+            return b.id === normalizedIdentifier || 
+                   normalizedBranchName.toLowerCase() === normalizedIdentifier.toLowerCase();
+          });
 
           if (!branch) {
-            errors.push(`Línea ${index + 2}: Sucursal "${branchIdentifier}" no encontrada`);
+            errors.push(`Línea ${index + 2}: Sucursal "${normalizedIdentifier}" no encontrada. Sucursales disponibles: ${branches.map(b => b.name).join(', ')}`);
             return;
           }
 
@@ -571,11 +576,11 @@ const StockInitial = () => {
             <div className="mt-3 bg-white p-3 rounded border border-gray-300 font-mono text-xs overflow-x-auto">
               <div className="text-gray-500">Ejemplo:</div>
               <div className="mt-1 whitespace-nowrap">
-                SKU,Nombre Producto,Descripción,Barcode,Categoría,Precio Venta,Costo Unitario,Cantidad,Unidad
+                SKU,Nombre Producto,Descripción,Barcode,Categoría,Precio Venta,Costo Unitario,Cantidad,Unidad,Sucursal (ID o Nombre)
                 <br />
-                PROD001,Shampoo Keratina 500ml,Shampoo reparador,7501234567890,Cuidado Capilar,45000,25000,10,unidad
+                PROD001,Shampoo Keratina 500ml,Shampoo reparador,7501234567890,Cuidado Capilar,45000,25000,10,unidad,{branches[0]?.id || 'ID_SUCURSAL'}
                 <br />
-                PROD002,Tinte Rubio Ceniza,,,Coloración,35000,18000,5,unidad
+                PROD002,Tinte Rubio Ceniza,,,Coloración,35000,18000,5,unidad,{branches[0]?.name || 'NOMBRE_SUCURSAL'}
               </div>
             </div>
           </div>
