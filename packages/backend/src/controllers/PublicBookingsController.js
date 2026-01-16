@@ -17,6 +17,8 @@ const { Op, Sequelize } = require('sequelize');
 const TimeSlotService = require('../services/TimeSlotService');
 const WompiService = require('../services/WompiService');
 const { validationResult } = require('express-validator');
+const BusinessRuleService = require('../services/BusinessRuleService');
+
 
 class PublicBookingsController {
 
@@ -43,9 +45,13 @@ class PublicBookingsController {
         });
       }
 
-      // Verificar si el negocio tiene habilitado Online Bookings
-      const appointmentSettings = business.settings?.appointments || {};
-      if (!appointmentSettings.allowOnlineBooking) {
+      // Verificar si el negocio tiene habilitadas las reservas online (regla de negocio)
+      const onlineBookingEnabled = await BusinessRuleService.getRuleValue(
+        business.id,
+        'RESERVAS_ONLINE_HABILITADAS'
+      );
+
+      if (!onlineBookingEnabled) {
         return res.status(404).json({
           success: false,
           message: 'Este negocio no tiene habilitadas las reservas online'
@@ -338,9 +344,13 @@ class PublicBookingsController {
         });
       }
 
-      // Verificar configuración de bookings online
-      const appointmentSettings = business.settings?.appointments || {};
-      if (!appointmentSettings.allowOnlineBooking) {
+      // Verificar si el negocio tiene habilitadas las reservas online (regla de negocio)
+      const onlineBookingEnabled = await BusinessRuleService.getRuleValue(
+        business.id,
+        'RESERVAS_ONLINE_HABILITADAS'
+      );
+
+      if (!onlineBookingEnabled) {
         await transaction.rollback();
         return res.status(400).json({
           success: false,
