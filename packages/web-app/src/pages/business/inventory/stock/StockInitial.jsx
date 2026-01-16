@@ -268,18 +268,29 @@ const StockInitial = () => {
             return;
           }
 
-          // Normalizar el identificador de sucursal (eliminar espacios múltiples y trim)
-          const normalizedIdentifier = branchIdentifier.replace(/\s+/g, ' ').trim();
+          // Normalizar el identificador de sucursal (eliminar espacios múltiples, trim, y minúsculas)
+          const normalizedIdentifier = branchIdentifier.replace(/\s+/g, ' ').trim().toLowerCase();
 
-          // Buscar sucursal por ID o nombre (con normalización)
+          // Buscar sucursal por ID o nombre (con normalización robusta)
           const branch = branches.find(b => {
-            const normalizedBranchName = b.name.replace(/\s+/g, ' ').trim();
-            return b.id === normalizedIdentifier || 
-                   normalizedBranchName.toLowerCase() === normalizedIdentifier.toLowerCase();
+            const normalizedBranchId = b.id.toLowerCase();
+            const normalizedBranchName = b.name.replace(/\s+/g, ' ').trim().toLowerCase();
+            
+            console.log('🔍 Comparando:', {
+              csv: normalizedIdentifier,
+              branchName: normalizedBranchName,
+              branchId: normalizedBranchId,
+              matchName: normalizedBranchName === normalizedIdentifier,
+              matchId: normalizedBranchId === normalizedIdentifier
+            });
+            
+            return normalizedBranchId === normalizedIdentifier || 
+                   normalizedBranchName === normalizedIdentifier;
           });
 
           if (!branch) {
-            errors.push(`Línea ${index + 2}: Sucursal "${normalizedIdentifier}" no encontrada. Sucursales disponibles: ${branches.map(b => b.name).join(', ')}`);
+            const availableBranches = branches.map(b => `"${b.name}" (ID: ${b.id})`).join(', ');
+            errors.push(`Línea ${index + 2}: Sucursal "${branchIdentifier.trim()}" no encontrada. Verifica que el nombre coincida exactamente. Disponibles: ${availableBranches}`);
             return;
           }
 
