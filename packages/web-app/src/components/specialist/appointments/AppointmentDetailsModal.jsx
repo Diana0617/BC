@@ -388,6 +388,7 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
                 appointmentId={appointmentDetails.id}
                 specialistId={appointmentDetails.specialistId}
                 branchId={appointmentDetails.branchId}
+                serviceName={appointmentDetails.Service?.name || appointmentDetails.service?.name || appointmentDetails.serviceName}
               />
             ) : activeTab === 'sales' ? (
               <div className="space-y-4">

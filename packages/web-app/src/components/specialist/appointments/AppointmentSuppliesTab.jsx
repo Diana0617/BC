@@ -15,11 +15,13 @@ import RegisterSupplyModal from '../procedures/RegisterSupplyModal';
  * @param {String} appointmentId - ID del turno/cita
  * @param {String} specialistId - ID del especialista (opcional)
  * @param {String} branchId - ID de la sucursal (opcional)
+ * @param {String} serviceName - Nombre del servicio (opcional)
  */
 const AppointmentSuppliesTab = ({ 
   appointmentId,
   specialistId = null,
-  branchId = null
+  branchId = null,
+  serviceName = null
 }) => {
   const dispatch = useDispatch();
   const { appointmentSupplies, loading } = useSelector(state => state.procedureSupply);
@@ -214,6 +216,7 @@ const AppointmentSuppliesTab = ({
         appointmentId={appointmentId}
         specialistId={specialistId}
         branchId={branchId}
+        serviceName={serviceName}
       />
     </div>
   );

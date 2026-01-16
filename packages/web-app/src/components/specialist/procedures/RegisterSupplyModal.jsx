@@ -19,6 +19,7 @@ import { fetchProducts } from '@shared/store/slices/productsSlice';
  * @param {String} specialistId - ID del especialista
  * @param {String} branchId - ID de la sucursal (opcional)
  * @param {String} shiftId - ID del turno de caja (opcional)
+ * @param {String} serviceName - Nombre del servicio para autocompletar (opcional)
  */
 const RegisterSupplyModal = ({ 
   isOpen, 
@@ -26,7 +27,8 @@ const RegisterSupplyModal = ({
   appointmentId, 
   specialistId,
   branchId = null,
-  shiftId = null
+  shiftId = null,
+  serviceName = null
 }) => {
   const dispatch = useDispatch();
   const { loading, createSuccess, error } = useSelector(state => state.procedureSupply);
@@ -42,7 +44,7 @@ const RegisterSupplyModal = ({
     notes: ''
   });
 
-  // Cargar productos al abrir
+  // Cargar productos y autocompletar servicio al abrir
   useEffect(() => {
     if (isOpen && businessId) {
       dispatch(fetchProducts({ 
@@ -50,8 +52,12 @@ const RegisterSupplyModal = ({
         productType: 'FOR_PROCEDURES,BOTH',
         isActive: true
       }));
+      // Autocompletar con el nombre del servicio si está disponible
+      if (serviceName && !formData.reason) {
+        setFormData(prev => ({ ...prev, reason: serviceName }));
+      }
     }
-  }, [isOpen, businessId, dispatch]);
+  }, [isOpen, businessId, serviceName, dispatch]);
 
   // Manejar éxito
   useEffect(() => {
