@@ -16,6 +16,13 @@ class ProcedureSupplyController {
     const transaction = await sequelize.transaction();
     
     try {
+      console.log('📦 ProcedureSupply - createSupply - Body recibido:', JSON.stringify(req.body, null, 2));
+      console.log('📦 ProcedureSupply - createSupply - Usuario:', {
+        userId: req.user.id,
+        businessId: req.user.businessId,
+        role: req.user.role
+      });
+
       const {
         branchId,
         appointmentId,
@@ -31,9 +38,20 @@ class ProcedureSupplyController {
       const userId = req.user.id;
       const businessId = req.user.businessId;
 
+      // Validar campos requeridos
+      if (!productId) {
+        await transaction.rollback();
+        console.log('❌ Error: productId es requerido');
+        return res.status(400).json({
+          success: false,
+          error: 'productId es requerido'
+        });
+      }
+
       // Validar que se provea cantidad
       if (!quantity || quantity <= 0) {
         await transaction.rollback();
+        console.log('❌ Error: Cantidad inválida:', quantity);
         return res.status(400).json({
           success: false,
           error: 'La cantidad debe ser mayor a 0'
@@ -41,6 +59,7 @@ class ProcedureSupplyController {
       }
 
       // Validar producto
+      console.log('🔍 Buscando producto:', { productId, businessId });
       const product = await Product.findOne({
         where: {
           id: productId,
@@ -52,11 +71,14 @@ class ProcedureSupplyController {
 
       if (!product) {
         await transaction.rollback();
+        console.log('❌ Error: Producto no encontrado o no disponible');
         return res.status(400).json({
           success: false,
           error: 'Producto no encontrado o no disponible para procedimientos'
         });
       }
+
+      console.log('✅ Producto encontrado:', { id: product.id, name: product.name, trackInventory: product.trackInventory });
 
       // Validar stock si el producto lo requiere
       if (product.trackInventory) {
