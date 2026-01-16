@@ -194,9 +194,12 @@ export default function SpecialistDashboard() {
             setSpecialists(specialistsData.data || specialistsData || []);
           }
         } else {
-          // Para SPECIALIST, solo él mismo
+          // Para SPECIALIST, solo él mismo - usar specialistProfile.id si existe
+          const specialistId = user?.specialistProfile?.id || user.id;
           setSpecialists([{
-            id: user.id,
+            id: specialistId,
+            specialistProfileId: user?.specialistProfile?.id,
+            userId: user.id,
             firstName: user.firstName,
             lastName: user.lastName
           }]);

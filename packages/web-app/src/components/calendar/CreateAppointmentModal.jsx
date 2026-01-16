@@ -983,9 +983,11 @@ const CreateAppointmentModal = ({
                     {specialists
                       .filter(specialist => specialist.isActive !== false && specialist.status !== 'INACTIVE')
                       .map(specialist => {
-                        console.log('👤 Specialist:', specialist);
+                        // Usar specialistProfileId, SpecialistProfile.id, o id como fallback
+                        const specialistId = specialist.specialistProfileId || specialist.SpecialistProfile?.id || specialist.id;
+                        console.log('👤 Specialist:', { ...specialist, specialistId });
                         return (
-                          <option key={specialist.id} value={specialist.id}>
+                          <option key={specialistId} value={specialistId}>
                             {specialist.firstName} {specialist.lastName}
                           </option>
                         )
