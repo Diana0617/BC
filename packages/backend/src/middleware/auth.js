@@ -220,11 +220,11 @@ const requireSpecialist = async (req, res, next) => {
       });
     }
 
-    // Verificar que el rol sea SPECIALIST o BUSINESS_SPECIALIST
-    if (!['SPECIALIST', 'BUSINESS_SPECIALIST'].includes(req.user.role)) {
+    // Verificar que el rol sea SPECIALIST, BUSINESS_SPECIALIST, o RECEPTIONIST_SPECIALIST
+    if (!['SPECIALIST', 'BUSINESS_SPECIALIST', 'RECEPTIONIST_SPECIALIST'].includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        error: 'Acceso denegado. Rol SPECIALIST o BUSINESS_SPECIALIST requerido'
+        error: 'Acceso denegado. Rol SPECIALIST, BUSINESS_SPECIALIST o RECEPTIONIST_SPECIALIST requerido'
       });
     }
 
