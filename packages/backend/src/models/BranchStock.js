@@ -43,7 +43,6 @@ const BranchStock = sequelize.define('BranchStock', {
     type: DataTypes.INTEGER,
     allowNull: false,
     defaultValue: 0,
-    field: 'current_stock',
     validate: {
       min: 0
     }
@@ -52,7 +51,6 @@ const BranchStock = sequelize.define('BranchStock', {
     type: DataTypes.INTEGER,
     allowNull: false,
     defaultValue: 0,
-    field: 'min_stock',
     validate: {
       min: 0
     }
@@ -60,15 +58,13 @@ const BranchStock = sequelize.define('BranchStock', {
   maxStock: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    field: 'max_stock',
     validate: {
       min: 0
     }
   },
   lastCountDate: {
     type: DataTypes.DATE,
-    allowNull: true,
-    field: 'last_count_date'
+    allowNull: true
   },
   notes: {
     type: DataTypes.TEXT,
