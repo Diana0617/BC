@@ -142,7 +142,7 @@ const StockInitial = () => {
   };
 
   const handleDownloadTemplate = () => {
-    // Crear plantilla CSV con ejemplos actualizados incluyendo Descripción y Barcode (opcionales)
+    // Crear plantilla CSV con ejemplos actualizados incluyendo Descripción, Barcode y Sucursal
     const headers = [
       "SKU",
       "Nombre Producto",
@@ -153,7 +153,14 @@ const StockInitial = () => {
       "Costo Unitario",
       "Cantidad",
       "Unidad",
+      "Sucursal (ID o Nombre)", // Nueva columna
     ];
+
+    // Generar comentario con sucursales disponibles
+    const branchesComment = branches.length > 0 
+      ? `# Sucursales disponibles:\n${branches.map(b => `# - ${b.name} (ID: ${b.id})`).join('\n')}\n`
+      : '# No hay sucursales disponibles\n';
+
     const example1 = [
       "PROD001",
       "Shampoo Keratina 500ml",
@@ -164,6 +171,7 @@ const StockInitial = () => {
       "25000",
       "10",
       "unidad",
+      branches[0]?.id || "ID_SUCURSAL", // ID de la primera sucursal o placeholder
     ];
     const example2 = [
       "PROD002",
@@ -175,6 +183,7 @@ const StockInitial = () => {
       "18000",
       "5",
       "unidad",
+      branches[0]?.name || "NOMBRE_SUCURSAL", // Nombre de la primera sucursal o placeholder
     ];
     const example3 = [
       "PROD003",
@@ -186,9 +195,12 @@ const StockInitial = () => {
       "22000",
       "8",
       "unidad",
+      branches[1]?.id || branches[0]?.id || "ID_SUCURSAL", // ID de segunda sucursal o primera
     ];
 
     const csvContent = [
+      branchesComment,
+      "# Puedes usar el ID o el nombre de la sucursal en la columna 'Sucursal'",
       headers.join(","),
       example1.join(","),
       example2.join(","),
@@ -220,7 +232,7 @@ const StockInitial = () => {
     reader.onload = (event) => {
       try {
         const text = event.target.result;
-        const lines = text.split("\n").filter((line) => line.trim());
+        const lines = text.split("\n").filter((line) => line.trim() && !line.startsWith('#')); // Ignorar comentarios
 
         // Saltar la primera línea (encabezados)
         const dataLines = lines.slice(1);
@@ -231,7 +243,7 @@ const StockInitial = () => {
         dataLines.forEach((line, index) => {
           const parts = line.split(",").map((s) => s.trim());
 
-          // Formato esperado: SKU,Nombre,Categoría,Precio,Costo,Cantidad,Unidad
+          // Formato esperado: SKU,Nombre,Descripción,Barcode,Categoría,Precio,Costo,Cantidad,Unidad,Sucursal
           const [
             sku,
             name,
@@ -242,10 +254,27 @@ const StockInitial = () => {
             costStr,
             quantityStr,
             unit,
+            branchIdentifier, // Puede ser ID o nombre de sucursal
           ] = parts;
 
           if (!sku || !name) {
             errors.push(`Línea ${index + 2}: SKU y Nombre son obligatorios`);
+            return;
+          }
+
+          // Validar y buscar la sucursal
+          if (!branchIdentifier) {
+            errors.push(`Línea ${index + 2}: Sucursal es obligatoria`);
+            return;
+          }
+
+          // Buscar sucursal por ID o nombre
+          const branch = branches.find(
+            b => b.id === branchIdentifier || b.name.toLowerCase() === branchIdentifier.toLowerCase()
+          );
+
+          if (!branch) {
+            errors.push(`Línea ${index + 2}: Sucursal "${branchIdentifier}" no encontrada`);
             return;
           }
 
@@ -282,9 +311,10 @@ const StockInitial = () => {
             };
           }
 
-          if (stockItems.find((item) => item.productSku === sku)) {
+          // Verificar duplicados por SKU y sucursal
+          if (stockItems.find((item) => item.productSku === sku && item.branchId === branch.id)) {
             errors.push(
-              `Línea ${index + 2}: Producto con SKU "${sku}" ya fue agregado`
+              `Línea ${index + 2}: Producto con SKU "${sku}" ya fue agregado para la sucursal "${branch.name}"`
             );
             return;
           }
@@ -304,6 +334,8 @@ const StockInitial = () => {
             unit: product.unit,
             quantity,
             unitCost,
+            branchId: branch.id, // Agregar branchId
+            branchName: branch.name, // Agregar branchName para mostrar en la tabla
             _newProduct: product._isNew
               ? {
                   name: product.name,
@@ -736,6 +768,9 @@ const StockInitial = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Producto
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Sucursal
+                        </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Cantidad
                         </th>
@@ -751,8 +786,8 @@ const StockInitial = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {stockItems.map((item) => (
-                        <tr key={item.productId} className="hover:bg-gray-50">
+                      {stockItems.map((item, index) => (
+                        <tr key={`${item.productId}-${item.branchId}-${index}`} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
                               <div className="text-sm font-medium text-gray-900">
@@ -763,6 +798,11 @@ const StockInitial = () => {
                                 {item.unit}
                               </div>
                             </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {item.branchName || branches.find(b => b.id === item.branchId)?.name || 'Sin sucursal'}
+                            </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right">
                             <input
