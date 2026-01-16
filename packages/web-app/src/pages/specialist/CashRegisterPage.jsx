@@ -333,6 +333,7 @@ const CashRegisterPage = () => {
                 </div>
                 <CashRegisterMovementsUnified 
                   shiftId={activeCashRegister?.id}
+                  branchId={selectedBranchId}
                   onMovementAdded={() => {
                     checkActiveCashRegister()
                   }}

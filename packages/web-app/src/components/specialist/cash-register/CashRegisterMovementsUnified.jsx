@@ -21,7 +21,7 @@ import PendingPayments from './PendingPayments';
 /**
  * Componente unificado: Resumen + Movimientos de caja
  */
-export default function CashRegisterMovementsUnified({ shiftId: propShiftId, onMovementAdded }) {
+export default function CashRegisterMovementsUnified({ shiftId: propShiftId, branchId, onMovementAdded }) {
   const { token, user } = useSelector(state => state.auth);
   const [activeView, setActiveView] = useState('pending'); // 'pending' | 'summary' | 'movements'
   const [movements, setMovements] = useState([]);
@@ -46,8 +46,12 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, onM
       if (!user?.businessId) return;
 
       try {
+        let url = `${import.meta.env.VITE_API_URL}/api/cash-register/active-shift?businessId=${user.businessId}`;
+        if (branchId) {
+          url += `&branchId=${branchId}`;
+        }
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/cash-register/active-shift?businessId=${user.businessId}`,
+          url,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -69,7 +73,7 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, onM
     };
 
     loadActiveShift();
-  }, [propShiftId, user?.businessId, token]);
+  }, [propShiftId, user?.businessId, token, branchId]);
 
   useEffect(() => {
     if (activeView === 'movements' && activeShiftId) {
@@ -77,7 +81,7 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, onM
     } else if (activeView === 'summary' && activeShiftId) {
       loadShiftData();
     }
-  }, [activeShiftId, page, filters, activeView]);
+  }, [activeShiftId, page, filters, activeView, branchId]);
 
   const loadShiftData = async () => {
     if (!activeShiftId || !user?.businessId) {
@@ -87,8 +91,12 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, onM
     
     setLoading(true);
     try {
+      let url = `${import.meta.env.VITE_API_URL}/api/cash-register/shift/${activeShiftId}?businessId=${user.businessId}`;
+      if (branchId) {
+        url += `&branchId=${branchId}`;
+      }
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/cash-register/shift/${activeShiftId}?businessId=${user.businessId}`,
+        url,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -118,6 +126,10 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, onM
       const params = new URLSearchParams({
         businessId: user.businessId
       });
+
+      if (branchId) {
+        params.append('branchId', branchId);
+      }
 
       if (filters.type !== 'all') {
         params.append('type', filters.type);
