@@ -124,7 +124,7 @@ class PublicBookingsController {
         {
           model: User,
           as: 'user',
-          attributes: ['id', 'name', 'email'],
+          attributes: ['id', 'firstName', 'lastName', 'email'],
           required: true
         },
         {
@@ -165,13 +165,13 @@ class PublicBookingsController {
         where: whereCondition,
         include: includeOptions,
         attributes: ['id', 'specialization', 'biography', 'experience', 'skills'],
-        order: [[{ model: User, as: 'user' }, 'name', 'ASC']]
+        order: [[{ model: User, as: 'user' }, 'firstName', 'ASC']]
       });
 
       // Formatear respuesta
       const formattedSpecialists = specialists.map(specialist => ({
         id: specialist.id,
-        name: specialist.user.name,
+        name: `${specialist.user.firstName} ${specialist.user.lastName}`.trim(),
         specialization: specialist.specialization,
         skills: specialist.skills || [],
         branches: specialist.branches?.map(branch => ({
