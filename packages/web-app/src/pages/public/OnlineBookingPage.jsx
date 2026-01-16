@@ -10,8 +10,8 @@ import PaymentSelection from './components/PaymentSelection';
 import BookingConfirmation from './components/BookingConfirmation';
 import {
   fetchPublicServices,
-  nextStep,
-  prevStep,
+  nextStep as goToNextStep,
+  prevStep as goToPrevStep,
   clearErrors
 } from '@shared/store/slices/publicBookingSlice';
 
@@ -42,14 +42,13 @@ const OnlineBookingPage = () => {
     };
   }, [businessCode, dispatch]);
 
-  // Handlers para navegación entre pasos (ahora se usan directamente las actions)
-
-  const nextStep = () => {
-    dispatch(nextStep());
+  // Handlers para navegación entre pasos
+  const handleNextStep = () => {
+    dispatch(goToNextStep());
   };
 
-  const prevStep = () => {
-    dispatch(prevStep());
+  const handlePrevStep = () => {
+    dispatch(goToPrevStep());
   };
 
   const steps = [
@@ -149,45 +148,45 @@ const OnlineBookingPage = () => {
           {currentStep === 1 && (
             <ServiceSelection
               businessCode={businessCode}
-              onNext={nextStep}
+              onNext={handleNextStep}
             />
           )}
 
           {currentStep === 2 && (
             <SpecialistSelection
               businessCode={businessCode}
-              onNext={nextStep}
-              onBack={prevStep}
+              onNext={handleNextStep}
+              onBack={handlePrevStep}
             />
           )}
 
           {currentStep === 3 && (
             <DateTimeSelection
               businessCode={businessCode}
-              onNext={nextStep}
-              onBack={prevStep}
+              onNext={handleNextStep}
+              onBack={handlePrevStep}
             />
           )}
 
           {currentStep === 4 && (
             <ClientForm
-              onNext={nextStep}
-              onBack={prevStep}
+              onNext={handleNextStep}
+              onBack={handlePrevStep}
             />
           )}
 
           {currentStep === 5 && (
             <PaymentSelection
               businessCode={businessCode}
-              onNext={nextStep}
-              onBack={prevStep}
+              onNext={handleNextStep}
+              onBack={handlePrevStep}
             />
           )}
 
           {currentStep === 6 && (
             <BookingConfirmation
               businessCode={businessCode}
-              onBack={prevStep}
+              onBack={handlePrevStep}
             />
           )}
         </div>
