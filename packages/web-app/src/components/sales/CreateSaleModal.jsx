@@ -11,12 +11,14 @@ import {
   BanknotesIcon,
   ReceiptPercentIcon,
   TicketIcon,
-  StarIcon
+  StarIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import { createSale, clearCreateSuccess, clearSalesError } from '@shared/store/slices/salesSlice';
 import { fetchProducts } from '@shared/store/slices/productsSlice';
 import { searchClients, getClientVouchers, getClientBalance } from '@shared';
+import branchApi from '../../api/branchApi';
 
 /**
  * CreateSaleModal - Modal mejorado para registrar ventas
@@ -33,6 +35,7 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [branchName, setBranchName] = useState('');
   
   // Cliente
   const [clientSearch, setClientSearch] = useState('');
@@ -61,7 +64,7 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
     notes: ''
   });
 
-  // Cargar productos al abrir
+  // Cargar productos y nombre de sucursal al abrir
   useEffect(() => {
     if (isOpen && businessId) {
       dispatch(fetchProducts({ 
@@ -69,8 +72,19 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
         productType: 'FOR_SALE,BOTH',
         isActive: true
       }));
+      // Cargar nombre de la sucursal
+      if (branchId) {
+        branchApi.getBranches(businessId).then(response => {
+          const branch = response.data.find(b => b.id === branchId);
+          if (branch) {
+            setBranchName(branch.name);
+          }
+        }).catch(err => {
+          console.error('Error loading branch:', err);
+        });
+      }
     }
-  }, [isOpen, businessId, dispatch]);
+  }, [isOpen, businessId, branchId, dispatch]);
 
   // Buscar clientes
   useEffect(() => {
@@ -391,10 +405,20 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b">
-          <div className="flex items-center gap-3">
-            <ShoppingCartIcon className="h-6 w-6 text-blue-600" />
-            <h2 className="text-2xl font-bold text-gray-900">Nueva Venta</h2>
+        <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-50 to-green-50">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <ShoppingCartIcon className="h-6 w-6 text-blue-600" />
+              <h2 className="text-2xl font-bold text-gray-900">Nueva Venta</h2>
+            </div>
+            {branchName && (
+              <div className="flex items-center gap-2 ml-9">
+                <BuildingOfficeIcon className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-700">
+                  Sucursal: {branchName}
+                </span>
+              </div>
+            )}
           </div>
           <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
             <XMarkIcon className="h-6 w-6" />
@@ -422,27 +446,45 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
                   {filteredProducts.length === 0 ? (
                     <div className="p-4 text-gray-500 text-center">No se encontraron productos</div>
                   ) : (
-                    filteredProducts.map(product => (
-                      <div
-                        key={product.id}
-                        onClick={() => {
-                          setSelectedProduct(product);
-                          handleAddProduct();
-                        }}
-                        className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 flex justify-between"
-                      >
-                        <div>
-                          <p className="font-medium">{product.name}</p>
-                          <p className="text-sm text-gray-500">{product.sku}</p>
+                    filteredProducts.map(product => {
+                      const branchStock = product.branchStocks?.find(bs => bs.branchId === branchId);
+                      const availableStock = branchStock?.currentStock || 0;
+                      const hasStock = availableStock > 0 || !product.trackInventory;
+                      
+                      return (
+                        <div
+                          key={product.id}
+                          onClick={() => {
+                            if (hasStock) {
+                              setSelectedProduct(product);
+                              handleAddProduct();
+                            } else {
+                              toast.error(`${product.name} no tiene stock disponible en esta sucursal`);
+                            }
+                          }}
+                          className={`p-3 border-b last:border-b-0 flex justify-between ${
+                            hasStock ? 'hover:bg-gray-50 cursor-pointer' : 'bg-gray-50 cursor-not-allowed opacity-60'
+                          }`}
+                        >
+                          <div>
+                            <p className={`font-medium ${!hasStock ? 'text-gray-400' : ''}`}>{product.name}</p>
+                            <p className="text-sm text-gray-500">{product.sku}</p>
+                            {product.trackInventory && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className={`text-xs font-medium ${
+                                  hasStock ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  Stock: {availableStock} {product.unit || 'unidades'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-blue-600">${product.price?.toLocaleString()}</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-blue-600">${product.price?.toLocaleString()}</p>
-                          {product.trackInventory && (
-                            <p className="text-sm text-gray-500">Stock: {product.currentStock}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               )}
