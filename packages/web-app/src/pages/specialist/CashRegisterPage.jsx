@@ -35,6 +35,19 @@ const CashRegisterPage = () => {
   // Si hay múltiples sucursales, inicializar con la primera
   const [selectedBranchId, setSelectedBranchId] = useState(null)
   
+  // Determinar si el usuario puede cambiar de sucursal libremente
+  const canChangeBranch = useMemo(() => {
+    return user?.role === 'BUSINESS' || user?.role === 'OWNER'
+  }, [user?.role])
+  
+  // Para roles no-BUSINESS/OWNER: usar branchId del turno activo si existe
+  const effectiveBranchId = useMemo(() => {
+    if (activeCashRegister?.branchId && !canChangeBranch) {
+      return activeCashRegister.branchId
+    }
+    return selectedBranchId
+  }, [activeCashRegister?.branchId, selectedBranchId, canChangeBranch])
+  
   // Cargar sucursales del negocio si el usuario no tiene branches asignadas
   useEffect(() => {
     const loadBusinessBranches = async () => {
@@ -91,8 +104,8 @@ const CashRegisterPage = () => {
       let url = `${import.meta.env.VITE_API_URL}/api/cash-register/active-shift?businessId=${user.businessId}`;
       
       // Si hay múltiples sucursales y se seleccionó una, filtrar por ella
-      if (hasMultipleBranchesAvailable && selectedBranchId) {
-        url += `&branchId=${selectedBranchId}`;
+      if (hasMultipleBranchesAvailable && effectiveBranchId) {
+        url += `&branchId=${effectiveBranchId}`;
       }
       
       const response = await fetch(url, {
@@ -121,11 +134,11 @@ const CashRegisterPage = () => {
     } finally {
       setLoading(false)
     }
-  }, [token, user?.businessId, hasMultipleBranchesAvailable, selectedBranchId])
+  }, [token, user?.businessId, hasMultipleBranchesAvailable, effectiveBranchId])
 
   useEffect(() => {
     checkActiveCashRegister()
-  }, [checkActiveCashRegister, selectedBranchId])
+  }, [checkActiveCashRegister, effectiveBranchId])
 
   const loadShiftData = useCallback(async () => {
     if (!activeCashRegister?.id || !token || !user?.businessId) return;
@@ -253,7 +266,7 @@ const CashRegisterPage = () => {
           </div>
 
           {/* Branch Selector for Multi-Branch Businesses */}
-          {hasMultipleBranchesAvailable && (
+          {hasMultipleBranchesAvailable && (canChangeBranch || !activeCashRegister) && (
             <div className="mt-4 flex items-center gap-3">
               <label htmlFor="branch-select" className="flex items-center gap-2 text-sm font-medium text-gray-700">
                 <BuildingOfficeIcon className="h-5 w-5 text-gray-400" />
@@ -273,7 +286,21 @@ const CashRegisterPage = () => {
                 ))}
               </select>
               <span className="text-xs text-gray-500">
-                Viendo caja de esta sucursal
+                {canChangeBranch ? 'Viendo caja de esta sucursal' : 'Selecciona sucursal para abrir caja'}
+              </span>
+            </div>
+          )}
+          
+          {/* Mostrar sucursal actual cuando la caja está abierta y no puede cambiar */}
+          {hasMultipleBranchesAvailable && !canChangeBranch && activeCashRegister && (
+            <div className="mt-4 flex items-center gap-3">
+              <BuildingOfficeIcon className="h-5 w-5 text-gray-400" />
+              <span className="text-sm font-medium text-gray-700">Sucursal:</span>
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                {availableBranches.find(b => b.id === effectiveBranchId)?.name || 'Sucursal Actual'}
+              </span>
+              <span className="text-xs text-gray-500">
+                (Caja abierta en esta sucursal)
               </span>
             </div>
           )}
@@ -333,7 +360,7 @@ const CashRegisterPage = () => {
                 </div>
                 <CashRegisterMovementsUnified 
                   shiftId={activeCashRegister?.id}
-                  branchId={selectedBranchId}
+                  branchId={effectiveBranchId}
                   onMovementAdded={() => {
                     checkActiveCashRegister()
                   }}
