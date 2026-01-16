@@ -252,21 +252,26 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
         userData.password = formData.password;
       }
 
-      // Si es RECEPTIONIST, crear con profileData mínimo (solo isActive y branchId)
-      // Si es SPECIALIST o RECEPTIONIST_SPECIALIST, crear con profileData completo
+      // Preparar profileData con información de sucursales
       let profileData = {
         isActive: formData.isActive
       };
 
-      // Solo incluir branchId si hay uno seleccionado
+      // Incluir branchId (sucursal principal) - si no hay, el backend creará una automáticamente
       if (formData.branchId) {
         profileData.branchId = formData.branchId;
       }
 
-      // Solo incluir additionalBranches si hay seleccionadas
+      // Incluir additionalBranches (sucursales adicionales)
       if (formData.additionalBranches && formData.additionalBranches.length > 0) {
         profileData.additionalBranches = formData.additionalBranches;
       }
+      
+      console.log('🔍 Datos de sucursales a enviar:', {
+        branchId: profileData.branchId,
+        additionalBranches: profileData.additionalBranches,
+        totalBranches: (profileData.branchId ? 1 : 0) + (profileData.additionalBranches?.length || 0)
+      });
 
       // Si NO es RECEPTIONIST puro, incluir datos profesionales
       if (formData.role !== 'RECEPTIONIST') {
@@ -300,16 +305,23 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
       if (editingSpecialist) {
         // Actualizar especialista existente
-        await businessSpecialistsApi.updateSpecialistProfile(
+        const updateResult = await businessSpecialistsApi.updateSpecialistProfile(
           activeBusiness.id, 
           editingSpecialist.id, 
           { ...userData, ...profileData }
         );
+        console.log('✅ Especialista actualizado:', updateResult);
       } else {
         // Crear nuevo especialista
-        await businessSpecialistsApi.createSpecialist(activeBusiness.id, {
+        const createResult = await businessSpecialistsApi.createSpecialist(activeBusiness.id, {
           userData,
           profileData
+        });
+        console.log('✅ Especialista creado:', {
+          userId: createResult.data?.user?.id,
+          profileId: createResult.data?.profile?.id,
+          role: createResult.data?.user?.role,
+          branches: createResult.data?.branches
         });
         
         // Si es el primer registro en modo setup, completar paso
