@@ -1697,6 +1697,30 @@ SpecialistProfile.belongsTo(Business, {
   as: 'business' 
 });
 
+// SpecialistProfile - Service (muchos a muchos a través de specialist_services)
+// Nota: La tabla specialist_services usa userId (User), no specialistProfileId
+// Usamos la relación a través de User
+SpecialistProfile.belongsToMany(Service, {
+  through: {
+    model: SpecialistService,
+    unique: false
+  },
+  foreignKey: 'specialistId',
+  otherKey: 'serviceId',
+  sourceKey: 'userId', // Usar userId de SpecialistProfile
+  as: 'services'
+});
+Service.belongsToMany(SpecialistProfile, {
+  through: {
+    model: SpecialistService,
+    unique: false
+  },
+  foreignKey: 'serviceId',
+  otherKey: 'specialistId',
+  targetKey: 'userId', // Mapear a userId de SpecialistProfile
+  as: 'specialistProfiles'
+});
+
 // Business - Schedule (uno a muchos)
 Business.hasMany(Schedule, { 
   foreignKey: 'businessId', 
