@@ -82,27 +82,41 @@ class ProcedureSupplyController {
 
       // Validar stock si el producto lo requiere
       if (product.trackInventory) {
+        console.log('📊 Validando stock - trackInventory: true');
         let availableStock;
         
         if (branchId) {
+          console.log('🏢 Buscando stock por sucursal:', { branchId, productId: product.id });
           // Stock por sucursal
           const branchStock = await BranchStock.findOne({
             where: { branchId, productId: product.id }
           });
           
+          console.log('📦 BranchStock encontrado:', branchStock ? {
+            id: branchStock.id,
+            currentStock: branchStock.currentStock,
+            minStock: branchStock.minStock
+          } : 'NO EXISTE');
+          
           availableStock = branchStock ? branchStock.currentStock : 0;
         } else {
+          console.log('🌍 Usando stock global');
           // Stock global
           availableStock = product.currentStock;
         }
 
+        console.log('📊 Stock disponible:', availableStock, '- Cantidad solicitada:', quantity);
+
         if (availableStock < quantity) {
           await transaction.rollback();
+          console.log('❌ Error: Stock insuficiente');
           return res.status(400).json({
             success: false,
             error: `Stock insuficiente de ${product.name}. Disponible: ${availableStock}, Solicitado: ${quantity}`
           });
         }
+
+        console.log('✅ Stock suficiente, continuando...');
       }
 
       // Validar especialista si se proporciona
