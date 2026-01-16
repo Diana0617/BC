@@ -16,7 +16,7 @@ import PaymentModal from './PaymentModal';
  * Lista de turnos pendientes de pago
  * Filtrados según el rol del usuario
  */
-export default function PendingPayments({ shiftId }) {
+export default function PendingPayments({ shiftId, branchId }) {
   const { user, token } = useSelector(state => state.auth);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -29,7 +29,7 @@ export default function PendingPayments({ shiftId }) {
 
   useEffect(() => {
     loadPendingPayments();
-  }, [shiftId, filters]);
+  }, [shiftId, filters, branchId]);
 
   const loadPendingPayments = async () => {
     if (!token) return;
@@ -39,6 +39,7 @@ export default function PendingPayments({ shiftId }) {
       const params = new URLSearchParams({
         businessId: user.businessId,
         paymentStatus: 'PENDING',
+        ...(branchId && { branchId }),
         ...(filters.status !== 'all' && { status: filters.status }),
         ...(filters.searchTerm && { search: filters.searchTerm })
       });

@@ -254,7 +254,7 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, bra
 
       {/* Vista: Turnos Pendientes */}
       {activeView === 'pending' && (
-        <PendingPayments shiftId={activeShiftId} onPaymentComplete={onMovementAdded} />
+        <PendingPayments shiftId={activeShiftId} branchId={branchId} onPaymentComplete={onMovementAdded} />
       )}
 
       {/* Vista: Resumen */}
