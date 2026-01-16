@@ -62,7 +62,7 @@ class PublicBookingsController {
       const services = await Service.findAll({
         where: {
           businessId: business.id,
-          status: 'ACTIVE'
+          isActive: true
         },
         attributes: [
           'id',
@@ -234,7 +234,7 @@ class PublicBookingsController {
           where: {
             id: serviceId,
             businessId: business.id,
-            status: 'ACTIVE'
+            isActive: true
           }
         });
 
@@ -363,7 +363,7 @@ class PublicBookingsController {
         where: {
           id: serviceId,
           businessId: business.id,
-          status: 'ACTIVE'
+          isActive: true
         },
         transaction
       });
