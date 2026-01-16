@@ -98,6 +98,20 @@ const ruleTemplates = [
       descriptions: ['Permitir citas simultáneas', 'Solo una cita a la vez']
     }
   },
+  {
+    key: 'RESERVAS_ONLINE_HABILITADAS',
+    type: 'BOOLEAN',
+    defaultValue: true,
+    description: 'Permitir que los clientes agenden citas online a través del enlace público',
+    category: 'BOOKING_POLICY',
+    allowCustomization: true,
+    version: '1.0.0',
+    requiredModule: 'online_booking',
+    examples: {
+      values: [true, false],
+      descriptions: ['Reservas online habilitadas', 'Reservas online deshabilitadas']
+    }
+  },
 
   // =====================
   // VALIDACIONES DE COMPLETAR CITAS (BusinessRuleService)
