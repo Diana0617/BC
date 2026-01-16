@@ -162,6 +162,7 @@ class SupplierInvoiceController {
       }
 
       const {
+        branchId, // Sucursal destino de la compra
         supplierId,
         supplierData, // Datos para crear proveedor si no existe
         invoiceNumber,
@@ -179,6 +180,7 @@ class SupplierInvoiceController {
       } = req.body;
 
       console.log('📎 Attachments recibidos:', attachments);
+      console.log('🏢 BranchId recibido:', branchId);
 
       // Validaciones
       if (!invoiceNumber || !issueDate || !dueDate || !items || items.length === 0) {
@@ -186,6 +188,28 @@ class SupplierInvoiceController {
         return res.status(400).json({
           success: false,
           message: 'Faltan campos requeridos: invoiceNumber, issueDate, dueDate, items'
+        });
+      }
+
+      if (!branchId) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'branchId es requerido para asignar el stock a una sucursal'
+        });
+      }
+
+      // Verificar que la sucursal existe y pertenece al negocio
+      const branch = await Branch.findOne({
+        where: { id: branchId, businessId },
+        transaction
+      });
+
+      if (!branch) {
+        await transaction.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Sucursal no encontrada o no pertenece a este negocio'
         });
       }
 
@@ -348,6 +372,7 @@ class SupplierInvoiceController {
         await InventoryMovement.create({
           businessId,
           productId: item.productId,
+          branchId, // Asociar movimiento a la sucursal
           userId,
           movementType: 'PURCHASE',
           quantity: item.quantity, // Cantidad positiva para entrada
@@ -356,7 +381,7 @@ class SupplierInvoiceController {
           previousStock,
           newStock,
           reason: `Entrada por factura ${invoiceNumber}`,
-          notes: `Factura de proveedor: ${supplier.name}`,
+          notes: `Factura de proveedor: ${supplier.name} - Sucursal: ${branch.name}`,
           referenceId: invoice.id,
           referenceType: 'SUPPLIER_INVOICE',
           supplierInfo: {
@@ -366,7 +391,7 @@ class SupplierInvoiceController {
           }
         }, { transaction });
 
-        // Actualizar stock del producto
+        // Actualizar stock del producto (global)
         const updateData = {
           currentStock: newStock,
           cost: item.unitCost // Actualizar costo con el último costo de compra
@@ -379,7 +404,39 @@ class SupplierInvoiceController {
         
         await product.update(updateData, { transaction });
 
-        console.log(`✅ Stock actualizado: ${product.name} | ${previousStock} → ${newStock} (+${item.quantity})`);
+        console.log(`✅ Stock global actualizado: ${product.name} | ${previousStock} → ${newStock} (+${item.quantity})`);
+
+        // 🔥 ACTUALIZAR O CREAR BRANCH_STOCK
+        const branchStock = await BranchStock.findOne({
+          where: { branchId, productId: item.productId },
+          transaction
+        });
+
+        if (branchStock) {
+          // Actualizar stock existente
+          const previousBranchStock = branchStock.currentStock;
+          const newBranchStock = previousBranchStock + item.quantity;
+          
+          await branchStock.update({
+            currentStock: newBranchStock,
+            lastCountDate: new Date()
+          }, { transaction });
+
+          console.log(`✅ Stock de sucursal actualizado: ${product.name} en ${branch.name} | ${previousBranchStock} → ${newBranchStock} (+${item.quantity})`);
+        } else {
+          // Crear registro de stock en sucursal
+          await BranchStock.create({
+            businessId,
+            branchId,
+            productId: item.productId,
+            currentStock: item.quantity,
+            minStock: 0,
+            maxStock: null,
+            lastCountDate: new Date()
+          }, { transaction });
+
+          console.log(`✅ Stock de sucursal creado: ${product.name} en ${branch.name} | Stock inicial: ${item.quantity}`);
+        }
       }
 
       await transaction.commit();

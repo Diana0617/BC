@@ -21,6 +21,11 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Branch data
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [loadingBranches, setLoadingBranches] = useState(false);
+
   // Supplier data
   const [useExistingSupplier, setUseExistingSupplier] = useState(false);
   const [suppliers, setSuppliers] = useState([]);
@@ -76,7 +81,35 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
   useEffect(() => {
     // Load products for selection
     dispatch(fetchProducts({ isActive: true, limit: 1000 }));
+    // Load branches
+    loadBranches();
   }, [dispatch]);
+
+  const loadBranches = async () => {
+    try {
+      setLoadingBranches(true);
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/business/${user.businessId}/branches`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setBranches(data.data || []);
+        // Seleccionar la primera sucursal por defecto
+        if (data.data && data.data.length > 0) {
+          setSelectedBranchId(data.data[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading branches:', error);
+    } finally {
+      setLoadingBranches(false);
+    }
+  };
 
   useEffect(() => {
     // Load suppliers when using existing supplier
@@ -338,6 +371,10 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
   };
 
   const validateStep1 = () => {
+    if (!selectedBranchId) {
+      setError('Debe seleccionar una sucursal destino');
+      return false;
+    }
     if (useExistingSupplier) {
       if (!selectedSupplierId) {
         setError('Debe seleccionar un proveedor');
@@ -439,6 +476,7 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
       });
 
       const payload = {
+        branchId: selectedBranchId, // Sucursal destino de la compra
         invoiceNumber: invoiceData.invoiceNumber,
         issueDate: invoiceData.issueDate,
         dueDate: invoiceData.dueDate,
@@ -518,6 +556,38 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
           {/* Step 1: Supplier & Invoice Info */}
           {step === 1 && (
             <div className="space-y-6">
+              {/* Selector de Sucursal */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Sucursal Destino
+                </h3>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-800">
+                    📦 Los productos de esta compra se agregarán al inventario de la sucursal seleccionada
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sucursal <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={selectedBranchId}
+                    onChange={(e) => setSelectedBranchId(e.target.value)}
+                    disabled={loadingBranches}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">
+                      {loadingBranches ? 'Cargando sucursales...' : 'Seleccionar sucursal...'}
+                    </option>
+                    {branches.map(branch => (
+                      <option key={branch.id} value={branch.id}>
+                        {branch.name} {branch.code ? `(${branch.code})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Información del Proveedor
