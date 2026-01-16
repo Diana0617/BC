@@ -4,11 +4,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
   XMarkIcon,
   BeakerIcon,
-  PlusIcon
+  PlusIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import { createSupply, clearCreateSuccess, clearSupplyError } from '@shared/store/slices/procedureSupplySlice';
 import { fetchProducts } from '@shared/store/slices/productsSlice';
+import branchApi from '../../../api/branchApi';
 
 /**
  * RegisterSupplyModal - Modal para registrar consumo de productos en procedimientos
@@ -39,12 +41,13 @@ const RegisterSupplyModal = ({
   const [supplies, setSupplies] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [branchName, setBranchName] = useState('');
   const [formData, setFormData] = useState({
     reason: '',
     notes: ''
   });
 
-  // Cargar productos y autocompletar servicio al abrir
+  // Cargar productos, sucursal y autocompletar servicio al abrir
   useEffect(() => {
     if (isOpen && businessId) {
       dispatch(fetchProducts({ 
@@ -56,8 +59,19 @@ const RegisterSupplyModal = ({
       if (serviceName && !formData.reason) {
         setFormData(prev => ({ ...prev, reason: serviceName }));
       }
+      // Cargar nombre de la sucursal
+      if (branchId) {
+        branchApi.getBranches(businessId).then(response => {
+          const branch = response.data.find(b => b.id === branchId);
+          if (branch) {
+            setBranchName(branch.name);
+          }
+        }).catch(err => {
+          console.error('Error loading branch:', err);
+        });
+      }
     }
-  }, [isOpen, businessId, serviceName, dispatch]);
+  }, [isOpen, businessId, serviceName, branchId, dispatch]);
 
   // Manejar éxito
   useEffect(() => {
@@ -195,12 +209,22 @@ const RegisterSupplyModal = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b">
-          <div className="flex items-center gap-3">
-            <BeakerIcon className="h-6 w-6 text-purple-600" />
-            <h2 className="text-2xl font-bold text-gray-900">
-              Registrar Consumo de Productos
-            </h2>
+        <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-purple-50 to-blue-50">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <BeakerIcon className="h-6 w-6 text-purple-600" />
+              <h2 className="text-2xl font-bold text-gray-900">
+                Registrar Consumo de Productos
+              </h2>
+            </div>
+            {branchName && (
+              <div className="flex items-center gap-2 ml-9">
+                <BuildingOfficeIcon className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-700">
+                  Sucursal: {branchName}
+                </span>
+              </div>
+            )}
           </div>
           <button
             onClick={handleClose}
@@ -236,31 +260,45 @@ const RegisterSupplyModal = ({
                       No se encontraron productos
                     </div>
                   ) : (
-                    filteredProducts.map(product => (
-                      <div
-                        key={product.id}
-                        onClick={() => {
-                          setSelectedProduct(product);
-                          handleAddSupply();
-                        }}
-                        className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 flex justify-between items-center"
-                      >
-                        <div>
-                          <p className="font-medium">{product.name}</p>
-                          <p className="text-sm text-gray-500">{product.sku}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600">
-                            Costo: ${product.cost?.toLocaleString()}
-                          </p>
-                          {product.trackInventory && (
-                            <p className="text-sm text-gray-500">
-                              Stock: {product.currentStock} {product.unit}
+                    filteredProducts.map(product => {
+                      const branchStock = product.branchStocks?.find(bs => bs.branchId === branchId);
+                      const availableStock = branchStock?.currentStock || 0;
+                      const hasStock = availableStock > 0;
+                      
+                      return (
+                        <div
+                          key={product.id}
+                          onClick={() => {
+                            if (hasStock) {
+                              setSelectedProduct(product);
+                              handleAddSupply();
+                            } else {
+                              toast.error(`${product.name} no tiene stock disponible en esta sucursal`);
+                            }
+                          }}
+                          className={`p-3 border-b last:border-b-0 flex justify-between items-center ${
+                            hasStock ? 'hover:bg-gray-50 cursor-pointer' : 'bg-gray-50 cursor-not-allowed opacity-60'
+                          }`}
+                        >
+                          <div>
+                            <p className={`font-medium ${!hasStock ? 'text-gray-400' : ''}`}>{product.name}</p>
+                            <p className="text-sm text-gray-500">{product.sku}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-xs font-medium ${
+                                hasStock ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                Stock: {availableStock} {product.unit || 'unidades'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-gray-600">
+                              Costo: ${product.cost?.toLocaleString()}
                             </p>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               )}
