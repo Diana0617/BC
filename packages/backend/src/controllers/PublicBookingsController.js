@@ -461,6 +461,11 @@ class PublicBookingsController {
           businessId: business.id,
           status: 'ACTIVE'
         },
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName']
+        }],
         transaction
       });
 
@@ -623,7 +628,7 @@ class PublicBookingsController {
               price: service.price
             },
             specialist: {
-              name: specialist.user.name
+              name: `${specialist.user.firstName} ${specialist.user.lastName}`.trim()
             },
             client: {
               name: clientName,
