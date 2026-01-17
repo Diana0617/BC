@@ -407,8 +407,8 @@ router.get('/business/:businessCode/payment-info', [
  */
 router.post('/business/:businessCode', [
   param('businessCode').isString().notEmpty(),
-  body('serviceId').isInt(),
-  body('specialistId').isInt(),
+  body('serviceId').isUUID(),
+  body('specialistId').isUUID(),
   body('branchId').optional().isUUID(),
   body('date').isDate(),
   body('time').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
@@ -416,7 +416,7 @@ router.post('/business/:businessCode', [
   body('clientEmail').isEmail(),
   body('clientPhone').isString().notEmpty(),
   body('notes').optional().isString(),
-  body('paymentMethod').optional().isString()
+  body('paymentMethod').optional().isUUID()
 ], PublicBookingsController.createBooking);
 
 /**
