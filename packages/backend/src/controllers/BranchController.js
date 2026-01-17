@@ -412,7 +412,7 @@ class BranchController {
       // Verificar que no haya conflicto de horarios
       const conflictingSchedule = await SpecialistBranchSchedule.findOne({
         where: {
-          specialistProfileId: specialistId,
+          specialistId: specialistId,
           branchId,
           dayOfWeek,
           isActive: true
@@ -428,7 +428,7 @@ class BranchController {
 
       // Crear el horario
       const schedule = await SpecialistBranchSchedule.create({
-        specialistProfileId: specialistId,
+        specialistId: specialistId,
         branchId,
         dayOfWeek,
         startTime,
