@@ -248,6 +248,7 @@ class PublicBookingsController {
       }
 
       // Verificar que el especialista existe y pertenece al negocio (specialistId es userId)
+      console.log('🔍 Buscando especialista con userId:', specialistId, 'businessId:', business.id);
       const specialistProfile = await SpecialistProfile.findOne({
         where: {
           userId: specialistId,
@@ -261,6 +262,12 @@ class PublicBookingsController {
         }]
       });
 
+      console.log('✅ Especialista encontrado:', specialistProfile ? {
+        id: specialistProfile.id,
+        userId: specialistProfile.userId,
+        specialization: specialistProfile.specialization
+      } : 'NO ENCONTRADO');
+
       if (!specialistProfile) {
         return res.status(404).json({
           success: false,
@@ -270,6 +277,7 @@ class PublicBookingsController {
 
       // Obtener sucursales donde el especialista tiene horarios configurados
       const { SpecialistBranchSchedule, Branch } = require('../models');
+      console.log('🔍 Buscando schedules para specialistProfile.id:', specialistProfile.id);
       const scheduledBranches = await SpecialistBranchSchedule.findAll({
         where: {
           specialistId: specialistProfile.id,
@@ -286,6 +294,8 @@ class PublicBookingsController {
         attributes: ['branchId'],
         group: ['branchId', 'branch.id', 'branch.name', 'branch.address']
       });
+
+      console.log('✅ Schedules encontrados:', scheduledBranches.length, 'sucursales');
 
       // Extraer las sucursales únicas
       const branches = scheduledBranches
