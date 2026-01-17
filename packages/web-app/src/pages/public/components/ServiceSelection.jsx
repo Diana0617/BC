@@ -84,16 +84,16 @@ const ServiceSelection = ({ businessCode, onNext }) => {
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h3 className="font-medium text-gray-900">{service.name}</h3>
+                <h3 className="font-medium text-gray-900">{service?.name || 'Servicio'}</h3>
                 {service.description && (
                   <p className="text-sm text-gray-600 mt-1">{service.description}</p>
                 )}
                 <div className="flex items-center gap-4 mt-3">
                   <span className="text-sm text-gray-500">
-                    ⏱️ {service.duration} min
+                    ⏱️ {service?.duration || 0} min
                   </span>
                   <span className="font-semibold text-green-600">
-                    ${service.price.toLocaleString('es-CO')}
+                    ${service?.price?.toLocaleString('es-CO') || '0'}
                   </span>
                 </div>
                 {service.category && (

@@ -122,7 +122,7 @@ const DateTimeSelection = ({ businessCode, onNext, onBack }) => {
           Selecciona fecha y hora
         </h2>
         <p className="text-gray-600">
-          Elige cuándo quieres tu {bookingData.service.name.toLowerCase()} con {bookingData.specialist.name}
+          Elige cuándo quieres tu {bookingData.service?.name?.toLowerCase() || 'servicio'} con {bookingData.specialist?.name || 'el especialista'}
         </p>
       </div>
 

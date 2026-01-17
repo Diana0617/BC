@@ -176,9 +176,8 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
                   }`} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{method.name}</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {method.type === 'CASH' && 'Paga directamente en el establecimiento'}
+                  <h3 className="font-medium text-gray-900">{method?.name || 'Método de pago'}</h3>
+                  <p className="text-sm text-gray-600 mt-1">{method.type === 'CASH' && 'Paga directamente en el establecimiento'}
                     {method.type === 'CARD' && 'Paga con tarjeta de crédito o débito'}
                     {method.type === 'TRANSFER' && 'Transferencia o consignación bancaria'}
                     {method.type === 'QR' && 'Paga escaneando el código QR'}

@@ -77,7 +77,7 @@ const SpecialistSelection = ({ businessCode, onNext, onBack }) => {
           Selecciona un especialista
         </h2>
         <p className="text-gray-600">
-          Elige el especialista para tu {bookingData.service.name.toLowerCase()}
+          Elige el especialista para tu {bookingData.service?.name?.toLowerCase() || 'servicio'}
         </p>
       </div>
 
@@ -107,7 +107,7 @@ const SpecialistSelection = ({ businessCode, onNext, onBack }) => {
                     <UserIcon className="w-6 h-6 text-gray-500" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{specialist.name}</h3>
+                    <h3 className="font-medium text-gray-900">{specialist?.name || 'Especialista'}</h3>
                     {specialist.specialties && specialist.specialties.length > 0 && (
                       <p className="text-sm text-gray-600 mt-1">
                         Especialista en: {specialist.specialties.join(', ')}
@@ -122,7 +122,7 @@ const SpecialistSelection = ({ businessCode, onNext, onBack }) => {
                               key={index}
                               className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full"
                             >
-                              {service.name}
+                              {service?.name || 'Servicio'}
                             </span>
                           ))}
                           {specialist.services.length > 3 && (
