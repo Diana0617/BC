@@ -171,8 +171,8 @@ class PublicBookingsController {
 
       // Formatear respuesta
       const formattedSpecialists = specialists.map(specialist => ({
-        id: specialist.userId, // Usar userId para que coincida con appointments.specialistId
-        specialistProfileId: specialist.id, // ID del perfil por si se necesita
+        id: specialist.id, // ID del SpecialistProfile (para compatibilidad con frontend y schedules)
+        userId: specialist.userId, // userId del User (para crear appointments)
         name: `${specialist.user.firstName} ${specialist.user.lastName}`.trim(),
         specialization: specialist.specialization,
         skills: specialist.skills || [],
@@ -247,11 +247,11 @@ class PublicBookingsController {
         });
       }
 
-      // Verificar que el especialista existe y pertenece al negocio (specialistId es userId)
-      console.log('🔍 Buscando especialista con userId:', specialistId, 'businessId:', business.id);
+      // Verificar que el especialista existe y pertenece al negocio (specialistId es el SpecialistProfile.id)
+      console.log('🔍 Buscando especialista con id:', specialistId, 'businessId:', business.id);
       const specialistProfile = await SpecialistProfile.findOne({
         where: {
-          userId: specialistId,
+          id: specialistId,
           businessId: business.id,
           status: 'ACTIVE'
         },
@@ -340,7 +340,7 @@ class PublicBookingsController {
                 availability[dateStr].push({
                   time: slot.startTime,
                   endTime: slot.endTime,
-                  specialistId: specialistProfile.userId, // userId para consistency
+                  specialistId: specialistProfile.id, // SpecialistProfile.id para consistency
                   specialistName: specialistName,
                   branchId: branch.id,
                   branchName: branch.name,
@@ -454,10 +454,10 @@ class PublicBookingsController {
         });
       }
 
-      // Verificar que el especialista existe (specialistId ahora es userId)
+      // Verificar que el especialista existe (specialistId es SpecialistProfile.id)
       const specialist = await SpecialistProfile.findOne({
         where: {
-          userId: specialistId,
+          id: specialistId,
           businessId: business.id,
           status: 'ACTIVE'
         },
@@ -545,7 +545,7 @@ class PublicBookingsController {
         businessId: business.id,
         branchId: branchId || null,
         clientId: client.id,
-        specialistId,
+        specialistId: specialist.userId, // Usar userId para foreign key a users
         serviceId,
         date: appointmentDateTime,
         startTime,
