@@ -622,6 +622,15 @@ class BusinessConfigService {
         transaction
       });
       
+      // Si no se encuentra por PK, intentar buscar por userId
+      if (!profile) {
+        profile = await SpecialistProfile.findOne({
+          where: { userId: profileId },
+          include: [{ model: User, as: 'user' }],
+          transaction
+        });
+      }
+      
       // Si no existe el perfil, verificar si es un usuario BUSINESS sin SpecialistProfile
       if (!profile) {
         const user = await User.findByPk(profileId, { transaction });
@@ -687,6 +696,58 @@ class BusinessConfigService {
       // Actualizar perfil si hay cambios
       if (Object.keys(specialistData).length > 0) {
         await profile.update(specialistData, { transaction });
+      }
+      
+      // Procesar sucursales (branchId y additionalBranches)
+      // Importante: para BUSINESS, si no se envían sucursales, asignar TODAS automáticamente
+      const user = profile.user || await User.findByPk(profile.userId, { transaction });
+      const isBusiness = user && ['BUSINESS', 'BUSINESS_SPECIALIST'].includes(user.role);
+      
+      if (isBusiness && !profileData.branchId && (!profileData.additionalBranches || profileData.additionalBranches.length === 0)) {
+        // Usuario BUSINESS sin sucursales especificadas: asignar TODAS
+        console.log('🔄 Usuario BUSINESS sin sucursales especificadas, asignando todas...');
+        const allBranches = await Branch.findAll({
+          where: {
+            businessId: user.businessId,
+            status: 'ACTIVE'
+          },
+          transaction
+        });
+        
+        if (allBranches.length > 0) {
+          await profile.setBranches(allBranches, { transaction });
+          console.log(`✅ Asignadas ${allBranches.length} sucursales automáticamente a usuario BUSINESS`);
+        }
+      } else if (profileData.branchId || (profileData.additionalBranches && profileData.additionalBranches.length > 0)) {
+        // Construir lista de todas las sucursales a asignar
+        const branchIds = [];
+        
+        // Agregar sucursal principal si existe
+        if (profileData.branchId) {
+          branchIds.push(profileData.branchId);
+        }
+        
+        // Agregar sucursales adicionales si existen
+        if (profileData.additionalBranches && Array.isArray(profileData.additionalBranches)) {
+          branchIds.push(...profileData.additionalBranches);
+        }
+        
+        // Eliminar duplicados
+        const uniqueBranchIds = [...new Set(branchIds)];
+        
+        if (uniqueBranchIds.length > 0) {
+          console.log(`🔄 Asignando ${uniqueBranchIds.length} sucursales al especialista...`);
+          
+          // Obtener instancias de Branch
+          const branches = await Branch.findAll({
+            where: { id: uniqueBranchIds },
+            transaction
+          });
+          
+          // Usar setBranches para reemplazar todas las asignaciones
+          await profile.setBranches(branches, { transaction });
+          console.log(`✅ Sucursales actualizadas correctamente`);
+        }
       }
       
       await transaction.commit();
