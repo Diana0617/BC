@@ -26,6 +26,9 @@ const SpecialistSelection = ({ businessCode, onNext, onBack }) => {
 
   const handleSpecialistSelect = (specialist) => {
     console.log('✅ SpecialistSelection - Especialista seleccionado:', specialist);
+    console.log('🔍 ¿Tiene ID?:', specialist.id);
+    console.log('🔍 ¿Tiene specialistProfileId?:', specialist.specialistProfileId);
+    console.log('🔍 Todas las keys:', Object.keys(specialist));
     dispatch(updateBookingData({ specialist }));
   };
 
