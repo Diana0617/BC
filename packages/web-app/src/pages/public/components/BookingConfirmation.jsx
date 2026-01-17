@@ -39,17 +39,23 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
   }, [createdBooking, bookingData, navigate]);
 
   const handleConfirmBooking = () => {
+    // Validar que tenemos todos los datos antes de enviar
+    if (!bookingData.service?.id || !bookingData.specialist?.id || !bookingData.dateTime?.date || !bookingData.clientData?.name) {
+      console.error('Faltan datos para crear la reserva', bookingData);
+      return;
+    }
+
     // Preparar datos para la API
     const bookingPayload = {
       serviceId: bookingData.service.id,
       specialistId: bookingData.specialist.id,
-      branchId: bookingData.dateTime.branchId,
+      branchId: bookingData.dateTime?.branchId,
       date: bookingData.dateTime.date,
       time: bookingData.dateTime.time,
       clientName: bookingData.clientData.name,
       clientEmail: bookingData.clientData.email,
       clientPhone: bookingData.clientData.phone,
-      notes: bookingData.clientData.notes,
+      notes: bookingData.clientData?.notes || '',
       paymentMethod: bookingData.paymentMethod
     };
 
@@ -57,22 +63,31 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
   };
 
   const formatDateTime = (date, time) => {
-    const dateTime = new Date(`${date}T${time}`);
-    return {
-      date: dateTime.toLocaleDateString('es-ES', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      }),
-      time: dateTime.toLocaleTimeString('es-ES', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    };
+    if (!date || !time) {
+      return { date: '', time: '' };
+    }
+    
+    try {
+      const dateTime = new Date(`${date}T${time}`);
+      return {
+        date: dateTime.toLocaleDateString('es-ES', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        }),
+        time: dateTime.toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      };
+    } catch (error) {
+      console.error('Error formateando fecha:', error);
+      return { date: date || '', time: time || '' };
+    }
   };
 
-  const { date, time } = formatDateTime(bookingData.dateTime.date, bookingData.dateTime.time);
+  const { date, time } = formatDateTime(bookingData.dateTime?.date, bookingData.dateTime?.time);
 
   return (
     <div>
