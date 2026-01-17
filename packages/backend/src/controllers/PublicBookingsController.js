@@ -14,6 +14,7 @@ const {
   Client
 } = require('../models');
 const { Op, Sequelize } = require('sequelize');
+const { sequelize } = require('../config/database');
 const TimeSlotService = require('../services/TimeSlotService');
 const WompiService = require('../services/WompiService');
 const { validationResult } = require('express-validator');
@@ -365,7 +366,7 @@ class PublicBookingsController {
    * POST /api/public/bookings/business/{businessCode}
    */
   static async createBooking(req, res) {
-    const transaction = await Sequelize.transaction();
+    const transaction = await sequelize.transaction();
 
     try {
       const { businessCode } = req.params;
