@@ -497,10 +497,10 @@ class BranchController {
       }
 
       // Si se está actualizando el día de la semana, verificar conflictos
-      if (updateData.dayOfWeek !== undefined || updateData.specialistProfileId !== undefined) {
+      if (updateData.dayOfWeek !== undefined || updateData.specialistId !== undefined) {
         const conflictCheck = await SpecialistBranchSchedule.findOne({
           where: {
-            specialistProfileId: updateData.specialistProfileId || schedule.specialistProfileId,
+            specialistId: updateData.specialistId || schedule.specialistId,
             branchId,
             dayOfWeek: updateData.dayOfWeek || schedule.dayOfWeek,
             isActive: true,
