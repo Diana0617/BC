@@ -562,7 +562,7 @@ class BranchController {
 
       // Filtros opcionales
       if (specialistId) {
-        where.specialistProfileId = specialistId;
+        where.specialistId = specialistId;
       }
 
       if (dayOfWeek !== undefined) {
