@@ -5,7 +5,8 @@ import {
   getPublicAvailability,
   createPublicBooking,
   uploadPaymentProof,
-  getPaymentInfo
+  getPaymentInfo,
+  getPaymentMethods
 } from '../../api/publicBookingApi.js';
 
 // Async thunk para obtener servicios públicos
@@ -86,6 +87,19 @@ export const fetchPaymentInfo = createAsyncThunk(
   }
 );
 
+// Async thunk para obtener métodos de pago
+export const fetchPaymentMethods = createAsyncThunk(
+  'publicBooking/fetchPaymentMethods',
+  async (businessCode, { rejectWithValue }) => {
+    try {
+      const response = await getPaymentMethods(businessCode);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
 const initialState = {
   // Datos de servicios y especialistas
   services: [],
@@ -96,6 +110,7 @@ const initialState = {
 
   // Información de pago
   paymentInfo: null,
+  paymentMethods: [],
 
   // Estado del flujo de booking
   currentStep: 1,
@@ -122,6 +137,7 @@ const initialState = {
   isCreatingBooking: false,
   isUploadingProof: false,
   isLoadingPaymentInfo: false,
+  isLoadingPaymentMethods: false,
   isLoadingBusinessInfo: false,
 
   // Errores
@@ -131,6 +147,7 @@ const initialState = {
   bookingError: null,
   uploadError: null,
   paymentInfoError: null,
+  paymentMethodsError: null,
   businessInfoError: null,
 
   // Éxito de operaciones
@@ -299,6 +316,21 @@ const publicBookingSlice = createSlice({
       .addCase(fetchPaymentInfo.rejected, (state, action) => {
         state.isLoadingPaymentInfo = false;
         state.paymentInfoError = action.payload;
+      })
+
+      // Fetch Payment Methods
+      .addCase(fetchPaymentMethods.pending, (state) => {
+        state.isLoadingPaymentMethods = true;
+        state.paymentMethodsError = null;
+      })
+      .addCase(fetchPaymentMethods.fulfilled, (state, action) => {
+        state.isLoadingPaymentMethods = false;
+        state.paymentMethods = action.payload.data.paymentMethods;
+        state.businessInfo = action.payload.data.businessInfo;
+      })
+      .addCase(fetchPaymentMethods.rejected, (state, action) => {
+        state.isLoadingPaymentMethods = false;
+        state.paymentMethodsError = action.payload;
       });
   }
 });

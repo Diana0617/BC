@@ -102,3 +102,16 @@ export const getPaymentInfo = async (businessCode, paymentMethod) => {
     throw error;
   }
 };
+
+/**
+ * Obtener métodos de pago activos del negocio
+ */
+export const getPaymentMethods = async (businessCode) => {
+  try {
+    const response = await apiClient.get(`/api/public/bookings/business/${businessCode}/payment-methods`);
+    return response.data;
+  } catch (error) {
+    console.error('Error obteniendo métodos de pago:', error);
+    throw error;
+  }
+};

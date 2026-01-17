@@ -8,10 +8,7 @@ import {
   QrCodeIcon,
   GlobeAltIcon
 } from '@heroicons/react/24/outline';
-import { updateBookingData } from '@shared/store/slices/publicBookingSlice';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'https://beautycontrol-api.azurewebsites.net/api';
+import { updateBookingData, fetchPaymentMethods } from '@shared/store/slices/publicBookingSlice';
 
 // Mapeo de tipos a iconos
 const PAYMENT_TYPE_ICONS = {
@@ -27,37 +24,22 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
   const dispatch = useDispatch();
 
   // Obtener estado de Redux
-  const { bookingData } = useSelector(state => state.publicBooking);
+  const { 
+    bookingData, 
+    paymentMethods, 
+    businessInfo, 
+    isLoadingPaymentMethods, 
+    paymentMethodsError 
+  } = useSelector(state => state.publicBooking);
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [paymentMethods, setPaymentMethods] = useState([]);
-  const [businessInfo, setBusinessInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   // Cargar métodos de pago al montar
   useEffect(() => {
-    fetchPaymentMethods();
-  }, [businessCode]);
-
-  const fetchPaymentMethods = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        `${API_URL}/public/bookings/business/${businessCode}/payment-methods`
-      );
-      
-      if (response.data.success) {
-        setPaymentMethods(response.data.data.paymentMethods);
-        setBusinessInfo(response.data.data.businessInfo);
-      }
-    } catch (err) {
-      console.error('Error al cargar métodos de pago:', err);
-      setError('No se pudieron cargar los métodos de pago');
-    } finally {
-      setLoading(false);
+    if (paymentMethods.length === 0) {
+      dispatch(fetchPaymentMethods(businessCode));
     }
-  };
+  }, [businessCode, paymentMethods.length, dispatch]);
 
   const handlePaymentSelect = (methodId) => {
     const selectedMethod = paymentMethods.find(m => m.id === methodId);
@@ -77,7 +59,7 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
 
   const selectedMethod = paymentMethods.find(m => m.id === bookingData.paymentMethod);
 
-  if (loading) {
+  if (isLoadingPaymentMethods) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -85,10 +67,10 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
     );
   }
 
-  if (error) {
+  if (paymentMethodsError) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-        <p className="text-red-600">{error}</p>
+        <p className="text-red-600">{paymentMethodsError}</p>
       </div>
     );
   }
