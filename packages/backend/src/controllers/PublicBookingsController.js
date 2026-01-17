@@ -171,7 +171,8 @@ class PublicBookingsController {
 
       // Formatear respuesta
       const formattedSpecialists = specialists.map(specialist => ({
-        id: specialist.id,
+        id: specialist.userId, // Usar userId para que coincida con appointments.specialistId
+        specialistProfileId: specialist.id, // ID del perfil por si se necesita
         name: `${specialist.user.firstName} ${specialist.user.lastName}`.trim(),
         specialization: specialist.specialization,
         skills: specialist.skills || [],
@@ -443,10 +444,10 @@ class PublicBookingsController {
         });
       }
 
-      // Verificar que el especialista existe
+      // Verificar que el especialista existe (specialistId ahora es userId)
       const specialist = await SpecialistProfile.findOne({
         where: {
-          id: specialistId,
+          userId: specialistId,
           businessId: business.id,
           status: 'ACTIVE'
         },
