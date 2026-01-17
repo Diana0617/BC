@@ -143,22 +143,29 @@ class PublicBookingsController {
       }
 
       // Si se especifica un servicio, filtrar especialistas que lo ofrecen
+      // Usamos un include separado para el filtro
       if (serviceId) {
         includeOptions.push({
           model: Service,
           as: 'services',
           where: { id: serviceId },
-          attributes: ['id', 'name', 'price'],
-          required: true
-        });
-      } else {
-        includeOptions.push({
-          model: Service,
-          as: 'services',
-          attributes: ['id', 'name', 'price'],
-          required: false
+          attributes: [],
+          required: true,
+          duplicating: false
         });
       }
+
+      // Siempre incluir todos los servicios del especialista para mostrar
+      includeOptions.push({
+        model: Service,
+        as: 'allServices',
+        attributes: ['id', 'name', 'price'],
+        required: false,
+        through: {
+          attributes: ['customPrice', 'canBeBooked'],
+          where: { isActive: true }
+        }
+      });
 
       // Obtener especialistas
       const specialists = await SpecialistProfile.findAll({
@@ -179,10 +186,11 @@ class PublicBookingsController {
           name: branch.name,
           code: branch.code
         })) || [],
-        services: specialist.services?.map(service => ({
+        services: specialist.allServices?.map(service => ({
           id: service.id,
           name: service.name,
-          price: service.price
+          price: service.SpecialistService?.customPrice || service.price,
+          canBeBooked: service.SpecialistService?.canBeBooked ?? true
         })) || []
       }));
 
