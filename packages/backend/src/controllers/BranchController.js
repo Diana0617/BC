@@ -578,14 +578,16 @@ class BranchController {
         include: [
           {
             model: SpecialistProfile,
+            as: 'specialist',
             include: [{
               model: require('../models').User,
               as: 'user',
-              attributes: ['id', 'name', 'email']
+              attributes: ['id', 'firstName', 'lastName', 'email']
             }]
           },
           {
             model: Branch,
+            as: 'branch',
             where: { businessId },
             required: true
           }
