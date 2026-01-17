@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircleIcon, ClockIcon, UserIcon, CalendarIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import { createBooking } from '@shared/store/slices/publicBookingSlice';
 
+console.log('🚀🚀🚀 BookingConfirmation.jsx CARGADO - Versión:', new Date().toISOString());
+
 const BookingConfirmation = ({ businessCode, onBack }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();

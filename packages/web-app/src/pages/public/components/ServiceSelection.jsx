@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { fetchPublicServices, updateBookingData } from '@shared/store/slices/publicBookingSlice';
 
+console.log('🚀🚀🚀 ServiceSelection.jsx CARGADO - Versión:', new Date().toISOString());
+
 const ServiceSelection = ({ businessCode, onNext }) => {
   const dispatch = useDispatch();
 
