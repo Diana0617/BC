@@ -500,6 +500,10 @@ class PublicBookingsController {
 
       // Combinar fecha y hora
       const appointmentDateTime = new Date(`${date}T${time}`);
+      
+      // Calcular startTime y endTime
+      const startTime = appointmentDateTime;
+      const endTime = new Date(appointmentDateTime.getTime() + service.duration * 60000); // duration en minutos
 
       // TODO: Implementar verificación de disponibilidad
       // Verificar que el slot esté disponible
@@ -536,6 +540,8 @@ class PublicBookingsController {
         specialistId,
         serviceId,
         date: appointmentDateTime,
+        startTime,
+        endTime,
         duration: service.duration,
         price: service.price,
         status: initialStatus,
