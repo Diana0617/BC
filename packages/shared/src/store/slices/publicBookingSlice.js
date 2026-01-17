@@ -28,6 +28,9 @@ export const fetchPublicSpecialists = createAsyncThunk(
   async ({ businessCode, serviceId }, { rejectWithValue }) => {
     try {
       const response = await getPublicSpecialists(businessCode, serviceId);
+      console.log('🔍 Response completo:', response);
+      console.log('🔍 Response.data:', response.data);
+      console.log('🔍 Primer especialista:', response.data?.[0]);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
