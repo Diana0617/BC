@@ -286,6 +286,20 @@ class SpecialistServiceController {
             status: 'ACTIVE'
           });
           console.log('✅ SpecialistProfile creado para usuario BUSINESS:', specialist.id);
+          
+          // Asignar TODAS las sucursales automáticamente
+          const Branch = require('../models').Branch;
+          const branches = await Branch.findAll({
+            where: {
+              businessId: businessId || userBusinessId,
+              status: 'ACTIVE'
+            }
+          });
+          
+          if (branches.length > 0) {
+            await specialist.setBranches(branches);
+            console.log(`✅ Asignadas ${branches.length} sucursales a BUSINESS specialist`);
+          }
         } else {
           return res.status(404).json({
             success: false,

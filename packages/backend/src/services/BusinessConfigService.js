@@ -477,6 +477,22 @@ class BusinessConfigService {
         await UserBranch.bulkCreate(additionalBranchAssignments, { transaction });
       }
 
+      // Si es BUSINESS/BUSINESS_SPECIALIST con perfil, asignar TODAS las sucursales automáticamente
+      if (profile && ['BUSINESS', 'BUSINESS_SPECIALIST'].includes(userData.role)) {
+        const allBranches = await Branch.findAll({
+          where: {
+            businessId: businessId,
+            status: 'ACTIVE'
+          },
+          transaction
+        });
+        
+        if (allBranches.length > 0) {
+          await profile.setBranches(allBranches, { transaction });
+          console.log(`✅ ${allBranches.length} sucursales asignadas automáticamente a usuario BUSINESS`);
+        }
+      }
+
       // ==================== ASIGNAR SERVICIOS AL ESPECIALISTA ====================
       // Solo asignar servicios si se creó un perfil de especialista
       if (profile && profileData.serviceIds && Array.isArray(profileData.serviceIds) && profileData.serviceIds.length > 0) {
@@ -601,13 +617,43 @@ class BusinessConfigService {
     const transaction = await sequelize.transaction();
     
     try {
-      const profile = await SpecialistProfile.findByPk(profileId, {
+      let profile = await SpecialistProfile.findByPk(profileId, {
         include: [{ model: User, as: 'user' }],
         transaction
       });
       
+      // Si no existe el perfil, verificar si es un usuario BUSINESS sin SpecialistProfile
       if (!profile) {
-        throw new Error('Perfil de especialista no encontrado');
+        const user = await User.findByPk(profileId, { transaction });
+        
+        if (user && ['BUSINESS', 'BUSINESS_SPECIALIST'].includes(user.role)) {
+          // Crear SpecialistProfile para BUSINESS
+          profile = await SpecialistProfile.create({
+            userId: user.id,
+            businessId: user.businessId,
+            specialization: 'Propietario/Especialista',
+            status: 'ACTIVE'
+          }, { transaction });
+          
+          // Asignar TODAS las sucursales automáticamente
+          const branches = await Branch.findAll({
+            where: {
+              businessId: user.businessId,
+              status: 'ACTIVE'
+            },
+            transaction
+          });
+          
+          if (branches.length > 0) {
+            await profile.setBranches(branches, { transaction });
+            console.log(`✅ SpecialistProfile creado y ${branches.length} sucursales asignadas a usuario BUSINESS`);
+          }
+          
+          // Recargar con el user
+          await profile.reload({ include: [{ model: User, as: 'user' }], transaction });
+        } else {
+          throw new Error('Perfil de especialista no encontrado');
+        }
       }
 
       // Separar datos de usuario vs datos de perfil
