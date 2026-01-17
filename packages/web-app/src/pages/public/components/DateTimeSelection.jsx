@@ -47,7 +47,10 @@ const DateTimeSelection = ({ businessCode, onNext, onBack }) => {
       date: selectedDate.toISOString().split('T')[0],
       time: time.time,
       specialistId: bookingData.specialist.id,
-      specialistName: time.specialistName
+      specialistName: time.specialistName,
+      branchId: time.branchId,
+      branchName: time.branchName,
+      branchAddress: time.branchAddress
     };
     dispatch(updateBookingData({ dateTime }));
   };
@@ -210,23 +213,24 @@ const DateTimeSelection = ({ businessCode, onNext, onBack }) => {
               </h3>
 
               {availableTimes.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {availableTimes.map((slot, index) => (
                     <button
                       key={index}
                       onClick={() => handleTimeSelect(slot)}
-                      className={`p-3 border rounded-lg text-center transition-colors ${
-                        selectedTime && selectedTime.time === slot.time
+                      className={`p-4 border rounded-lg text-left transition-colors ${
+                        selectedTime && selectedTime.time === slot.time && selectedTime.branchId === slot.branchId
                           ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      <div className="flex items-center justify-center gap-1">
-                        <ClockIcon className="w-4 h-4" />
-                        <span className="font-medium">{slot.time}</span>
+                      <div className="flex items-center gap-2 mb-2">
+                        <ClockIcon className="w-5 h-5 flex-shrink-0" />
+                        <span className="font-semibold text-lg">{slot.time}</span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {slot.specialistName}
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <div className="font-medium">{slot.branchName}</div>
+                        <div className="text-xs text-gray-500">{slot.branchAddress}</div>
                       </div>
                     </button>
                   ))}

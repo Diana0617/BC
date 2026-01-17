@@ -299,7 +299,7 @@ class PublicBookingsController {
               date: dateStr
             });
 
-            // Si hay slots disponibles, agregarlos al resultado
+            // Si hay slots disponibles, agregarlos con info de sucursal
             if (result.slots && result.slots.length > 0) {
               result.slots.forEach(slot => {
                 availability[dateStr].push({
@@ -308,7 +308,8 @@ class PublicBookingsController {
                   specialistId: specialistProfile.id,
                   specialistName: specialistName,
                   branchId: branch.id,
-                  branchName: branch.name
+                  branchName: branch.name,
+                  branchAddress: branch.address || 'Dirección no disponible'
                 });
               });
             }
@@ -317,6 +318,9 @@ class PublicBookingsController {
             // Continuar con la siguiente sucursal
           }
         }
+
+        // Ordenar slots por tiempo
+        availability[dateStr].sort((a, b) => a.time.localeCompare(b.time));
       }
 
       res.json({
