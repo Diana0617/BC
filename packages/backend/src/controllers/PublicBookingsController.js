@@ -526,11 +526,8 @@ class PublicBookingsController {
       // Generar código único para la reserva
       const bookingCode = `BK-${Date.now().toString().slice(-6)}`;
 
-      // Determinar estado inicial basado en método de pago
-      let initialStatus = 'PENDING_PAYMENT';
-      if (paymentMethod === 'CASH' || paymentMethod === 'BANK_TRANSFER') {
-        initialStatus = 'PENDING_CONFIRMATION';
-      }
+      // Determinar estado inicial - Las reservas online siempre inician como PENDING
+      const initialStatus = 'PENDING';
 
       // Crear la cita
       const appointment = await Appointment.create({
