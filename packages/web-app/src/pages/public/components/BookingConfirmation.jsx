@@ -71,6 +71,8 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
       paymentMethod: bookingData.paymentMethod
     };
 
+    console.log('📤 Enviando reserva al backend:', bookingPayload);
+    console.log('📤 Business Code:', businessCode);
     dispatch(createBooking({ businessCode, bookingData: bookingPayload }));
   };
 
