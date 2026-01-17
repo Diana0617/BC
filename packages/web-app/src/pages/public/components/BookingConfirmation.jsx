@@ -9,7 +9,7 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
   const navigate = useNavigate();
 
   // Obtener estado de Redux
-  const { bookingData, isLoadingCreateBooking, createBookingError, createdBooking } = useSelector(state => state.publicBooking);
+  const { bookingData, isCreatingBooking, bookingError, currentBooking } = useSelector(state => state.publicBooking);
 
   // Validar que tenemos todos los datos necesarios
   if (!bookingData.service || !bookingData.specialist || !bookingData.dateTime || !bookingData.clientData) {
@@ -28,15 +28,15 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
 
   // Redirigir cuando se crea la reserva exitosamente
   useEffect(() => {
-    if (createdBooking) {
+    if (currentBooking) {
       navigate('/booking/success', {
         state: {
           bookingData: bookingData,
-          bookingCode: createdBooking.code
+          bookingCode: currentBooking.code
         }
       });
     }
-  }, [createdBooking, bookingData, navigate]);
+  }, [currentBooking, bookingData, navigate]);
 
   const handleConfirmBooking = () => {
     // Validar que tenemos todos los datos antes de enviar
@@ -47,14 +47,14 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
 
     // Preparar datos para la API
     const bookingPayload = {
-      serviceId: bookingData.service.id,
-      specialistId: bookingData.specialist.id,
+      serviceId: bookingData.service?.id,
+      specialistId: bookingData.specialist?.id,
       branchId: bookingData.dateTime?.branchId,
-      date: bookingData.dateTime.date,
-      time: bookingData.dateTime.time,
-      clientName: bookingData.clientData.name,
-      clientEmail: bookingData.clientData.email,
-      clientPhone: bookingData.clientData.phone,
+      date: bookingData.dateTime?.date,
+      time: bookingData.dateTime?.time,
+      clientName: bookingData.clientData?.name,
+      clientEmail: bookingData.clientData?.email,
+      clientPhone: bookingData.clientData?.phone,
       notes: bookingData.clientData?.notes || '',
       paymentMethod: bookingData.paymentMethod
     };
@@ -287,9 +287,9 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
       </div>
 
       {/* Mensaje de error */}
-      {createBookingError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-red-600">{createBookingError}</p>
+      {bookingError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-600">{bookingError}</p>
         </div>
       )}
 
@@ -297,17 +297,17 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
       <div className="flex justify-between">
         <button
           onClick={onBack}
-          disabled={isLoadingCreateBooking}
+          disabled={isCreatingBooking}
           className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
         >
           ← Volver
         </button>
         <button
           onClick={handleConfirmBooking}
-          disabled={isLoadingCreateBooking}
+          disabled={isCreatingBooking}
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 flex items-center gap-2"
         >
-          {isLoadingCreateBooking ? (
+          {isCreatingBooking ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               Procesando...
