@@ -52,6 +52,7 @@ const DateTimeSelection = ({ businessCode, onNext, onBack }) => {
       branchName: time.branchName,
       branchAddress: time.branchAddress
     };
+    console.log('✅ DateTimeSelection - Fecha/hora seleccionada:', dateTime);
     dispatch(updateBookingData({ dateTime }));
   };
 

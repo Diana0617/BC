@@ -22,6 +22,7 @@ const ServiceSelection = ({ businessCode, onNext }) => {
   }, [businessCode, services.length, dispatch]);
 
   const handleServiceSelect = (service) => {
+    console.log('✅ ServiceSelection - Servicio seleccionado:', service);
     dispatch(updateBookingData({ service }));
   };
 

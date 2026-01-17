@@ -61,6 +61,7 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
 
   const handlePaymentSelect = (methodId) => {
     const selectedMethod = paymentMethods.find(m => m.id === methodId);
+    console.log('✅ PaymentSelection - Método de pago seleccionado:', { methodId, selectedMethod });
     dispatch(updateBookingData({ 
       paymentMethod: methodId,
       paymentMethodData: selectedMethod

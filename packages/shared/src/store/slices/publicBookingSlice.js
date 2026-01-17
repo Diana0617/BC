@@ -162,7 +162,10 @@ const publicBookingSlice = createSlice({
       state.currentStep = action.payload;
     },
     updateBookingData: (state, action) => {
+      console.log('🔄 Redux - updateBookingData llamado con:', action.payload);
+      console.log('🔄 Redux - Estado anterior:', state.bookingData);
       state.bookingData = { ...state.bookingData, ...action.payload };
+      console.log('🔄 Redux - Estado actualizado:', state.bookingData);
     },
     setBusinessInfo: (state, action) => {
       state.businessInfo = action.payload;

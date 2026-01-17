@@ -73,6 +73,7 @@ const ClientForm = ({ onNext, onBack }) => {
     e.preventDefault();
 
     if (validateForm()) {
+      console.log('✅ ClientForm - Datos del cliente guardados:', formData);
       dispatch(updateBookingData({ clientData: formData }));
       onNext();
     }

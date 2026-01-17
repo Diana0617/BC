@@ -12,6 +12,15 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
   // Obtener estado de Redux
   const { bookingData, isCreatingBooking, bookingError, currentBooking } = useSelector(state => state.publicBooking);
 
+  // DEBUG: Ver el estado completo
+  console.log('🔍 BookingConfirmation - Estado completo:', { bookingData, isCreatingBooking, bookingError, currentBooking });
+  console.log('🔍 BookingConfirmation - bookingData.service:', bookingData?.service);
+  console.log('🔍 BookingConfirmation - bookingData.specialist:', bookingData?.specialist);
+  console.log('🔍 BookingConfirmation - bookingData.dateTime:', bookingData?.dateTime);
+  console.log('🔍 BookingConfirmation - bookingData.clientData:', bookingData?.clientData);
+  console.log('🔍 BookingConfirmation - bookingData.paymentMethod:', bookingData?.paymentMethod);
+  console.log('🔍 BookingConfirmation - bookingData.paymentMethodData:', bookingData?.paymentMethodData);
+
   // Validar que tenemos todos los datos necesarios
   if (!bookingData.service || !bookingData.specialist || !bookingData.dateTime || !bookingData.clientData) {
     return (
