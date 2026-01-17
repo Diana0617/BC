@@ -28,6 +28,7 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
     const bookingPayload = {
       serviceId: bookingData.service.id,
       specialistId: bookingData.specialist.id,
+      branchId: bookingData.dateTime.branchId,
       date: bookingData.dateTime.date,
       time: bookingData.dateTime.time,
       clientName: bookingData.clientData.name,
@@ -117,6 +118,15 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
             <div className="ml-7">
               <p className="font-medium text-gray-900">{date}</p>
               <p className="text-sm text-gray-600">{time}</p>
+              {bookingData.dateTime.branchName && (
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">Sucursal:</p>
+                  <p className="text-sm font-medium text-gray-900">{bookingData.dateTime.branchName}</p>
+                  {bookingData.dateTime.branchAddress && (
+                    <p className="text-xs text-gray-600">{bookingData.dateTime.branchAddress}</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -145,21 +155,21 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
           <div className="grid md:grid-cols-3 gap-4 text-sm">
             <div>
               <span className="text-gray-500">Nombre:</span>
-              <p className="font-medium">{bookingData.client.name}</p>
+              <p className="font-medium">{bookingData.clientData.name}</p>
             </div>
             <div>
               <span className="text-gray-500">Email:</span>
-              <p className="font-medium">{bookingData.client.email}</p>
+              <p className="font-medium">{bookingData.clientData.email}</p>
             </div>
             <div>
               <span className="text-gray-500">Teléfono:</span>
-              <p className="font-medium">{bookingData.client.phone}</p>
+              <p className="font-medium">{bookingData.clientData.phone}</p>
             </div>
           </div>
-          {bookingData.client.notes && (
+          {bookingData.clientData.notes && (
             <div className="mt-3">
               <span className="text-gray-500 text-sm">Notas:</span>
-              <p className="text-sm mt-1">{bookingData.client.notes}</p>
+              <p className="text-sm mt-1">{bookingData.clientData.notes}</p>
             </div>
           )}
         </div>

@@ -372,6 +372,7 @@ class PublicBookingsController {
       const {
         serviceId,
         specialistId,
+        branchId,
         date,
         time,
         clientName,
@@ -522,6 +523,7 @@ class PublicBookingsController {
       // Crear la cita
       const appointment = await Appointment.create({
         businessId: business.id,
+        branchId: branchId || null,
         clientId: client.id,
         specialistId,
         serviceId,
