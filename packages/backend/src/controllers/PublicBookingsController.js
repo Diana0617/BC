@@ -294,7 +294,7 @@ class PublicBookingsController {
             const result = await AvailabilityService.generateAvailableSlots({
               businessId: business.id,
               branchId: branch.id,
-              specialistId: specialistProfile.userId,
+              specialistId: specialistProfile.id,
               serviceId: service.id,
               date: dateStr
             });
