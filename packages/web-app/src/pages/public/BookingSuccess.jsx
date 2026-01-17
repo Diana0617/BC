@@ -144,6 +144,19 @@ const BookingSuccess = () => {
               </div>
             </div>
 
+            {bookingData.dateTime?.branchName && (
+              <div className="mt-4 pt-4 border-t">
+                <h3 className="font-medium text-gray-900 mb-2">Ubicación</h3>
+                <div className="text-sm">
+                  <span className="text-gray-500">Sucursal:</span>
+                  <p className="font-medium">{bookingData.dateTime.branchName}</p>
+                  {bookingData.dateTime.branchAddress && (
+                    <p className="text-gray-600 text-xs mt-1">{bookingData.dateTime.branchAddress}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {bookingData.client && (
               <div className="mt-4 pt-4 border-t">
                 <h3 className="font-medium text-gray-900 mb-2">Tus datos</h3>
