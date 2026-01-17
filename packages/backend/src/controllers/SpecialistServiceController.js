@@ -249,18 +249,49 @@ class SpecialistServiceController {
       }
 
       // Verificar que el especialista existe y pertenece al negocio
-      const specialist = await SpecialistProfile.findOne({
+      let specialist = await SpecialistProfile.findOne({
         where: {
           id: specialistId,
           businessId: businessId || userBusinessId
         }
       });
 
+      // Si no se encuentra por ID, intentar por userId (para BUSINESS/BUSINESS_SPECIALIST)
       if (!specialist) {
-        return res.status(404).json({
-          success: false,
-          error: 'Especialista no encontrado'
+        specialist = await SpecialistProfile.findOne({
+          where: {
+            userId: specialistId,
+            businessId: businessId || userBusinessId
+          }
         });
+      }
+
+      // Si aún no existe, verificar si es un usuario BUSINESS/BUSINESS_SPECIALIST y crear SpecialistProfile
+      if (!specialist) {
+        const staffUser = await User.findOne({
+          where: {
+            id: specialistId,
+            businessId: businessId || userBusinessId,
+            role: { [Op.in]: ['BUSINESS', 'BUSINESS_SPECIALIST'] },
+            status: 'ACTIVE'
+          }
+        });
+
+        if (staffUser) {
+          // Crear SpecialistProfile para BUSINESS/BUSINESS_SPECIALIST
+          specialist = await SpecialistProfile.create({
+            userId: staffUser.id,
+            businessId: businessId || userBusinessId,
+            specialization: 'Propietario/Especialista',
+            status: 'ACTIVE'
+          });
+          console.log('✅ SpecialistProfile creado para usuario BUSINESS:', specialist.id);
+        } else {
+          return res.status(404).json({
+            success: false,
+            error: 'Especialista no encontrado'
+          });
+        }
       }
 
       // Verificar que el servicio existe y pertenece al negocio

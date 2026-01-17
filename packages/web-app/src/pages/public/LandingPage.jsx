@@ -556,7 +556,7 @@ const LandingPage = () => {
 
           {/* Mobile Cards */}
           <div className="lg:hidden space-y-6">
-            {plans.map((plan, planIdx) => (
+            {plans.map((plan) => (
               <div key={plan.id} className={`border-2 rounded-xl overflow-hidden ${
                 plan.isPopular ? 'border-yellow-400 shadow-lg' : 'border-gray-200'
               }`}>
