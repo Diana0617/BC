@@ -290,6 +290,20 @@ router.get('/business/:businessCode/payment-methods', [
 
 /**
  * @swagger
+ * /api/public/bookings/business/{businessCode}/payment-info:
+ *   get:
+ *     tags:
+ *       - Public Bookings
+ *     summary: [DEPRECATED] Alias para payment-methods
+ *     description: Endpoint legacy para compatibilidad con versiones antiguas del frontend
+ *     deprecated: true
+ */
+router.get('/business/:businessCode/payment-info', [
+  param('businessCode').isString().notEmpty()
+], PublicBookingsController.getPaymentMethods);
+
+/**
+ * @swagger
  * /api/public/bookings/business/{businessCode}:
  *   post:
  *     tags:
