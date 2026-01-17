@@ -247,10 +247,10 @@ class PublicBookingsController {
         });
       }
 
-      // Verificar que el especialista existe y pertenece al negocio
+      // Verificar que el especialista existe y pertenece al negocio (specialistId es userId)
       const specialistProfile = await SpecialistProfile.findOne({
         where: {
-          id: specialistId,
+          userId: specialistId,
           businessId: business.id,
           status: 'ACTIVE'
         },
@@ -319,7 +319,7 @@ class PublicBookingsController {
             const result = await AvailabilityService.generateAvailableSlots({
               businessId: business.id,
               branchId: branch.id,
-              specialistId: specialistProfile.id,
+              specialistId: specialistProfile.id, // Usar specialistProfile.id para schedules
               serviceId: service.id,
               date: dateStr
             });
@@ -330,7 +330,7 @@ class PublicBookingsController {
                 availability[dateStr].push({
                   time: slot.startTime,
                   endTime: slot.endTime,
-                  specialistId: specialistProfile.id,
+                  specialistId: specialistProfile.userId, // userId para consistency
                   specialistName: specialistName,
                   branchId: branch.id,
                   branchName: branch.name,
