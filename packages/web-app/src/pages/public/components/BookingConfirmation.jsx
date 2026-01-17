@@ -102,9 +102,9 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
               <span className="font-medium text-gray-900">Servicio</span>
             </div>
             <div className="ml-7">
-              <p className="font-medium text-gray-900">{bookingData.service.name}</p>
-              <p className="text-sm text-gray-600">{bookingData.service.description}</p>
-              <p className="text-sm text-gray-500">Duración: {bookingData.service.duration} minutos</p>
+              <p className="font-medium text-gray-900">{bookingData.service?.name || 'Servicio'}</p>
+              <p className="text-sm text-gray-600">{bookingData.service?.description || ''}</p>
+              <p className="text-sm text-gray-500">Duración: {bookingData.service?.duration || 0} minutos</p>
             </div>
           </div>
 
@@ -115,8 +115,8 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
               <span className="font-medium text-gray-900">Especialista</span>
             </div>
             <div className="ml-7">
-              <p className="font-medium text-gray-900">{bookingData.specialist.name}</p>
-              {bookingData.specialist.specialties && (
+              <p className="font-medium text-gray-900">{bookingData.specialist?.name || 'Especialista'}</p>
+              {bookingData.specialist?.specialties && (
                 <p className="text-sm text-gray-600">
                   Especialista en: {bookingData.specialist.specialties.join(', ')}
                 </p>
@@ -133,11 +133,11 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
             <div className="ml-7">
               <p className="font-medium text-gray-900">{date}</p>
               <p className="text-sm text-gray-600">{time}</p>
-              {bookingData.dateTime.branchName && (
+              {bookingData.dateTime?.branchName && (
                 <div className="mt-2 pt-2 border-t border-gray-200">
                   <p className="text-xs text-gray-500">Sucursal:</p>
                   <p className="text-sm font-medium text-gray-900">{bookingData.dateTime.branchName}</p>
-                  {bookingData.dateTime.branchAddress && (
+                  {bookingData.dateTime?.branchAddress && (
                     <p className="text-xs text-gray-600">{bookingData.dateTime.branchAddress}</p>
                   )}
                 </div>
@@ -156,7 +156,7 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
                 {bookingData.paymentMethodData?.name || 'Método de pago seleccionado'}
               </p>
               <p className="text-sm text-gray-600">
-                Total: ${bookingData.service.price.toLocaleString('es-CO')}
+                Total: ${bookingData.service?.price?.toLocaleString('es-CO') || '0'}
               </p>
             </div>
           </div>
@@ -168,18 +168,18 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
           <div className="grid md:grid-cols-3 gap-4 text-sm">
             <div>
               <span className="text-gray-500">Nombre:</span>
-              <p className="font-medium">{bookingData.clientData.name}</p>
+              <p className="font-medium">{bookingData.clientData?.name || 'Cliente'}</p>
             </div>
             <div>
               <span className="text-gray-500">Email:</span>
-              <p className="font-medium">{bookingData.clientData.email}</p>
+              <p className="font-medium">{bookingData.clientData?.email || ''}</p>
             </div>
             <div>
               <span className="text-gray-500">Teléfono:</span>
-              <p className="font-medium">{bookingData.clientData.phone}</p>
+              <p className="font-medium">{bookingData.clientData?.phone || ''}</p>
             </div>
           </div>
-          {bookingData.clientData.notes && (
+          {bookingData.clientData?.notes && (
             <div className="mt-3">
               <span className="text-gray-500 text-sm">Notas:</span>
               <p className="text-sm mt-1">{bookingData.clientData.notes}</p>
