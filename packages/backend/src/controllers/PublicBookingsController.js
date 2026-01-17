@@ -266,8 +266,31 @@ class PublicBookingsController {
         });
       }
 
-      // Obtener todas las sucursales del especialista
-      const branches = await specialistProfile.getBranches();
+      // Obtener sucursales donde el especialista tiene horarios configurados
+      const { SpecialistBranchSchedule, Branch } = require('../models');
+      const scheduledBranches = await SpecialistBranchSchedule.findAll({
+        where: {
+          specialistId: specialistProfile.id,
+          isActive: true
+        },
+        include: [{
+          model: Branch,
+          as: 'branch',
+          where: {
+            businessId: business.id,
+            status: 'ACTIVE'
+          }
+        }],
+        attributes: ['branchId'],
+        group: ['branchId', 'branch.id', 'branch.name', 'branch.address']
+      });
+
+      // Extraer las sucursales únicas
+      const branches = scheduledBranches
+        .map(schedule => schedule.branch)
+        .filter((branch, index, self) => 
+          index === self.findIndex(b => b.id === branch.id)
+        );
       
       if (!branches || branches.length === 0) {
         return res.json({
@@ -287,7 +310,7 @@ class PublicBookingsController {
         const dateStr = date.toISOString().split('T')[0];
         availability[dateStr] = [];
 
-        // Generar slots para cada sucursal del especialista
+        // Generar slots para cada sucursal donde el especialista tiene horarios
         for (const branch of branches) {
           try {
             const AvailabilityService = require('../services/AvailabilityService');
