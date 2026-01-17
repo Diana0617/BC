@@ -325,8 +325,8 @@ const publicBookingSlice = createSlice({
       })
       .addCase(fetchPaymentMethods.fulfilled, (state, action) => {
         state.isLoadingPaymentMethods = false;
-        state.paymentMethods = action.payload.data.paymentMethods;
-        state.businessInfo = action.payload.data.businessInfo;
+        state.paymentMethods = action.payload.paymentMethods;
+        state.businessInfo = action.payload.businessInfo;
       })
       .addCase(fetchPaymentMethods.rejected, (state, action) => {
         state.isLoadingPaymentMethods = false;
