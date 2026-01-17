@@ -230,57 +230,94 @@ class PublicBookingsController {
       }
 
       // Verificar que el servicio existe y pertenece al negocio
-      if (serviceId) {
-        const service = await Service.findOne({
-          where: {
-            id: serviceId,
-            businessId: business.id,
-            isActive: true
-          }
-        });
-
-        if (!service) {
-          return res.status(404).json({
-            success: false,
-            message: 'Servicio no encontrado'
-          });
+      const service = await Service.findOne({
+        where: {
+          id: serviceId,
+          businessId: business.id,
+          isActive: true
         }
-      }
-
-      // Verificar que el especialista existe y pertenece al negocio (si se especifica)
-      if (specialistId) {
-        const specialist = await SpecialistProfile.findOne({
-          where: {
-            id: specialistId,
-            businessId: business.id,
-            status: 'ACTIVE'
-          }
-        });
-
-        if (!specialist) {
-          return res.status(404).json({
-            success: false,
-            message: 'Especialista no encontrado'
-          });
-        }
-      }
-
-      // Obtener duración del servicio para calcular slots
-      let duration = 30; // default
-      if (serviceId) {
-        const service = await Service.findByPk(serviceId);
-        duration = service.duration;
-      }
-
-      // Usar TimeSlotService para obtener disponibilidad
-      const availability = await TimeSlotService.getAvailability({
-        businessId: business.id,
-        specialistId: specialistId || undefined,
-        startDate,
-        endDate,
-        duration,
-        status: 'AVAILABLE'
       });
+
+      if (!service) {
+        return res.status(404).json({
+          success: false,
+          message: 'Servicio no encontrado'
+        });
+      }
+
+      // Verificar que el especialista existe y pertenece al negocio
+      const specialistProfile = await SpecialistProfile.findOne({
+        where: {
+          id: specialistId,
+          businessId: business.id,
+          status: 'ACTIVE'
+        },
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['firstName', 'lastName']
+        }]
+      });
+
+      if (!specialistProfile) {
+        return res.status(404).json({
+          success: false,
+          message: 'Especialista no encontrado'
+        });
+      }
+
+      // Obtener todas las sucursales del especialista
+      const branches = await specialistProfile.getBranches();
+      
+      if (!branches || branches.length === 0) {
+        return res.json({
+          success: true,
+          data: {}
+        });
+      }
+
+      // Generar slots para cada día del rango
+      const availability = {};
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const specialistName = `${specialistProfile.user.firstName} ${specialistProfile.user.lastName}`;
+
+      // Iterar por cada día del rango
+      for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+        const dateStr = date.toISOString().split('T')[0];
+        availability[dateStr] = [];
+
+        // Generar slots para cada sucursal del especialista
+        for (const branch of branches) {
+          try {
+            const AvailabilityService = require('../services/AvailabilityService');
+            const result = await AvailabilityService.generateAvailableSlots({
+              businessId: business.id,
+              branchId: branch.id,
+              specialistId: specialistProfile.userId,
+              serviceId: service.id,
+              date: dateStr
+            });
+
+            // Si hay slots disponibles, agregarlos al resultado
+            if (result.slots && result.slots.length > 0) {
+              result.slots.forEach(slot => {
+                availability[dateStr].push({
+                  time: slot.startTime,
+                  endTime: slot.endTime,
+                  specialistId: specialistProfile.id,
+                  specialistName: specialistName,
+                  branchId: branch.id,
+                  branchName: branch.name
+                });
+              });
+            }
+          } catch (error) {
+            console.log(`No hay disponibilidad para ${branch.name} el ${dateStr}:`, error.message);
+            // Continuar con la siguiente sucursal
+          }
+        }
+      }
 
       res.json({
         success: true,
