@@ -1057,7 +1057,7 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
     );
   };
 
-  // Renderizar sección de Calendario (placeholder)
+  // Renderizar sección de Calendario
   const renderCalendarTab = () => {
     if (!editingSpecialist?.id) {
       return (
@@ -1069,15 +1069,43 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
       );
     }
 
+    // Obtener sucursales asignadas al especialista
+    const specialistBranches = editingSpecialist?.branches || [];
+    
+    if (specialistBranches.length === 0) {
+      return (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+          <BuildingOfficeIcon className="h-12 w-12 text-blue-400 mx-auto mb-3" />
+          <p className="text-blue-800 font-medium mb-2">
+            Este especialista no tiene sucursales asignadas
+          </p>
+          <p className="text-blue-600 text-sm">
+            Primero asigna sucursales en la pestaña de "Información Básica"
+          </p>
+        </div>
+      );
+    }
+
     return (
-      <div className="bg-white rounded-lg p-4 border border-gray-200">
-        <h4 className="font-medium text-gray-900 mb-3">Calendario Semanal</h4>
-        <p className="text-gray-500 text-sm">
-          🚧 Funcionalidad de calendario en desarrollo...
-        </p>
-        <p className="text-gray-400 text-xs mt-2">
-          Próximamente podrás configurar horarios semanales, excepciones y disponibilidad.
-        </p>
+      <div className="space-y-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-medium text-blue-900 mb-2">
+            📅 Configuración de Horarios por Sucursal
+          </h4>
+          <p className="text-sm text-blue-700">
+            Define los horarios de atención para cada sucursal asignada. Los horarios deben estar dentro del horario de operación del negocio.
+          </p>
+        </div>
+
+        {specialistBranches.map(branch => (
+          <SpecialistBranchScheduleEditor
+            key={branch.id}
+            branch={branch}
+            specialistId={editingSpecialist.id}
+            businessId={activeBusiness.id}
+            businessHours={activeBusiness.businessHours}
+          />
+        ))}
       </div>
     );
   };
@@ -1443,6 +1471,292 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
         onClose={() => setShowUpgradeModal(false)}
         featureName="Gestión de Equipo"
       />
+    </div>
+  );
+};
+
+// Componente para editar horarios de un especialista en una sucursal específica
+const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, businessHours }) => {
+  const [schedules, setSchedules] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(null);
+  const [error, setError] = useState(null);
+
+  const daysOfWeek = [
+    { key: 'monday', label: 'Lunes' },
+    { key: 'tuesday', label: 'Martes' },
+    { key: 'wednesday', label: 'Miércoles' },
+    { key: 'thursday', label: 'Jueves' },
+    { key: 'friday', label: 'Viernes' },
+    { key: 'saturday', label: 'Sábado' },
+    { key: 'sunday', label: 'Domingo' }
+  ];
+
+  // Cargar horarios existentes del especialista en esta sucursal
+  useEffect(() => {
+    loadSchedules();
+  }, [specialistId, branch.id]);
+
+  const loadSchedules = async () => {
+    setLoading(true);
+    try {
+      const response = await businessBranchesApi.getBranchSchedules(businessId, branch.id, {
+        specialistId: specialistId
+      });
+      
+      // Convertir array de horarios a objeto por día
+      const schedulesByDay = {};
+      response.data.forEach(schedule => {
+        schedulesByDay[schedule.dayOfWeek] = {
+          id: schedule.id,
+          enabled: schedule.isActive,
+          startTime: schedule.startTime.substring(0, 5), // HH:MM
+          endTime: schedule.endTime.substring(0, 5)
+        };
+      });
+      
+      setSchedules(schedulesByDay);
+    } catch (err) {
+      console.error('Error cargando horarios:', err);
+      // No mostrar error si no hay horarios aún
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDayToggle = (day) => {
+    setSchedules(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        enabled: !prev[day]?.enabled,
+        startTime: prev[day]?.startTime || '09:00',
+        endTime: prev[day]?.endTime || '18:00'
+      }
+    }));
+  };
+
+  const handleTimeChange = (day, field, value) => {
+    setSchedules(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSaveSchedules = async () => {
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Para cada día con horarios configurados
+      for (const [day, schedule] of Object.entries(schedules)) {
+        if (!schedule.enabled) {
+          // Si existe y se deshabilitó, eliminarlo
+          if (schedule.id) {
+            await businessBranchesApi.deleteSpecialistSchedule(
+              businessId,
+              branch.id,
+              schedule.id
+            );
+          }
+          continue;
+        }
+
+        // Validar horarios
+        if (!schedule.startTime || !schedule.endTime) {
+          throw new Error(`Falta configurar horarios para ${daysOfWeek.find(d => d.key === day)?.label}`);
+        }
+
+        const scheduleData = {
+          specialistId: specialistId,
+          dayOfWeek: day,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          isActive: true
+        };
+
+        if (schedule.id) {
+          // Actualizar existente
+          await businessBranchesApi.updateSpecialistSchedule(
+            businessId,
+            branch.id,
+            schedule.id,
+            scheduleData
+          );
+        } else {
+          // Crear nuevo
+          const response = await businessBranchesApi.createSpecialistSchedule(
+            businessId,
+            branch.id,
+            scheduleData
+          );
+          // Actualizar con el ID creado
+          setSchedules(prev => ({
+            ...prev,
+            [day]: { ...prev[day], id: response.data.id }
+          }));
+        }
+      }
+
+      setSuccess('✅ Horarios guardados correctamente');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      console.error('Error guardando horarios:', err);
+      setError(err.response?.data?.message || err.message || 'Error al guardar horarios');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <BuildingOfficeIcon className="h-5 w-5 text-gray-400" />
+          <h5 className="font-medium text-gray-900">{branch.name}</h5>
+        </div>
+        <p className="text-sm text-gray-500">Cargando horarios...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <BuildingOfficeIcon className="h-5 w-5 text-blue-600" />
+          <h5 className="font-medium text-gray-900">{branch.name}</h5>
+        </div>
+        {branch.code && (
+          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+            {branch.code}
+          </span>
+        )}
+      </div>
+
+      {/* Horarios del negocio (referencia) */}
+      {businessHours && (
+        <div className="bg-gray-50 rounded-lg p-3 mb-4">
+          <p className="text-xs text-gray-600 font-medium mb-2">
+            ℹ️ Horario de operación del negocio:
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            {daysOfWeek.map(day => {
+              const dayHours = businessHours?.[day.key];
+              return (
+                <div key={day.key} className="text-gray-700">
+                  <span className="font-medium">{day.label}:</span>{' '}
+                  {dayHours?.closed ? (
+                    <span className="text-gray-400">Cerrado</span>
+                  ) : (
+                    <span>{dayHours?.open || '09:00'} - {dayHours?.close || '18:00'}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Configuración de horarios */}
+      <div className="space-y-3">
+        {daysOfWeek.map(day => {
+          const daySchedule = schedules[day.key] || {};
+          const businessDayHours = businessHours?.[day.key];
+          const isBusinessClosed = businessDayHours?.closed;
+
+          return (
+            <div
+              key={day.key}
+              className={`flex items-center gap-4 p-3 rounded-lg border ${
+                daySchedule.enabled
+                  ? 'bg-blue-50 border-blue-200'
+                  : 'bg-gray-50 border-gray-200'
+              }`}
+            >
+              {/* Checkbox para habilitar día */}
+              <label className="flex items-center gap-2 cursor-pointer min-w-[120px]">
+                <input
+                  type="checkbox"
+                  checked={daySchedule.enabled || false}
+                  onChange={() => handleDayToggle(day.key)}
+                  disabled={isBusinessClosed}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className={`font-medium ${daySchedule.enabled ? 'text-blue-900' : 'text-gray-600'}`}>
+                  {day.label}
+                </span>
+              </label>
+
+              {/* Inputs de hora */}
+              {daySchedule.enabled ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <input
+                    type="time"
+                    value={daySchedule.startTime || '09:00'}
+                    onChange={(e) => handleTimeChange(day.key, 'startTime', e.target.value)}
+                    min={businessDayHours?.open || '00:00'}
+                    max={daySchedule.endTime || businessDayHours?.close || '23:59'}
+                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-gray-500">-</span>
+                  <input
+                    type="time"
+                    value={daySchedule.endTime || '18:00'}
+                    onChange={(e) => handleTimeChange(day.key, 'endTime', e.target.value)}
+                    min={daySchedule.startTime || businessDayHours?.open || '00:00'}
+                    max={businessDayHours?.close || '23:59'}
+                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              ) : (
+                <span className="text-sm text-gray-400 flex-1">
+                  {isBusinessClosed ? 'Negocio cerrado este día' : 'No atiende este día'}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Mensajes */}
+      {success && (
+        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+          {success}
+        </div>
+      )}
+      {error && (
+        <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
+
+      {/* Botón guardar */}
+      <div className="mt-4 flex justify-end">
+        <button
+          onClick={handleSaveSchedules}
+          disabled={saving}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {saving ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Guardando...
+            </>
+          ) : (
+            <>
+              <CheckCircleIcon className="h-4 w-4" />
+              Guardar Horarios
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 };
