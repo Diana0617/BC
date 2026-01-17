@@ -75,12 +75,13 @@ class AvailabilityService {
         },
         include: [
           {
-            model: User,
+            model: SpecialistProfile,
             as: 'specialist',
-            attributes: ['id', 'firstName', 'lastName'],
+            attributes: ['id', 'specialization'],
             include: [{
-              model: SpecialistProfile,
-              attributes: ['specialization']
+              model: User,
+              as: 'user',
+              attributes: ['id', 'firstName', 'lastName']
             }]
           }
         ]
