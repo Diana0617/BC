@@ -494,22 +494,23 @@ class PublicBookingsController {
       // Combinar fecha y hora
       const appointmentDateTime = new Date(`${date}T${time}`);
 
+      // TODO: Implementar verificación de disponibilidad
       // Verificar que el slot esté disponible
-      const isAvailable = await TimeSlotService.checkSlotAvailability({
-        businessId: business.id,
-        specialistId,
-        date: date,
-        time: time,
-        duration: service.duration
-      });
+      // const isAvailable = await TimeSlotService.checkSlotAvailability({
+      //   businessId: business.id,
+      //   specialistId,
+      //   date: date,
+      //   time: time,
+      //   duration: service.duration
+      // });
 
-      if (!isAvailable) {
-        await transaction.rollback();
-        return res.status(409).json({
-          success: false,
-          message: 'El horario seleccionado ya no está disponible'
-        });
-      }
+      // if (!isAvailable) {
+      //   await transaction.rollback();
+      //   return res.status(409).json({
+      //     success: false,
+      //     message: 'El horario seleccionado ya no está disponible'
+      //   });
+      // }
 
       // Generar código único para la reserva
       const bookingCode = `BK-${Date.now().toString().slice(-6)}`;
