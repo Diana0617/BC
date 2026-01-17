@@ -849,7 +849,7 @@ class PublicBookingsController {
           subdomain: businessCode,
           status: ['ACTIVE', 'TRIAL']
         },
-        attributes: ['id', 'name', 'phone', 'whatsappNumber']
+        attributes: ['id', 'name', 'phone']
       });
 
       if (!business) {
@@ -875,8 +875,7 @@ class PublicBookingsController {
         data: {
           businessInfo: {
             name: business.name,
-            phone: business.phone,
-            whatsappNumber: business.whatsappNumber
+            phone: business.phone
           },
           paymentMethods: paymentMethods.map(pm => ({
             id: pm.id,
