@@ -11,6 +11,21 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
   // Obtener estado de Redux
   const { bookingData, isLoadingCreateBooking, createBookingError, createdBooking } = useSelector(state => state.publicBooking);
 
+  // Validar que tenemos todos los datos necesarios
+  if (!bookingData.service || !bookingData.specialist || !bookingData.dateTime || !bookingData.clientData) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+        <p className="text-yellow-700 mb-4">Faltan datos para completar la reserva.</p>
+        <button
+          onClick={onBack}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          ← Volver
+        </button>
+      </div>
+    );
+  }
+
   // Redirigir cuando se crea la reserva exitosamente
   useEffect(() => {
     if (createdBooking) {
@@ -138,9 +153,7 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
             </div>
             <div className="ml-7">
               <p className="font-medium text-gray-900">
-                {bookingData.paymentMethod === 'WOMPI' && 'Pago en línea (Wompi)'}
-                {bookingData.paymentMethod === 'BANK_TRANSFER' && 'Transferencia bancaria'}
-                {bookingData.paymentMethod === 'CASH' && 'Pago en efectivo'}
+                {bookingData.paymentMethodData?.name || 'Método de pago seleccionado'}
               </p>
               <p className="text-sm text-gray-600">
                 Total: ${bookingData.service.price.toLocaleString('es-CO')}
@@ -181,10 +194,10 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
           ¿Qué sucede después?
         </h4>
 
-        {bookingData.paymentMethod === 'WOMPI' && (
+        {bookingData.paymentMethodData?.type === 'ONLINE' && (
           <div className="text-sm text-blue-800">
             <p className="mb-2">
-              • Serás redirigido a la pasarela de pagos segura de Wompi
+              • Serás redirigido a la pasarela de pagos segura
             </p>
             <p className="mb-2">
               • Una vez completado el pago, tu reserva se confirmará automáticamente
@@ -195,10 +208,10 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
           </div>
         )}
 
-        {bookingData.paymentMethod === 'BANK_TRANSFER' && (
+        {bookingData.paymentMethodData?.type === 'TRANSFER' && (
           <div className="text-sm text-blue-800">
             <p className="mb-2">
-              • Recibirás un email con los datos bancarios para realizar la transferencia
+              • Realiza la transferencia usando los datos bancarios proporcionados
             </p>
             <p className="mb-2">
               • Tu reserva quedará en estado "Pendiente de pago"
@@ -209,7 +222,7 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
           </div>
         )}
 
-        {bookingData.paymentMethod === 'CASH' && (
+        {bookingData.paymentMethodData?.type === 'CASH' && (
           <div className="text-sm text-blue-800">
             <p className="mb-2">
               • Tu reserva quedará confirmada
@@ -220,6 +233,40 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
             <p>
               • Recibirás recordatorios por email y WhatsApp
             </p>
+          </div>
+        )}
+
+        {bookingData.paymentMethodData?.type === 'QR' && (
+          <div className="text-sm text-blue-800">
+            <p className="mb-2">
+              • Realiza el pago usando el código QR proporcionado
+            </p>
+            <p className="mb-2">
+              • Envía el comprobante por WhatsApp
+            </p>
+            <p>
+              • Tu reserva se confirmará una vez verifiquemos tu pago
+            </p>
+          </div>
+        )}
+
+        {bookingData.paymentMethodData?.type === 'CARD' && (
+          <div className="text-sm text-blue-800">
+            <p className="mb-2">
+              • Procesaremos tu pago con tarjeta de forma segura
+            </p>
+            <p className="mb-2">
+              • Tu reserva se confirmará automáticamente
+            </p>
+            <p>
+              • Recibirás un email de confirmación
+            </p>
+          </div>
+        )}
+
+        {!bookingData.paymentMethodData?.type && (
+          <div className="text-sm text-blue-800">
+            <p>Tu reserva será procesada y recibirás confirmación por email.</p>
           </div>
         )}
       </div>
