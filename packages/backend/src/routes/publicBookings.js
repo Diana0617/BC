@@ -240,6 +240,56 @@ router.get('/business/:businessCode/availability', [
 
 /**
  * @swagger
+ * /api/public/bookings/business/{businessCode}/payment-methods:
+ *   get:
+ *     tags:
+ *       - Public Bookings
+ *     summary: Obtener métodos de pago del negocio
+ *     description: Obtiene los métodos de pago activos configurados por el negocio
+ *     parameters:
+ *       - in: path
+ *         name: businessCode
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Código único del negocio
+ *         example: "lauravargas"
+ *     responses:
+ *       200:
+ *         description: Métodos de pago obtenidos exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     businessInfo:
+ *                       type: object
+ *                       properties:
+ *                         name:
+ *                           type: string
+ *                         phone:
+ *                           type: string
+ *                         whatsappNumber:
+ *                           type: string
+ *                     paymentMethods:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *       404:
+ *         description: Negocio no encontrado
+ */
+router.get('/business/:businessCode/payment-methods', [
+  param('businessCode').isString().notEmpty()
+], PublicBookingsController.getPaymentMethods);
+
+/**
+ * @swagger
  * /api/public/bookings/business/{businessCode}:
  *   post:
  *     tags:

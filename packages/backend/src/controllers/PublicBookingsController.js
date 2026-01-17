@@ -832,6 +832,72 @@ class PublicBookingsController {
       });
     }
   }
+
+  /**
+   * Obtener métodos de pago configurados del negocio
+   * GET /api/public/bookings/business/{businessCode}/payment-methods
+   */
+  static async getPaymentMethods(req, res) {
+    try {
+      const { businessCode } = req.params;
+
+      // Buscar negocio por subdomain
+      const business = await Business.findOne({
+        where: {
+          subdomain: businessCode,
+          status: ['ACTIVE', 'TRIAL']
+        },
+        attributes: ['id', 'name', 'phone', 'whatsappNumber']
+      });
+
+      if (!business) {
+        return res.status(404).json({
+          success: false,
+          message: 'Negocio no encontrado'
+        });
+      }
+
+      // Obtener métodos de pago activos del negocio
+      const { PaymentMethod } = require('../models');
+      const paymentMethods = await PaymentMethod.findAll({
+        where: {
+          businessId: business.id,
+          isActive: true
+        },
+        order: [['order', 'ASC'], ['name', 'ASC']],
+        attributes: ['id', 'name', 'type', 'requiresProof', 'icon', 'bankInfo', 'qrInfo', 'metadata', 'order']
+      });
+
+      res.json({
+        success: true,
+        data: {
+          businessInfo: {
+            name: business.name,
+            phone: business.phone,
+            whatsappNumber: business.whatsappNumber
+          },
+          paymentMethods: paymentMethods.map(pm => ({
+            id: pm.id,
+            name: pm.name,
+            type: pm.type,
+            requiresProof: pm.requiresProof,
+            icon: pm.icon,
+            bankInfo: pm.bankInfo,
+            qrInfo: pm.qrInfo,
+            metadata: pm.metadata,
+            order: pm.order
+          }))
+        }
+      });
+
+    } catch (error) {
+      console.error('Error al obtener métodos de pago:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
 }
 
 module.exports = PublicBookingsController;
