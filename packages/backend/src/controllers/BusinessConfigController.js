@@ -150,6 +150,14 @@ class BusinessConfigController {
       const { businessId, profileId } = req.params;
       const profileData = req.body;
       
+      console.log('📥 updateSpecialistProfile recibido:', {
+        businessId,
+        profileId,
+        hasBranchId: !!profileData.branchId,
+        hasAdditionalBranches: !!(profileData.additionalBranches && profileData.additionalBranches.length > 0),
+        role: profileData.role
+      });
+      
       if (req.user.businessId !== businessId || !['BUSINESS', 'BUSINESS_SPECIALIST', 'OWNER'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
@@ -165,9 +173,15 @@ class BusinessConfigController {
         message: 'Perfil de especialista actualizado exitosamente'
       });
     } catch (error) {
+      console.error('❌ Error en updateSpecialistProfile controller:', {
+        message: error.message,
+        stack: error.stack
+      });
+      
       res.status(500).json({
         success: false,
-        message: error.message
+        message: error.message,
+        error: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   }
