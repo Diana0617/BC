@@ -483,9 +483,15 @@ class PublicBookingsController {
       });
 
       if (!client) {
+        // Dividir nombre completo en firstName y lastName
+        const nameParts = clientName.trim().split(' ');
+        const firstName = nameParts[0] || clientName;
+        const lastName = nameParts.slice(1).join(' ') || clientName;
+
         client = await Client.create({
           businessId: business.id,
-          name: clientName,
+          firstName,
+          lastName,
           email: clientEmail,
           phone: clientPhone,
           status: 'ACTIVE'
