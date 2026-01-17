@@ -20,9 +20,24 @@ const DateTimeSelection = ({ businessCode, onNext, onBack }) => {
 
   // Cargar disponibilidad cuando cambie el mes o los datos de booking
   useEffect(() => {
+    console.log('🔍 DateTimeSelection - useEffect disparado:', {
+      businessCode,
+      serviceId: bookingData.service?.id,
+      specialistId: bookingData.specialist?.id,
+      hasAll: !!(businessCode && bookingData.service?.id && bookingData.specialist?.id)
+    });
+
     if (businessCode && bookingData.service?.id && bookingData.specialist?.id) {
       const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+
+      console.log('📅 Llamando fetchPublicAvailability con:', {
+        businessCode,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        serviceId: bookingData.service.id,
+        specialistId: bookingData.specialist.id
+      });
 
       dispatch(fetchPublicAvailability({
         businessCode,
@@ -101,6 +116,14 @@ const DateTimeSelection = ({ businessCode, onNext, onBack }) => {
   };
 
   const availableTimes = selectedDate ? availability[selectedDate.toISOString().split('T')[0]] || [] : [];
+
+  console.log('📊 Estado de DateTimeSelection:', {
+    isLoadingAvailability,
+    availabilityError,
+    availabilityKeys: Object.keys(availability || {}),
+    selectedDate: selectedDate?.toISOString().split('T')[0],
+    availableTimesCount: availableTimes.length
+  });
 
   if (!bookingData.service || !bookingData.specialist) {
     return (
