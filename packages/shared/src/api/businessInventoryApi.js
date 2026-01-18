@@ -177,12 +177,13 @@ export const updateProduct = async (productId, productData) => {
 
 /**
  * Eliminar producto
+ * @param {string} businessId - ID del negocio
  * @param {string} productId - ID del producto
  * @returns {Promise<Object>} Confirmación de eliminación
  */
-export const deleteProduct = async (productId) => {
+export const deleteProduct = async (businessId, productId) => {
   try {
-    const response = await apiClient.delete(`/business/config/inventory/products/${productId}`);
+    const response = await apiClient.delete(`/business/${businessId}/config/inventory/products/${productId}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting product:', error);
@@ -461,13 +462,14 @@ export const uploadProductImage = async (productId, imageFile, description = '')
 
 /**
  * Eliminar imagen del producto
+ * @param {string} businessId - ID del negocio
  * @param {string} productId - ID del producto
- * @param {string} imageId - ID de la imagen
+ * @param {string} imageId - ID de la imagen (índice)
  * @returns {Promise<Object>} Confirmación de eliminación
  */
-export const deleteProductImage = async (productId, imageId) => {
+export const deleteProductImage = async (businessId, productId, imageId) => {
   try {
-    const response = await apiClient.delete(`/business/config/inventory/products/${productId}/images/${imageId}`);
+    const response = await apiClient.delete(`/business/${businessId}/config/inventory/products/${productId}/images/${imageId}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting product image:', error);

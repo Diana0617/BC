@@ -341,6 +341,28 @@ class ProductController {
         });
       }
 
+      // Eliminar imágenes de Cloudinary antes de eliminar el producto
+      if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+        console.log(`Eliminando ${product.images.length} imágenes de Cloudinary para producto ${product.name}`);
+        for (const image of product.images) {
+          try {
+            // Eliminar imagen principal
+            if (image.main?.public_id) {
+              await cloudinary.uploader.destroy(image.main.public_id);
+              console.log(`Imagen principal eliminada: ${image.main.public_id}`);
+            }
+            // Eliminar thumbnail
+            if (image.thumbnail?.public_id) {
+              await cloudinary.uploader.destroy(image.thumbnail.public_id);
+              console.log(`Thumbnail eliminado: ${image.thumbnail.public_id}`);
+            }
+          } catch (cloudinaryError) {
+            console.error('Error eliminando imagen de Cloudinary:', cloudinaryError);
+            // Continuar con la siguiente imagen aunque falle una
+          }
+        }
+      }
+
       // Si no tiene movimientos, eliminar físicamente
       await product.destroy();
 
