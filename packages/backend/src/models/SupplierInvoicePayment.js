@@ -19,7 +19,6 @@ const SupplierInvoicePayment = sequelize.define('SupplierInvoicePayment', {
   businessId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'business_id',
     references: {
       model: 'businesses',
       key: 'id'
@@ -35,7 +34,6 @@ const SupplierInvoicePayment = sequelize.define('SupplierInvoicePayment', {
   paymentDate: {
     type: DataTypes.DATE,
     allowNull: false,
-    field: 'payment_date',
     defaultValue: DataTypes.NOW
   },
   paymentMethod: {
@@ -48,7 +46,6 @@ const SupplierInvoicePayment = sequelize.define('SupplierInvoicePayment', {
       'OTHER'        
     ),
     allowNull: false,
-    field: 'payment_method',
     defaultValue: 'TRANSFER'
   },
   reference: {
@@ -68,7 +65,6 @@ const SupplierInvoicePayment = sequelize.define('SupplierInvoicePayment', {
   createdBy: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'created_by',
     references: {
       model: 'users',
       key: 'id'
