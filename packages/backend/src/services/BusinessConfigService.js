@@ -171,7 +171,19 @@ class BusinessConfigService {
             where: Object.keys(profileWhereClause).length > 0 ? profileWhereClause : undefined,
             attributes: ['id', 'specialization', 'biography', 'experience', 'certifications', 
                         'profileImage', 'isActive', 'commissionRate', 'commissionType', 
-                        'fixedCommissionAmount', 'status', 'createdAt', 'updatedAt']
+                        'fixedCommissionAmount', 'status', 'createdAt', 'updatedAt'],
+            include: [
+              {
+                model: Branch,
+                as: 'branches',
+                through: { 
+                  attributes: ['dayOfWeek', 'startTime', 'endTime', 'isActive'],
+                  where: { isActive: true }
+                },
+                attributes: ['id', 'name', 'address', 'city', 'isMain'],
+                required: false
+              }
+            ]
           },
           {
             model: Branch,
@@ -190,7 +202,16 @@ class BusinessConfigService {
       // Transformar la respuesta
       return users.map(user => {
         const profile = user.specialistProfile; // <- minúscula
-        const branches = user.branches || [];
+        
+        // Combinar branches de User.branches (UserBranch) y SpecialistProfile.branches (SpecialistBranchSchedule)
+        let branches = user.branches || [];
+        
+        // Si es un especialista con perfil, usar las branches del SpecialistProfile
+        if (profile && profile.branches && profile.branches.length > 0) {
+          branches = profile.branches;
+          console.log(`🔍 Usuario ${user.firstName} ${user.lastName} tiene ${branches.length} sucursales desde SpecialistProfile`);
+        }
+        
         const defaultBranch = branches.find(b => b.UserBranch?.isDefault);
         
         return {
@@ -214,7 +235,7 @@ class BusinessConfigService {
           commissionType: profile?.commissionType || null,
           hourlyRate: profile?.fixedCommissionAmount || null,
           status: profile?.status || 'ACTIVE',
-          branchId: defaultBranch?.id || null,
+          branchId: defaultBranch?.id || (branches.length > 0 ? branches[0].id : null),
           branches: branches.map(b => ({
             id: b.id,
             name: b.name,
