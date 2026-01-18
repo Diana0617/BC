@@ -456,9 +456,42 @@ const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, get
     )
   }
 
+  // Calcular totales por método de pago
+  const paymentMethodTotals = movements.reduce((acc, movement) => {
+    const method = movement.paymentMethod;
+    const amount = parseFloat(movement.amount);
+    
+    if (!acc[method]) {
+      acc[method] = { income: 0, expense: 0, balance: 0 };
+    }
+    
+    if (movement.type === 'INCOME') {
+      acc[method].income += amount;
+    } else if (movement.type === 'EXPENSE') {
+      acc[method].expense += amount;
+    }
+    
+    acc[method].balance = acc[method].income - acc[method].expense;
+    
+    return acc;
+  }, {});
+
+  // Iconos por método de pago
+  const paymentMethodIcons = {
+    'CASH': '💵',
+    'CREDIT_CARD': '💳',
+    'DEBIT_CARD': '💳',
+    'BANK_TRANSFER': '🏦',
+    'DIGITAL_WALLET': '📱',
+    'CHECK': '📝',
+    'VOUCHER': '🎫',
+    'CREDIT': '📋',
+    'TRANSFER': '🏦'
+  };
+
   return (
     <div className="space-y-6">
-      {/* Totales */}
+      {/* Totales Generales */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white">
           <div className="flex items-center justify-between mb-2">
@@ -484,6 +517,52 @@ const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, get
           <p className="text-3xl font-bold">{formatCurrency(totals.netBalance)}</p>
         </div>
       </div>
+
+      {/* Totales por Método de Pago */}
+      {Object.keys(paymentMethodTotals).length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Balance por Método de Pago</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Object.entries(paymentMethodTotals).map(([method, data]) => (
+              <div key={method} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl">{paymentMethodIcons[method] || '💰'}</span>
+                  <h4 className="font-semibold text-gray-900 text-sm">
+                    {getPaymentMethodLabel(method)}
+                  </h4>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Ingresos:</span>
+                    <span className="font-semibold text-emerald-600">
+                      {formatCurrency(data.income)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Gastos:</span>
+                    <span className="font-semibold text-red-600">
+                      {formatCurrency(data.expense)}
+                    </span>
+                  </div>
+                  
+                  <div className="pt-2 mt-2 border-t border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-gray-700">Balance:</span>
+                      <span className={`font-bold text-base ${
+                        data.balance >= 0 ? 'text-blue-600' : 'text-red-600'
+                      }`}>
+                        {formatCurrency(data.balance)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tabla de Movimientos */}
       {movements.length > 0 ? (
