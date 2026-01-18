@@ -28,12 +28,12 @@ import {
   Warning as WarningIcon
 } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
+import { useBusinessContext } from '../../../context/BusinessContext';
 import businessBranchesApi from '@shared/api/businessBranchesApi';
 import supplierInvoicesApi from '@shared/api/supplierInvoicesApi';
 
 const DistributeStockModal = ({ open, onClose, invoice, onSuccess }) => {
-  const { user } = useSelector((state) => state.auth);
-  const businessId = user?.businessId;
+  const { businessId } = useBusinessContext();
   const [loading, setLoading] = useState(false);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [error, setError] = useState(null);
@@ -43,20 +43,34 @@ const DistributeStockModal = ({ open, onClose, invoice, onSuccess }) => {
   const [distribution, setDistribution] = useState([]);
 
   useEffect(() => {
-    if (open && businessId && invoice) {
+    if (open && businessId) {
+      console.log('🔍 DistributeStockModal useEffect triggered');
+      console.log('  - open:', open);
+      console.log('  - businessId:', businessId);
+      console.log('  - user:', user);
+      console.log('  - token in localStorage:', !!localStorage.getItem('token'));
       loadBranches();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, businessId]);
+
+  useEffect(() => {
+    if (branches.length > 0 && invoice?.items) {
       initializeDistribution();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, businessId, invoice]);
+  }, [branches, invoice]);
 
   const loadBranches = async () => {
     setLoadingBranches(true);
     try {
+      console.log('🏪 Loading branches for businessId:', businessId);
+      console.log('🔑 Token exists:', !!localStorage.getItem('token'));
       const response = await businessBranchesApi.getBranches(businessId);
+      console.log('✅ Branches loaded:', response.data);
       setBranches(response.data || []);
     } catch (error) {
-      console.error('Error loading branches:', error);
+      console.error('❌ Error loading branches:', error);
       toast.error('Error al cargar sucursales');
     } finally {
       setLoadingBranches(false);
