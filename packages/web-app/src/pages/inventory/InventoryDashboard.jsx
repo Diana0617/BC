@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Tabs, Tab, Paper, Typography } from '@mui/material';
 import {
   Inventory as InventoryIcon,
@@ -6,12 +6,15 @@ import {
   ShoppingCart as PurchaseIcon,
   PointOfSale as SalesIcon,
   Build as ConsumptionIcon,
-  Assignment as MovementsIcon
+  Assignment as MovementsIcon,
+  Warehouse as WarehouseIcon
 } from '@mui/icons-material';
+import { useBusinessContext } from '../../context/BusinessContext';
 
 // Componentes de las pestañas
 import StockInitial from './stock/StockInitial';
 import InventoryMovements from './movements/InventoryMovements';
+import StockByBranchView from '../../components/inventory/StockByBranchView';
 
 // Componentes pendientes (crearemos después)
 const ProductsList = () => (
@@ -43,7 +46,35 @@ const InternalConsumption = () => (
 );
 
 const InventoryDashboard = () => {
+  const { businessId } = useBusinessContext();
   const [activeTab, setActiveTab] = useState(0);
+  const [branches, setBranches] = useState([]);
+
+  useEffect(() => {
+    if (businessId) {
+      fetchBranches();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessId]);
+
+  const fetchBranches = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/business/${businessId}/branches`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setBranches(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+    }
+  };
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -54,6 +85,11 @@ const InventoryDashboard = () => {
       label: 'Stock Inicial',
       icon: <UploadIcon />,
       component: <StockInitial />
+    },
+    {
+      label: 'Stock por Sucursal',
+      icon: <WarehouseIcon />,
+      component: <StockByBranchView branches={branches} />
     },
     {
       label: 'Productos',
