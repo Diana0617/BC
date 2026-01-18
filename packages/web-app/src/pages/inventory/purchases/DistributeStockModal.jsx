@@ -152,7 +152,7 @@ const DistributeStockModal = ({ open, onClose, invoice, onSuccess }) => {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/business/${businessId}/supplier-invoices/${invoice.id}/distribute-stock`,
+        `${import.meta.env.VITE_API_URL}/api/business/${businessId}/supplier-invoices/${invoice.id}/distribute-stock`,
         {
           method: 'POST',
           headers: {

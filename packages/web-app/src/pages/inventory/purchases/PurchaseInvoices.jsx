@@ -54,7 +54,7 @@ const PurchaseInvoices = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/business/${businessId}/supplier-invoices`,
+        `${import.meta.env.VITE_API_URL}/api/business/${businessId}/supplier-invoices`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -88,7 +88,7 @@ const PurchaseInvoices = () => {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/business/${businessId}/supplier-invoices/${selectedInvoice.id}/approve`,
+        `${import.meta.env.VITE_API_URL}/api/business/${businessId}/supplier-invoices/${selectedInvoice.id}/approve`,
         {
           method: 'POST',
           headers: {

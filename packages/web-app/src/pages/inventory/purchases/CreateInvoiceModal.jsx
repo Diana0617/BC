@@ -57,7 +57,7 @@ const CreateInvoiceModal = ({ open, onClose, onSuccess }) => {
       // Cargar productos y proveedores
       const [productsRes, suppliersRes] = await Promise.all([
         getProducts(businessId, { limit: 1000 }),
-        fetch(`${import.meta.env.VITE_API_URL}/business/${businessId}/suppliers`, {
+        fetch(`${import.meta.env.VITE_API_URL}/api/business/${businessId}/suppliers`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }).then(r => r.json())
       ]);
@@ -152,7 +152,7 @@ const CreateInvoiceModal = ({ open, onClose, onSuccess }) => {
       };
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/business/${businessId}/supplier-invoices`,
+        `${import.meta.env.VITE_API_URL}/api/business/${businessId}/supplier-invoices`,
         {
           method: 'POST',
           headers: {
