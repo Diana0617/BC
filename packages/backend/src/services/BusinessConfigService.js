@@ -731,9 +731,36 @@ class BusinessConfigService {
           console.log(`📍 Sucursales encontradas: ${allBranches.length}`, allBranches.map(b => ({ id: b.id, name: b.name })));
           
           if (allBranches.length > 0) {
-            console.log('🔧 Llamando profile.setBranches con transaction...');
-            await profile.setBranches(allBranches, { transaction });
-            console.log(`✅ Asignadas ${allBranches.length} sucursales automáticamente a usuario BUSINESS`);
+            console.log('🔧 Creando horarios por defecto para todas las sucursales...');
+            const throughData = [];
+            const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            for (const branch of allBranches) {
+              for (const day of daysOfWeek) {
+                throughData.push({
+                  branchId: branch.id,
+                  specialistId: profile.id,
+                  dayOfWeek: day,
+                  startTime: '09:00:00',
+                  endTime: '18:00:00',
+                  isActive: true,
+                  priority: 1
+                });
+              }
+            }
+            
+            const SpecialistBranchSchedule = require('../models').SpecialistBranchSchedule;
+            await SpecialistBranchSchedule.destroy({
+              where: { specialistId: profile.id },
+              transaction
+            });
+            
+            await SpecialistBranchSchedule.bulkCreate(throughData, { 
+              transaction,
+              ignoreDuplicates: true 
+            });
+            
+            console.log(`✅ Asignadas ${allBranches.length} sucursales con ${throughData.length} horarios automáticamente a usuario BUSINESS`);
           }
         } else if (profileData.branchId || (profileData.additionalBranches && profileData.additionalBranches.length > 0)) {
           // Construir lista de todas las sucursales a asignar
@@ -767,10 +794,36 @@ class BusinessConfigService {
               console.warn('⚠️ No todas las sucursales fueron encontradas');
             }
             
-            // Usar setBranches para reemplazar todas las asignaciones
-            console.log('🔧 Llamando profile.setBranches con transaction...');
-            await profile.setBranches(branches, { transaction });
-            console.log(`✅ Sucursales actualizadas correctamente`);
+            console.log('🔧 Creando horarios por defecto para sucursales seleccionadas...');
+            const throughData = [];
+            const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            for (const branch of branches) {
+              for (const day of daysOfWeek) {
+                throughData.push({
+                  branchId: branch.id,
+                  specialistId: profile.id,
+                  dayOfWeek: day,
+                  startTime: '09:00:00',
+                  endTime: '18:00:00',
+                  isActive: true,
+                  priority: 1
+                });
+              }
+            }
+            
+            const SpecialistBranchSchedule = require('../models').SpecialistBranchSchedule;
+            await SpecialistBranchSchedule.destroy({
+              where: { specialistId: profile.id },
+              transaction
+            });
+            
+            await SpecialistBranchSchedule.bulkCreate(throughData, { 
+              transaction,
+              ignoreDuplicates: true 
+            });
+            
+            console.log(`✅ Sucursales actualizadas: ${branches.length} sucursales con ${throughData.length} horarios`);
           }
         } else {
           console.log('ℹ️ No se procesaron sucursales (no es BUSINESS o no hay datos de sucursales)');
