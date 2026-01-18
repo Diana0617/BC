@@ -1115,6 +1115,316 @@ class BusinessInventoryController {
       });
     }
   }
+
+  /**
+   * Transferir stock entre sucursales
+   * POST /business/:businessId/config/inventory/transfer-between-branches
+   */
+  async transferStockBetweenBranches(req, res) {
+    const transaction = await sequelize.transaction();
+
+    try {
+      const { businessId } = req.params;
+      const { businessId: userBusinessId, role } = req.user;
+      const { productId, fromBranchId, toBranchId, quantity, notes } = req.body;
+
+      // Validar permisos
+      if (businessId !== userBusinessId) {
+        await transaction.rollback();
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para realizar esta operación'
+        });
+      }
+
+      const allowedRoles = ['BUSINESS', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'];
+      if (!allowedRoles.includes(role)) {
+        await transaction.rollback();
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para transferir stock entre sucursales'
+        });
+      }
+
+      // Validaciones
+      if (!productId || !fromBranchId || !toBranchId || !quantity) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Faltan datos requeridos: productId, fromBranchId, toBranchId, quantity'
+        });
+      }
+
+      if (quantity <= 0) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'La cantidad debe ser mayor a 0'
+        });
+      }
+
+      if (fromBranchId === toBranchId) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Las sucursales de origen y destino no pueden ser iguales'
+        });
+      }
+
+      // Verificar producto
+      const product = await Product.findOne({
+        where: { id: productId, businessId },
+        transaction
+      });
+
+      if (!product) {
+        await transaction.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Producto no encontrado'
+        });
+      }
+
+      // Verificar sucursales
+      const [fromBranch, toBranch] = await Promise.all([
+        Branch.findOne({ where: { id: fromBranchId, businessId }, transaction }),
+        Branch.findOne({ where: { id: toBranchId, businessId }, transaction })
+      ]);
+
+      if (!fromBranch || !toBranch) {
+        await transaction.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Una o ambas sucursales no existen'
+        });
+      }
+
+      // Verificar stock en sucursal origen
+      const fromBranchStock = await BranchStock.findOne({
+        where: { branchId: fromBranchId, productId },
+        transaction
+      });
+
+      if (!fromBranchStock || fromBranchStock.currentStock < quantity) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: `Stock insuficiente en ${fromBranch.name}. Disponible: ${fromBranchStock?.currentStock || 0}`
+        });
+      }
+
+      // Buscar o crear stock en sucursal destino
+      const [toBranchStock, created] = await BranchStock.findOrCreate({
+        where: { branchId: toBranchId, productId },
+        defaults: {
+          businessId,
+          branchId: toBranchId,
+          productId,
+          currentStock: 0,
+          minStock: 0,
+          maxStock: 0
+        },
+        transaction
+      });
+
+      // Actualizar stocks
+      await fromBranchStock.update({
+        currentStock: fromBranchStock.currentStock - quantity
+      }, { transaction });
+
+      await toBranchStock.update({
+        currentStock: toBranchStock.currentStock + quantity
+      }, { transaction });
+
+      // Crear movimientos (salida de origen)
+      const outMovement = await InventoryMovement.create({
+        businessId,
+        productId,
+        branchId: fromBranchId,
+        movementType: 'TRANSFER_OUT',
+        quantity: -quantity,
+        reason: 'BRANCH_TRANSFER',
+        notes: notes || `Transferencia a ${toBranch.name}`,
+        userId: req.user.id,
+        relatedBranchId: toBranchId,
+        metadata: {
+          transferTo: toBranchId,
+          transferToBranchName: toBranch.name
+        }
+      }, { transaction });
+
+      // Crear movimiento (entrada a destino)
+      const inMovement = await InventoryMovement.create({
+        businessId,
+        productId,
+        branchId: toBranchId,
+        movementType: 'TRANSFER_IN',
+        quantity: quantity,
+        reason: 'BRANCH_TRANSFER',
+        notes: notes || `Transferencia desde ${fromBranch.name}`,
+        userId: req.user.id,
+        relatedBranchId: fromBranchId,
+        metadata: {
+          transferFrom: fromBranchId,
+          transferFromBranchName: fromBranch.name,
+          relatedMovementId: outMovement.id
+        }
+      }, { transaction });
+
+      // Actualizar metadata del movimiento de salida con el ID del de entrada
+      await outMovement.update({
+        metadata: {
+          ...outMovement.metadata,
+          relatedMovementId: inMovement.id
+        }
+      }, { transaction });
+
+      await transaction.commit();
+
+      res.json({
+        success: true,
+        message: `Transferencia exitosa: ${quantity} ${product.unit || 'unidades'} de ${product.name}`,
+        data: {
+          product: {
+            id: product.id,
+            name: product.name,
+            unit: product.unit
+          },
+          from: {
+            branchId: fromBranchId,
+            branchName: fromBranch.name,
+            previousStock: fromBranchStock.currentStock + quantity,
+            newStock: fromBranchStock.currentStock
+          },
+          to: {
+            branchId: toBranchId,
+            branchName: toBranch.name,
+            previousStock: toBranchStock.currentStock - quantity,
+            newStock: toBranchStock.currentStock
+          },
+          quantity,
+          movements: [outMovement, inMovement]
+        }
+      });
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Error transferring stock between branches:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al transferir stock entre sucursales',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Obtener movimientos de inventario con filtros
+   * GET /business/:businessId/config/inventory/movements
+   */
+  async getInventoryMovements(req, res) {
+    try {
+      const { businessId } = req.params;
+      const { businessId: userBusinessId } = req.user;
+      const {
+        productId,
+        branchId,
+        movementType, // PURCHASE, ADJUSTMENT, TRANSFER_OUT, TRANSFER_IN, SALE, etc.
+        reason, // STAFF_CONSUMPTION, BRANCH_TRANSFER, etc.
+        userId,
+        dateFrom,
+        dateTo,
+        page = 1,
+        limit = 20
+      } = req.query;
+
+      if (businessId !== userBusinessId) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para acceder a este negocio'
+        });
+      }
+
+      const where = { businessId };
+      
+      if (productId) where.productId = productId;
+      if (branchId) where.branchId = branchId;
+      if (movementType) where.movementType = movementType;
+      if (reason) where.reason = reason;
+      if (userId) where.userId = userId;
+      
+      if (dateFrom || dateTo) {
+        where.createdAt = {};
+        if (dateFrom) where.createdAt[Op.gte] = new Date(dateFrom);
+        if (dateTo) {
+          const endDate = new Date(dateTo);
+          endDate.setHours(23, 59, 59, 999);
+          where.createdAt[Op.lte] = endDate;
+        }
+      }
+
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+
+      const { count, rows: movements } = await InventoryMovement.findAndCountAll({
+        where,
+        include: [
+          {
+            model: Product,
+            as: 'product',
+            attributes: ['id', 'name', 'sku', 'unit', 'category', 'images']
+          },
+          {
+            model: Branch,
+            as: 'branch',
+            attributes: ['id', 'name', 'address']
+          },
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'name', 'email', 'role']
+          }
+        ],
+        order: [['createdAt', 'DESC']],
+        limit: parseInt(limit),
+        offset
+      });
+
+      // Calcular totales
+      const totals = await InventoryMovement.findAll({
+        where,
+        attributes: [
+          'movementType',
+          [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+          [sequelize.fn('SUM', sequelize.col('quantity')), 'totalQuantity']
+        ],
+        group: ['movementType'],
+        raw: true
+      });
+
+      res.json({
+        success: true,
+        data: {
+          movements,
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(count / parseInt(limit)),
+            totalItems: count,
+            itemsPerPage: parseInt(limit)
+          },
+          summary: {
+            totals,
+            totalMovements: count
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error getting inventory movements:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al obtener movimientos de inventario',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = new BusinessInventoryController();

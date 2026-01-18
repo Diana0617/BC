@@ -2318,6 +2318,129 @@ router.get('/:businessId/config/inventory/withdrawals', BusinessInventoryControl
 
 /**
  * @swagger
+ * /api/business/{businessId}/config/inventory/transfer-between-branches:
+ *   post:
+ *     summary: Transferir stock entre sucursales
+ *     description: Permite mover productos de una sucursal a otra
+ *     tags: [Business Inventory]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - productId
+ *               - fromBranchId
+ *               - toBranchId
+ *               - quantity
+ *             properties:
+ *               productId:
+ *                 type: string
+ *                 format: uuid
+ *               fromBranchId:
+ *                 type: string
+ *                 format: uuid
+ *               toBranchId:
+ *                 type: string
+ *                 format: uuid
+ *               quantity:
+ *                 type: number
+ *                 minimum: 1
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Transferencia completada exitosamente
+ *       400:
+ *         description: Datos inválidos o stock insuficiente
+ *       403:
+ *         description: No tiene permisos para transferir stock
+ *       404:
+ *         description: Producto o sucursal no encontrada
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.post('/:businessId/config/inventory/transfer-between-branches', BusinessInventoryController.transferStockBetweenBranches);
+
+/**
+ * @swagger
+ * /api/business/{businessId}/config/inventory/movements:
+ *   get:
+ *     summary: Obtener movimientos de inventario
+ *     description: Lista todos los movimientos de inventario con filtros opcionales
+ *     tags: [Business Inventory]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: productId
+ *         schema:
+ *           type: string
+ *         description: Filtrar por producto
+ *       - in: query
+ *         name: branchId
+ *         schema:
+ *           type: string
+ *         description: Filtrar por sucursal
+ *       - in: query
+ *         name: movementType
+ *         schema:
+ *           type: string
+ *           enum: [PURCHASE, ADJUSTMENT, TRANSFER_OUT, TRANSFER_IN, SALE]
+ *         description: Tipo de movimiento
+ *       - in: query
+ *         name: reason
+ *         schema:
+ *           type: string
+ *           enum: [STAFF_CONSUMPTION, BRANCH_TRANSFER, INITIAL_STOCK, ADJUSTMENT]
+ *         description: Razón del movimiento
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         description: Filtrar por usuario que realizó el movimiento
+ *       - in: query
+ *         name: dateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha desde
+ *       - in: query
+ *         name: dateTo
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha hasta
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Movimientos obtenidos exitosamente
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/:businessId/config/inventory/movements', BusinessInventoryController.getInventoryMovements);
+
+/**
+ * @swagger
  * /api/business/{businessId}/config/inventory/low-stock:
  *   get:
  *     summary: Obtener productos con stock bajo

@@ -328,7 +328,7 @@ class SupplierInvoiceController {
         });
       }
 
-      // Crear la factura
+      // Crear la factura (SIN actualizar stock aún)
       const invoice = await SupplierInvoice.create({
         businessId,
         supplierId: finalSupplierId,
@@ -344,101 +344,18 @@ class SupplierInvoiceController {
         currency,
         notes,
         attachments,
-        status: 'PENDING',
+        status: 'PENDING', // Queda pendiente hasta que se distribuya el stock
         paidAmount: 0,
-        remainingAmount: total
+        remainingAmount: total,
+        metadata: {
+          stockDistributed: false, // Marca que el stock NO ha sido distribuido
+          branchDistribution: null // Se llenará cuando se distribuya
+        }
       }, { transaction });
 
-      // 🔥 CREAR MOVIMIENTOS DE INVENTARIO Y ACTUALIZAR STOCK
-      console.log(`📦 Creando movimientos de inventario para factura ${invoiceNumber}`);
-      
-      for (const item of processedItems) {
-        if (!item.productId) {
-          console.warn(`⚠️ Item sin productId, saltando: ${item.productName}`);
-          continue;
-        }
+      console.log(`✅ Factura creada: ${invoiceNumber} - Stock pendiente de distribución`)
 
-        // Obtener producto actual para registrar stock previo
-        const product = await Product.findByPk(item.productId, { transaction });
-        
-        if (!product) {
-          console.warn(`⚠️ Producto no encontrado: ${item.productId}`);
-          continue;
-        }
-
-        const previousStock = product.currentStock || 0;
-        const newStock = previousStock + item.quantity;
-
-        // Crear movimiento de inventario
-        await InventoryMovement.create({
-          businessId,
-          productId: item.productId,
-          branchId, // Asociar movimiento a la sucursal
-          userId,
-          movementType: 'PURCHASE',
-          quantity: item.quantity, // Cantidad positiva para entrada
-          unitCost: item.unitCost,
-          totalCost: item.total,
-          previousStock,
-          newStock,
-          reason: `Entrada por factura ${invoiceNumber}`,
-          notes: `Factura de proveedor: ${supplier.name} - Sucursal: ${branch.name}`,
-          referenceId: invoice.id,
-          referenceType: 'SUPPLIER_INVOICE',
-          supplierInfo: {
-            supplierId: finalSupplierId,
-            supplierName: supplier.name,
-            invoiceNumber: invoiceNumber
-          }
-        }, { transaction });
-
-        // Actualizar stock del producto (global)
-        const updateData = {
-          currentStock: newStock,
-          cost: item.unitCost // Actualizar costo con el último costo de compra
-        };
-        
-        // Si se proporcionó un precio de venta, actualizarlo también
-        if (item.salePrice && parseFloat(item.salePrice) > 0) {
-          updateData.price = parseFloat(item.salePrice);
-        }
-        
-        await product.update(updateData, { transaction });
-
-        console.log(`✅ Stock global actualizado: ${product.name} | ${previousStock} → ${newStock} (+${item.quantity})`);
-
-        // 🔥 ACTUALIZAR O CREAR BRANCH_STOCK
-        const branchStock = await BranchStock.findOne({
-          where: { branchId, productId: item.productId },
-          transaction
-        });
-
-        if (branchStock) {
-          // Actualizar stock existente
-          const previousBranchStock = branchStock.currentStock;
-          const newBranchStock = previousBranchStock + item.quantity;
-          
-          await branchStock.update({
-            currentStock: newBranchStock,
-            lastCountDate: new Date()
-          }, { transaction });
-
-          console.log(`✅ Stock de sucursal actualizado: ${product.name} en ${branch.name} | ${previousBranchStock} → ${newBranchStock} (+${item.quantity})`);
-        } else {
-          // Crear registro de stock en sucursal
-          await BranchStock.create({
-            businessId,
-            branchId,
-            productId: item.productId,
-            currentStock: item.quantity,
-            minStock: 0,
-            maxStock: null,
-            lastCountDate: new Date()
-          }, { transaction });
-
-          console.log(`✅ Stock de sucursal creado: ${product.name} en ${branch.name} | Stock inicial: ${item.quantity}`);
-        }
-      }
+      console.log(`✅ Factura creada: ${invoiceNumber} - Stock pendiente de distribución`);
 
       await transaction.commit();
 
@@ -455,7 +372,7 @@ class SupplierInvoiceController {
 
       res.status(201).json({
         success: true,
-        message: 'Factura creada exitosamente y stock actualizado',
+        message: 'Factura creada exitosamente. Debe distribuir el stock antes de aprobar.',
         data: createdInvoice
       });
     } catch (error) {
@@ -470,16 +387,28 @@ class SupplierInvoiceController {
   }
 
   /**
-   * Aprobar factura y actualizar inventario
-   * POST /api/business/:businessId/supplier-invoices/:invoiceId/approve
+   * Distribuir stock de factura entre sucursales
+   * POST /api/business/:businessId/supplier-invoices/:invoiceId/distribute-stock
+   * 
+   * Body: {
+   *   distribution: [
+   *     {
+   *       branchId: 'uuid',
+   *       items: [
+   *         { productId: 'uuid', quantity: 10 },
+   *         { productId: 'uuid', quantity: 5 }
+   *       ]
+   *     }
+   *   ]
+   * }
    */
-  static async approveInvoice(req, res) {
+  static async distributeStock(req, res) {
     const transaction = await sequelize.transaction();
     
     try {
       const { businessId, invoiceId } = req.params;
       const { businessId: userBusinessId, id: userId } = req.user;
-      const { branchId } = req.body; // Sucursal donde se recibirán los productos
+      const { distribution } = req.body;
 
       if (businessId !== userBusinessId) {
         await transaction.rollback();
@@ -489,11 +418,221 @@ class SupplierInvoiceController {
         });
       }
 
-      if (!branchId) {
+      // Validar distribution
+      if (!distribution || !Array.isArray(distribution) || distribution.length === 0) {
         await transaction.rollback();
         return res.status(400).json({
           success: false,
-          message: 'Debes especificar la sucursal donde se recibirán los productos'
+          message: 'Debes proporcionar la distribución de stock por sucursal'
+        });
+      }
+
+      // Obtener factura
+      const invoice = await SupplierInvoice.findOne({
+        where: { id: invoiceId, businessId },
+        include: [{
+          model: Supplier,
+          as: 'supplier'
+        }],
+        transaction
+      });
+
+      if (!invoice) {
+        await transaction.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Factura no encontrada'
+        });
+      }
+
+      // Validar que la factura esté pendiente
+      if (invoice.status !== 'PENDING') {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: `No se puede distribuir stock de una factura con status ${invoice.status}`
+        });
+      }
+
+      // Validar que el stock no haya sido distribuido previamente
+      if (invoice.metadata?.stockDistributed) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'El stock de esta factura ya ha sido distribuido'
+        });
+      }
+
+      // Validar que todas las sucursales existan
+      const branchIds = distribution.map(d => d.branchId);
+      const branches = await Branch.findAll({
+        where: { id: branchIds, businessId },
+        transaction
+      });
+
+      if (branches.length !== branchIds.length) {
+        await transaction.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Una o más sucursales no existen o no pertenecen al negocio'
+        });
+      }
+
+      // Validar que las cantidades distribuidas coincidan con las de la factura
+      const productQuantities = {};
+      invoice.items.forEach(item => {
+        productQuantities[item.productId] = item.quantity;
+      });
+
+      const distributedQuantities = {};
+      distribution.forEach(dist => {
+        dist.items.forEach(item => {
+          if (!distributedQuantities[item.productId]) {
+            distributedQuantities[item.productId] = 0;
+          }
+          distributedQuantities[item.productId] += item.quantity;
+        });
+      });
+
+      // Verificar que cada producto tenga la cantidad correcta
+      for (const [productId, invoiceQty] of Object.entries(productQuantities)) {
+        const distributedQty = distributedQuantities[productId] || 0;
+        if (distributedQty !== invoiceQty) {
+          await transaction.rollback();
+          const product = await Product.findByPk(productId);
+          return res.status(400).json({
+            success: false,
+            message: `La cantidad distribuida de "${product?.name || productId}" (${distributedQty}) no coincide con la cantidad de la factura (${invoiceQty})`
+          });
+        }
+      }
+
+      console.log(`📦 Distribuyendo stock de factura ${invoice.invoiceNumber}`);
+
+      // Aplicar distribución: crear movimientos y actualizar stock
+      for (const dist of distribution) {
+        const branch = branches.find(b => b.id === dist.branchId);
+        
+        for (const item of dist.items) {
+          const invoiceItem = invoice.items.find(i => i.productId === item.productId);
+          if (!invoiceItem) continue;
+
+          const product = await Product.findByPk(item.productId, { transaction });
+          if (!product) continue;
+
+          const previousStock = product.currentStock || 0;
+          const newStock = previousStock + item.quantity;
+
+          // Crear movimiento de inventario
+          await InventoryMovement.create({
+            businessId,
+            productId: item.productId,
+            branchId: dist.branchId,
+            userId,
+            movementType: 'PURCHASE',
+            quantity: item.quantity,
+            unitCost: invoiceItem.unitCost,
+            totalCost: invoiceItem.unitCost * item.quantity,
+            previousStock,
+            newStock,
+            reason: `Entrada por factura ${invoice.invoiceNumber}`,
+            notes: `Factura de proveedor: ${invoice.supplier.name} - Sucursal: ${branch.name}`,
+            referenceId: invoice.id,
+            referenceType: 'SUPPLIER_INVOICE',
+            supplierInfo: {
+              supplierId: invoice.supplierId,
+              supplierName: invoice.supplier.name,
+              invoiceNumber: invoice.invoiceNumber
+            }
+          }, { transaction });
+
+          // Actualizar stock global del producto
+          await product.update({
+            currentStock: newStock,
+            cost: invoiceItem.unitCost
+          }, { transaction });
+
+          console.log(`✅ Stock global actualizado: ${product.name} | ${previousStock} → ${newStock} (+${item.quantity})`);
+
+          // Actualizar o crear stock de sucursal
+          const [branchStock, created] = await BranchStock.findOrCreate({
+            where: { branchId: dist.branchId, productId: item.productId },
+            defaults: {
+              businessId,
+              branchId: dist.branchId,
+              productId: item.productId,
+              currentStock: 0,
+              minStock: 0,
+              maxStock: null,
+              lastCountDate: new Date()
+            },
+            transaction
+          });
+
+          const previousBranchStock = branchStock.currentStock;
+          const newBranchStock = previousBranchStock + item.quantity;
+
+          await branchStock.update({
+            currentStock: newBranchStock,
+            lastCountDate: new Date()
+          }, { transaction });
+
+          console.log(`✅ Stock de sucursal ${created ? 'creado' : 'actualizado'}: ${product.name} en ${branch.name} | ${previousBranchStock} → ${newBranchStock} (+${item.quantity})`);
+        }
+      }
+
+      // Actualizar metadata de la factura
+      await invoice.update({
+        metadata: {
+          stockDistributed: true,
+          branchDistribution: distribution,
+          distributedAt: new Date(),
+          distributedBy: userId
+        }
+      }, { transaction });
+
+      await transaction.commit();
+
+      // Recargar factura con relaciones
+      const updatedInvoice = await SupplierInvoice.findByPk(invoiceId, {
+        include: [{
+          model: Supplier,
+          as: 'supplier'
+        }]
+      });
+
+      res.json({
+        success: true,
+        message: 'Stock distribuido exitosamente',
+        data: updatedInvoice
+      });
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Error distributing stock:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al distribuir stock',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Aprobar factura (requiere distribución previa de stock)
+   * POST /api/business/:businessId/supplier-invoices/:invoiceId/approve
+   */
+  static async approveInvoice(req, res) {
+    const transaction = await sequelize.transaction();
+    
+    try {
+      const { businessId, invoiceId } = req.params;
+      const { businessId: userBusinessId } = req.user;
+
+      if (businessId !== userBusinessId) {
+        await transaction.rollback();
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para acceder a este negocio'
         });
       }
 
@@ -518,89 +657,16 @@ class SupplierInvoiceController {
         });
       }
 
-      // Actualizar stock de cada producto en la sucursal
-           // Actualizar stock de cada producto en la sucursal
-      for (const item of invoice.items) {
-        if (!item.productId) continue;
-
-        // Buscar o crear BranchStock
-        const [branchStock, created] = await BranchStock.findOrCreate({
-          where: {
-            branchId,
-            productId: item.productId
-          },
-          defaults: {
-            businessId,
-            branchId,
-            productId: item.productId,
-            currentStock: 0,
-            minStock: 0,
-            maxStock: 0
-          },
-          transaction
+      // Validar que el stock haya sido distribuido
+      if (!invoice.metadata?.stockDistributed) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Debe distribuir el stock antes de aprobar la factura'
         });
-
-        // Incrementar stock
-        await branchStock.update({
-          currentStock: branchStock.currentStock + item.quantity
-        }, { transaction });
-
-        // Obtener producto para actualizar costo y catálogo
-        const product = await Product.findByPk(item.productId, { transaction });
-        
-        // Actualizar costo del producto
-        await product.update(
-          { cost: item.unitCost },
-          { transaction }
-        );
-
-        // 🆕 AUTO-GENERAR CATÁLOGO DEL PROVEEDOR
-        // Crear o actualizar item en el catálogo del proveedor
-        const catalogItemData = {
-          businessId,
-          supplierId: invoice.supplierId,
-          supplierSku: product.sku || `${invoice.supplierId}-${item.productId}`,
-          name: product.name,
-          description: product.description,
-          category: product.category,
-          brand: product.brand,
-          price: item.unitCost, // Precio del proveedor
-          currency: 'COP',
-          unit: product.unit,
-          available: true,
-          images: product.images || [],
-          lastUpdate: new Date()
-        };
-
-        // Buscar si ya existe en el catálogo
-        const existingCatalogItem = await SupplierCatalogItem.findOne({
-          where: {
-            businessId,
-            supplierSku: catalogItemData.supplierSku
-          },
-          transaction
-        });
-
-        if (existingCatalogItem) {
-          // Actualizar precio y fecha
-          await existingCatalogItem.update({
-            price: catalogItemData.price,
-            name: catalogItemData.name,
-            description: catalogItemData.description,
-            category: catalogItemData.category,
-            brand: catalogItemData.brand,
-            unit: catalogItemData.unit,
-            images: catalogItemData.images,
-            lastUpdate: catalogItemData.lastUpdate,
-            available: true
-          }, { transaction });
-        } else {
-          // Crear nuevo item en el catálogo
-          await SupplierCatalogItem.create(catalogItemData, { transaction });
-        }
       }
 
-      // Actualizar estado de la factura
+      // Aprobar factura
       await invoice.update({
         status: 'APPROVED'
       }, { transaction });
@@ -609,7 +675,7 @@ class SupplierInvoiceController {
 
       res.json({
         success: true,
-        message: 'Factura aprobada e inventario actualizado exitosamente',
+        message: 'Factura aprobada exitosamente',
         data: invoice
       });
     } catch (error) {

@@ -52,9 +52,18 @@ router.post(
 );
 
 /**
+ * POST /api/business/:businessId/supplier-invoices/:invoiceId/distribute-stock
+ * Distribuir el stock de una factura pendiente entre sucursales
+ * Body: { distribution: [{ branchId, items: [{ productId, quantity }] }] }
+ */
+router.post(
+  '/:invoiceId/distribute-stock',
+  SupplierInvoiceController.distributeStock
+);
+
+/**
  * POST /api/business/:businessId/supplier-invoices/:invoiceId/approve
- * Aprobar factura y actualizar inventario
- * Body: { branchId }
+ * Aprobar factura (requiere distribución previa de stock)
  */
 router.post(
   '/:invoiceId/approve',
