@@ -19,6 +19,7 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getInventoryMovements } from '@shared/api/businessInventoryApi';
+import businessBranchesApi from '@shared/api/businessBranchesApi';
 import { usePagination } from '@shared/hooks/usePagination';
 import { PAGINATION } from '@shared/constants/ui';
 
@@ -26,6 +27,7 @@ const InventoryMovements = () => {
   const { user } = useSelector((state) => state.auth);
   const businessId = user?.businessId;
   const [movements, setMovements] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [summary, setSummary] = useState(null);
@@ -99,6 +101,15 @@ const InventoryMovements = () => {
     PURCHASE: 'Compra'
   };
 
+  const loadBranches = async () => {
+    try {
+      const response = await businessBranchesApi.getBranches(businessId);
+      setBranches(response.data || []);
+    } catch (error) {
+      console.error('Error loading branches:', error);
+    }
+  };
+
   const fetchMovements = async () => {
     setLoading(true);
     setError(null);
@@ -128,6 +139,7 @@ const InventoryMovements = () => {
 
   useEffect(() => {
     if (businessId) {
+      loadBranches();
       fetchMovements();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -229,6 +241,24 @@ const InventoryMovements = () => {
                   {Object.entries(movementTypes).map(([key, value]) => (
                     <option key={key} value={key}>
                       {value.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sucursal
+                </label>
+                <select
+                  value={filters.branchId}
+                  onChange={(e) => handleFilterChange('branchId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todas</option>
+                  {branches.map(branch => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
                     </option>
                   ))}
                 </select>
