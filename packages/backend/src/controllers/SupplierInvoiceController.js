@@ -7,6 +7,7 @@ const {
   Business,
   SupplierInvoicePayment,
   InventoryMovement,
+  FinancialMovement,
   sequelize
 } = require('../models');
 const { uploadDocument } = require('../config/cloudinary');
@@ -848,9 +849,14 @@ class SupplierInvoiceController {
         });
       }
 
-      // Obtener la factura
+      // Obtener la factura con supplier
       const invoice = await SupplierInvoice.findOne({
         where: { id: invoiceId, businessId },
+        include: [{
+          model: Supplier,
+          as: 'supplier',
+          attributes: ['id', 'name']
+        }],
         transaction
       });
 
@@ -904,6 +910,26 @@ class SupplierInvoiceController {
         notes,
         createdBy: userId
       }, { transaction});
+
+      // Crear movimiento financiero (GASTO)
+      await FinancialMovement.create({
+        businessId,
+        userId,
+        type: 'EXPENSE',
+        category: 'Compra de Inventario',
+        description: `Pago factura ${invoice.invoiceNumber} - ${invoice.supplier?.name || 'Proveedor'}`,
+        amount: amountFloat,
+        paymentMethod,
+        status: 'COMPLETED',
+        transactionDate: paymentDate ? new Date(paymentDate) : new Date(),
+        reference,
+        metadata: {
+          source: 'supplier_invoice_payment',
+          invoiceId: invoice.id,
+          paymentId: payment.id,
+          supplierId: invoice.supplierId
+        }
+      }, { transaction });
 
       // Actualizar la factura
       const newPaidAmount = parseFloat(invoice.paidAmount) + amountFloat;
