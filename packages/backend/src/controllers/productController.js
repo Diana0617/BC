@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const InventoryMovement = require('../models/InventoryMovement');
+const SaleItem = require('../models/SaleItem');
 const { sequelize } = require('../config/database');
 const { Op } = require('sequelize');
 const { uploadResponsiveImage } = require('../config/cloudinary');
@@ -327,17 +328,28 @@ class ProductController {
         });
       }
 
-      // Verificar si tiene movimientos
+      // Verificar si tiene movimientos de inventario
       const hasMovements = await InventoryMovement.count({
         where: { productId: id }
       });
 
-      if (hasMovements > 0) {
+      // Verificar si tiene ventas asociadas
+      const hasSales = await SaleItem.count({
+        where: { productId: id }
+      });
+
+      if (hasMovements > 0 || hasSales > 0) {
         // No eliminar, solo desactivar
         await product.update({ isActive: false });
+        
+        const reason = [];
+        if (hasMovements > 0) reason.push(`${hasMovements} movimientos de inventario`);
+        if (hasSales > 0) reason.push(`${hasSales} ventas`);
+        
         return res.json({
           success: true,
-          message: 'Producto desactivado (tiene movimientos de inventario)'
+          message: `Producto desactivado (tiene ${reason.join(' y ')})`,
+          deactivated: true
         });
       }
 

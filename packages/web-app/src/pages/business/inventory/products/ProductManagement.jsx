@@ -97,7 +97,13 @@ const ProductManagement = () => {
       console.log('Delete response:', response);
       if (response.success) {
         await loadProducts(); // Aseguramos que se refresque la lista
-        alert('Producto eliminado correctamente');
+        
+        // Mostrar mensaje apropiado según si fue eliminado o desactivado
+        if (response.deactivated) {
+          alert(`⚠️ ${response.message}\n\nEl producto no se puede eliminar completamente porque tiene historial, pero ha sido desactivado.`);
+        } else {
+          alert('✅ Producto eliminado correctamente');
+        }
       } else {
         alert('Error al eliminar el producto: ' + (response.message || 'Error desconocido'));
       }
