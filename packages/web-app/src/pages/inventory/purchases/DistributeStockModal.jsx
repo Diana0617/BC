@@ -28,6 +28,7 @@ import {
   Warning as WarningIcon
 } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
+import businessBranchesApi from '@shared/api/businessBranchesApi';
 const DistributeStockModal = ({ open, onClose, invoice, onSuccess }) => {
   const { user } = useSelector((state) => state.auth);
   const businessId = user?.businessId;
@@ -50,18 +51,8 @@ const DistributeStockModal = ({ open, onClose, invoice, onSuccess }) => {
   const loadBranches = async () => {
     setLoadingBranches(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/business/${businessId}/branches`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-      const data = await response.json();
-      if (data.success) {
-        setBranches(data.data || []);
-      }
+      const response = await businessBranchesApi.getBranches(businessId);
+      setBranches(response.data || []);
     } catch (error) {
       console.error('Error loading branches:', error);
       toast.error('Error al cargar sucursales');
