@@ -635,6 +635,7 @@ class BranchController {
         },
         include: [{
           model: Branch,
+          as: 'branch',
           where: { businessId },
           required: true
         }]
