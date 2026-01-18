@@ -287,8 +287,9 @@ class SpecialistServiceController {
           });
           console.log('✅ SpecialistProfile creado para usuario BUSINESS:', specialist.id);
           
-          // Asignar TODAS las sucursales automáticamente
+          // Asignar TODAS las sucursales automáticamente con horarios por defecto
           const Branch = require('../models').Branch;
+          const SpecialistBranchSchedule = require('../models').SpecialistBranchSchedule;
           const branches = await Branch.findAll({
             where: {
               businessId: businessId || userBusinessId,
@@ -297,8 +298,27 @@ class SpecialistServiceController {
           });
           
           if (branches.length > 0) {
-            await specialist.setBranches(branches);
-            console.log(`✅ Asignadas ${branches.length} sucursales a BUSINESS specialist`);
+            const throughData = [];
+            const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            for (const branch of branches) {
+              for (const day of daysOfWeek) {
+                throughData.push({
+                  branchId: branch.id,
+                  specialistId: specialist.id,
+                  dayOfWeek: day,
+                  startTime: '09:00:00',
+                  endTime: '18:00:00',
+                  isActive: true,
+                  priority: 1
+                });
+              }
+            }
+            
+            await SpecialistBranchSchedule.bulkCreate(throughData, { 
+              ignoreDuplicates: true 
+            });
+            console.log(`✅ Asignadas ${branches.length} sucursales con ${throughData.length} horarios a BUSINESS specialist`);
           }
         } else {
           return res.status(404).json({
