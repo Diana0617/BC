@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import {
   Dialog,
   DialogTitle,
@@ -44,11 +43,6 @@ const DistributeStockModal = ({ open, onClose, invoice, onSuccess }) => {
 
   useEffect(() => {
     if (open && businessId) {
-      console.log('🔍 DistributeStockModal useEffect triggered');
-      console.log('  - open:', open);
-      console.log('  - businessId:', businessId);
-      console.log('  - user:', user);
-      console.log('  - token in localStorage:', !!localStorage.getItem('token'));
       loadBranches();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
