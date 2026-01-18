@@ -15,6 +15,7 @@ import { useBusinessContext } from '../../context/BusinessContext';
 import StockInitial from './stock/StockInitial';
 import InventoryMovements from './movements/InventoryMovements';
 import StockByBranchView from '../../components/inventory/StockByBranchView';
+import PurchaseInvoices from './purchases/PurchaseInvoices';
 
 // Componentes pendientes (crearemos después)
 const ProductsList = () => (
@@ -24,17 +25,10 @@ const ProductsList = () => (
   </Box>
 );
 
-const PurchaseOrders = () => (
-  <Box p={3}>
-    <Typography variant="h5">Órdenes de Compra</Typography>
-    <Typography color="text.secondary">En desarrollo...</Typography>
-  </Box>
-);
-
 const ProductSales = () => (
   <Box p={3}>
     <Typography variant="h5">Ventas de Productos</Typography>
-    <Typography color="text.secondary">En desarrollo...</Typography>
+    <Typography color="text.secondary">Las ventas de productos se gestionan desde la sección de Ventas</Typography>
   </Box>
 );
 
@@ -99,7 +93,7 @@ const InventoryDashboard = () => {
     {
       label: 'Compras',
       icon: <PurchaseIcon />,
-      component: <PurchaseOrders />
+      component: <PurchaseInvoices />
     },
     {
       label: 'Ventas',
