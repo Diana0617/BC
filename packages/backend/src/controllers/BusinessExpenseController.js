@@ -421,7 +421,7 @@ class BusinessExpenseController {
           notes: notes,
           paymentMethod: paymentMethod || 'CASH',
           transactionId: transactionReference,
-          status: 'COMPLETED',
+          status: 'PENDING', // Cambiar a PENDING hasta que se pague
           dueDate: dueDate,
           receiptUrl: expenseData.receiptUrl,
           taxAmount: expenseData.taxAmount || 0,
@@ -696,6 +696,16 @@ class BusinessExpenseController {
         notes: notes || expense.notes,
         updatedBy: req.user.id
       });
+
+      // Actualizar movimiento financiero asociado
+      await FinancialMovement.update(
+        {
+          status: 'COMPLETED'
+        },
+        {
+          where: { businessExpenseId: expense.id }
+        }
+      );
 
       res.json({
         success: true,
