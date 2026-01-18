@@ -1,5 +1,6 @@
 // TEMPORARILY SIMPLIFIED - BusinessConfigService under refactoring
 // Full functionality temporarily unavailable while BusinessRules system is being refactored
+// Force redeploy: 2026-01-18
 
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
