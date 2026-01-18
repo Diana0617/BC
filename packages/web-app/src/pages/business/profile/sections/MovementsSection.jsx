@@ -48,10 +48,12 @@ import {
   ClockIcon,
   CalendarIcon,
   ReceiptPercentIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { exportMovementsToExcel, exportPaymentMethodBalanceToExcel } from '../../../../utils/excelExport'
 
 const MovementsSection = () => {
   const dispatch = useDispatch()
@@ -378,6 +380,8 @@ const MovementsSection = () => {
           movements={movements}
           loading={movementsLoading}
           totals={movementsTotals}
+          currentBusiness={currentBusiness}
+          dateRange={dateRange}
           formatCurrency={formatCurrency}
           getPaymentMethodLabel={getPaymentMethodLabel}
           getStatusBadge={getStatusBadge}
@@ -451,7 +455,7 @@ const MovementsSection = () => {
 }
 
 // Pestaña de Movimientos Financieros
-const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, getPaymentMethodLabel, getStatusBadge }) => {
+const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, getPaymentMethodLabel, getStatusBadge, currentBusiness, dateRange }) => {
   // Paginación
   const {
     data: paginatedMovements,
@@ -501,9 +505,49 @@ const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, get
     'TRANSFER': '🏦'
   };
 
+  const handleExportToExcel = () => {
+    try {
+      const businessName = currentBusiness?.name || 'Negocio';
+      const filters = {
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      };
+      exportMovementsToExcel(movements, filters, businessName);
+    } catch (error) {
+      console.error('Error al exportar a Excel:', error);
+    }
+  };
+
+  const handleExportPaymentMethodBalance = () => {
+    try {
+      const businessName = currentBusiness?.name || 'Negocio';
+      exportPaymentMethodBalanceToExcel(movements, businessName);
+    } catch (error) {
+      console.error('Error al exportar balance de métodos de pago:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Totales Generales */}
+      {/* Botones de Exportación */}
+      <div className="flex items-center justify-end gap-3">
+        <button
+          onClick={handleExportPaymentMethodBalance}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+        >
+          <ArrowDownTrayIcon className="h-4 w-4" />
+          Exportar Balance
+        </button>
+        <button
+          onClick={handleExportToExcel}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors text-sm font-medium"
+        >
+          <ArrowDownTrayIcon className="h-4 w-4" />
+          Exportar Movimientos a Excel
+        </button>
+      </div>
+
+      {/* Totales Generales */
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white">
           <div className="flex items-center justify-between mb-2">
