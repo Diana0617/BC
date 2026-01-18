@@ -1,24 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  MenuItem,
-  Grid,
-  Alert,
-  CircularProgress,
-  Typography,
-  Box,
-  Chip
-} from '@mui/material';
-import {
-  SwapHoriz as TransferIcon,
-  Store as StoreIcon,
-  Inventory as ProductIcon
-} from '@mui/icons-material';
+import { X, ArrowLeftRight, Store, Package, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useBusinessContext } from '../../context/BusinessContext';
 
@@ -166,182 +147,222 @@ const TransferStockModal = ({ open, onClose, onSuccess, products = [], branches 
   const fromBranch = branches.find(b => b.id === formData.fromBranchId);
   const toBranch = branches.find(b => b.id === formData.toBranchId);
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        <Box display="flex" alignItems="center" gap={1}>
-          <TransferIcon color="primary" />
-          <Typography variant="h6">Transferir Stock entre Sucursales</Typography>
-        </Box>
-      </DialogTitle>
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        {/* Overlay */}
+        <div 
+          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+          onClick={handleClose}
+        ></div>
 
-      <form onSubmit={handleSubmit}>
-        <DialogContent>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
+        {/* Modal */}
+        <div className="inline-block w-full max-w-2xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center gap-2">
+              <ArrowLeftRight className="w-6 h-6 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Transferir Stock entre Sucursales</h3>
+            </div>
+            <button
+              onClick={handleClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-          <Grid container spacing={2}>
-            {/* Seleccionar Producto */}
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                select
-                label="Producto"
-                value={formData.productId}
-                onChange={(e) => handleChange('productId', e.target.value)}
-                required
-                InputProps={{
-                  startAdornment: <ProductIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                }}
-              >
-                <MenuItem value="">Seleccionar producto</MenuItem>
-                {products.map((product) => (
-                  <MenuItem key={product.id} value={product.id}>
-                    <Box>
-                      <Typography>{product.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        SKU: {product.sku} | Stock Global: {product.currentStock} {product.unit}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-
-            {/* Sucursal Origen */}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                select
-                label="Desde Sucursal"
-                value={formData.fromBranchId}
-                onChange={(e) => handleChange('fromBranchId', e.target.value)}
-                required
-                InputProps={{
-                  startAdornment: <StoreIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                }}
-              >
-                <MenuItem value="">Seleccionar sucursal</MenuItem>
-                {branches.map((branch) => (
-                  <MenuItem 
-                    key={branch.id} 
-                    value={branch.id}
-                    disabled={branch.id === formData.toBranchId}
-                  >
-                    {branch.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-              
-              {fromBranchStock && (
-                <Box mt={1}>
-                  <Chip
-                    label={`Stock disponible: ${fromBranchStock.currentStock} ${selectedProduct?.unit || ''}`}
-                    color={fromBranchStock.currentStock > 0 ? 'success' : 'error'}
-                    size="small"
-                  />
-                </Box>
+          <form onSubmit={handleSubmit}>
+            {/* Content */}
+            <div className="px-6 py-4 space-y-4">
+              {error && (
+                <div className="flex items-center gap-2 p-4 text-red-800 bg-red-50 rounded-lg">
+                  <AlertCircle className="w-5 h-5" />
+                  <p className="text-sm">{error}</p>
+                </div>
               )}
-            </Grid>
 
-            {/* Sucursal Destino */}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                select
-                label="Hacia Sucursal"
-                value={formData.toBranchId}
-                onChange={(e) => handleChange('toBranchId', e.target.value)}
-                required
-                InputProps={{
-                  startAdornment: <StoreIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                }}
-              >
-                <MenuItem value="">Seleccionar sucursal</MenuItem>
-                {branches.map((branch) => (
-                  <MenuItem 
-                    key={branch.id} 
-                    value={branch.id}
-                    disabled={branch.id === formData.fromBranchId}
+              {/* Seleccionar Producto */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    Producto
+                  </div>
+                </label>
+                <select
+                  value={formData.productId}
+                  onChange={(e) => handleChange('productId', e.target.value)}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Seleccionar producto</option>
+                  {products.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name} - SKU: {product.sku} | Stock: {product.currentStock} {product.unit}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Sucursales */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Sucursal Origen */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <div className="flex items-center gap-2">
+                      <Store className="w-4 h-4" />
+                      Desde Sucursal
+                    </div>
+                  </label>
+                  <select
+                    value={formData.fromBranchId}
+                    onChange={(e) => handleChange('fromBranchId', e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    {branch.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-              
-              {toBranchStock && (
-                <Box mt={1}>
-                  <Chip
-                    label={`Stock actual: ${toBranchStock.currentStock} ${selectedProduct?.unit || ''}`}
-                    color="info"
-                    size="small"
-                  />
-                </Box>
+                    <option value="">Seleccionar sucursal</option>
+                    {branches.map((branch) => (
+                      <option 
+                        key={branch.id} 
+                        value={branch.id}
+                        disabled={branch.id === formData.toBranchId}
+                      >
+                        {branch.name}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {fromBranchStock && (
+                    <div className="mt-2">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        fromBranchStock.currentStock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Stock disponible: {fromBranchStock.currentStock} {selectedProduct?.unit || ''}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sucursal Destino */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <div className="flex items-center gap-2">
+                      <Store className="w-4 h-4" />
+                      Hacia Sucursal
+                    </div>
+                  </label>
+                  <select
+                    value={formData.toBranchId}
+                    onChange={(e) => handleChange('toBranchId', e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Seleccionar sucursal</option>
+                    {branches.map((branch) => (
+                      <option 
+                        key={branch.id} 
+                        value={branch.id}
+                        disabled={branch.id === formData.fromBranchId}
+                      >
+                        {branch.name}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {toBranchStock && (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Stock actual: {toBranchStock.currentStock} {selectedProduct?.unit || ''}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Cantidad */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cantidad a Transferir
+                </label>
+                <input
+                  type="number"
+                  value={formData.quantity}
+                  onChange={(e) => handleChange('quantity', e.target.value)}
+                  required
+                  min="1"
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {fromBranchStock && formData.quantity && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    Quedarán {fromBranchStock.currentStock - formData.quantity} en {fromBranch?.name}
+                  </p>
+                )}
+              </div>
+
+              {/* Notas */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notas (opcional)
+                </label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => handleChange('notes', e.target.value)}
+                  rows={3}
+                  placeholder="Motivo de la transferencia, observaciones..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Resumen */}
+              {selectedProduct && fromBranch && toBranch && formData.quantity && (
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div className="text-sm text-blue-800">
+                      <strong>Resumen:</strong> Se transferirán <strong>{formData.quantity} {selectedProduct.unit || 'unidades'}</strong> de <strong>{selectedProduct.name}</strong> desde <strong>{fromBranch.name}</strong> hacia <strong>{toBranch.name}</strong>
+                    </div>
+                  </div>
+                </div>
               )}
-            </Grid>
+            </div>
 
-            {/* Cantidad */}
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Cantidad a Transferir"
-                value={formData.quantity}
-                onChange={(e) => handleChange('quantity', e.target.value)}
-                required
-                inputProps={{ min: 1, step: 0.01 }}
-                helperText={
-                  fromBranchStock && formData.quantity
-                    ? `Quedarán ${fromBranchStock.currentStock - formData.quantity} en ${fromBranch?.name}`
-                    : ''
-                }
-              />
-            </Grid>
-
-            {/* Notas */}
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="Notas (opcional)"
-                value={formData.notes}
-                onChange={(e) => handleChange('notes', e.target.value)}
-                placeholder="Motivo de la transferencia, observaciones..."
-              />
-            </Grid>
-
-            {/* Resumen */}
-            {selectedProduct && fromBranch && toBranch && formData.quantity && (
-              <Grid item xs={12}>
-                <Alert severity="info">
-                  <Typography variant="body2">
-                    <strong>Resumen:</strong> Se transferirán <strong>{formData.quantity} {selectedProduct.unit || 'unidades'}</strong> de <strong>{selectedProduct.name}</strong> desde <strong>{fromBranch.name}</strong> hacia <strong>{toBranch.name}</strong>
-                  </Typography>
-                </Alert>
-              </Grid>
-            )}
-          </Grid>
-        </DialogContent>
-
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleClose} disabled={loading}>
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={loading || !formData.productId || !formData.fromBranchId || !formData.toBranchId || !formData.quantity}
-            startIcon={loading ? <CircularProgress size={20} /> : <TransferIcon />}
-          >
-            {loading ? 'Transfiriendo...' : 'Transferir'}
-          </Button>
-        </DialogActions>
-      </form>
-    </Dialog>
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <button
+                type="button"
+                onClick={handleClose}
+                disabled={loading}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !formData.productId || !formData.fromBranchId || !formData.toBranchId || !formData.quantity}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Transfiriendo...
+                  </>
+                ) : (
+                  <>
+                    <ArrowLeftRight className="w-4 h-4" />
+                    Transferir
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -12,18 +12,22 @@ import {
   HistoryIcon,
   RefreshCwIcon,
   FilterIcon,
-  XIcon
+  XIcon,
+  ArrowLeftRightIcon
 } from 'lucide-react';
 import productApi from '../../../../api/productApi';
+import businessBranchesApi from '@shared/api/businessBranchesApi';
 import EditProductModal from './EditProductModal';
 import ProductMovementsModal from './ProductMovementsModal';
 import UploadImageModal from './UploadImageModal';
+import TransferStockModal from '../../../../components/inventory/TransferStockModal';
 
 const ProductManagement = () => {
   const { user } = useSelector((state) => state.auth);
   const branding = useSelector(state => state.businessConfiguration?.branding);
 
   const [products, setProducts] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null);
@@ -32,18 +36,29 @@ const ProductManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [branchFilter, setBranchFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   
   // Modales
   const [showEditModal, setShowEditModal] = useState(false);
   const [showMovementsModal, setShowMovementsModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 20;
+
+  const loadBranches = useCallback(async () => {
+    try {
+      const response = await businessBranchesApi.getBranches(user.businessId);
+      setBranches(response.data || []);
+    } catch (err) {
+      console.error('Error loading branches:', err);
+    }
+  }, [user.businessId]);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -69,8 +84,9 @@ const ProductManagement = () => {
   }, [user.businessId, searchTerm, categoryFilter, typeFilter, currentPage]);
 
   useEffect(() => {
+    loadBranches();
     loadProducts();
-  }, [loadProducts]);
+  }, [loadBranches, loadProducts]);
 
   const handleEditProduct = (product) => {
     setSelectedProduct(product);
@@ -85,6 +101,11 @@ const ProductManagement = () => {
   const handleUploadImage = (product) => {
     setSelectedProduct(product);
     setShowImageModal(true);
+  };
+
+  const handleTransferStock = (product) => {
+    setSelectedProduct(product);
+    setShowTransferModal(true);
   };
 
   const handleDeleteProduct = async (product) => {
@@ -227,6 +248,22 @@ const ProductManagement = () => {
                 <option value="BOTH">Ambos</option>
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Sucursal
+              </label>
+              <select
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">Todas las sucursales</option>
+                {branches.map(branch => (
+                  <option key={branch.id} value={branch.id}>{branch.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
       </div>
@@ -298,6 +335,14 @@ const ProductManagement = () => {
                   </td>
                   <td className="px-6 py-4 text-right text-sm font-medium">
                     <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleTransferStock(product)}
+                        className="text-green-600 hover:text-green-900"
+                        title="Transferir entre sucursales"
+                        disabled={branches.length < 2}
+                      >
+                        <ArrowLeftRightIcon className="h-5 w-5" />
+                      </button>
                       <button
                         onClick={() => handleViewMovements(product)}
                         className="text-blue-600 hover:text-blue-900"
@@ -408,6 +453,23 @@ const ProductManagement = () => {
             setSelectedProduct(null);
             loadProducts();
           }}
+        />
+      )}
+
+      {showTransferModal && selectedProduct && (
+        <TransferStockModal
+          open={showTransferModal}
+          onClose={() => {
+            setShowTransferModal(false);
+            setSelectedProduct(null);
+          }}
+          onSuccess={() => {
+            setShowTransferModal(false);
+            setSelectedProduct(null);
+            loadProducts();
+          }}
+          products={[selectedProduct]}
+          branches={branches}
         />
       )}
     </div>
