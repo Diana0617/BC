@@ -2208,6 +2208,116 @@ router.post('/:businessId/config/inventory/transfer-stock', BusinessInventoryCon
 
 /**
  * @swagger
+ * /api/business/{businessId}/config/inventory/withdraw-stock:
+ *   post:
+ *     summary: Retirar productos del inventario (consumo por especialistas)
+ *     description: Permite a especialistas y personal retirar productos para consumo interno
+ *     tags: [Business Inventory]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - productId
+ *               - quantity
+ *             properties:
+ *               productId:
+ *                 type: string
+ *                 description: ID del producto a retirar
+ *               quantity:
+ *                 type: number
+ *                 description: Cantidad a retirar
+ *               unit:
+ *                 type: string
+ *                 description: Unidad de medida (ej. ml, gr, unidad)
+ *               notes:
+ *                 type: string
+ *                 description: Notas adicionales sobre el retiro
+ *               branchId:
+ *                 type: string
+ *                 description: ID de la sucursal (opcional)
+ *     responses:
+ *       200:
+ *         description: Retiro registrado exitosamente
+ *       400:
+ *         description: Datos inválidos o stock insuficiente
+ *       403:
+ *         description: No tiene permisos para retirar stock
+ *       404:
+ *         description: Producto no encontrado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.post('/:businessId/config/inventory/withdraw-stock', BusinessInventoryController.withdrawStock);
+
+/**
+ * @swagger
+ * /api/business/{businessId}/config/inventory/withdrawals:
+ *   get:
+ *     summary: Obtener historial de retiros de stock
+ *     description: Lista todos los retiros de productos realizados por el personal
+ *     tags: [Business Inventory]
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         description: Filtrar por usuario que realizó el retiro
+ *       - in: query
+ *         name: productId
+ *         schema:
+ *           type: string
+ *         description: Filtrar por producto
+ *       - in: query
+ *         name: branchId
+ *         schema:
+ *           type: string
+ *         description: Filtrar por sucursal
+ *       - in: query
+ *         name: dateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha desde
+ *       - in: query
+ *         name: dateTo
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha hasta
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Historial de retiros obtenido exitosamente
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/:businessId/config/inventory/withdrawals', BusinessInventoryController.getWithdrawals);
+
+/**
+ * @swagger
  * /api/business/{businessId}/config/inventory/low-stock:
  *   get:
  *     summary: Obtener productos con stock bajo

@@ -11,6 +11,9 @@
  */
 
 const BusinessConfigService = require("../services/BusinessConfigService");
+const { Product, InventoryMovement, User, BranchStock, Branch } = require('../models');
+const { Op } = require('sequelize');
+const { sequelize } = require('../config/database');
 
 class BusinessInventoryController {
 
@@ -409,6 +412,326 @@ class BusinessInventoryController {
       res.status(500).json({
         success: false,
         message: "Error al transferir stock",
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Retirar productos del inventario (consumo por especialistas)
+   * POST /business/config/inventory/withdraw-stock
+   * 
+   * Permite a especialistas/personal retirar productos del inventario
+   * para consumo interno (ej: shampoo, tintes, etc.)
+   * 
+   * Roles permitidos: BUSINESS, SPECIALIST, RECEPTIONIST, RECEPTIONIST_SPECIALIST
+   * Roles NO permitidos: OWNER, CLIENT
+   */
+  async withdrawStock(req, res) {
+    const transaction = await sequelize.transaction();
+    
+    try {
+      const businessId = req.business.id;
+      const userId = req.user.id;
+      const userRole = req.user.role;
+
+      // Validar que el usuario tenga permisos para retirar stock
+      const allowedRoles = ['BUSINESS', 'SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'];
+      if (!allowedRoles.includes(userRole)) {
+        await transaction.rollback();
+        return res.status(403).json({
+          success: false,
+          message: "No tienes permisos para retirar productos del inventario"
+        });
+      }
+
+      const { productId, quantity, unit, notes, branchId } = req.body;
+
+      // Validaciones
+      if (!productId) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: "ID de producto requerido"
+        });
+      }
+
+      if (!quantity || quantity <= 0) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: "Cantidad debe ser mayor a 0"
+        });
+      }
+
+      // Obtener producto
+      const product = await Product.findOne({
+        where: { id: productId, businessId, isActive: true },
+        transaction
+      });
+
+      if (!product) {
+        await transaction.rollback();
+        return res.status(404).json({
+          success: false,
+          message: "Producto no encontrado o inactivo"
+        });
+      }
+
+      // Verificar que el producto sea apto para procedimientos
+      if (!['FOR_PROCEDURES', 'BOTH'].includes(product.productType)) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: `El producto "${product.name}" no está marcado como apto para uso en procedimientos`
+        });
+      }
+
+      // Obtener usuario para incluir su nombre
+      const user = await User.findByPk(userId, {
+        attributes: ['id', 'name', 'email', 'role'],
+        transaction
+      });
+
+      let branchStock = null;
+      let previousStock = 0;
+      let newStock = 0;
+
+      // Si se especifica sucursal, verificar stock por sucursal
+      if (branchId) {
+        // Verificar que la sucursal existe y pertenece al negocio
+        const branch = await Branch.findOne({
+          where: { id: branchId, businessId },
+          transaction
+        });
+
+        if (!branch) {
+          await transaction.rollback();
+          return res.status(404).json({
+            success: false,
+            message: "Sucursal no encontrada"
+          });
+        }
+
+        // Obtener stock de la sucursal
+        branchStock = await BranchStock.findOne({
+          where: { productId, branchId },
+          transaction
+        });
+
+        if (!branchStock) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: `El producto "${product.name}" no tiene stock registrado en esta sucursal`
+          });
+        }
+
+        previousStock = branchStock.currentStock || 0;
+
+        // Verificar stock disponible
+        if (product.trackInventory && previousStock < quantity) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: `Stock insuficiente en sucursal. Disponible: ${previousStock}, Requerido: ${quantity}`
+          });
+        }
+
+        // Actualizar stock de sucursal
+        newStock = previousStock - parseFloat(quantity);
+        await branchStock.update({
+          currentStock: newStock,
+          lastMovementAt: new Date()
+        }, { transaction });
+
+      } else {
+        // Stock general del producto
+        previousStock = product.currentStock || 0;
+
+        // Verificar stock disponible
+        if (product.trackInventory && previousStock < quantity) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: `Stock insuficiente. Disponible: ${previousStock}, Requerido: ${quantity}`
+          });
+        }
+
+        // Actualizar stock general
+        newStock = previousStock - parseFloat(quantity);
+        await product.update({
+          currentStock: newStock
+        }, { transaction });
+      }
+
+      // Crear movimiento de inventario
+      const movement = await InventoryMovement.create({
+        businessId,
+        productId,
+        userId,
+        branchId: branchId || null,
+        movementType: 'ADJUSTMENT',
+        quantity: -parseFloat(quantity), // Negativo porque es retiro
+        previousStock,
+        newStock,
+        reason: 'STAFF_CONSUMPTION',
+        notes: notes || `Retiro por ${user?.name || 'personal'} - ${unit || 'unidad'}`,
+        referenceType: 'WITHDRAWAL',
+        unitCost: product.cost || 0,
+        totalCost: (product.cost || 0) * parseFloat(quantity),
+        metadata: {
+          withdrawnBy: {
+            userId: user.id,
+            userName: user.name,
+            userRole: user.role
+          },
+          unit: unit || 'unidad',
+          quantity: parseFloat(quantity)
+        }
+      }, { transaction });
+
+      await transaction.commit();
+
+      res.json({
+        success: true,
+        data: {
+          movement: {
+            id: movement.id,
+            productId,
+            productName: product.name,
+            quantity: parseFloat(quantity),
+            unit: unit || 'unidad',
+            previousStock,
+            newStock,
+            branchId: branchId || null,
+            withdrawnBy: user.name,
+            createdAt: movement.createdAt
+          }
+        },
+        message: "Retiro de stock registrado exitosamente"
+      });
+    } catch (error) {
+      await transaction.rollback();
+      console.error("Error withdrawing stock:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error al retirar stock",
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Obtener historial de retiros de stock
+   * GET /business/config/inventory/withdrawals
+   * 
+   * Permite ver todos los retiros de stock por especialistas
+   * Filtros: userId, productId, dateFrom, dateTo, branchId
+   */
+  async getWithdrawals(req, res) {
+    try {
+      const businessId = req.business.id;
+      const {
+        userId,
+        productId,
+        branchId,
+        dateFrom,
+        dateTo,
+        page = 1,
+        limit = 20,
+        sortBy = 'createdAt',
+        sortOrder = 'DESC'
+      } = req.query;
+
+      const where = {
+        businessId,
+        movementType: 'ADJUSTMENT',
+        reason: 'STAFF_CONSUMPTION',
+        quantity: { [Op.lt]: 0 } // Solo retiros (cantidades negativas)
+      };
+
+      // Aplicar filtros
+      if (userId) where.userId = userId;
+      if (productId) where.productId = productId;
+      if (branchId) where.branchId = branchId;
+
+      if (dateFrom || dateTo) {
+        where.createdAt = {};
+        if (dateFrom) where.createdAt[Op.gte] = new Date(dateFrom);
+        if (dateTo) {
+          const endDate = new Date(dateTo);
+          endDate.setHours(23, 59, 59, 999);
+          where.createdAt[Op.lte] = endDate;
+        }
+      }
+
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+
+      const { count, rows: movements } = await InventoryMovement.findAndCountAll({
+        where,
+        include: [
+          {
+            model: Product,
+            as: 'product',
+            attributes: ['id', 'name', 'sku', 'category', 'unit', 'images']
+          },
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'name', 'email', 'role']
+          },
+          {
+            model: Branch,
+            as: 'branch',
+            attributes: ['id', 'name'],
+            required: false
+          }
+        ],
+        limit: parseInt(limit),
+        offset,
+        order: [[sortBy, sortOrder]]
+      });
+
+      // Calcular totales
+      const totalQuantityWithdrawn = movements.reduce((sum, m) => sum + Math.abs(m.quantity), 0);
+      const totalCost = movements.reduce((sum, m) => sum + (m.totalCost || 0), 0);
+
+      res.json({
+        success: true,
+        data: {
+          withdrawals: movements.map(m => ({
+            id: m.id,
+            product: m.product,
+            quantity: Math.abs(m.quantity), // Mostrar como positivo
+            unit: m.metadata?.unit || 'unidad',
+            previousStock: m.previousStock,
+            newStock: m.newStock,
+            totalCost: m.totalCost,
+            withdrawnBy: m.user,
+            branch: m.branch,
+            notes: m.notes,
+            createdAt: m.createdAt
+          })),
+          pagination: {
+            total: count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(count / parseInt(limit))
+          },
+          summary: {
+            totalWithdrawals: count,
+            totalQuantityWithdrawn,
+            totalCost
+          }
+        },
+        message: "Historial de retiros obtenido exitosamente"
+      });
+    } catch (error) {
+      console.error("Error getting withdrawals:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error al obtener historial de retiros",
         error: error.message
       });
     }
