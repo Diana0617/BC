@@ -323,7 +323,10 @@ export const getInventoryMovements = async (businessId, params = {}) => {
     if (params.page) queryParams.append('page', params.page);
     if (params.limit) queryParams.append('limit', params.limit);
 
-    const response = await apiClient.get(`/business/${businessId}/config/inventory/movements?${queryParams}`);
+    const queryString = queryParams.toString();
+    const url = `/business/${businessId}/config/inventory/movements${queryString ? '?' + queryString : ''}`;
+    
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error('Error fetching inventory movements:', error);
