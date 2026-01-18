@@ -11,6 +11,7 @@ import {
 
 // Componentes de las pestañas
 import StockInitial from './stock/StockInitial';
+import InventoryMovements from './movements/InventoryMovements';
 
 // Componentes pendientes (crearemos después)
 const ProductsList = () => (
@@ -37,13 +38,6 @@ const ProductSales = () => (
 const InternalConsumption = () => (
   <Box p={3}>
     <Typography variant="h5">Consumo Interno</Typography>
-    <Typography color="text.secondary">En desarrollo...</Typography>
-  </Box>
-);
-
-const InventoryMovements = () => (
-  <Box p={3}>
-    <Typography variant="h5">Movimientos de Inventario</Typography>
     <Typography color="text.secondary">En desarrollo...</Typography>
   </Box>
 );

@@ -309,18 +309,21 @@ export const transferStock = async (transferData) => {
  * @param {number} [params.limit] - Límite de resultados
  * @returns {Promise<Object>} Lista de movimientos con metadatos
  */
-export const getInventoryMovements = async (params = {}) => {
+export const getInventoryMovements = async (businessId, params = {}) => {
   try {
     const queryParams = new URLSearchParams();
     
     if (params.productId) queryParams.append('productId', params.productId);
+    if (params.branchId) queryParams.append('branchId', params.branchId);
     if (params.movementType) queryParams.append('movementType', params.movementType);
-    if (params.startDate) queryParams.append('startDate', params.startDate);
-    if (params.endDate) queryParams.append('endDate', params.endDate);
+    if (params.reason) queryParams.append('reason', params.reason);
+    if (params.userId) queryParams.append('userId', params.userId);
+    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
     if (params.page) queryParams.append('page', params.page);
     if (params.limit) queryParams.append('limit', params.limit);
 
-    const response = await apiClient.get(`/business/config/inventory/movements?${queryParams}`);
+    const response = await apiClient.get(`/business/${businessId}/config/inventory/movements?${queryParams}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching inventory movements:', error);
