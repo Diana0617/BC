@@ -27,12 +27,16 @@ import {
   selectSpecialists,
   selectCommissionConfig,
   selectCommissionsLoading,
-  selectSpecialistDetails
+  selectSpecialistDetails,
+  // Pagination
+  usePagination,
+  PAGINATION
 } from '@shared'
 import ExpensesTab from '../../../../components/business/profile/ExpensesTab'
 import CommissionsTab from '../../../../components/business/profile/CommissionsTab'
 import ExpenseFormModal from '../../../../components/business/profile/ExpenseFormModal'
 import CommissionPaymentModal from '../../../../components/business/profile/CommissionPaymentModal'
+import PaginationControls from '../../../../components/common/PaginationControls'
 import {
   ChartBarIcon,
   CalendarDaysIcon,
@@ -448,6 +452,14 @@ const MovementsSection = () => {
 
 // Pestaña de Movimientos Financieros
 const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, getPaymentMethodLabel, getStatusBadge }) => {
+  // Paginación
+  const {
+    data: paginatedMovements,
+    pagination,
+    goToPage,
+    changePageSize
+  } = usePagination(movements, PAGINATION.MOVEMENTS);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -456,7 +468,7 @@ const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, get
     )
   }
 
-  // Calcular totales por método de pago
+  // Calcular totales por método de pago (usando todos los movements, no los paginados)
   const paymentMethodTotals = movements.reduce((acc, movement) => {
     const method = movement.paymentMethod;
     const amount = parseFloat(movement.amount);
@@ -592,7 +604,7 @@ const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, get
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {movements.map((movement) => (
+                {paginatedMovements.map((movement) => (
                   <tr key={movement.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {movement.transactionDate 
@@ -635,6 +647,14 @@ const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, get
               </tbody>
             </table>
           </div>
+          
+          {/* Controles de paginación */}
+          <PaginationControls
+            pagination={pagination}
+            onPageChange={goToPage}
+            onPageSizeChange={changePageSize}
+            pageSizeOptions={[5, 8, 10, 20, 50]}
+          />
         </div>
       ) : (
         <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-12 text-center">

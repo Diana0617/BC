@@ -138,10 +138,13 @@ export * from './hooks/useSpecialistService.js';
 export * from './hooks/useSchedule.js';
 export * from './hooks/useAppointmentCalendar.js';
 export * from './hooks/useTimeSlot.js';
+// 📄 PAGINATION HOOK
+export * from './hooks/usePagination.js';
 
 // Export constants and configuration
 export * from './config/routes.js';
 export * from './constants/api.js';
+export * from './constants/ui.js';
 
 // Export TypeScript types
 export * from './types/index.ts';
