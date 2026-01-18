@@ -27,10 +27,9 @@ import {
   Warning as WarningIcon
 } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
-import { useBusinessContext } from '../../../context/BusinessContext';
-
 const DistributeStockModal = ({ open, onClose, invoice, onSuccess }) => {
-  const { businessId } = useBusinessContext();
+  const { user } = useSelector((state) => state.auth);
+  const businessId = user?.businessId;
   const [loading, setLoading] = useState(false);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [error, setError] = useState(null);

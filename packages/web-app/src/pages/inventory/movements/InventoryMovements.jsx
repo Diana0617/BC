@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import {
   ArrowRightLeft,
   ShoppingCart,
@@ -16,10 +17,10 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getInventoryMovements } from '@shared/api/businessInventoryApi';
-import { useBusinessContext } from '../../../context/BusinessContext';
 
 const InventoryMovements = () => {
-  const { businessId } = useBusinessContext();
+  const { user } = useSelector((state) => state.auth);
+  const businessId = user?.businessId;
   const [movements, setMovements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
