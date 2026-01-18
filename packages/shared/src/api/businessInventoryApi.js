@@ -324,7 +324,7 @@ export const getInventoryMovements = async (businessId, params = {}) => {
     if (params.limit) queryParams.append('limit', params.limit);
 
     const queryString = queryParams.toString();
-    const url = `/business/${businessId}/config/inventory/movements${queryString ? '?' + queryString : ''}`;
+    const url = `/api/business/${businessId}/config/inventory/movements${queryString ? '?' + queryString : ''}`;
     
     const response = await apiClient.get(url);
     return response.data;
