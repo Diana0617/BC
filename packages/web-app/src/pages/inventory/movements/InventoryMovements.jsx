@@ -1,39 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Paper,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Chip,
-  TextField,
-  Grid,
-  MenuItem,
-  Button,
-  IconButton,
-  Tooltip,
-  Card,
-  CardContent,
-  CircularProgress,
-  Alert
-} from '@mui/material';
-import {
-  SwapHoriz as TransferIcon,
-  ShoppingCart as PurchaseIcon,
-  RemoveCircle as AdjustmentIcon,
-  TrendingDown as ConsumptionIcon,
-  TrendingUp as StockInIcon,
-  FilterList as FilterIcon,
-  Download as DownloadIcon,
-  Refresh as RefreshIcon,
-  ArrowUpward,
-  ArrowDownward
-} from '@mui/icons-material';
+  ArrowRightLeft,
+  ShoppingCart,
+  MinusCircle,
+  TrendingDown,
+  TrendingUp,
+  Filter,
+  Download,
+  RefreshCw,
+  ArrowUp,
+  ArrowDown,
+  Package,
+  Loader2
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getInventoryMovements } from '@shared/api/businessInventoryApi';
@@ -66,39 +45,39 @@ const InventoryMovements = () => {
   const movementTypes = {
     PURCHASE: {
       label: 'Compra',
-      color: 'success',
-      icon: <PurchaseIcon fontSize="small" />,
-      bg: '#e8f5e9'
+      colorClass: 'bg-green-100 text-green-800',
+      icon: <ShoppingCart className="w-4 h-4" />,
+      bgClass: 'bg-green-50'
     },
     ADJUSTMENT: {
       label: 'Ajuste',
-      color: 'warning',
-      icon: <AdjustmentIcon fontSize="small" />,
-      bg: '#fff3e0'
+      colorClass: 'bg-yellow-100 text-yellow-800',
+      icon: <MinusCircle className="w-4 h-4" />,
+      bgClass: 'bg-yellow-50'
     },
     TRANSFER_OUT: {
       label: 'Salida - Transferencia',
-      color: 'error',
-      icon: <ArrowDownward fontSize="small" />,
-      bg: '#ffebee'
+      colorClass: 'bg-red-100 text-red-800',
+      icon: <ArrowDown className="w-4 h-4" />,
+      bgClass: 'bg-red-50'
     },
     TRANSFER_IN: {
       label: 'Entrada - Transferencia',
-      color: 'info',
-      icon: <ArrowUpward fontSize="small" />,
-      bg: '#e3f2fd'
+      colorClass: 'bg-blue-100 text-blue-800',
+      icon: <ArrowUp className="w-4 h-4" />,
+      bgClass: 'bg-blue-50'
     },
     SALE: {
       label: 'Venta',
-      color: 'secondary',
-      icon: <TrendingDown fontSize="small" />,
-      bg: '#f3e5f5'
+      colorClass: 'bg-purple-100 text-purple-800',
+      icon: <TrendingDown className="w-4 h-4" />,
+      bgClass: 'bg-purple-50'
     },
     INITIAL_STOCK: {
       label: 'Stock Inicial',
-      color: 'default',
-      icon: <StockInIcon fontSize="small" />,
-      bg: '#f5f5f5'
+      colorClass: 'bg-gray-100 text-gray-800',
+      icon: <TrendingUp className="w-4 h-4" />,
+      bgClass: 'bg-gray-50'
     }
   };
 
@@ -180,283 +159,325 @@ const InventoryMovements = () => {
   };
 
   const getMovementIcon = (type) => {
-    return movementTypes[type]?.icon || <TransferIcon fontSize="small" />;
+    return movementTypes[type]?.icon || <ArrowRightLeft className="w-4 h-4" />;
   };
 
-  const getMovementColor = (type) => {
-    return movementTypes[type]?.color || 'default';
+  const getMovementColorClass = (type) => {
+    return movementTypes[type]?.colorClass || 'bg-gray-100 text-gray-800';
   };
 
-  const getMovementBg = (type) => {
-    return movementTypes[type]?.bg || '#ffffff';
+  const getMovementBgClass = (type) => {
+    return movementTypes[type]?.bgClass || 'bg-white';
   };
 
   return (
-    <Box>
+    <div className="space-y-6">
       {/* Header con estadísticas */}
-      {summary && (
-        <Grid container spacing={2} mb={3}>
-          {summary.totals?.map((total, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <Card>
-                <CardContent>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    {getMovementIcon(total.movementType)}
-                    <Typography variant="body2" color="text.secondary">
-                      {movementTypes[total.movementType]?.label || total.movementType}
-                    </Typography>
-                  </Box>
-                  <Typography variant="h4" fontWeight="bold" mt={1}>
-                    {total.count}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Total: {total.totalQuantity > 0 ? '+' : ''}{total.totalQuantity}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+      {summary && summary.totals && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {summary.totals.map((total, index) => (
+            <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                {getMovementIcon(total.movementType)}
+                <span className="text-sm text-gray-600">
+                  {movementTypes[total.movementType]?.label || total.movementType}
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{total.count}</div>
+              <div className="text-xs text-gray-500">
+                Total: {total.totalQuantity > 0 ? '+' : ''}{total.totalQuantity}
+              </div>
+            </div>
           ))}
-        </Grid>
+        </div>
       )}
 
       {/* Filtros */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6" display="flex" alignItems="center" gap={1}>
-            <FilterIcon />
-            Filtros
-          </Typography>
-          <Box>
-            <IconButton onClick={() => setShowFilters(!showFilters)} size="small">
-              <FilterIcon />
-            </IconButton>
-            <IconButton onClick={fetchMovements} size="small">
-              <RefreshIcon />
-            </IconButton>
-          </Box>
-        </Box>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-gray-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Filter className="w-5 h-5 text-gray-600" />
+            </button>
+            <button
+              onClick={fetchMovements}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <RefreshCw className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+        </div>
 
         {showFilters && (
           <>
-            <Grid container spacing={2} mb={2}>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth
-                  select
-                  size="small"
-                  label="Tipo de Movimiento"
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo de Movimiento
+                </label>
+                <select
                   value={filters.movementType}
                   onChange={(e) => handleFilterChange('movementType', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <MenuItem value="">Todos</MenuItem>
+                  <option value="">Todos</option>
                   {Object.entries(movementTypes).map(([key, value]) => (
-                    <MenuItem key={key} value={key}>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        {value.icon}
-                        {value.label}
-                      </Box>
-                    </MenuItem>
+                    <option key={key} value={key}>
+                      {value.label}
+                    </option>
                   ))}
-                </TextField>
-              </Grid>
+                </select>
+              </div>
 
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth
-                  select
-                  size="small"
-                  label="Razón"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Razón
+                </label>
+                <select
                   value={filters.reason}
                   onChange={(e) => handleFilterChange('reason', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <MenuItem value="">Todas</MenuItem>
+                  <option value="">Todas</option>
                   {Object.entries(reasons).map(([key, value]) => (
-                    <MenuItem key={key} value={key}>
+                    <option key={key} value={key}>
                       {value}
-                    </MenuItem>
+                    </option>
                   ))}
-                </TextField>
-              </Grid>
+                </select>
+              </div>
 
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth
-                  size="small"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Desde
+                </label>
+                <input
                   type="date"
-                  label="Desde"
                   value={filters.dateFrom}
                   onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-                  InputLabelProps={{ shrink: true }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-              </Grid>
+              </div>
 
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth
-                  size="small"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Hasta
+                </label>
+                <input
                   type="date"
-                  label="Hasta"
                   value={filters.dateTo}
                   onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-                  InputLabelProps={{ shrink: true }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-              </Grid>
-            </Grid>
+              </div>
+            </div>
 
-            <Box display="flex" gap={2}>
-              <Button
-                variant="contained"
+            <div className="flex gap-2">
+              <button
                 onClick={handleApplyFilters}
-                startIcon={<FilterIcon />}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
               >
+                <Filter className="w-4 h-4" />
                 Aplicar Filtros
-              </Button>
-              <Button
-                variant="outlined"
+              </button>
+              <button
                 onClick={handleClearFilters}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Limpiar
-              </Button>
-            </Box>
+              </button>
+            </div>
           </>
         )}
-      </Paper>
+      </div>
 
       {/* Tabla de movimientos */}
-      <Paper>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {error && (
-          <Alert severity="error" sx={{ m: 2 }}>
-            {error}
-          </Alert>
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 m-4">
+            <p className="text-red-700">{error}</p>
+          </div>
         )}
 
         {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" p={4}>
-            <CircularProgress />
-          </Box>
+          <div className="flex justify-center items-center p-8">
+            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+          </div>
         ) : (
           <>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Fecha</TableCell>
-                    <TableCell>Tipo</TableCell>
-                    <TableCell>Producto</TableCell>
-                    <TableCell>Sucursal</TableCell>
-                    <TableCell align="right">Cantidad</TableCell>
-                    <TableCell>Usuario</TableCell>
-                    <TableCell>Razón/Notas</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Fecha
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tipo
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Producto
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sucursal
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Cantidad
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Usuario
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Razón/Notas
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
                   {movements.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        <Typography color="text.secondary" py={3}>
-                          No hay movimientos para mostrar
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
+                    <tr>
+                      <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                        <Package className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                        <p>No hay movimientos para mostrar</p>
+                      </td>
+                    </tr>
                   ) : (
                     movements.map((movement) => (
-                      <TableRow
-                        key={movement.id}
-                        sx={{ bgcolor: getMovementBg(movement.movementType) }}
-                      >
-                        <TableCell>
-                          <Typography variant="body2">
+                      <tr key={movement.id} className={getMovementBgClass(movement.movementType)}>
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-gray-900">
                             {format(new Date(movement.createdAt), 'dd/MM/yyyy', { locale: es })}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          </div>
+                          <div className="text-xs text-gray-500">
                             {format(new Date(movement.createdAt), 'HH:mm', { locale: es })}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            icon={getMovementIcon(movement.movementType)}
-                            label={movementTypes[movement.movementType]?.label || movement.movementType}
-                            color={getMovementColor(movement.movementType)}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight={500}>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getMovementColorClass(movement.movementType)}`}>
+                            {getMovementIcon(movement.movementType)}
+                            {movementTypes[movement.movementType]?.label || movement.movementType}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm font-medium text-gray-900">
                             {movement.product?.name || 'N/A'}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          </div>
+                          <div className="text-xs text-gray-500">
                             SKU: {movement.product?.sku || '-'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-gray-900">
                             {movement.branch?.name || 'General'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography
-                            variant="body2"
-                            fontWeight="bold"
-                            color={movement.quantity > 0 ? 'success.main' : 'error.main'}
-                          >
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className={`text-sm font-bold ${movement.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {movement.quantity > 0 ? '+' : ''}{movement.quantity} {movement.product?.unit || ''}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-gray-900">
                             {movement.user?.name || 'Sistema'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-gray-900">
                             {reasons[movement.reason] || movement.reason}
-                          </Typography>
+                          </div>
                           {movement.notes && (
-                            <Typography variant="caption" color="text.secondary" display="block">
+                            <div className="text-xs text-gray-500 mt-1">
                               {movement.notes}
-                            </Typography>
+                            </div>
                           )}
-                          {movement.metadata?.transferFromBranchName && (
-                            <Chip
-                              label={`Desde: ${movement.metadata.transferFromBranchName}`}
-                              size="small"
-                              variant="outlined"
-                              sx={{ mt: 0.5 }}
-                            />
-                          )}
-                          {movement.metadata?.transferToBranchName && (
-                            <Chip
-                              label={`Hacia: ${movement.metadata.transferToBranchName}`}
-                              size="small"
-                              variant="outlined"
-                              sx={{ mt: 0.5 }}
-                            />
-                          )}
-                        </TableCell>
-                      </TableRow>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {movement.metadata?.transferFromBranchName && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                Desde: {movement.metadata.transferFromBranchName}
+                              </span>
+                            )}
+                            {movement.metadata?.transferToBranchName && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                Hacia: {movement.metadata.transferToBranchName}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
                     ))
                   )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                </tbody>
+              </table>
+            </div>
 
-            <TablePagination
-              component="div"
-              count={totalItems}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 20, 50, 100]}
-              labelRowsPerPage="Filas por página:"
-              labelDisplayedRows={({ from, to, count }) =>
-                `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
-              }
-            />
+            {/* Paginación */}
+            <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <button
+                  onClick={() => setPage(Math.max(0, page - 1))}
+                  disabled={page === 0}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Anterior
+                </button>
+                <button
+                  onClick={() => setPage(page + 1)}
+                  disabled={(page + 1) * rowsPerPage >= totalItems}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Siguiente
+                </button>
+              </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Mostrando <span className="font-medium">{page * rowsPerPage + 1}</span> a{' '}
+                    <span className="font-medium">{Math.min((page + 1) * rowsPerPage, totalItems)}</span> de{' '}
+                    <span className="font-medium">{totalItems}</span> resultados
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-700">Filas por página:</label>
+                  <select
+                    value={rowsPerPage}
+                    onChange={(e) => {
+                      setRowsPerPage(parseInt(e.target.value, 10));
+                      setPage(0);
+                    }}
+                    className="px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <button
+                    onClick={() => setPage(Math.max(0, page - 1))}
+                    disabled={page === 0}
+                    className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ArrowDown className="w-5 h-5 rotate-90" />
+                  </button>
+                  <button
+                    onClick={() => setPage(page + 1)}
+                    disabled={(page + 1) * rowsPerPage >= totalItems}
+                    className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ArrowDown className="w-5 h-5 -rotate-90" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </>
         )}
-      </Paper>
-    </Box>
+      </div>
+    </div>
   );
 };
 
