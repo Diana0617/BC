@@ -1353,12 +1353,21 @@ class BusinessInventoryController {
           {
             model: User,
             as: 'user',
-            attributes: ['id', 'name', 'email', 'role']
+            attributes: ['id', 'firstName', 'lastName', 'email', 'role']
           }
         ],
         order: [['createdAt', 'DESC']],
         limit: parseInt(limit),
         offset
+      });
+
+      // Transformar datos para incluir nombre completo del usuario
+      const transformedMovements = movements.map(movement => {
+        const movementData = movement.toJSON();
+        if (movementData.user) {
+          movementData.user.name = `${movementData.user.firstName} ${movementData.user.lastName}`.trim();
+        }
+        return movementData;
       });
 
       // Calcular totales
@@ -1376,7 +1385,7 @@ class BusinessInventoryController {
       res.json({
         success: true,
         data: {
-          movements,
+          movements: transformedMovements,
           pagination: {
             currentPage: parseInt(page),
             totalPages: Math.ceil(count / parseInt(limit)),
