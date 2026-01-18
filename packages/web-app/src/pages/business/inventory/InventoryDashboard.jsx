@@ -20,6 +20,7 @@ import PurchaseInvoices from './purchases/PurchaseInvoices';
 import ProductManagement from './products/ProductManagement';
 import SupplierCatalog from './catalog/SupplierCatalog';
 import SalesPage from '../../sales/SalesPage';
+import InventoryMovements from '../../inventory/movements/InventoryMovements';
 
 const InventoryDashboard = () => {
   const navigate = useNavigate();
@@ -84,7 +85,7 @@ const InventoryDashboard = () => {
       name: 'Movimientos',
       icon: HistoryIcon,
       description: 'Historial de movimientos',
-      component: <ComingSoonPlaceholder title="Movimientos" />
+      component: <InventoryMovements />
     },
     {
       id: 'reportes',

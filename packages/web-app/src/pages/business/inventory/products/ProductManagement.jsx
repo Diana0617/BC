@@ -94,12 +94,16 @@ const ProductManagement = () => {
 
     try {
       const response = await productApi.deleteProduct(user.businessId, product.id);
+      console.log('Delete response:', response);
       if (response.success) {
-        loadProducts();
+        await loadProducts(); // Aseguramos que se refresque la lista
+        alert('Producto eliminado correctamente');
+      } else {
+        alert('Error al eliminar el producto: ' + (response.message || 'Error desconocido'));
       }
     } catch (err) {
       console.error('Error deleting product:', err);
-      alert('Error al eliminar el producto');
+      alert('Error al eliminar el producto: ' + (err.message || 'Error de red'));
     }
   };
 
