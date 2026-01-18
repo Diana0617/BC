@@ -2437,7 +2437,8 @@ router.post('/:businessId/config/inventory/transfer-between-branches', BusinessI
  *       500:
  *         description: Error interno del servidor
  */
-router.get('/:businessId/config/inventory/movements', BusinessInventoryController.getInventoryMovements);
+// NOTA: Ruta duplicada comentada - la implementación correcta está más abajo (línea ~2621)
+// router.get('/:businessId/config/inventory/movements', BusinessInventoryController.getInventoryMovements);
 
 /**
  * @swagger

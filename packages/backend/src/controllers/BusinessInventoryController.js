@@ -788,41 +788,14 @@ class BusinessInventoryController {
     }
   }
 
-  /**
-   * Obtener movimientos de inventario
-   * GET /business/config/inventory/movements
-   */
-  async getInventoryMovements(req, res) {
-    try {
-      const businessId = req.business.id;
-      const filters = {
-        productId: req.query.productId,
-        type: req.query.type,
-        userId: req.query.userId,
-        dateFrom: req.query.dateFrom,
-        dateTo: req.query.dateTo,
-        page: parseInt(req.query.page) || 1,
-        limit: parseInt(req.query.limit) || 10,
-        sortBy: req.query.sortBy || 'createdAt',
-        sortOrder: req.query.sortOrder || 'DESC'
-      };
-
-      const result = await BusinessConfigService.getInventoryMovements(businessId, filters);
-
-      res.json({
-        success: true,
-        data: result,
-        message: "Movimientos de inventario obtenidos exitosamente"
-      });
-    } catch (error) {
-      console.error("Error getting inventory movements:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error al obtener movimientos de inventario",
-        error: error.message
-      });
-    }
-  }
+  // NOTA: Este método fue reemplazado por una implementación más completa en la línea 1324
+  // /**
+  //  * Obtener movimientos de inventario
+  //  * GET /business/config/inventory/movements
+  //  */
+  // async getInventoryMovements(req, res) {
+  //   ...implementación antigua...
+  // }
 
   /**
    * Obtener movimiento específico
