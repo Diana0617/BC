@@ -1,4 +1,5 @@
 // Load environment variables
+// Force Azure redeploy - 2026-01-18 (inventory movements backend)
 require('dotenv').config();
 const app = require('./src/app');
 const { sequelize } = require('./src/models');
