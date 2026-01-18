@@ -12,11 +12,15 @@ import {
   ArrowUp,
   ArrowDown,
   Package,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getInventoryMovements } from '@shared/api/businessInventoryApi';
+import { usePagination } from '@shared/hooks/usePagination';
+import { PAGINATION } from '@shared/constants/ui';
 
 const InventoryMovements = () => {
   const { user } = useSelector((state) => state.auth);
@@ -24,9 +28,6 @@ const InventoryMovements = () => {
   const [movements, setMovements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(20);
-  const [totalItems, setTotalItems] = useState(0);
   const [summary, setSummary] = useState(null);
 
   // Filtros
@@ -41,6 +42,14 @@ const InventoryMovements = () => {
   });
 
   const [showFilters, setShowFilters] = useState(true);
+
+  // Hook de paginación
+  const {
+    data: paginatedMovements,
+    pagination,
+    goToPage,
+    changePageSize
+  } = usePagination(movements, PAGINATION.MOVEMENTS || 20);
 
   // Tipos de movimiento con sus colores e iconos
   const movementTypes = {
@@ -95,8 +104,6 @@ const InventoryMovements = () => {
     setError(null);
     try {
       const params = {
-        page: page + 1,
-        limit: rowsPerPage,
         ...filters
       };
 
@@ -110,7 +117,6 @@ const InventoryMovements = () => {
       const response = await getInventoryMovements(businessId, params);
       
       setMovements(response.data.movements || []);
-      setTotalItems(response.data.pagination?.totalItems || 0);
       setSummary(response.data.summary || null);
     } catch (err) {
       console.error('Error fetching movements:', err);
@@ -125,14 +131,14 @@ const InventoryMovements = () => {
       fetchMovements();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, businessId]);
+  }, [businessId]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));
   };
 
   const handleApplyFilters = () => {
-    setPage(0);
+    goToPage(1);
     fetchMovements();
   };
 
@@ -146,17 +152,8 @@ const InventoryMovements = () => {
       dateFrom: '',
       dateTo: ''
     });
-    setPage(0);
+    goToPage(1);
     setTimeout(fetchMovements, 100);
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
   };
 
   const getMovementIcon = (type) => {
@@ -341,7 +338,7 @@ const InventoryMovements = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {movements.length === 0 ? (
+                  {paginatedMovements.length === 0 ? (
                     <tr>
                       <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
                         <Package className="w-12 h-12 mx-auto mb-2 text-gray-400" />
@@ -349,7 +346,7 @@ const InventoryMovements = () => {
                       </td>
                     </tr>
                   ) : (
-                    movements.map((movement) => (
+                    paginatedMovements.map((movement) => (
                       <tr key={movement.id} className={getMovementBgClass(movement.movementType)}>
                         <td className="px-4 py-3">
                           <div className="text-sm text-gray-900">
@@ -421,15 +418,15 @@ const InventoryMovements = () => {
             <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button
-                  onClick={() => setPage(Math.max(0, page - 1))}
-                  disabled={page === 0}
+                  onClick={() => goToPage(pagination.currentPage - 1)}
+                  disabled={!pagination.hasPrevPage}
                   className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Anterior
                 </button>
                 <button
-                  onClick={() => setPage(page + 1)}
-                  disabled={(page + 1) * rowsPerPage >= totalItems}
+                  onClick={() => goToPage(pagination.currentPage + 1)}
+                  disabled={!pagination.hasNextPage}
                   className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Siguiente
@@ -438,19 +435,16 @@ const InventoryMovements = () => {
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
-                    Mostrando <span className="font-medium">{page * rowsPerPage + 1}</span> a{' '}
-                    <span className="font-medium">{Math.min((page + 1) * rowsPerPage, totalItems)}</span> de{' '}
-                    <span className="font-medium">{totalItems}</span> resultados
+                    Mostrando <span className="font-medium">{pagination.startIndex}</span> a{' '}
+                    <span className="font-medium">{pagination.endIndex}</span> de{' '}
+                    <span className="font-medium">{pagination.totalItems}</span> resultados
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <label className="text-sm text-gray-700">Filas por página:</label>
                   <select
-                    value={rowsPerPage}
-                    onChange={(e) => {
-                      setRowsPerPage(parseInt(e.target.value, 10));
-                      setPage(0);
-                    }}
+                    value={pagination.pageSize}
+                    onChange={(e) => changePageSize(parseInt(e.target.value, 10))}
                     className="px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value={10}>10</option>
@@ -459,18 +453,23 @@ const InventoryMovements = () => {
                     <option value={100}>100</option>
                   </select>
                   <button
-                    onClick={() => setPage(Math.max(0, page - 1))}
-                    disabled={page === 0}
+                    onClick={() => goToPage(pagination.currentPage - 1)}
+                    disabled={!pagination.hasPrevPage}
                     className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Página anterior"
                   >
-                    <ArrowDown className="w-5 h-5 rotate-90" />
+                    <ChevronLeft className="w-5 h-5" />
                   </button>
+                  <span className="text-sm text-gray-700">
+                    Página {pagination.currentPage} de {pagination.totalPages}
+                  </span>
                   <button
-                    onClick={() => setPage(page + 1)}
-                    disabled={(page + 1) * rowsPerPage >= totalItems}
+                    onClick={() => goToPage(pagination.currentPage + 1)}
+                    disabled={!pagination.hasNextPage}
                     className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Página siguiente"
                   >
-                    <ArrowDown className="w-5 h-5 -rotate-90" />
+                    <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
               </div>
