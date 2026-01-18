@@ -623,11 +623,14 @@ class ProductController {
       const { businessId } = req.user;
       const { id, imageIndex } = req.params;
 
+      console.log('🗑️ Deleting product image:', { businessId, productId: id, imageIndex });
+
       const product = await Product.findOne({
         where: { id, businessId }
       });
 
       if (!product) {
+        console.log('❌ Product not found');
         return res.status(404).json({
           success: false,
           error: 'Producto no encontrado'
@@ -637,7 +640,10 @@ class ProductController {
       const currentImages = product.images || [];
       const index = parseInt(imageIndex);
 
+      console.log('📷 Current images:', currentImages.length, 'Deleting index:', index);
+
       if (index < 0 || index >= currentImages.length) {
+        console.log('❌ Invalid image index');
         return res.status(400).json({
           success: false,
           error: 'Índice de imagen inválido'
@@ -645,30 +651,38 @@ class ProductController {
       }
 
       const imageToDelete = currentImages[index];
+      console.log('🖼️ Image to delete:', imageToDelete);
 
       // Eliminar de Cloudinary
       try {
         if (imageToDelete.main?.public_id) {
+          console.log('☁️ Deleting from Cloudinary:', imageToDelete.main.public_id);
           await cloudinary.uploader.destroy(imageToDelete.main.public_id);
+          console.log('✅ Main image deleted from Cloudinary');
         }
         if (imageToDelete.thumbnail?.public_id) {
+          console.log('☁️ Deleting thumbnail:', imageToDelete.thumbnail.public_id);
           await cloudinary.uploader.destroy(imageToDelete.thumbnail.public_id);
+          console.log('✅ Thumbnail deleted from Cloudinary');
         }
       } catch (cloudinaryError) {
-        console.error('Error deleting from Cloudinary:', cloudinaryError);
+        console.error('⚠️ Error deleting from Cloudinary:', cloudinaryError);
         // Continuar aunque falle Cloudinary
       }
 
       // Eliminar del array
       currentImages.splice(index, 1);
+      console.log('📝 Updating product with', currentImages.length, 'images');
+      
       await product.update({ images: currentImages });
+      console.log('✅ Product updated successfully');
 
       res.json({
         success: true,
         message: 'Imagen eliminada exitosamente'
       });
     } catch (error) {
-      console.error('Error deleting product image:', error);
+      console.error('❌ Error deleting product image:', error);
       res.status(500).json({
         success: false,
         error: 'Error al eliminar la imagen'
