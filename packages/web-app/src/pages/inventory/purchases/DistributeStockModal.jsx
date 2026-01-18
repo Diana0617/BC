@@ -29,6 +29,8 @@ import {
 } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
 import businessBranchesApi from '@shared/api/businessBranchesApi';
+import supplierInvoicesApi from '@shared/api/supplierInvoicesApi';
+
 const DistributeStockModal = ({ open, onClose, invoice, onSuccess }) => {
   const { user } = useSelector((state) => state.auth);
   const businessId = user?.businessId;
@@ -151,28 +153,12 @@ const DistributeStockModal = ({ open, onClose, invoice, onSuccess }) => {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/business/${businessId}/supplier-invoices/${invoice.id}/distribute-stock`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ distribution })
-        }
-      );
+      const response = await supplierInvoicesApi.distributeStock(businessId, invoice.id, distribution);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Error al distribuir stock');
-      }
-
-      toast.success('Stock distribuido exitosamente');
+      toast.success(response.data?.message || 'Stock distribuido exitosamente');
       
       if (onSuccess) {
-        onSuccess(data.data);
+        onSuccess(response.data);
       }
       
       handleClose();

@@ -23,6 +23,8 @@ import {
 import { toast } from 'react-hot-toast';
 import { useBusinessContext } from '../../../context/BusinessContext';
 import { getProducts } from '@shared/api/businessInventoryApi';
+import suppliersApi from '@shared/api/suppliersApi';
+import supplierInvoicesApi from '@shared/api/supplierInvoicesApi';
 
 const CreateInvoiceModal = ({ open, onClose, onSuccess }) => {
   const { businessId } = useBusinessContext();
@@ -57,9 +59,7 @@ const CreateInvoiceModal = ({ open, onClose, onSuccess }) => {
       // Cargar productos y proveedores
       const [productsRes, suppliersRes] = await Promise.all([
         getProducts(businessId, { limit: 1000 }),
-        fetch(`${import.meta.env.VITE_API_URL}/api/business/${businessId}/suppliers`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        }).then(r => r.json())
+        suppliersApi.getSuppliers(businessId)
       ]);
 
       setProducts(productsRes.data?.products || []);
@@ -151,28 +151,12 @@ const CreateInvoiceModal = ({ open, onClose, onSuccess }) => {
         notes: formData.notes
       };
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/business/${businessId}/supplier-invoices`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify(invoiceData)
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Error al crear factura');
-      }
+      const response = await supplierInvoicesApi.createInvoice(businessId, invoiceData);
 
       toast.success('Factura creada. Ahora distribuye el stock entre sucursales.');
       
       if (onSuccess) {
-        onSuccess(data.data);
+        onSuccess(response.data);
       }
       
       handleClose();

@@ -31,6 +31,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
 import { useBusinessContext } from '../../../context/BusinessContext';
+import supplierInvoicesApi from '@shared/api/supplierInvoicesApi';
 import CreateInvoiceModal from './CreateInvoiceModal';
 import DistributeStockModal from './DistributeStockModal';
 
@@ -53,18 +54,8 @@ const PurchaseInvoices = () => {
   const fetchInvoices = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/business/${businessId}/supplier-invoices`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-      const data = await response.json();
-      if (data.success) {
-        setInvoices(data.data || []);
-      }
+      const response = await supplierInvoicesApi.getInvoices(businessId);
+      setInvoices(response.data || []);
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast.error('Error al cargar facturas');
