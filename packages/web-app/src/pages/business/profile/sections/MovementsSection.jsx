@@ -574,7 +574,7 @@ const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, get
         </div>
       </div>
 
-      {/* Totales por Método de Pago */}
+      }
       {Object.keys(paymentMethodTotals).length > 0 && (
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Balance por Método de Pago</h3>
