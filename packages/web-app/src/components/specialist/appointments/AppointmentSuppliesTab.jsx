@@ -161,10 +161,10 @@ const AppointmentSuppliesTab = ({
                 {/* Información del producto */}
                 <div className="flex-1">
                   <h4 className="text-lg font-semibold text-gray-900">
-                    {supply.Product?.name}
+                    {supply.product?.name || supply.Product?.name}
                   </h4>
                   <p className="text-sm text-gray-500 mb-2">
-                    SKU: {supply.Product?.sku}
+                    SKU: {supply.product?.sku || supply.Product?.sku}
                   </p>
 
                   {/* Cantidad y unidad */}
@@ -206,10 +206,10 @@ const AppointmentSuppliesTab = ({
 
                   {/* Info adicional */}
                   <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t text-sm text-gray-500">
-                    {supply.Specialist && (
+                    {(supply.specialist || supply.Specialist) && (
                       <div className="flex items-center gap-1">
                         <UserIcon className="h-4 w-4" />
-                        {supply.Specialist.fullName}
+                        {supply.specialist?.firstName || supply.Specialist?.firstName} {supply.specialist?.lastName || supply.Specialist?.lastName}
                       </div>
                     )}
                     
@@ -222,7 +222,7 @@ const AppointmentSuppliesTab = ({
 
                 {/* Botón de eliminar */}
                 <button
-                  onClick={() => handleDeleteSupply(supply.id, supply.Product?.name)}
+                  onClick={() => handleDeleteSupply(supply.id, supply.product?.name || supply.Product?.name)}
                   className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   title="Eliminar consumo"
                 >

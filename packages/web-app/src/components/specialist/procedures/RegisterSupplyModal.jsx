@@ -50,11 +50,18 @@ const RegisterSupplyModal = ({
   // Cargar productos, sucursal y autocompletar servicio al abrir
   useEffect(() => {
     if (isOpen && businessId) {
+      console.log('🔍 RegisterSupplyModal - Cargando productos con filtros:', {
+        businessId,
+        productType: 'FOR_PROCEDURES,BOTH',
+        isActive: true
+      });
+      
       dispatch(fetchProducts({ 
         businessId,
         productType: 'FOR_PROCEDURES,BOTH',
         isActive: true
       }));
+      
       // Autocompletar con el nombre del servicio si está disponible
       if (serviceName && !formData.reason) {
         setFormData(prev => ({ ...prev, reason: serviceName }));
@@ -153,6 +160,43 @@ const RegisterSupplyModal = ({
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Console log para debuggear productos
+  useEffect(() => {
+    if (products.length > 0) {
+      console.log('📦 RegisterSupplyModal - Productos cargados:', {
+        totalProducts: products.length,
+        productos: products.map(p => ({
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          productType: p.productType,
+          isActive: p.isActive,
+          trackInventory: p.trackInventory,
+          hasBranchStocks: !!p.branchStocks?.length,
+          branchStocksCount: p.branchStocks?.length || 0
+        }))
+      });
+
+      if (branchId) {
+        const productsWithStock = products.filter(p => {
+          const branchStock = p.branchStocks?.find(bs => bs.branchId === branchId);
+          return branchStock && branchStock.currentStock > 0;
+        });
+        console.log('📊 RegisterSupplyModal - Productos con stock en esta sucursal:', {
+          branchId,
+          totalConStock: productsWithStock.length,
+          productosConStock: productsWithStock.map(p => {
+            const bs = p.branchStocks.find(b => b.branchId === branchId);
+            return {
+              name: p.name,
+              stock: bs?.currentStock
+            };
+          })
+        });
+      }
+    }
+  }, [products, branchId]);
 
   // Validar y enviar
   const handleSubmit = async (e) => {
