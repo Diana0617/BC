@@ -9,12 +9,14 @@ import {
   DownloadIcon,
   EyeIcon,
   FilterIcon,
-  DollarSignIcon
+  DollarSignIcon,
+  Share2Icon
 } from 'lucide-react';
 import supplierInvoiceApi from '../../../../api/supplierInvoiceApi';
 import CreateInvoiceModal from './CreateInvoiceModal';
 import InvoiceDetailModal from './InvoiceDetailModal';
 import SupplierAccountSummary from './SupplierAccountSummary';
+import DistributeStockModal from '../../../inventory/purchases/DistributeStockModal';
 
 const PurchaseInvoices = () => {
   const { user } = useSelector((state) => state.auth);
@@ -22,6 +24,7 @@ const PurchaseInvoices = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDistributeModal, setShowDistributeModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showAccountSummary, setShowAccountSummary] = useState(false);
@@ -131,6 +134,13 @@ const PurchaseInvoices = () => {
     setSelectedSupplierId(supplierId);
     setShowAccountSummary(true);
   };
+
+  const handleDistribute = (invoice) => {
+    setSelectedInvoice(invoice);
+    setShowDistributeModal(true);
+  };
+
+  
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -390,6 +400,15 @@ const PurchaseInvoices = () => {
                           >
                             <EyeIcon className="w-4 h-4" />
                           </button>
+                          {invoice.status === 'PENDING' && !invoice.metadata?.stockDistributed && (
+                            <button
+                              onClick={() => handleDistribute(invoice)}
+                              className="p-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded"
+                              title="Distribuir stock"
+                            >
+                              <Share2Icon className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleViewSupplierAccount(invoice.supplierId)}
                             className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded"
@@ -476,7 +495,22 @@ const PurchaseInvoices = () => {
           }}
         />
       )}
-    </div>
+      {showDistributeModal && selectedInvoice && (
+        <DistributeStockModal
+          invoice={selectedInvoice}
+          onClose={() => {
+            setShowDistributeModal(false);
+            setSelectedInvoice(null);
+          }}
+          onDistributed={() => {
+            setShowDistributeModal(false);
+            setSelectedInvoice(null);
+            loadInvoices();
+            setSuccess('Stock distribuido exitosamente');
+            setTimeout(() => setSuccess(''), 3000);
+          }}
+        />
+      )}    </div>
   );
 };
 
