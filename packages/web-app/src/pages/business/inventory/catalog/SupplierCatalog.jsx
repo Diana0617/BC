@@ -293,12 +293,6 @@ const SupplierCatalog = () => {
                 </h3>
                 <p className="text-xs text-gray-500 mb-2">SKU: {item.supplierSku}</p>
                 
-                {item.supplier && (
-                  <p className="text-sm text-gray-600 mb-2">
-                    {item.supplier.name}
-                  </p>
-                )}
-
                 {(item.product?.category || item.category) && (
                   <span className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded mb-2">
                     {item.product?.category || item.category}

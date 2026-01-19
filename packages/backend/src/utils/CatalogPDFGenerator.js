@@ -20,7 +20,7 @@ class CatalogPDFGenerator {
         doc.pipe(stream);
 
         // Header
-        doc.fontSize(20).text('Catálogo de Proveedores', { align: 'center' });
+        doc.fontSize(20).text('Catálogo de Productos', { align: 'center' });
         doc.fontSize(12).text(business.name || 'Mi Negocio', { align: 'center' });
         doc.moveDown();
 
@@ -39,84 +39,137 @@ class CatalogPDFGenerator {
         // Items del catálogo
         for (let index = 0; index < catalogItems.length; index++) {
           const item = catalogItems[index];
+          
+          // Calcular altura necesaria para el item (mínimo 140px para la imagen)
+          const minItemHeight = 150;
+          
           // Verificar si necesitamos una nueva página
-          if (doc.y > 650) {
+          if (doc.y > 700 - minItemHeight) {
             doc.addPage();
           }
 
-          // Línea separadora
-          if (index > 0) {
-            doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-            doc.moveDown(0.5);
-          }
-
           const startY = doc.y;
+          const leftMargin = 50;
+          const imageSize = 120;
+          const imageX = leftMargin;
+          const textX = imageX + imageSize + 15; // Texto al lado de la imagen
+          const contentWidth = 495 - imageSize - 15; // Ancho para el texto
 
-          // Nombre del producto (negrita)
-          doc.fontSize(14).font('Helvetica-Bold').text(item.name, 50, startY);
-          doc.font('Helvetica');
+          // Caja con borde sutil para cada producto
+          doc.save();
+          doc.strokeColor('#E5E7EB').lineWidth(1);
+          doc.rect(leftMargin, startY, 495, minItemHeight).stroke();
+          doc.restore();
 
-          // SKU y proveedor
-          doc.fontSize(10).text(`SKU: ${item.supplierSku}`, 50, doc.y + 5);
-          if (item.supplier) {
-            doc.text(`Proveedor: ${item.supplier.name}`, 50, doc.y + 3);
-          }
+          // Intentar cargar y mostrar imagen
+          let imageLoaded = false;
+          const imageUrl = item.product?.images?.[0]?.thumbnail?.url || 
+                          item.product?.images?.[0]?.main?.url || 
+                          item.product?.images?.[0]?.url ||
+                          item.images?.[0]?.thumbnail?.url || 
+                          item.images?.[0]?.main?.url || 
+                          item.images?.[0]?.url;
 
-          // Categoría y marca
-          if (item.category) {
-            doc.text(`Categoría: ${item.category}`, 50, doc.y + 3);
-          }
-          if (item.brand) {
-            doc.text(`Marca: ${item.brand}`, 50, doc.y + 3);
-          }
-
-          // Precio
-          const price = parseFloat(item.price);
-          doc.fontSize(12).font('Helvetica-Bold')
-            .text(`$${price.toLocaleString('es-CO')} ${item.currency}`, 50, doc.y + 5);
-          doc.font('Helvetica').fontSize(10);
-
-          // Descripción
-          if (item.description) {
-            doc.text(item.description, 50, doc.y + 3, {
-              width: 300,
-              align: 'justify'
-            });
-          }
-
-          // Disponibilidad
-          const availText = item.available ? '✓ Disponible' : '✗ No disponible';
-          doc.fillColor(item.available ? 'green' : 'red')
-            .text(availText, 50, doc.y + 3);
-          doc.fillColor('black');
-
-          // Agregar imagen si existe
-          if (item.images && item.images.length > 0) {
+          if (imageUrl) {
             try {
-              const imageUrl = item.images[0].thumbnail?.url || item.images[0].main?.url;
-              if (imageUrl) {
-                // Descargar imagen
-                const imageBuffer = await this.downloadImage(imageUrl);
-                if (imageBuffer) {
-                  // Agregar imagen al PDF (máximo 150x150)
-                  doc.image(imageBuffer, 380, startY, {
-                    fit: [150, 150],
-                    align: 'center',
-                    valign: 'center'
-                  });
-                }
+              const imageBuffer = await this.downloadImage(imageUrl);
+              if (imageBuffer) {
+                doc.image(imageBuffer, imageX + 10, startY + 15, {
+                  fit: [imageSize - 20, imageSize - 20],
+                  align: 'center',
+                  valign: 'center'
+                });
+                imageLoaded = true;
               }
             } catch (error) {
-              console.error('Error adding image to PDF:', error);
-              // Si falla, mostrar placeholder
-              doc.fontSize(8).text('[Imagen no disponible]', 380, startY, {
-                width: 150,
-                align: 'center'
-              });
+              console.error('Error loading image:', error);
             }
           }
 
-          doc.moveDown(1.5);
+          // Si no hay imagen, mostrar placeholder
+          if (!imageLoaded) {
+            doc.save();
+            doc.fillColor('#F3F4F6');
+            doc.rect(imageX + 10, startY + 15, imageSize - 20, imageSize - 20).fill();
+            doc.fillColor('#9CA3AF').fontSize(40);
+            doc.text('📦', imageX + 10, startY + 45, {
+              width: imageSize - 20,
+              align: 'center'
+            });
+            doc.restore();
+          }
+
+          // Contenido de texto
+          let textY = startY + 15;
+
+          // Nombre del producto (negrita, más grande)
+          doc.font('Helvetica-Bold').fontSize(13).fillColor('#111827');
+          const productName = item.product?.name || item.name;
+          doc.text(productName, textX, textY, {
+            width: contentWidth,
+            ellipsis: true,
+            lineBreak: false
+          });
+          textY += 18;
+
+          // SKU
+          doc.font('Helvetica').fontSize(9).fillColor('#6B7280');
+          doc.text(`SKU: ${item.supplierSku || item.product?.sku || 'N/A'}`, textX, textY);
+          textY += 12;
+
+          // Categoría
+          const category = item.product?.category || item.category;
+          if (category && category !== 'Sin categoría') {
+            doc.fillColor('#4B5563');
+            doc.text(`🏷️  ${category}`, textX, textY);
+            textY += 12;
+          }
+
+          // Marca
+          if (item.brand) {
+            doc.fillColor('#4B5563');
+            doc.text(`Marca: ${item.brand}`, textX, textY);
+            textY += 12;
+          }
+
+          textY += 5;
+
+          // Precio destacado
+          const price = parseFloat(item.product?.price || item.price || 0);
+          doc.font('Helvetica-Bold').fontSize(16).fillColor('#059669');
+          doc.text(`$${price.toLocaleString('es-CO')}`, textX, textY);
+          textY += 22;
+
+          // Disponibilidad con badge
+          const availText = item.available ? '✓ Disponible' : '✗ No disponible';
+          const badgeColor = item.available ? '#10B981' : '#EF4444';
+          const badgeX = textX;
+          const badgeY = textY;
+          
+          doc.save();
+          doc.fillColor(badgeColor).opacity(0.1);
+          doc.roundedRect(badgeX, badgeY, 80, 16, 3).fill();
+          doc.restore();
+          
+          doc.font('Helvetica-Bold').fontSize(8).fillColor(badgeColor);
+          doc.text(availText, badgeX + 5, badgeY + 4);
+          doc.fillColor('black');
+
+          // Descripción si hay espacio
+          if (item.description && textY < startY + minItemHeight - 30) {
+            textY += 20;
+            doc.font('Helvetica').fontSize(8).fillColor('#4B5563');
+            const descText = item.description.length > 150 
+              ? item.description.substring(0, 147) + '...' 
+              : item.description;
+            doc.text(descText, textX, textY, {
+              width: contentWidth,
+              lineGap: 2
+            });
+          }
+
+          // Mover a la siguiente posición
+          doc.y = startY + minItemHeight + 10;
         }
 
         // Footer
