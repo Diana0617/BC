@@ -67,6 +67,14 @@ class SupplierInvoiceController {
             model: Supplier,
             as: 'supplier',
             attributes: ['id', 'name', 'email', 'phone', 'taxId']
+          },
+          {
+            model: Product,
+            as: 'items',
+            through: {
+              attributes: ['quantity', 'unitCost', 'total']
+            },
+            attributes: ['id', 'name', 'sku', 'unit', 'category']
           }
         ],
         order: [['issueDate', 'DESC']],
