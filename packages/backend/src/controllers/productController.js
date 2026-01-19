@@ -43,8 +43,19 @@ class ProductController {
 
       const offset = (page - 1) * limit;
 
+      // Incluir BranchStock en la consulta
+      const BranchStock = require('../models/BranchStock');
+      
       const products = await Product.findAndCountAll({
         where,
+        include: [
+          {
+            model: BranchStock,
+            as: 'branchStocks',
+            attributes: ['id', 'branchId', 'currentStock', 'minStock', 'maxStock'],
+            required: false
+          }
+        ],
         limit: parseInt(limit),
         offset,
         order: [['name', 'ASC']]
@@ -57,56 +68,27 @@ class ProductController {
         );
       }
 
-      // Agregar stock por sucursal
-      try {
-        console.log('📊 [ProductController] Aggregating branch stock for businessId:', businessId);
-        const BranchStock = require('../models/BranchStock');
+      // Calcular currentStock agregado desde branchStocks
+      products.rows = products.rows.map(product => {
+        const productData = product.toJSON();
         
         // Si se especifica branchId, filtrar solo esa sucursal
-        const branchStockWhere = { businessId: businessId };
+        let relevantStocks = productData.branchStocks || [];
         if (branchId) {
-          branchStockWhere.branchId = branchId;
+          relevantStocks = relevantStocks.filter(bs => bs.branchId === branchId);
         }
+        
+        // Calcular stock total
+        const totalStock = relevantStocks.reduce((sum, bs) => sum + (bs.currentStock || 0), 0);
+        productData.currentStock = totalStock;
+        
+        console.log(`📦 Product: ${productData.name}, branchStocks:`, relevantStocks.length, 'total:', totalStock);
+        
+        return productData;
+      });
 
-        // Usar raw:true para obtener resultados planos y nombres de columnas explícitos
-        const branchSums = await BranchStock.findAll({
-          attributes: [
-            [sequelize.col('productId'), 'productId'],
-            [sequelize.fn('SUM', sequelize.col('currentStock')), 'totalStock']
-          ],
-          where: branchStockWhere,
-          group: [sequelize.col('productId')],
-          raw: true
-        });
-        console.log('✅ [ProductController] Branch stock aggregated successfully:', branchSums.length, 'products');
-
-        const stockMap = {};
-        branchSums.forEach(bs => {
-          const pid = bs.productId;
-          const total = parseInt(bs.totalStock || 0, 10);
-          stockMap[pid] = total;
-        });
-
-        // Log de depuración para verificar agregación en runtime
-        if (process.env.NODE_ENV === 'development') {
-          console.debug('Branch stock sums for business', businessId, stockMap);
-        }
-
-        // Asignar currentStock calculado a los productos devueltos
-        products.rows = products.rows.map(p => {
-          const pid = p.id;
-          const aggregated = stockMap[pid];
-          if (typeof aggregated !== 'undefined') {
-            p.currentStock = aggregated;
-          } else {
-            // Si no hay stock en ninguna sucursal (o en la sucursal filtrada), poner 0
-            p.currentStock = 0;
-          }
-          return p;
-        });
-      } catch (e) {
-        console.warn('No se pudo agregar branch stock sums:', e.message || e);
-      }
+      // Remover el código viejo de agregación
+      // try { ... } catch (e) { ... }
 
       res.json({
         success: true,
