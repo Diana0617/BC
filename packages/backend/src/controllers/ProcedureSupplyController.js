@@ -125,8 +125,8 @@ class ProcedureSupplyController {
           where: {
             id: specialistId,
             businessId,
-            role: { [Op.in]: ['SPECIALIST', 'BUSINESS_SPECIALIST'] },
-            isActive: true
+            role: { [Op.in]: ['SPECIALIST', 'BUSINESS_SPECIALIST', 'BUSINESS', 'RECEPTIONIST_SPECIALIST'] },
+            status: 'ACTIVE'
           }
         });
 

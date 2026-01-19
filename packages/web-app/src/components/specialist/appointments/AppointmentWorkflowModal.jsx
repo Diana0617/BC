@@ -19,7 +19,7 @@ import EvidenceUploader from '../evidence/EvidenceUploader';
 export default function AppointmentWorkflowModal({ 
   isOpen, 
   appointment, 
-  action, // 'start' | 'complete'
+  action, // 'start' | 'complete' | 'before-photo' | 'after-photo'
   onClose, 
   onSuccess 
 }) {
@@ -38,6 +38,17 @@ export default function AppointmentWorkflowModal({
   }, [isOpen, appointment, action]);
 
   const initializeWorkflow = async () => {
+    // Si es solo para subir fotos, no inicializar el flujo completo
+    if (action === 'before-photo' || action === 'after-photo') {
+      // Ir directo al paso de foto correspondiente
+      if (action === 'before-photo') {
+        setCurrentStep(2); // Fotos antes
+      } else {
+        setCurrentStep(4); // Fotos después
+      }
+      return;
+    }
+
     // Verificar si el servicio requiere consentimiento
     // Soportar ambos formatos: Service/service
     const service = appointment.Service || appointment.service;
@@ -90,6 +101,13 @@ export default function AppointmentWorkflowModal({
 
   const handleBeforePhotosComplete = () => {
     setBeforeEvidenceUploaded(true);
+    // Si es solo para subir fotos, cerrar el modal
+    if (action === 'before-photo') {
+      toast.success('Foto "antes" guardada correctamente');
+      onSuccess?.();
+      onClose();
+      return;
+    }
     setCurrentStep(3);
   };
 
@@ -126,6 +144,13 @@ export default function AppointmentWorkflowModal({
 
   const handleAfterPhotosComplete = () => {
     setAfterEvidenceUploaded(true);
+    // Si es solo para subir fotos, cerrar el modal
+    if (action === 'after-photo') {
+      toast.success('Foto "después" guardada correctamente');
+      onSuccess?.();
+      onClose();
+      return;
+    }
     handleCompleteAppointment();
   };
 
@@ -185,7 +210,8 @@ export default function AppointmentWorkflowModal({
           </div>
         );
 
-      case 2: // Fotos Antes
+      case 2: { // Fotos Antes
+        const isOnlyUploadBefore = action === 'before-photo';
         return (
           <div>
             <div className="mb-6">
@@ -194,8 +220,12 @@ export default function AppointmentWorkflowModal({
                   <PhotoIcon className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Paso 2: Evidencia Fotográfica (Antes)</h3>
-                  <p className="text-sm text-gray-600">Documenta el estado inicial del cliente (opcional)</p>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {isOnlyUploadBefore ? 'Subir Foto Antes' : 'Paso 2: Evidencia Fotográfica (Antes)'}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {isOnlyUploadBefore ? 'Documenta el estado inicial del cliente' : 'Documenta el estado inicial del cliente (opcional)'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -207,23 +237,32 @@ export default function AppointmentWorkflowModal({
             />
 
             <div className="mt-6 flex gap-3">
+              {!isOnlyUploadBefore && (
+                <button
+                  onClick={handleSkipBeforePhotos}
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  Omitir Fotos
+                </button>
+              )}
               <button
-                onClick={handleSkipBeforePhotos}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                onClick={isOnlyUploadBefore ? onClose : handleBeforePhotosComplete}
+                disabled={isOnlyUploadBefore ? !beforeEvidenceUploaded : false}
+                className={`${isOnlyUploadBefore ? 'w-full' : 'flex-1'} px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
               >
-                Omitir Fotos
-              </button>
-              <button
-                onClick={handleBeforePhotosComplete}
-                disabled={!beforeEvidenceUploaded}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                Continuar
-                <ArrowRightIcon className="w-5 h-5" />
+                {isOnlyUploadBefore ? (
+                  beforeEvidenceUploaded ? 'Cerrar' : 'Subir Foto para Continuar'
+                ) : (
+                  <>
+                    Continuar
+                    <ArrowRightIcon className="w-5 h-5" />
+                  </>
+                )}
               </button>
             </div>
           </div>
         );
+      }
 
       case 3: // Confirmar Inicio
         return (
@@ -287,7 +326,8 @@ export default function AppointmentWorkflowModal({
           </div>
         );
 
-      case 4: // Fotos Después
+      case 4: { // Fotos Después
+        const isOnlyUploadAfter = action === 'after-photo';
         return (
           <div>
             <div className="mb-6">
@@ -296,8 +336,12 @@ export default function AppointmentWorkflowModal({
                   <PhotoIcon className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Evidencia Fotográfica (Después)</h3>
-                  <p className="text-sm text-gray-600">Documenta el resultado final (opcional)</p>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {isOnlyUploadAfter ? 'Subir Foto Después' : 'Evidencia Fotográfica (Después)'}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {isOnlyUploadAfter ? 'Documenta el resultado final' : 'Documenta el resultado final (opcional)'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -309,22 +353,26 @@ export default function AppointmentWorkflowModal({
             />
 
             <div className="mt-6 flex gap-3">
+              {!isOnlyUploadAfter && (
+                <button
+                  onClick={handleSkipAfterPhotos}
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  Omitir y Completar
+                </button>
+              )}
               <button
-                onClick={handleSkipAfterPhotos}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-              >
-                Omitir y Completar
-              </button>
-              <button
-                onClick={handleAfterPhotosComplete}
-                disabled={loading || !afterEvidenceUploaded}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                onClick={isOnlyUploadAfter ? onClose : handleAfterPhotosComplete}
+                disabled={isOnlyUploadAfter ? !afterEvidenceUploaded : (loading || !afterEvidenceUploaded)}
+                className={`${isOnlyUploadAfter ? 'w-full' : 'flex-1'} px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
               >
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     Completando...
                   </>
+                ) : isOnlyUploadAfter ? (
+                  afterEvidenceUploaded ? 'Cerrar' : 'Subir Foto para Continuar'
                 ) : (
                   <>
                     <CheckCircleIcon className="w-5 h-5" />
@@ -335,6 +383,7 @@ export default function AppointmentWorkflowModal({
             </div>
           </div>
         );
+      }
 
       default:
         return null;
@@ -362,10 +411,10 @@ export default function AppointmentWorkflowModal({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-bold text-white">
-                  {action === 'complete' ? 'Completar Turno' : 'Iniciar Turno'}
+                  {action === 'complete' ? 'Completar Turno' : action === 'before-photo' ? 'Subir Foto Antes' : action === 'after-photo' ? 'Subir Foto Después' : 'Iniciar Turno'}
                 </h3>
                 <p className="text-blue-100 text-sm mt-1">
-                  {appointment.service?.name}
+                  {appointment.service?.name || appointment.Service?.name}
                 </p>
               </div>
               {currentStep !== 1 && currentStep !== 3 && (
@@ -379,14 +428,16 @@ export default function AppointmentWorkflowModal({
             </div>
 
             {/* Barra de Progreso */}
-            <div className="mt-4">
-              <div className="bg-blue-400 bg-opacity-30 rounded-full h-2 overflow-hidden">
-                <div 
-                  className="bg-white h-full transition-all duration-300"
-                  style={{ width: `${getProgressPercentage()}%` }}
-                />
+            {action !== 'before-photo' && action !== 'after-photo' && (
+              <div className="mt-4">
+                <div className="bg-blue-400 bg-opacity-30 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-white h-full transition-all duration-300"
+                    style={{ width: `${getProgressPercentage()}%` }}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Body */}
