@@ -228,9 +228,9 @@ const DistributeStockModal = ({ invoice, onClose, onDistributed }) => {
 
                           return (
                             <tr key={idx} className="border-b border-gray-200">
-                              <td className="py-2 px-2">{item.product?.name || item.productId}</td>
+                              <td className="py-2 px-2">{item.productName || item.productId}</td>
                               <td className="text-right py-2 px-2">
-                                <strong>{item.quantity}</strong> {item.product?.unit}
+                                <strong>{item.quantity}</strong>
                               </td>
                               <td className={`text-right py-2 px-2 ${
                                 isOver ? 'text-red-600 font-bold' : 
@@ -307,7 +307,7 @@ const DistributeStockModal = ({ invoice, onClose, onDistributed }) => {
                           {invoice.items.map((item, itemIndex) => (
                             <div key={itemIndex}>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {item.product?.name || 'Producto'}
+                                {item.productName || 'Producto'}
                               </label>
                               <input
                                 type="number"
@@ -318,7 +318,7 @@ const DistributeStockModal = ({ invoice, onClose, onDistributed }) => {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               />
                               <p className="text-xs text-gray-500 mt-1">
-                                Máx: {item.quantity} {item.product?.unit || ''}
+                                Máx: {item.quantity}
                               </p>
                             </div>
                           ))}
