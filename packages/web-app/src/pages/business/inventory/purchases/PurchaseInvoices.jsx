@@ -12,7 +12,7 @@ import {
   DollarSignIcon
 } from 'lucide-react';
 import supplierInvoiceApi from '../../../../api/supplierInvoiceApi';
-import CreateInvoiceModal from '../../inventory/purchases/CreateInvoiceModal';
+import CreateInvoiceModal from '../../../inventory/purchases/CreateInvoiceModal';
 import InvoiceDetailModal from './InvoiceDetailModal';
 import SupplierAccountSummary from './SupplierAccountSummary';
 
