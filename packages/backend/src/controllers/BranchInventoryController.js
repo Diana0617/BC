@@ -7,6 +7,7 @@ const {
   sequelize
 } = require('../models');
 const { Op } = require('sequelize');
+const SupplierCatalogService = require('../services/SupplierCatalogService');
 
 /**
  * Controlador para gestión de inventario por sucursal
@@ -548,6 +549,20 @@ class BranchInventoryController {
             quantity,
             stockId: stock.id
           });
+
+          // Agregar producto al catálogo de proveedores
+          try {
+            await SupplierCatalogService.addFromInitialStock(
+              businessId,
+              productId,
+              quantity,
+              unitCost || product.cost
+            );
+            console.log(`📚 Producto agregado al catálogo: ${product.name}`);
+          } catch (catalogError) {
+            console.error(`⚠️ Error agregando al catálogo: ${catalogError.message}`);
+            // No fallar la operación principal si falla el catálogo
+          }
 
         } catch (itemError) {
           results.errors.push({

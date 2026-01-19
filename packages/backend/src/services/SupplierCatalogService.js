@@ -232,13 +232,18 @@ class SupplierCatalogService {
 
   /**
    * Obtener categorías disponibles en el catálogo
+   * Busca en la tabla Product para obtener todas las categorías reales
    */
   static async getCategories(businessId) {
     try {
-      const categories = await SupplierCatalogItem.findAll({
-        where: { businessId },
+      const categories = await Product.findAll({
+        where: { 
+          businessId,
+          category: { [Op.ne]: null }
+        },
         attributes: ['category'],
         group: ['category'],
+        order: [['category', 'ASC']],
         raw: true
       });
 
