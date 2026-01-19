@@ -521,40 +521,7 @@ class SupplierInvoiceController {
           const product = await Product.findByPk(item.productId, { transaction });
           if (!product) continue;
 
-          // Crear movimiento de inventario
-          await InventoryMovement.create({
-            businessId,
-            productId: item.productId,
-            branchId: dist.branchId,
-            userId,
-            movementType: 'PURCHASE',
-            quantity: item.quantity,
-            unitCost: invoiceItem.unitCost,
-            totalCost: invoiceItem.unitCost * item.quantity,
-            previousStock: 0, // Se calculará del BranchStock
-            newStock: item.quantity, // Se calculará del BranchStock
-            reason: `Entrada por factura ${invoice.invoiceNumber}`,
-            notes: `Factura de proveedor: ${invoice.supplier.name} - Sucursal: ${branch.name}`,
-            referenceId: invoice.id,
-            referenceType: 'SUPPLIER_INVOICE',
-            supplierInfo: {
-              supplierId: invoice.supplierId,
-              supplierName: invoice.supplier.name,
-              invoiceNumber: invoice.invoiceNumber
-            }
-          }, { transaction });
-
-          // Actualizar solo el costo en el producto (NO el stock global)
-          await product.update({
-            cost: invoiceItem.unitCost
-          }, { transaction });
-
-          // Actualizar solo el costo en el producto (NO el stock global)
-          await product.update({
-            cost: invoiceItem.unitCost
-          }, { transaction });
-
-          // Actualizar o crear stock de sucursal
+          // Obtener o crear stock de sucursal ANTES del movimiento
           const [branchStock, created] = await BranchStock.findOrCreate({
             where: { branchId: dist.branchId, productId: item.productId },
             defaults: {
@@ -572,6 +539,35 @@ class SupplierInvoiceController {
           const previousBranchStock = branchStock.currentStock;
           const newBranchStock = previousBranchStock + item.quantity;
 
+          // Crear movimiento de inventario con valores correctos
+          await InventoryMovement.create({
+            businessId,
+            productId: item.productId,
+            branchId: dist.branchId,
+            userId,
+            movementType: 'PURCHASE',
+            quantity: item.quantity,
+            unitCost: invoiceItem.unitCost,
+            totalCost: invoiceItem.unitCost * item.quantity,
+            previousStock: previousBranchStock,
+            newStock: newBranchStock,
+            reason: `Entrada por factura ${invoice.invoiceNumber}`,
+            notes: `Factura de proveedor: ${invoice.supplier.name} - Sucursal: ${branch.name}`,
+            referenceId: invoice.id,
+            referenceType: 'SUPPLIER_INVOICE',
+            supplierInfo: {
+              supplierId: invoice.supplierId,
+              supplierName: invoice.supplier.name,
+              invoiceNumber: invoice.invoiceNumber
+            }
+          }, { transaction });
+
+          // Actualizar solo el costo en el producto (NO el stock global)
+          await product.update({
+            cost: invoiceItem.unitCost
+          }, { transaction });
+
+          // Actualizar stock de sucursal
           await branchStock.update({
             currentStock: newBranchStock,
             lastCountDate: new Date()
