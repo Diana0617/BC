@@ -82,20 +82,33 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
   useEffect(() => {
     // Load products for selection
     dispatch(fetchProducts({ isActive: true, limit: 1000 }));
-    // Load branches automatically
-    loadBranches();
   }, [dispatch]);
+
+  useEffect(() => {
+    // Load branches automatically when user.businessId is available
+    if (user?.businessId) {
+      loadBranches();
+    }
+  }, [user?.businessId]);
 
   // Cargar sucursales automáticamente al montar el componente
   const loadBranches = async () => {
+    if (!user?.businessId) {
+      console.warn('⚠️ No se puede cargar sucursales: user.businessId no disponible');
+      return;
+    }
+    
     try {
       setLoadingBranches(true);
+      console.log('🏢 Cargando sucursales para businessId:', user.businessId);
+      
       const response = await businessBranchesApi.getBranches(user.businessId, {
         isActive: true,
         limit: 50
       });
       
       const branchesData = response.data || [];
+      console.log('📦 Sucursales cargadas:', branchesData.length, branchesData);
       setBranches(branchesData);
       
       // Buscar la sucursal principal o usar la primera activa
@@ -104,10 +117,11 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
         setDefaultBranchId(mainBranch.id);
         console.log('✅ Sucursal por defecto asignada:', mainBranch.name, mainBranch.id);
       } else {
+        console.error('❌ No hay sucursales activas');
         setError('No hay sucursales activas. Por favor crea una sucursal primero.');
       }
     } catch (err) {
-      console.error('Error loading branches:', err);
+      console.error('❌ Error loading branches:', err);
       setError('Error al cargar sucursales. No se puede crear la factura.');
     } finally {
       setLoadingBranches(false);
@@ -505,6 +519,16 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
         payload.supplierId = selectedSupplierId;
       } else {
         payload.supplierData = supplierData;
+      }
+
+      console.log('📤 Enviando factura con payload:', {
+        ...payload,
+        branchId: payload.branchId,
+        itemsCount: payload.items.length
+      });
+
+      if (!payload.branchId) {
+        throw new Error('No se pudo asignar una sucursal. Por favor recarga la página.');
       }
 
       const response = await supplierInvoiceApi.createInvoice(user.businessId, payload);
