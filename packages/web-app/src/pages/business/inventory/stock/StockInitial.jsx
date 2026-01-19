@@ -338,6 +338,16 @@ const StockInitial = () => {
           const quantity = parseInt(quantityStr) || 0;
           const unitCost = parseFloat(costStr) || product.cost || 0;
 
+          console.log('📝 Procesando línea CSV:', {
+            lineNumber: index + 2,
+            sku,
+            quantityStr,
+            quantity,
+            costStr,
+            unitCost,
+            branchName: branch.name
+          });
+
           if (quantity <= 0) {
             errors.push(`Línea ${index + 2}: Cantidad debe ser mayor a 0`);
             return;
@@ -398,6 +408,13 @@ const StockInitial = () => {
         unitCost: item.unitCost,
         ...(item._newProduct && { newProduct: item._newProduct }),
       }));
+
+      console.log('📦 Enviando stock inicial:', {
+        businessId: user.businessId,
+        selectedBranch,
+        products,
+        totalItems: products.length
+      });
 
       const result = await branchInventoryApi.loadInitialStock(
         user.businessId,
