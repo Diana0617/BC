@@ -248,7 +248,7 @@ class ProcedureSupplyController {
           {
             model: Appointment,
             as: 'appointment',
-            attributes: ['id', 'appointmentNumber', 'date', 'startTime']
+            attributes: ['id', 'appointmentNumber', 'startTime', 'endTime', 'status']
           },
           {
             model: Branch,
@@ -334,7 +334,7 @@ class ProcedureSupplyController {
           {
             model: Appointment,
             as: 'appointment',
-            attributes: ['id', 'appointmentNumber', 'date', 'startTime']
+            attributes: ['id', 'appointmentNumber', 'startTime', 'endTime', 'status']
           },
           {
             model: Branch,
@@ -397,7 +397,7 @@ class ProcedureSupplyController {
           {
             model: Appointment,
             as: 'appointment',
-            attributes: ['id', 'appointmentNumber', 'date', 'startTime', 'endTime']
+            attributes: ['id', 'appointmentNumber', 'startTime', 'endTime', 'status']
           },
           {
             model: Branch,
@@ -586,6 +586,114 @@ class ProcedureSupplyController {
       res.status(500).json({
         success: false,
         error: 'Error al obtener consumos del turno'
+      });
+    }
+  }
+
+  /**
+   * Eliminar registro de consumo
+   * DELETE /api/procedure-supplies/:id
+   * Revierte el movimiento de stock si existe
+   */
+  static async deleteSupply(req, res) {
+    const transaction = await sequelize.transaction();
+    
+    try {
+      const { id } = req.params;
+      const { userId, businessId } = req.user;
+
+      // Buscar el consumo
+      const supply = await ProcedureSupply.findOne({
+        where: { id, businessId },
+        include: [
+          {
+            model: Product,
+            as: 'product',
+            attributes: ['id', 'name', 'trackInventory', 'currentStock']
+          },
+          {
+            model: InventoryMovement,
+            as: 'inventoryMovement',
+            attributes: ['id', 'quantity', 'previousStock', 'newStock']
+          }
+        ]
+      });
+
+      if (!supply) {
+        await transaction.rollback();
+        return res.status(404).json({
+          success: false,
+          error: 'Consumo no encontrado'
+        });
+      }
+
+      console.log('🗑️ Eliminando consumo:', {
+        supplyId: supply.id,
+        productName: supply.product?.name,
+        quantity: supply.quantity,
+        hasInventoryMovement: !!supply.inventoryMovement
+      });
+
+      // Si tiene movimiento de inventario, revertir el stock
+      if (supply.inventoryMovement && supply.product?.trackInventory) {
+        const { quantity, branchId } = supply;
+        
+        if (branchId) {
+          // Revertir stock por sucursal
+          const branchStock = await BranchStock.findOne({
+            where: { branchId, productId: supply.productId },
+            transaction
+          });
+          
+          if (branchStock) {
+            branchStock.currentStock += quantity; // Sumar de vuelta
+            await branchStock.save({ transaction });
+            
+            console.log('✅ Stock de sucursal revertido:', {
+              branchId,
+              newStock: branchStock.currentStock
+            });
+          }
+        } else {
+          // Revertir stock global
+          const product = await Product.findByPk(supply.productId, { transaction });
+          if (product) {
+            product.currentStock += quantity; // Sumar de vuelta
+            await product.save({ transaction });
+            
+            console.log('✅ Stock global revertido:', {
+              productId: product.id,
+              newStock: product.currentStock
+            });
+          }
+        }
+
+        // Eliminar el movimiento de inventario
+        await InventoryMovement.destroy({
+          where: { id: supply.inventoryMovement.id },
+          transaction
+        });
+      }
+
+      // Eliminar el registro de consumo
+      await supply.destroy({ transaction });
+
+      await transaction.commit();
+
+      res.json({
+        success: true,
+        message: 'Consumo eliminado correctamente'
+      });
+
+    } catch (error) {
+      if (!transaction.finished) {
+        await transaction.rollback();
+      }
+      console.error('Error eliminando consumo:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al eliminar el consumo',
+        details: error.message
       });
     }
   }

@@ -62,6 +62,18 @@ export const fetchSupplyStats = createAsyncThunk(
   }
 );
 
+export const deleteSupply = createAsyncThunk(
+  'procedureSupply/deleteSupply',
+  async (supplyId, { rejectWithValue }) => {
+    try {
+      const response = await procedureSupplyApi.deleteSupply(supplyId);
+      return { supplyId, ...response.data };
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const initialState = {
   supplies: [],
   currentSupply: null,
@@ -183,6 +195,34 @@ const procedureSupplySlice = createSlice({
         state.stats = action.payload.data;
       })
       .addCase(fetchSupplyStats.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Delete Supply
+      .addCase(deleteSupply.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteSupply.fulfilled, (state, action) => {
+        state.loading = false;
+        const supplyId = action.payload.supplyId;
+        
+        // Remover de la lista general
+        state.supplies = state.supplies.filter(s => s.id !== supplyId);
+        state.total -= 1;
+
+        // Remover de appointmentSupplies si existe
+        if (state.appointmentSupplies?.supplies) {
+          const deletedSupply = state.appointmentSupplies.supplies.find(s => s.id === supplyId);
+          if (deletedSupply) {
+            state.appointmentSupplies.supplies = state.appointmentSupplies.supplies.filter(s => s.id !== supplyId);
+            state.appointmentSupplies.summary.totalItems -= 1;
+            state.appointmentSupplies.summary.totalCost -= deletedSupply.totalCost || 0;
+          }
+        }
+      })
+      .addCase(deleteSupply.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

@@ -24,5 +24,10 @@ export const procedureSupplyApi = {
   // Obtener estadísticas de consumo
   getSupplyStats: (params = {}) => {
     return apiClient.get('/api/procedure-supplies/stats', { params });
+  },
+
+  // Eliminar consumo
+  deleteSupply: (supplyId) => {
+    return apiClient.delete(`/api/procedure-supplies/${supplyId}`);
   }
 };

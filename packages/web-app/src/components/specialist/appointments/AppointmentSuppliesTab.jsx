@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import toast from 'react-hot-toast';
 import {
   BeakerIcon,
   PlusIcon,
   CalendarIcon,
-  UserIcon
+  UserIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
-import { fetchSuppliesByAppointment, clearAppointmentSupplies } from '@shared/store/slices/procedureSupplySlice';
+import { fetchSuppliesByAppointment, clearAppointmentSupplies, deleteSupply } from '@shared/store/slices/procedureSupplySlice';
 import RegisterSupplyModal from '../procedures/RegisterSupplyModal';
 
 /**
@@ -53,6 +55,20 @@ const AppointmentSuppliesTab = ({
     setShowRegisterModal(false);
     // Recargar la lista
     dispatch(fetchSuppliesByAppointment(appointmentId));
+  };
+
+  const handleDeleteSupply = async (supplyId, productName) => {
+    if (!window.confirm(`¿Estás seguro de eliminar el consumo de "${productName}"?\n\nEsta acción revertirá el stock y no se puede deshacer.`)) {
+      return;
+    }
+
+    try {
+      await dispatch(deleteSupply(supplyId)).unwrap();
+      toast.success('Consumo eliminado correctamente');
+    } catch (error) {
+      console.error('Error eliminando consumo:', error);
+      toast.error(error?.error || 'Error al eliminar el consumo');
+    }
   };
 
   if (loading) {
@@ -141,7 +157,7 @@ const AppointmentSuppliesTab = ({
               key={supply.id}
               className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow"
             >
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start gap-4">
                 {/* Información del producto */}
                 <div className="flex-1">
                   <h4 className="text-lg font-semibold text-gray-900">
@@ -203,6 +219,15 @@ const AppointmentSuppliesTab = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Botón de eliminar */}
+                <button
+                  onClick={() => handleDeleteSupply(supply.id, supply.Product?.name)}
+                  className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Eliminar consumo"
+                >
+                  <TrashIcon className="h-5 w-5" />
+                </button>
               </div>
             </div>
           ))}

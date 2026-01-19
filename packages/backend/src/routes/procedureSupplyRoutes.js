@@ -50,4 +50,12 @@ router.get(
   ProcedureSupplyController.getSupplyById
 );
 
+// Eliminar consumo
+router.delete(
+  '/:id',
+  authenticateToken,
+  roleCheck(['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST']),
+  ProcedureSupplyController.deleteSupply
+);
+
 module.exports = router;
