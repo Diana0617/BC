@@ -637,6 +637,7 @@ class ProcedureSupplyController {
       // Si tiene movimiento de inventario, revertir el stock
       if (supply.inventoryMovement && supply.product?.trackInventory) {
         const { quantity, branchId } = supply;
+        const quantityToRevert = Math.round(parseFloat(quantity)); // Convertir a entero
         
         if (branchId) {
           // Revertir stock por sucursal
@@ -646,11 +647,13 @@ class ProcedureSupplyController {
           });
           
           if (branchStock) {
-            branchStock.currentStock += quantity; // Sumar de vuelta
+            branchStock.currentStock = parseInt(branchStock.currentStock) + quantityToRevert; // Sumar de vuelta
             await branchStock.save({ transaction });
             
             console.log('✅ Stock de sucursal revertido:', {
               branchId,
+              previousStock: branchStock.currentStock - quantityToRevert,
+              quantityReverted: quantityToRevert,
               newStock: branchStock.currentStock
             });
           }
@@ -658,11 +661,13 @@ class ProcedureSupplyController {
           // Revertir stock global
           const product = await Product.findByPk(supply.productId, { transaction });
           if (product) {
-            product.currentStock += quantity; // Sumar de vuelta
+            product.currentStock = parseInt(product.currentStock) + quantityToRevert; // Sumar de vuelta
             await product.save({ transaction });
             
             console.log('✅ Stock global revertido:', {
               productId: product.id,
+              previousStock: product.currentStock - quantityToRevert,
+              quantityReverted: quantityToRevert,
               newStock: product.currentStock
             });
           }
