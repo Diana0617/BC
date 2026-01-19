@@ -195,9 +195,7 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
       window.URL.revokeObjectURL(url);
       
       toast.success('Recibo descargado');
-    } cSelectedBranch(null);
-    setBranches([]);
-    setatch (error) {
+    } catch (error) {
       console.error('Error descargando recibo:', error);
       toast.error('Error al descargar el recibo');
     }
@@ -910,7 +908,6 @@ selectedBranch?.i
               <textarea
                 rows="2"
                 value={formData.notes}
-        )}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 className="w-full px-3 py-2 border rounded-lg"
                 placeholder="Observaciones..."
