@@ -11,6 +11,7 @@ import {
 import supplierInvoiceApi from '../../../../api/supplierInvoiceApi';
 import cloudinaryApi from '../../../../api/cloudinaryApi';
 import { fetchProducts } from '@shared/store/slices/productsSlice';
+import { businessBranchesApi } from '@shared/api';
 
 const CreateInvoiceModal = ({ onClose, onSuccess }) => {
   const { user } = useSelector((state) => state.auth);
@@ -20,6 +21,11 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
   const [step, setStep] = useState(1); // 1: Proveedor, 2: Items, 3: Resumen
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Branch data (cargado automáticamente, no visible para el usuario)
+  const [branches, setBranches] = useState([]);
+  const [defaultBranchId, setDefaultBranchId] = useState(null);
+  const [loadingBranches, setLoadingBranches] = useState(false);
 
   // Supplier data
   const [useExistingSupplier, setUseExistingSupplier] = useState(false);
@@ -76,9 +82,37 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
   useEffect(() => {
     // Load products for selection
     dispatch(fetchProducts({ isActive: true, limit: 1000 }));
+    // Load branches automatically
+    loadBranches();
   }, [dispatch]);
 
-
+  // Cargar sucursales automáticamente al montar el componente
+  const loadBranches = async () => {
+    try {
+      setLoadingBranches(true);
+      const response = await businessBranchesApi.getBranches(user.businessId, {
+        isActive: true,
+        limit: 50
+      });
+      
+      const branchesData = response.data || [];
+      setBranches(branchesData);
+      
+      // Buscar la sucursal principal o usar la primera activa
+      const mainBranch = branchesData.find(b => b.isMainBranch) || branchesData[0];
+      if (mainBranch) {
+        setDefaultBranchId(mainBranch.id);
+        console.log('✅ Sucursal por defecto asignada:', mainBranch.name, mainBranch.id);
+      } else {
+        setError('No hay sucursales activas. Por favor crea una sucursal primero.');
+      }
+    } catch (err) {
+      console.error('Error loading branches:', err);
+      setError('Error al cargar sucursales. No se puede crear la factura.');
+    } finally {
+      setLoadingBranches(false);
+    }
+  };
 
   useEffect(() => {
     // Load suppliers when using existing supplier
@@ -340,6 +374,12 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
   };
 
   const validateStep1 = () => {
+    // Validar que hay una sucursal asignada
+    if (!defaultBranchId) {
+      setError('No se pudo asignar una sucursal. Por favor recarga la página.');
+      return false;
+    }
+    
     if (useExistingSupplier) {
       if (!selectedSupplierId) {
         setError('Debe seleccionar un proveedor');
@@ -452,6 +492,7 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
         total,
         currency: invoiceData.currency,
         notes: invoiceData.notes,
+        branchId: defaultBranchId, // Asignar sucursal principal automáticamente
         attachments: uploadedFile ? [{
           url: uploadedFile.url,
           publicId: uploadedFile.publicId,
