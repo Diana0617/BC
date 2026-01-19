@@ -319,7 +319,7 @@ class SaleController {
         saleId: sale.id, // Vinculamos con la venta
         appointmentId: null, // No hay cita asociada
         specialistId: userId, // Usuario que realiza la venta (vendedor)
-        userId: clientId || userId, // Cliente o usuario que registró
+        userId: userId, // Usuario que registró la venta (debe ser de tabla Users)
         
         // Información del cliente
         clientName: clientInfo ? 
