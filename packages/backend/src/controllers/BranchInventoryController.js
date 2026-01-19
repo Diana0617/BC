@@ -433,33 +433,49 @@ class BranchInventoryController {
         try {
           let { productId, quantity, unitCost, newProduct } = item;
 
-          // Si viene newProduct, significa que hay que crear el producto primero
+          // Si viene newProduct, verificar primero si ya existe un producto con ese SKU
           if (newProduct && productId.startsWith('temp_')) {
             try {
-              const createdProduct = await Product.create({
-                businessId,
-                name: newProduct.name,
-                sku: newProduct.sku,
-                description: newProduct.description || null,
-                barcode: newProduct.barcode || null,
-                category: newProduct.category || 'Sin categoría',
-                price: newProduct.price,
-                cost: newProduct.cost || unitCost,
-                unit: newProduct.unit || 'unidad',
-                trackInventory: true,
-                isActive: true,
-                currentStock: 0,
-                minStock: 0
-              }, { transaction });
-
-              productId = createdProduct.id;
-              results.created.push({
-                id: createdProduct.id,
-                name: createdProduct.name,
-                sku: createdProduct.sku
+              // Buscar si ya existe un producto con ese SKU
+              const existingProduct = await Product.findOne({
+                where: { 
+                  businessId,
+                  sku: newProduct.sku 
+                },
+                transaction
               });
-              
-              console.log(`✅ Producto creado: ${createdProduct.name} (${createdProduct.sku})`);
+
+              if (existingProduct) {
+                // Si ya existe, usar ese producto en lugar de crear uno nuevo
+                productId = existingProduct.id;
+                console.log(`♻️ Usando producto existente: ${existingProduct.name} (${existingProduct.sku})`);
+              } else {
+                // Si no existe, crear el producto
+                const createdProduct = await Product.create({
+                  businessId,
+                  name: newProduct.name,
+                  sku: newProduct.sku,
+                  description: newProduct.description || null,
+                  barcode: newProduct.barcode || null,
+                  category: newProduct.category || 'Sin categoría',
+                  price: newProduct.price,
+                  cost: newProduct.cost || unitCost,
+                  unit: newProduct.unit || 'unidad',
+                  trackInventory: true,
+                  isActive: true,
+                  currentStock: 0,
+                  minStock: 0
+                }, { transaction });
+
+                productId = createdProduct.id;
+                results.created.push({
+                  id: createdProduct.id,
+                  name: createdProduct.name,
+                  sku: createdProduct.sku
+                });
+                
+                console.log(`✅ Producto creado: ${createdProduct.name} (${createdProduct.sku})`);
+              }
             } catch (createError) {
               results.errors.push({
                 sku: newProduct.sku,
@@ -472,7 +488,8 @@ class BranchInventoryController {
 
           // Verificar producto (ahora debería existir)
           const product = await Product.findOne({
-            where: { id: productId, businessId }
+            where: { id: productId, businessId },
+            transaction
           });
 
           if (!product) {
@@ -485,7 +502,8 @@ class BranchInventoryController {
 
           // Verificar si ya existe stock
           const existingStock = await BranchStock.findOne({
-            where: { branchId, productId }
+            where: { branchId, productId },
+            transaction
           });
 
           if (existingStock) {
