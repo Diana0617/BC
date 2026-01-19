@@ -36,32 +36,45 @@ class CatalogPDFGenerator {
         doc.fontSize(10).text(`Generado: ${new Date().toLocaleDateString('es-ES')}`, { align: 'right' });
         doc.moveDown();
 
-        // Items del catálogo
+        // Layout de 2 columnas
+        const pageWidth = 595; // A4 width in points
+        const margin = 50;
+        const columnGap = 20;
+        const columnWidth = (pageWidth - (2 * margin) - columnGap) / 2;
+        const imageSize = 80;
+        const itemHeight = 140;
+        
+        let currentColumn = 0; // 0 = izquierda, 1 = derecha
+        let startY = doc.y;
+
+        // Items del catálogo en 2 columnas
         for (let index = 0; index < catalogItems.length; index++) {
           const item = catalogItems[index];
           
-          // Calcular altura necesaria para el item (mínimo 140px para la imagen)
-          const minItemHeight = 150;
-          
           // Verificar si necesitamos una nueva página
-          if (doc.y > 700 - minItemHeight) {
+          if (startY > 700 - itemHeight) {
             doc.addPage();
+            startY = 50;
+            currentColumn = 0;
           }
 
-          const startY = doc.y;
-          const leftMargin = 50;
-          const imageSize = 120;
-          const imageX = leftMargin;
-          const textX = imageX + imageSize + 15; // Texto al lado de la imagen
-          const contentWidth = 495 - imageSize - 15; // Ancho para el texto
+          // Calcular posición X según la columna
+          const columnX = currentColumn === 0 
+            ? margin 
+            : margin + columnWidth + columnGap;
 
           // Caja con borde sutil para cada producto
           doc.save();
           doc.strokeColor('#E5E7EB').lineWidth(1);
-          doc.rect(leftMargin, startY, 495, minItemHeight).stroke();
+          doc.rect(columnX, startY, columnWidth, itemHeight).stroke();
           doc.restore();
 
-          // Intentar cargar y mostrar imagen
+          // Posiciones para imagen y texto
+          const imageX = columnX + 10;
+          const textX = columnX + 10;
+          const contentWidth = columnWidth - 20;
+
+          // Intentar cargar y mostrar imagen (centrada horizontalmente)
           let imageLoaded = false;
           const imageUrl = item.product?.images?.[0]?.thumbnail?.url || 
                           item.product?.images?.[0]?.main?.url || 
@@ -70,12 +83,14 @@ class CatalogPDFGenerator {
                           item.images?.[0]?.main?.url || 
                           item.images?.[0]?.url;
 
+          const imageCenterX = columnX + (columnWidth - imageSize) / 2;
+
           if (imageUrl) {
             try {
               const imageBuffer = await this.downloadImage(imageUrl);
               if (imageBuffer) {
-                doc.image(imageBuffer, imageX + 10, startY + 15, {
-                  fit: [imageSize - 20, imageSize - 20],
+                doc.image(imageBuffer, imageCenterX, startY + 10, {
+                  fit: [imageSize, imageSize],
                   align: 'center',
                   valign: 'center'
                 });
@@ -90,86 +105,72 @@ class CatalogPDFGenerator {
           if (!imageLoaded) {
             doc.save();
             doc.fillColor('#F3F4F6');
-            doc.rect(imageX + 10, startY + 15, imageSize - 20, imageSize - 20).fill();
-            doc.fillColor('#9CA3AF').fontSize(40);
-            doc.text('📦', imageX + 10, startY + 45, {
-              width: imageSize - 20,
+            doc.rect(imageCenterX, startY + 10, imageSize, imageSize).fill();
+            doc.fillColor('#9CA3AF').fontSize(30);
+            doc.text('[IMG]', imageCenterX, startY + 35, {
+              width: imageSize,
               align: 'center'
             });
             doc.restore();
           }
 
-          // Contenido de texto
-          let textY = startY + 15;
+          // Contenido de texto debajo de la imagen
+          let textY = startY + imageSize + 18;
 
-          // Nombre del producto (negrita, más grande)
-          doc.font('Helvetica-Bold').fontSize(13).fillColor('#111827');
+          // Nombre del producto (negrita)
+          doc.font('Helvetica-Bold').fontSize(11).fillColor('#111827');
           const productName = item.product?.name || item.name;
           doc.text(productName, textX, textY, {
             width: contentWidth,
-            ellipsis: true,
-            lineBreak: false
+            align: 'center',
+            ellipsis: true
           });
-          textY += 18;
+          textY = doc.y + 3;
 
           // SKU
-          doc.font('Helvetica').fontSize(9).fillColor('#6B7280');
-          doc.text(`SKU: ${item.supplierSku || item.product?.sku || 'N/A'}`, textX, textY);
-          textY += 12;
+          doc.font('Helvetica').fontSize(8).fillColor('#6B7280');
+          doc.text(`SKU: ${item.supplierSku || item.product?.sku || 'N/A'}`, textX, textY, {
+            width: contentWidth,
+            align: 'center'
+          });
+          textY = doc.y + 2;
 
           // Categoría
           const category = item.product?.category || item.category;
           if (category && category !== 'Sin categoría') {
-            doc.fillColor('#4B5563');
-            doc.text(`🏷️  ${category}`, textX, textY);
-            textY += 12;
+            doc.fillColor('#4B5563').fontSize(8);
+            doc.text(category, textX, textY, {
+              width: contentWidth,
+              align: 'center'
+            });
+            textY = doc.y + 2;
           }
 
           // Marca
           if (item.brand) {
-            doc.fillColor('#4B5563');
-            doc.text(`Marca: ${item.brand}`, textX, textY);
-            textY += 12;
+            doc.fillColor('#4B5563').fontSize(8);
+            doc.text(`Marca: ${item.brand}`, textX, textY, {
+              width: contentWidth,
+              align: 'center'
+            });
+            textY = doc.y + 2;
           }
-
-          textY += 5;
 
           // Precio destacado
           const price = parseFloat(item.product?.price || item.price || 0);
-          doc.font('Helvetica-Bold').fontSize(16).fillColor('#059669');
-          doc.text(`$${price.toLocaleString('es-CO')}`, textX, textY);
-          textY += 22;
+          doc.font('Helvetica-Bold').fontSize(14).fillColor('#059669');
+          doc.text(`$${price.toLocaleString('es-CO')}`, textX, textY + 3, {
+            width: contentWidth,
+            align: 'center'
+          });
 
-          // Disponibilidad con badge
-          const availText = item.available ? '✓ Disponible' : '✗ No disponible';
-          const badgeColor = item.available ? '#10B981' : '#EF4444';
-          const badgeX = textX;
-          const badgeY = textY;
-          
-          doc.save();
-          doc.fillColor(badgeColor).opacity(0.1);
-          doc.roundedRect(badgeX, badgeY, 80, 16, 3).fill();
-          doc.restore();
-          
-          doc.font('Helvetica-Bold').fontSize(8).fillColor(badgeColor);
-          doc.text(availText, badgeX + 5, badgeY + 4);
-          doc.fillColor('black');
-
-          // Descripción si hay espacio
-          if (item.description && textY < startY + minItemHeight - 30) {
-            textY += 20;
-            doc.font('Helvetica').fontSize(8).fillColor('#4B5563');
-            const descText = item.description.length > 150 
-              ? item.description.substring(0, 147) + '...' 
-              : item.description;
-            doc.text(descText, textX, textY, {
-              width: contentWidth,
-              lineGap: 2
-            });
+          // Cambiar a la siguiente columna o fila
+          if (currentColumn === 0) {
+            currentColumn = 1;
+          } else {
+            currentColumn = 0;
+            startY += itemHeight + 10;
           }
-
-          // Mover a la siguiente posición
-          doc.y = startY + minItemHeight + 10;
         }
 
         // Footer
