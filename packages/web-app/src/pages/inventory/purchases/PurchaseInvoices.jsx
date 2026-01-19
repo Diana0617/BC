@@ -42,7 +42,6 @@ const PurchaseInvoices = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDistributeModal, setShowDistributeModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [showConfirmApprove, setShowConfirmApprove] = useState(false);
 
   useEffect(() => {
     if (businessId) {
@@ -70,39 +69,9 @@ const PurchaseInvoices = () => {
   };
 
   const handleApproveClick = (invoice) => {
+    // Al aprobar, abrir modal de distribución
     setSelectedInvoice(invoice);
-    setShowConfirmApprove(true);
-  };
-
-  const handleApprove = async () => {
-    if (!selectedInvoice) return;
-
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/business/${businessId}/supplier-invoices/${selectedInvoice.id}/approve`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Error al aprobar factura');
-      }
-
-      toast.success('Factura aprobada exitosamente');
-      setShowConfirmApprove(false);
-      setSelectedInvoice(null);
-      fetchInvoices();
-    } catch (error) {
-      console.error('Error approving invoice:', error);
-      toast.error(error.message);
-    }
+    setShowDistributeModal(true);
   };
 
   const getStatusColor = (status) => {
@@ -299,27 +268,6 @@ const PurchaseInvoices = () => {
           onSuccess={fetchInvoices}
         />
       )}
-
-      {/* Confirm Approve Dialog */}
-      <Dialog open={showConfirmApprove} onClose={() => setShowConfirmApprove(false)}>
-        <DialogTitle>Confirmar Aprobación</DialogTitle>
-        <DialogContent>
-          <Typography>
-            ¿Estás seguro de aprobar la factura <strong>{selectedInvoice?.invoiceNumber}</strong>?
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mt={2}>
-            El stock ya ha sido distribuido. Esta acción finalizará el proceso y no se podrá modificar.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowConfirmApprove(false)}>
-            Cancelar
-          </Button>
-          <Button variant="contained" color="success" onClick={handleApprove}>
-            Aprobar
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };
