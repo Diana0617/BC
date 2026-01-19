@@ -67,6 +67,9 @@ router.put('/:id', (req, res) => {
 // Cancelar cita
 router.patch('/:id/cancel', AppointmentController.updateAppointmentStatus);
 
+// Actualizar estado de cita (genérico para PENDING -> CONFIRMED, etc.)
+router.patch('/:id/status', AppointmentController.updateAppointmentStatus);
+
 // Iniciar cita (cambiar a IN_PROGRESS)
 router.post('/:id/start', async (req, res) => {
   try {
