@@ -659,7 +659,7 @@ const StockInitial = () => {
                 value={selectedBranch !== null ? selectedBranch : ""}
                 onChange={(e) =>
                   setSelectedBranch(
-                    e.target.value !== "" ? parseInt(e.target.value) : null
+                    e.target.value !== "" ? e.target.value : null
                   )
                 }
                 className="block w-full max-w-md rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
