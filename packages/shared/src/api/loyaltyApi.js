@@ -109,7 +109,7 @@ export const downloadMyCard = () => {
  * @returns {Promise} Balance de puntos del cliente
  */
 export const getClientBalance = (clientId) => {
-  return apiClient.get(`/loyalty/business/client/${clientId}/balance`);
+  return apiClient.get(`/api/loyalty/business/client/${clientId}/balance`);
 };
 
 /**

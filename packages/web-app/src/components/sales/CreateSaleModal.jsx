@@ -139,16 +139,28 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
     const loadClientData = async () => {
       if (selectedClient && businessId) {
         try {
-          // Cargar balance de puntos
-          const balanceResponse = await getClientBalance(selectedClient.id);
-          setClientBalance(balanceResponse.data);
+          // Cargar balance de puntos (opcional - puede no estar disponible)
+          try {
+            const balanceResponse = await getClientBalance(selectedClient.id);
+            setClientBalance(balanceResponse.data);
+          } catch (balanceError) {
+            console.log('Balance de puntos no disponible para este cliente');
+            setClientBalance(null);
+          }
 
-          // Cargar vouchers activos
-          const vouchersResponse = await getClientVouchers(businessId, selectedClient.id);
-          const activeVouchers = (vouchersResponse.data?.vouchers || []).filter(v => v.status === 'ACTIVE');
-          setClientVouchers(activeVouchers);
+          // Cargar vouchers activos (opcional - puede no estar disponible)
+          try {
+            const vouchersResponse = await getClientVouchers(businessId, selectedClient.id);
+            const activeVouchers = (vouchersResponse.data?.vouchers || []).filter(v => v.status === 'ACTIVE');
+            setClientVouchers(activeVouchers);
+          } catch (vouchersError) {
+            console.log('Vouchers no disponibles para este cliente');
+            setClientVouchers([]);
+          }
         } catch (error) {
           console.error('Error cargando datos del cliente:', error);
+          setClientBalance(null);
+          setClientVouchers([]);
         }
       } else {
         setClientBalance(null);
