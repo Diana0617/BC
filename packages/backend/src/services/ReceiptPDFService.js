@@ -165,11 +165,12 @@ class ReceiptPDFService {
         }
 
         // ============= DESGLOSE FINANCIERO =============
+        // Línea separadora antes del desglose
         doc
-          .fontSize(12)
-          .font('Helvetica-Bold')
-          .text('DESGLOSE DE PAGO', { underline: true })
-          .moveDown(0.5);
+          .moveTo(50, doc.y)
+          .lineTo(550, doc.y)
+          .stroke()
+          .moveDown(0.8);
 
         const subtotal = parseFloat(receipt.subtotal || 0);
         const discount = parseFloat(receipt.discount || 0);
@@ -177,54 +178,60 @@ class ReceiptPDFService {
         const tip = parseFloat(receipt.tip || 0);
         const total = parseFloat(receipt.totalAmount || 0);
 
+        const leftCol = 100;
+        const rightCol = 480;
+
         doc.font('Helvetica').fontSize(10);
 
         // Subtotal
         doc
-          .text(`Subtotal:`, 100, doc.y, { continued: true, width: 300 })
-          .text(`$${this._formatMoney(subtotal)}`, { align: 'right' });
+          .text('Subtotal:', leftCol, doc.y)
+          .text(`$${this._formatMoney(subtotal)}`, rightCol, doc.y, { align: 'right' })
+          .moveDown(0.3);
 
         // Descuento (si aplica)
         if (discount > 0) {
           doc
             .fillColor('green')
-            .text(`Descuento:`, 100, doc.y, { continued: true, width: 300 })
-            .text(`-$${this._formatMoney(discount)}`, { align: 'right' })
-            .fillColor('black');
+            .text('Descuento:', leftCol, doc.y)
+            .text(`-$${this._formatMoney(discount)}`, rightCol, doc.y, { align: 'right' })
+            .fillColor('black')
+            .moveDown(0.3);
         }
 
         // Impuestos (si aplica)
         if (tax > 0) {
           doc
-            .text(`Impuestos:`, 100, doc.y, { continued: true, width: 300 })
-            .text(`$${this._formatMoney(tax)}`, { align: 'right' });
+            .text('Impuestos:', leftCol, doc.y)
+            .text(`$${this._formatMoney(tax)}`, rightCol, doc.y, { align: 'right' })
+            .moveDown(0.3);
         }
 
         // Propina (si aplica)
         if (tip > 0) {
           doc
             .fillColor('blue')
-            .text(`Propina:`, 100, doc.y, { continued: true, width: 300 })
-            .text(`$${this._formatMoney(tip)}`, { align: 'right' })
-            .fillColor('black');
+            .text('Propina:', leftCol, doc.y)
+            .text(`$${this._formatMoney(tip)}`, rightCol, doc.y, { align: 'right' })
+            .fillColor('black')
+            .moveDown(0.3);
         }
-
-        doc.moveDown(0.3);
 
         // Línea antes del total
         doc
+          .moveDown(0.2)
           .moveTo(100, doc.y)
           .lineTo(500, doc.y)
           .stroke()
-          .moveDown(0.3);
+          .moveDown(0.5);
 
         // Total (destacado)
         doc
           .fontSize(14)
           .font('Helvetica-Bold')
-          .text(`TOTAL:`, 100, doc.y, { continued: true, width: 300 })
-          .text(`$${this._formatMoney(total)}`, { align: 'right' })
-          .moveDown(1.5);
+          .text('TOTAL:', leftCol, doc.y)
+          .text(`$${this._formatMoney(total)}`, rightCol, doc.y, { align: 'right' })
+          .moveDown(1);
 
         // ============= INFORMACIÓN DEL PAGO =============
         doc
@@ -289,7 +296,7 @@ class ReceiptPDFService {
             `Este recibo fue generado electrónicamente el ${this._formatDateTime(new Date())}`,
             { align: 'center' }
           )
-          .text('Beauty Control - Sistema de Gestión', { align: 'center' });
+          .text(' Control de Negocios - Sistema de Gestión', { align: 'center' });
 
         // Validación de autenticidad
         doc

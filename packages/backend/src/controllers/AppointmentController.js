@@ -560,79 +560,63 @@ class AppointmentController {
       // Validar que el especialista pertenezca al negocio
       console.log('🔍 Buscando especialista:', { specialistId, businessId });
       
-      // Verificar si es un usuario BUSINESS_SPECIALIST (dueño del negocio)
       const User = require('../models/User');
-      const businessSpecialistUser = await User.findOne({
-        where: {
-          id: specialistId,
-          businessId,
-          status: 'ACTIVE',
-          role: 'BUSINESS_SPECIALIST'
-        }
-      });
-
-      console.log('🔍 Buscando BUSINESS_SPECIALIST:', {
-        specialistId,
-        businessId,
-        found: !!businessSpecialistUser
-      });
-
-      // Verificar si es el propio BUSINESS (dueño del negocio)
-      const businessOwner = await User.findOne({
-        where: {
-          id: specialistId,
-          businessId,
-          status: 'ACTIVE',
-          role: 'BUSINESS'
-        }
-      });
-
-      console.log('🔍 Buscando BUSINESS owner:', {
-        specialistId,
-        businessId,
-        found: !!businessOwner
-      });
-
-      let specialist;
-      let specialistProfile = null; // Declarar en el scope externo
+      const SpecialistProfile = require('../models/SpecialistProfile');
       
-      if (businessSpecialistUser) {
-        // Es un BUSINESS_SPECIALIST, no necesita SpecialistProfile
-        specialist = businessSpecialistUser;
-        console.log('✅ BUSINESS_SPECIALIST válido:', specialist.id);
-      } else if (businessOwner) {
-        // Es el BUSINESS owner, puede atender sus propios turnos
-        specialist = businessOwner;
-        console.log('✅ BUSINESS owner válido:', specialist.id);
+      let specialist;
+      let specialistProfile = null;
+      
+      // Primero intentar buscar como SpecialistProfile (lo más común)
+      specialistProfile = await SpecialistProfile.findOne({
+        where: {
+          id: specialistId,
+          businessId,
+          isActive: true
+        },
+        include: [{
+          model: User,
+          as: 'user',
+          where: {
+            status: 'ACTIVE'
+          },
+          required: true
+        }]
+      });
+
+      if (specialistProfile && specialistProfile.user) {
+        specialist = specialistProfile.user;
+        console.log('✅ Especialista válido (SpecialistProfile):', {
+          specialistProfileId: specialistProfile.id,
+          userId: specialist.id,
+          role: specialist.role,
+          name: `${specialist.firstName} ${specialist.lastName}`
+        });
       } else {
-        // Buscar el SpecialistProfile para especialistas regulares
-        const SpecialistProfile = require('../models/SpecialistProfile');
-        specialistProfile = await SpecialistProfile.findOne({
+        // Si no es un SpecialistProfile, intentar buscar directamente como User
+        // (para casos donde se envíe el userId directamente)
+        const userDirectly = await User.findOne({
           where: {
             id: specialistId,
             businessId,
-            isActive: true
-          },
-          include: [{
-            model: User,
-            as: 'user',
-            where: {
-              status: 'ACTIVE',
-              role: { [Op.in]: ['SPECIALIST', 'RECEPTIONIST_SPECIALIST'] }
-            }
-          }]
+            status: 'ACTIVE',
+            role: { [Op.in]: ['BUSINESS_SPECIALIST', 'BUSINESS', 'SPECIALIST', 'RECEPTIONIST_SPECIALIST'] }
+          }
         });
 
-        if (!specialistProfile || !specialistProfile.user) {
+        if (userDirectly) {
+          specialist = userDirectly;
+          console.log('✅ Especialista válido (User directo):', {
+            userId: specialist.id,
+            role: specialist.role,
+            name: `${specialist.firstName} ${specialist.lastName}`
+          });
+        } else {
           console.log('❌ Especialista no encontrado o no válido');
           return res.status(400).json({
             success: false,
             error: 'Especialista no válido para este negocio'
           });
         }
-        
-        specialist = specialistProfile.user;
-        console.log('✅ Especialista válido:', specialist.id);
       }
 
       // Los servicios ya fueron validados al principio
