@@ -20,6 +20,7 @@ class ProductController {
         search, 
         trackInventory,
         lowStock,
+        branchId, // Filtro de sucursal
         page = 1, 
         limit = 50 
       } = req.query;
@@ -60,13 +61,20 @@ class ProductController {
       try {
         console.log('📊 [ProductController] Aggregating branch stock for businessId:', businessId);
         const BranchStock = require('../models/BranchStock');
+        
+        // Si se especifica branchId, filtrar solo esa sucursal
+        const branchStockWhere = { businessId: businessId };
+        if (branchId) {
+          branchStockWhere.branchId = branchId;
+        }
+
         // Usar raw:true para obtener resultados planos y nombres de columnas explícitos
         const branchSums = await BranchStock.findAll({
           attributes: [
             [sequelize.col('productId'), 'productId'],
             [sequelize.fn('SUM', sequelize.col('currentStock')), 'totalStock']
           ],
-          where: { businessId: businessId },
+          where: branchStockWhere,
           group: [sequelize.col('productId')],
           raw: true
         });
@@ -90,6 +98,9 @@ class ProductController {
           const aggregated = stockMap[pid];
           if (typeof aggregated !== 'undefined') {
             p.currentStock = aggregated;
+          } else {
+            // Si no hay stock en ninguna sucursal (o en la sucursal filtrada), poner 0
+            p.currentStock = 0;
           }
           return p;
         });

@@ -521,9 +521,6 @@ class SupplierInvoiceController {
           const product = await Product.findByPk(item.productId, { transaction });
           if (!product) continue;
 
-          const previousStock = product.currentStock || 0;
-          const newStock = previousStock + item.quantity;
-
           // Crear movimiento de inventario
           await InventoryMovement.create({
             businessId,
@@ -534,8 +531,8 @@ class SupplierInvoiceController {
             quantity: item.quantity,
             unitCost: invoiceItem.unitCost,
             totalCost: invoiceItem.unitCost * item.quantity,
-            previousStock,
-            newStock,
+            previousStock: 0, // Se calculará del BranchStock
+            newStock: item.quantity, // Se calculará del BranchStock
             reason: `Entrada por factura ${invoice.invoiceNumber}`,
             notes: `Factura de proveedor: ${invoice.supplier.name} - Sucursal: ${branch.name}`,
             referenceId: invoice.id,
@@ -547,13 +544,15 @@ class SupplierInvoiceController {
             }
           }, { transaction });
 
-          // Actualizar stock global del producto
+          // Actualizar solo el costo en el producto (NO el stock global)
           await product.update({
-            currentStock: newStock,
             cost: invoiceItem.unitCost
           }, { transaction });
 
-          console.log(`✅ Stock global actualizado: ${product.name} | ${previousStock} → ${newStock} (+${item.quantity})`);
+          // Actualizar solo el costo en el producto (NO el stock global)
+          await product.update({
+            cost: invoiceItem.unitCost
+          }, { transaction });
 
           // Actualizar o crear stock de sucursal
           const [branchStock, created] = await BranchStock.findOrCreate({
