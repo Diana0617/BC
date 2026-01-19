@@ -67,21 +67,29 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
   // Cargar productos y nombre de sucursal al abrir
   useEffect(() => {
     if (isOpen && businessId) {
+      console.log('🏪 CreateSaleModal - Loading products for businessId:', businessId);
+      console.log('🏪 CreateSaleModal - branchId:', branchId);
+      
       dispatch(fetchProducts({ 
         businessId,
         productType: 'FOR_SALE,BOTH',
-        isActive: true
+        isActive: true,
+        branchId: branchId // Agregar branchId para filtrar stock
       }));
+      
       // Cargar nombre de la sucursal
       if (branchId) {
         branchApi.getBranches(businessId).then(response => {
           const branch = response.data.find(b => b.id === branchId);
           if (branch) {
             setBranchName(branch.name);
+            console.log('🏢 Branch loaded:', branch.name, 'ID:', branch.id);
           }
         }).catch(err => {
           console.error('Error loading branch:', err);
         });
+      } else {
+        console.warn('⚠️ No branchId provided to CreateSaleModal');
       }
     }
   }, [isOpen, businessId, branchId, dispatch]);
@@ -342,6 +350,24 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
     p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Debug: Ver productos y su stock
+  useEffect(() => {
+    if (products.length > 0 && isOpen) {
+      console.log('📦 Total products loaded:', products.length);
+      console.log('📦 Sample product with branchStocks:', products[0]);
+      console.log('📦 Products with branchStocks:', products.map(p => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        trackInventory: p.trackInventory,
+        branchStocks: p.branchStocks?.map(bs => ({
+          branchId: bs.branchId,
+          currentStock: bs.currentStock
+        }))
+      })));
+    }
+  }, [products, isOpen]);
+
   // Calcular puntos máximos a usar
   const maxPointsToUse = clientBalance 
     ? Math.min(clientBalance.availablePoints, Math.floor(calculateTotal())) 
@@ -450,8 +476,15 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
                       const branchStock = product.branchStocks?.find(bs => bs.branchId === branchId);
                       const availableStock = branchStock?.currentStock || 0;
                       const hasStock = availableStock > 0 || !product.trackInventory;
-                      
-                      return (
+                                            console.log(`📊 Product: ${product.name}`, {
+                        branchId: branchId,
+                        allBranchStocks: product.branchStocks,
+                        foundBranchStock: branchStock,
+                        availableStock: availableStock,
+                        hasStock: hasStock,
+                        trackInventory: product.trackInventory
+                      });
+                                            return (
                         <div
                           key={product.id}
                           onClick={() => {
