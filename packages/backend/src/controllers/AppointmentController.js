@@ -675,21 +675,21 @@ class AppointmentController {
       const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][appointmentDate.getDay()];
       const appointmentTime = appointmentDate.toTimeString().split(' ')[0]; // "HH:MM:SS"
       
-      // Para BUSINESS_SPECIALIST, usar directamente el userId ya que no tienen specialistProfile
-      const specialistIdForSchedule = businessSpecialistUser ? businessSpecialistUser.id : (specialistProfile ? specialistProfile.id : null);
+      // Usar el specialistProfile.id si existe, de lo contrario null
+      const specialistIdForSchedule = specialistProfile ? specialistProfile.id : null;
       
       console.log('🔍 Verificando horario del especialista:', {
         specialistId: specialistIdForSchedule,
-        isBUSINESS_SPECIALIST: !!businessSpecialistUser,
+        hasSpecialistProfile: !!specialistProfile,
         branchId,
         dayOfWeek,
         appointmentTime,
         appointmentDate: appointmentDate.toISOString()
       });
 
-      // 1. Intentar obtener horarios del especialista (solo si NO es BUSINESS_SPECIALIST)
+      // 1. Intentar obtener horarios del especialista (solo si tiene SpecialistProfile)
       let schedules = [];
-      if (!businessSpecialistUser && specialistIdForSchedule) {
+      if (specialistIdForSchedule) {
         schedules = await SpecialistBranchSchedule.findAll({
           where: {
             specialistId: specialistIdForSchedule,
@@ -787,7 +787,7 @@ class AppointmentController {
           errorReason = 'NO_SCHEDULES_IN_BRANCH';
         }
         
-        if (!businessSpecialistUser && specialistIdForSchedule) {
+        if (specialistIdForSchedule) {
           errorMessage += '. El especialista no tiene horarios configurados y la sucursal no tiene horarios definidos para este día';
           errorReason = 'NO_SPECIALIST_SCHEDULES';
         }
