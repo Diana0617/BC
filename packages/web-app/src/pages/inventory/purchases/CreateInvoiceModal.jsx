@@ -22,7 +22,7 @@ import {
 } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
 import { useBusinessContext } from '../../../context/BusinessContext';
-import { getProducts } from '@shared/api/businessInventoryApi';
+import businessInventoryApi from '@shared/api/businessInventoryApi';
 import suppliersApi from '@shared/api/suppliersApi';
 import supplierInvoicesApi from '@shared/api/supplierInvoicesApi';
 
@@ -58,7 +58,7 @@ const CreateInvoiceModal = ({ open, onClose, onSuccess }) => {
     try {
       // Cargar productos y proveedores
       const [productsRes, suppliersRes] = await Promise.all([
-        getProducts(businessId, { limit: 1000 }),
+        businessInventoryApi.getProducts(businessId, { limit: 1000 }),
         suppliersApi.getSuppliers(businessId)
       ]);
 
@@ -106,8 +106,8 @@ const CreateInvoiceModal = ({ open, onClose, onSuccess }) => {
   const calculateSubtotal = () => {
     return items.reduce((sum, item) => {
       const quantity = parseFloat(item.quantity) || 0;
-      const cost = parseFloat(item.unitCost) || 0;
-      return sum + (quantity * cost);
+      const unitCost = parseFloat(item.unitCost) || 0;
+      return sum + (quantity * unitCost);
     }, 0);
   };
 
@@ -117,7 +117,7 @@ const CreateInvoiceModal = ({ open, onClose, onSuccess }) => {
 
     // Validaciones
     if (!formData.supplierId || !formData.invoiceNumber || !formData.issueDate) {
-      setError('Todos los campos obligatorios deben estar completos');
+      setError('Proveedor, número de factura y fecha son requeridos');
       return;
     }
 
@@ -133,37 +133,33 @@ const CreateInvoiceModal = ({ open, onClose, onSuccess }) => {
     setLoading(true);
 
     try {
-      const subtotal = calculateSubtotal();
-      
-      const invoiceData = {
+      const payload = {
         supplierId: formData.supplierId,
         invoiceNumber: formData.invoiceNumber,
         issueDate: formData.issueDate,
-        dueDate: formData.dueDate || null,
+        dueDate: formData.dueDate,
+        notes: formData.notes,
         items: validItems.map(item => ({
           productId: item.productId,
           quantity: parseFloat(item.quantity),
           unitCost: parseFloat(item.unitCost)
         })),
-        subtotal,
-        tax: 0,
-        total: subtotal,
-        notes: formData.notes
+        total: calculateSubtotal()
       };
 
-      const response = await supplierInvoicesApi.createInvoice(businessId, invoiceData);
+      const response = await supplierInvoicesApi.createInvoice(businessId, payload);
 
-      toast.success('Factura creada. Ahora distribuye el stock entre sucursales.');
-      
-      if (onSuccess) {
-        onSuccess(response.data);
+      if (response.success) {
+        toast.success('Factura creada exitosamente');
+        handleClose();
+        if (onSuccess) {
+          onSuccess();
+        }
       }
-      
-      handleClose();
     } catch (err) {
       console.error('Error creating invoice:', err);
-      setError(err.message);
-      toast.error(err.message);
+      setError(err.response?.data?.message || 'Error al crear la factura');
+      toast.error(err.response?.data?.message || 'Error al crear la factura');
     } finally {
       setLoading(false);
     }
@@ -301,33 +297,56 @@ const CreateInvoiceModal = ({ open, onClose, onSuccess }) => {
                   const itemTotal = (parseFloat(item.quantity) || 0) * (parseFloat(item.unitCost) || 0);
 
                   return (
-                    <Paper key={index} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
-                      <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} sm={5}>
+                    <Box
+                      key={index}
+                      sx={{
+                        border: 1,
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        p: 2,
+                        mb: 2,
+                        backgroundColor: 'background.paper'
+                      }}
+                    >
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="subtitle2">
+                          Producto {index + 1}
+                        </Typography>
+                        {items.length > 1 && (
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleRemoveItem(index)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Box>
+
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
                           <TextField
                             fullWidth
                             select
-                            size="small"
-                            label="Producto"
+                            label="Producto *"
                             value={item.productId}
                             onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
                             required
                           >
                             <MenuItem value="">Seleccionar producto</MenuItem>
-                            {products.map((prod) => (
-                              <MenuItem key={prod.id} value={prod.id}>
-                                {prod.name} ({prod.sku})
+                            {products.map((p) => (
+                              <MenuItem key={p.id} value={p.id}>
+                                {p.name} - {p.sku}
                               </MenuItem>
                             ))}
                           </TextField>
                         </Grid>
 
-                        <Grid item xs={6} sm={2}>
+                        <Grid item xs={4}>
                           <TextField
                             fullWidth
-                            size="small"
                             type="number"
-                            label="Cantidad"
+                            label="Cantidad *"
                             value={item.quantity}
                             onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
                             required
@@ -335,50 +354,39 @@ const CreateInvoiceModal = ({ open, onClose, onSuccess }) => {
                           />
                         </Grid>
 
-                        <Grid item xs={6} sm={2}>
+                        <Grid item xs={4}>
                           <TextField
                             fullWidth
-                            size="small"
                             type="number"
-                            label="Costo Unit."
+                            label="Costo Unitario *"
                             value={item.unitCost}
                             onChange={(e) => handleItemChange(index, 'unitCost', e.target.value)}
                             required
-                            inputProps={{ min: 0, step: 0.01 }}
+                            inputProps={{ min: 0.01, step: 0.01 }}
                           />
                         </Grid>
 
-                        <Grid item xs={10} sm={2}>
-                          <Box textAlign="right">
-                            <Typography variant="caption" color="text.secondary">
-                              Subtotal
-                            </Typography>
-                            <Typography variant="body2" fontWeight="bold">
-                              ${itemTotal.toLocaleString()}
-                            </Typography>
-                          </Box>
-                        </Grid>
-
-                        <Grid item xs={2} sm={1}>
-                          <IconButton
-                            color="error"
-                            size="small"
-                            onClick={() => handleRemoveItem(index)}
-                            disabled={items.length === 1}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
+                        <Grid item xs={4}>
+                          <TextField
+                            fullWidth
+                            label="Total"
+                            value={`$${itemTotal.toLocaleString()}`}
+                            disabled
+                            InputProps={{
+                              readOnly: true
+                            }}
+                          />
                         </Grid>
 
                         {product && (
                           <Grid item xs={12}>
                             <Typography variant="caption" color="text.secondary">
-                              Stock actual: {product.currentStock} {product.unit}
+                              Stock actual: {product.currentStock} {product.unit || 'unidades'}
                             </Typography>
                           </Grid>
                         )}
                       </Grid>
-                    </Paper>
+                    </Box>
                   );
                 })}
               </Box>
