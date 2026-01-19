@@ -422,15 +422,21 @@ const StockInitial = () => {
         products
       );
 
+      console.log('✅ Respuesta del backend:', result);
+
       if (result.success) {
-        const { summary, errors: failedItems } = result.data;
+        const { summary, errors: failedItems, results } = result.data || {};
         const branchName =
           branches.find((b) => b.id === selectedBranch)?.name || "Sucursal";
         
-        let message = `Stock inicial cargado en ${branchName}: ${summary.successful} exitosos, ${summary.failed} fallidos de ${summary.total} productos`;
+        let message = `Stock inicial cargado en ${branchName}`;
+        
+        if (summary) {
+          message += `: ${summary.successful} exitosos, ${summary.failed} fallidos de ${summary.total} productos`;
+        }
         
         // Si hay errores, mostrar detalles
-        if (failedItems && failedItems.length > 0) {
+        if (failedItems && Array.isArray(failedItems) && failedItems.length > 0) {
           const errorDetails = failedItems.map(err => {
             const item = stockItems.find(s => s.productId === err.productId);
             return `• ${item?.productName || 'Producto'}: ${err.error}`;
@@ -441,9 +447,16 @@ const StockInitial = () => {
         setSuccess(message);
         
         // Limpiar solo los items que se cargaron exitosamente
-        if (summary.successful > 0) {
-          const successfulIds = result.data.results.map(r => r.productId);
-          setStockItems(prev => prev.filter(item => !successfulIds.includes(item.productId)));
+        if (results && Array.isArray(results) && results.length > 0) {
+          const successfulIds = results
+            .filter(r => r.success)
+            .map(r => r.productId);
+          if (successfulIds.length > 0) {
+            setStockItems(prev => prev.filter(item => !successfulIds.includes(item.productId)));
+          }
+        } else if (summary && summary.successful > 0) {
+          // Si no hay results array pero hubo éxitos, limpiar todos
+          setStockItems([]);
         }
         
         setConfirmDialog(false);
