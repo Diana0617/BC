@@ -227,7 +227,7 @@ class ProcedureSupplyController {
 
       await transaction.commit();
 
-      // Cargar registro completo con relaciones
+      // Cargar registro completo con relaciones (fuera de la transacción)
       const completeSupply = await ProcedureSupply.findByPk(supply.id, {
         include: [
           {
@@ -258,16 +258,19 @@ class ProcedureSupplyController {
         ]
       });
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         message: 'Consumo registrado exitosamente',
         data: completeSupply
       });
 
     } catch (error) {
-      await transaction.rollback();
+      // Solo hacer rollback si la transacción no ha sido commiteada
+      if (!transaction.finished) {
+        await transaction.rollback();
+      }
       console.error('Error registrando consumo:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Error al registrar el consumo',
         details: error.message
