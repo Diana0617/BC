@@ -414,9 +414,9 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
       toast.error(`Puntos insuficientes. Disponibles: ${maxPointsToUse}`);
       return;
     }
-selectedBranch?.i
+
     const saleData = {
-      branchId: branchId || null,
+      branchId: selectedBranch?.id || null,
       clientId: selectedClient?.id || null,
       shiftId: shiftId || null,
       items: items.map(item => ({
@@ -554,11 +554,12 @@ selectedBranch?.i
                     <div className="p-4 text-gray-500 text-center">No se encontraron productos</div>
                   ) : (
                     filteredProducts.map(product => {
-                      const branchStock = product.branchStocks?.find(bs => bs.branchId === branchId);
+                      const branchStock = product.branchStocks?.find(bs => bs.branchId === selectedBranch?.id);
                       const availableStock = branchStock?.currentStock || 0;
                       const hasStock = availableStock > 0 || !product.trackInventory;
-                                            console.log(`📊 Product: ${product.name}`, {
-                        branchId: branchId,
+                      
+                      console.log(`📊 Product: ${product.name}`, {
+                        branchId: selectedBranch?.id,
                         allBranchStocks: product.branchStocks,
                         foundBranchStock: branchStock,
                         availableStock: availableStock,
