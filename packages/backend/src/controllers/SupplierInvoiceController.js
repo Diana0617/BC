@@ -8,6 +8,7 @@ const {
   SupplierInvoicePayment,
   InventoryMovement,
   FinancialMovement,
+  Branch,
   sequelize
 } = require('../models');
 const { uploadDocument } = require('../config/cloudinary');
