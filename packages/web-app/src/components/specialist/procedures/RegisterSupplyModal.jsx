@@ -251,9 +251,9 @@ const RegisterSupplyModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-purple-50 to-blue-50">
+        <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-purple-50 to-blue-50 flex-shrink-0">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
               <BeakerIcon className="h-6 w-6 text-purple-600" />
@@ -278,7 +278,7 @@ const RegisterSupplyModal = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex h-[calc(90vh-120px)]">
+        <form onSubmit={handleSubmit} className="flex flex-1 overflow-hidden">
           {/* Columna Izquierda - Productos */}
           <div className="w-2/3 p-6 border-r overflow-y-auto">
             {/* Buscar Producto */}
@@ -429,64 +429,66 @@ const RegisterSupplyModal = ({
           </div>
 
           {/* Columna Derecha - Información General */}
-          <div className="w-1/3 p-6 bg-gray-50 overflow-y-auto">
-            {/* Motivo/Procedimiento */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Procedimiento/Motivo *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.reason}
-                onChange={(e) => setFormData({...formData, reason: e.target.value})}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                placeholder="Ej: Alisado con keratina"
-              />
+          <div className="w-1/3 flex flex-col bg-gray-50">
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Motivo/Procedimiento */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Procedimiento/Motivo *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.reason}
+                  onChange={(e) => setFormData({...formData, reason: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                  placeholder="Ej: Alisado con keratina"
+                />
+              </div>
+
+              {/* Notas */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notas Adicionales
+                </label>
+                <textarea
+                  rows="4"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="Observaciones, particularidades del procedimiento..."
+                />
+              </div>
+
+              {/* Resumen */}
+              <div className="bg-white rounded-lg p-4 mb-6">
+                <h3 className="font-semibold text-lg mb-3">Resumen</h3>
+                
+                <div className="flex justify-between text-gray-600 mb-2">
+                  <span>Total productos:</span>
+                  <span>{supplies.length}</span>
+                </div>
+                
+                <div className="flex justify-between text-gray-600 mb-2">
+                  <span>Cantidad total:</span>
+                  <span>
+                    {supplies.reduce((sum, s) => sum + s.quantity, 0).toFixed(2)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                  <span>Costo Total:</span>
+                  <span className="text-purple-600">
+                    ${supplies.reduce((sum, s) => 
+                      sum + (s.quantity * (s.product.cost || 0)), 0
+                    ).toLocaleString()}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Notas */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notas Adicionales
-              </label>
-              <textarea
-                rows="4"
-                value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                className="w-full px-3 py-2 border rounded-lg"
-                placeholder="Observaciones, particularidades del procedimiento..."
-              />
-            </div>
-
-            {/* Resumen */}
-            <div className="bg-white rounded-lg p-4 mb-6">
-              <h3 className="font-semibold text-lg mb-3">Resumen</h3>
-              
-              <div className="flex justify-between text-gray-600 mb-2">
-                <span>Total productos:</span>
-                <span>{supplies.length}</span>
-              </div>
-              
-              <div className="flex justify-between text-gray-600 mb-2">
-                <span>Cantidad total:</span>
-                <span>
-                  {supplies.reduce((sum, s) => sum + s.quantity, 0).toFixed(2)}
-                </span>
-              </div>
-              
-              <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                <span>Costo Total:</span>
-                <span className="text-purple-600">
-                  ${supplies.reduce((sum, s) => 
-                    sum + (s.quantity * (s.product.cost || 0)), 0
-                  ).toLocaleString()}
-                </span>
-              </div>
-            </div>
-
-            {/* Botones */}
-            <div className="space-y-2">
+            {/* Botones fijos en la parte inferior */}
+            <div className="p-6 border-t bg-gray-50 space-y-2 flex-shrink-0">
               <button
                 type="submit"
                 disabled={loading || supplies.length === 0}
