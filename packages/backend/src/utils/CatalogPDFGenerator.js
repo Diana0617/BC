@@ -116,50 +116,62 @@ class CatalogPDFGenerator {
 
           // Contenido de texto debajo de la imagen
           let textY = startY + imageSize + 18;
+          const maxTextY = startY + itemHeight - 10; // Límite inferior de la caja
 
-          // Nombre del producto (negrita)
-          doc.font('Helvetica-Bold').fontSize(11).fillColor('#111827');
+          // Nombre del producto (negrita, máximo 2 líneas)
+          doc.font('Helvetica-Bold').fontSize(10).fillColor('#111827');
           const productName = item.product?.name || item.name;
-          doc.text(productName, textX, textY, {
+          const truncatedName = productName.length > 40 ? productName.substring(0, 37) + '...' : productName;
+          doc.text(truncatedName, textX, textY, {
             width: contentWidth,
             align: 'center',
+            lineBreak: false,
             ellipsis: true
           });
-          textY = doc.y + 3;
+          textY += 14;
 
           // SKU
-          doc.font('Helvetica').fontSize(8).fillColor('#6B7280');
-          doc.text(`SKU: ${item.supplierSku || item.product?.sku || 'N/A'}`, textX, textY, {
+          doc.font('Helvetica').fontSize(7).fillColor('#6B7280');
+          const skuText = `SKU: ${item.supplierSku || item.product?.sku || 'N/A'}`;
+          const truncatedSku = skuText.length > 25 ? skuText.substring(0, 22) + '...' : skuText;
+          doc.text(truncatedSku, textX, textY, {
             width: contentWidth,
-            align: 'center'
+            align: 'center',
+            lineBreak: false
           });
-          textY = doc.y + 2;
+          textY += 10;
 
           // Categoría
           const category = item.product?.category || item.category;
-          if (category && category !== 'Sin categoría') {
-            doc.fillColor('#4B5563').fontSize(8);
-            doc.text(category, textX, textY, {
+          if (category && category !== 'Sin categoría' && textY < maxTextY - 20) {
+            doc.fillColor('#4B5563').fontSize(7);
+            const truncatedCategory = category.length > 20 ? category.substring(0, 17) + '...' : category;
+            doc.text(truncatedCategory, textX, textY, {
               width: contentWidth,
-              align: 'center'
+              align: 'center',
+              lineBreak: false
             });
-            textY = doc.y + 2;
+            textY += 10;
           }
 
-          // Marca
-          if (item.brand) {
-            doc.fillColor('#4B5563').fontSize(8);
-            doc.text(`Marca: ${item.brand}`, textX, textY, {
+          // Marca (solo si hay espacio)
+          if (item.brand && textY < maxTextY - 20) {
+            doc.fillColor('#4B5563').fontSize(7);
+            const brandText = `Marca: ${item.brand}`;
+            const truncatedBrand = brandText.length > 25 ? brandText.substring(0, 22) + '...' : brandText;
+            doc.text(truncatedBrand, textX, textY, {
               width: contentWidth,
-              align: 'center'
+              align: 'center',
+              lineBreak: false
             });
-            textY = doc.y + 2;
+            textY += 10;
           }
 
-          // Precio destacado
+          // Precio destacado (siempre al final, posición fija desde el bottom)
           const price = parseFloat(item.product?.price || item.price || 0);
+          const priceY = startY + itemHeight - 20; // Posición fija desde el fondo
           doc.font('Helvetica-Bold').fontSize(14).fillColor('#059669');
-          doc.text(`$${price.toLocaleString('es-CO')}`, textX, textY + 3, {
+          doc.text(`$${price.toLocaleString('es-CO')}`, textX, priceY, {
             width: contentWidth,
             align: 'center'
           });
