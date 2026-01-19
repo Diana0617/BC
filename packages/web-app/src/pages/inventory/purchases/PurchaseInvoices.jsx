@@ -32,7 +32,7 @@ import { es } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
 import { useBusinessContext } from '../../../context/BusinessContext';
 import supplierInvoicesApi from '@shared/api/supplierInvoicesApi';
-import CreateInvoiceModal from './CreateInvoiceModal';
+import CreateInvoiceModal from '../../business/inventory/purchases/CreateInvoiceModal';
 import DistributeStockModal from './DistributeStockModal';
 
 const PurchaseInvoices = () => {
