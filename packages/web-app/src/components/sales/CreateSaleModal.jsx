@@ -24,7 +24,7 @@ import branchApi from '../../api/branchApi';
  * CreateSaleModal - Modal mejorado para registrar ventas
  * Con: selección de clientes, pago mixto, loyalty points, vouchers
  */
-const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) => {
+const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBranchId = null }) => {
   const dispatch = useDispatch();
   const { loading, createSuccess, error } = useSelector(state => state.sales);
   const currentSale = useSelector(state => state.sales.currentSale);
@@ -32,10 +32,14 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
   const user = useSelector(state => state.auth?.user);
   const businessId = user?.businessId;
 
+  // Sucursales
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState(null);
+  const [loadingBranches, setLoadingBranches] = useState(false);
+
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [branchName, setBranchName] = useState('');
   
   // Cliente
   const [clientSearch, setClientSearch] = useState('');
@@ -64,35 +68,50 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
     notes: ''
   });
 
-  // Cargar productos y nombre de sucursal al abrir
+  // Cargar sucursales al abrir
   useEffect(() => {
-    if (isOpen && businessId) {
-      console.log('🏪 CreateSaleModal - Loading products for businessId:', businessId);
-      console.log('🏪 CreateSaleModal - branchId:', branchId);
+    const loadBranches = async () => {
+      if (isOpen && businessId) {
+        setLoadingBranches(true);
+        try {
+          const response = await branchApi.getBranches(businessId);
+          const userBranches = response.data || [];
+          setBranches(userBranches);
+          console.log('🏢 Branches loaded:', userBranches);
+          
+          // Si hay un branchId inicial (de turno de caja), auto-seleccionarlo
+          if (initialBranchId) {
+            const branch = userBranches.find(b => b.id === initialBranchId);
+            if (branch) {
+              setSelectedBranch(branch);
+              console.log('🏢 Auto-selected branch:', branch.name);
+            }
+          }
+        } catch (err) {
+          console.error('Error loading branches:', err);
+          toast.error('Error al cargar sucursales');
+        } finally {
+          setLoadingBranches(false);
+        }
+      }
+    };
+
+    loadBranches();
+  }, [isOpen, businessId, initialBranchId]);
+
+  // Cargar productos cuando se selecciona una sucursal
+  useEffect(() => {
+    if (selectedBranch && businessId) {
+      console.log('🏪 Loading products for branch:', selectedBranch.name, 'ID:', selectedBranch.id);
       
       dispatch(fetchProducts({ 
         businessId,
         productType: 'FOR_SALE,BOTH',
         isActive: true,
-        branchId: branchId // Agregar branchId para filtrar stock
+        branchId: selectedBranch.id
       }));
-      
-      // Cargar nombre de la sucursal
-      if (branchId) {
-        branchApi.getBranches(businessId).then(response => {
-          const branch = response.data.find(b => b.id === branchId);
-          if (branch) {
-            setBranchName(branch.name);
-            console.log('🏢 Branch loaded:', branch.name, 'ID:', branch.id);
-          }
-        }).catch(err => {
-          console.error('Error loading branch:', err);
-        });
-      } else {
-        console.warn('⚠️ No branchId provided to CreateSaleModal');
-      }
     }
-  }, [isOpen, businessId, branchId, dispatch]);
+  }, [selectedBranch, businessId, dispatch]);
 
   // Buscar clientes
   useEffect(() => {
@@ -176,7 +195,9 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
       window.URL.revokeObjectURL(url);
       
       toast.success('Recibo descargado');
-    } catch (error) {
+    } cSelectedBranch(null);
+    setBranches([]);
+    setatch (error) {
       console.error('Error descargando recibo:', error);
       toast.error('Error al descargar el recibo');
     }
@@ -395,7 +416,7 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
       toast.error(`Puntos insuficientes. Disponibles: ${maxPointsToUse}`);
       return;
     }
-
+selectedBranch?.i
     const saleData = {
       branchId: branchId || null,
       clientId: selectedClient?.id || null,
@@ -437,12 +458,19 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
               <ShoppingCartIcon className="h-6 w-6 text-blue-600" />
               <h2 className="text-2xl font-bold text-gray-900">Nueva Venta</h2>
             </div>
-            {branchName && (
+            {selectedBranch && (
               <div className="flex items-center gap-2 ml-9">
                 <BuildingOfficeIcon className="h-4 w-4 text-blue-600" />
                 <span className="text-sm font-medium text-blue-700">
-                  Sucursal: {branchName}
+                  Sucursal: {selectedBranch.name}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedBranch(null)}
+                  className="text-xs text-blue-600 hover:text-blue-800 underline ml-2"
+                >
+                  Cambiar
+                </button>
               </div>
             )}
           </div>
@@ -451,7 +479,62 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex h-[calc(90vh-120px)]">
+        {/* Selector de Sucursal */}
+        {!selectedBranch ? (
+          <div className="p-8">
+            <div className="text-center mb-6">
+              <BuildingOfficeIcon className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Selecciona la Sucursal
+              </h3>
+              <p className="text-gray-600">
+                Elige en qué sucursal se realizará la venta
+              </p>
+            </div>
+
+            {loadingBranches ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-gray-500 mt-4">Cargando sucursales...</p>
+              </div>
+            ) : branches.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No hay sucursales disponibles</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                {branches.map(branch => (
+                  <button
+                    key={branch.id}
+                    type="button"
+                    onClick={() => setSelectedBranch(branch)}
+                    className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <BuildingOfficeIcon className="h-6 w-6 text-blue-600 group-hover:text-blue-700 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 group-hover:text-blue-700 truncate">
+                          {branch.name}
+                        </h4>
+                        {branch.address && (
+                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                            {branch.address}
+                          </p>
+                        )}
+                        {branch.phone && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            {branch.phone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex h-[calc(90vh-120px)]">
           {/* Columna Izquierda - Productos */}
           <div className="w-2/3 p-6 border-r overflow-y-auto">
             {/* Buscar Producto */}
@@ -827,6 +910,7 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
               <textarea
                 rows="2"
                 value={formData.notes}
+        )}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 className="w-full px-3 py-2 border rounded-lg"
                 placeholder="Observaciones..."
@@ -889,6 +973,7 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId = null }) =
             </div>
           </div>
         </form>
+        )}
       </div>
     </div>
   );
