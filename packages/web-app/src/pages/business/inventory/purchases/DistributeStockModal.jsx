@@ -9,8 +9,8 @@ import {
   CheckCircleIcon
 } from 'lucide-react';
 import { useBusinessContext } from '../../../../context/BusinessContext';
-import businessBranchesApi from '../../../../api/businessBranchesApi';
-import supplierInvoicesApi from '../../../../api/supplierInvoicesApi';
+import businessBranchesApi from '@shared/api/businessBranchesApi';
+import supplierInvoicesApi from '@shared/api/supplierInvoicesApi';
 
 const DistributeStockModal = ({ invoice, onClose, onDistributed }) => {
   const { businessId } = useBusinessContext();
