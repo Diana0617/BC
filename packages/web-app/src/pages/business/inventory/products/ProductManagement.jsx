@@ -67,6 +67,7 @@ const ProductManagement = () => {
         search: searchTerm,
         category: categoryFilter !== 'all' ? categoryFilter : undefined,
         productType: typeFilter !== 'all' ? typeFilter : undefined,
+        branchId: branchFilter !== 'all' ? branchFilter : undefined,
         page: currentPage,
         limit: itemsPerPage
       });
@@ -81,7 +82,7 @@ const ProductManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [user.businessId, searchTerm, categoryFilter, typeFilter, currentPage]);
+  }, [user.businessId, searchTerm, categoryFilter, typeFilter, branchFilter, currentPage]);
 
   useEffect(() => {
     loadBranches();
