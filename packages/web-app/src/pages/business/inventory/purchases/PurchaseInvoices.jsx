@@ -16,7 +16,7 @@ import supplierInvoiceApi from '../../../../api/supplierInvoiceApi';
 import CreateInvoiceModal from './CreateInvoiceModal';
 import InvoiceDetailModal from './InvoiceDetailModal';
 import SupplierAccountSummary from './SupplierAccountSummary';
-import DistributeStockModal from '../../../inventory/purchases/DistributeStockModal';
+import DistributeStockModal from './DistributeStockModal';
 
 const PurchaseInvoices = () => {
   const { user } = useSelector((state) => state.auth);
