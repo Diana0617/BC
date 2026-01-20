@@ -58,13 +58,20 @@ exports.getSpecialistCommissionSummary = async (req, res) => {
           model: Service,
           as: 'service',
           attributes: ['id', 'name', 'price']
+        },
+        {
+          model: Client,
+          as: 'client',
+          attributes: ['id', 'firstName', 'lastName']
         }
-      ]
+      ],
+      order: [['completedAt', 'DESC']]
     });
 
     // Calcular comisiones generadas
     let pending = 0;
     let thisMonth = 0;
+    const appointmentsWithCommission = [];
     
     completedAppointments.forEach(appointment => {
       const price = parseFloat(appointment.totalAmount || appointment.service?.price || 0);
@@ -73,6 +80,21 @@ exports.getSpecialistCommissionSummary = async (req, res) => {
       
       pending += commission;
       thisMonth += commission;
+
+      // Agregar información del appointment con comisión calculada
+      appointmentsWithCommission.push({
+        id: appointment.id,
+        date: appointment.date,
+        completedAt: appointment.completedAt,
+        serviceName: appointment.service?.name,
+        clientName: appointment.client 
+          ? `${appointment.client.firstName} ${appointment.client.lastName}` 
+          : 'Cliente no registrado',
+        totalAmount: price,
+        commissionRate: commissionRate,
+        commissionAmount: Math.round(commission * 100) / 100,
+        status: 'PENDING' // Por defecto, se puede verificar con CommissionDetail
+      });
     });
 
     // Obtener comisiones ya pagadas (si existen)
@@ -130,7 +152,8 @@ exports.getSpecialistCommissionSummary = async (req, res) => {
         lastPayment: lastPayment ? {
           date: lastPayment.paidAt,
           amount: lastPayment.totalAmount
-        } : null
+        } : null,
+        appointments: appointmentsWithCommission
       }
     });
 

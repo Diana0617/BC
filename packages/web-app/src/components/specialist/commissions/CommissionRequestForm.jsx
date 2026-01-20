@@ -199,7 +199,7 @@ export default function CommissionRequestForm({
               onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
               max={pendingAmount}
               min={0}
-              step="1000"
+              step="1"
               required
               className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="0"

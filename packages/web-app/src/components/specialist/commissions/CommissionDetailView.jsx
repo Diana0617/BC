@@ -80,11 +80,10 @@ export default function CommissionDetailView({
       const data = await response.json();
       console.log('✅ CommissionDetailView - Data recibida:', data);
       
-      // El endpoint summary devuelve: { success, data: { pending, requested, paid, total, thisMonth, lastPayment } }
+      // El endpoint summary devuelve: { success, data: { pending, requested, paid, total, thisMonth, lastPayment, appointments } }
       if (data.success) {
         setCommissionData(data.data);
-        // TODO: Cargar appointments si es necesario
-        setAppointments([]);
+        setAppointments(data.data.appointments || []);
       }
     } catch (error) {
       console.error('❌ CommissionDetailView - Error loading commission data:', error);
@@ -247,21 +246,19 @@ export default function CommissionDetailView({
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h4 className="font-semibold text-gray-900">
-                        {appointment.service?.name}
+                        {appointment.serviceName}
                       </h4>
-                      {getStatusBadge(appointment.commissionStatus)}
+                      {getStatusBadge(appointment.status)}
                     </div>
 
                     <div className="space-y-1 text-sm text-gray-600">
                       <div className="flex items-center gap-2">
                         <UserIcon className="w-4 h-4" />
-                        <span>
-                          {appointment.client?.firstName} {appointment.client?.lastName}
-                        </span>
+                        <span>{appointment.clientName}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CalendarIcon className="w-4 h-4" />
-                        <span>{formatDate(appointment.date)}</span>
+                        <span>{formatDate(appointment.completedAt || appointment.date)}</span>
                       </div>
                     </div>
                   </div>
@@ -271,18 +268,10 @@ export default function CommissionDetailView({
                       {formatCurrency(appointment.commissionAmount)}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {appointment.commissionPercentage}% de {formatCurrency(appointment.totalAmount)}
+                      {appointment.commissionRate}% de {formatCurrency(appointment.totalAmount)}
                     </p>
                   </div>
                 </div>
-
-                {appointment.commissionNotes && (
-                  <div className="mt-3 bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs text-gray-600">
-                      <span className="font-medium">Nota:</span> {appointment.commissionNotes}
-                    </p>
-                  </div>
-                )}
               </div>
             ))
           )}
