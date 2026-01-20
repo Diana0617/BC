@@ -339,18 +339,15 @@ export default function SpecialistDashboard() {
       
       console.log('✅ Final specialistId:', specialistId);
       
-      // Construir payload según lo que espera el backend
-      // Convertir a ISO string sin forzar UTC para mantener la hora local
-      const startDateTime = new Date(`${formData.date}T${formData.startTime}:00`)
-      const endDateTime = new Date(`${formData.date}T${formData.endTime}:00`)
-      
+      // Los tiempos ya vienen convertidos a UTC desde CreateAppointmentModal
+      // No necesitamos volver a convertirlos
       const payload = {
         businessId: effectiveBusinessId,
         branchId: formData.branchId,
         specialistId: specialistId,
         serviceId: formData.serviceId,
-        startTime: startDateTime.toISOString(),
-        endTime: endDateTime.toISOString(),
+        startTime: formData.startTime, // Ya es ISO string UTC
+        endTime: formData.endTime,     // Ya es ISO string UTC
         notes: formData.notes || '',
         status: 'CONFIRMED'
       };
