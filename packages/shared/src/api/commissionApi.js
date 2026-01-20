@@ -271,7 +271,6 @@ const commissionApi = {
       
       console.log('✅ API - registerPayment response:', responseData);
       return responseData;
-      return response.data;
     } catch (error) {
       console.error('❌ API - Error registering payment:', error);
       throw error;
