@@ -12,13 +12,17 @@
  */
 export const localToUTC = (date, time, timezone) => {
   try {
-    // Crear string en formato ISO pero en la zona horaria local
+    // Crear el string de fecha/hora local
     const dateTimeString = `${date}T${time}:00`
     
-    // Usar Intl.DateTimeFormat para obtener offset correcto
-    const localDate = new Date(dateTimeString)
+    // Parsear la fecha interpretándola como UTC primero
+    const [year, month, day] = date.split('-').map(Number)
+    const [hour, minute] = time.split(':').map(Number)
     
-    // Obtener la fecha/hora como string en la zona horaria especificada
+    // Crear una fecha temporal en UTC para obtener el timestamp base
+    const utcBase = Date.UTC(year, month - 1, day, hour, minute, 0)
+    
+    // Formatear esta fecha en la zona horaria objetivo para ver el offset
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       year: 'numeric',
@@ -27,31 +31,44 @@ export const localToUTC = (date, time, timezone) => {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: false
+      hour12: false,
+      timeZoneName: 'longOffset'
     })
     
-    const parts = formatter.formatToParts(localDate)
-    const dateObj = {}
-    parts.forEach(part => {
-      if (part.type !== 'literal') {
-        dateObj[part.type] = part.value
-      }
-    })
+    // Obtener el offset
+    const testDate = new Date(utcBase)
+    const parts = formatter.formatToParts(testDate)
     
-    // Crear fecha UTC manualmente
-    const utcDate = new Date(Date.UTC(
-      parseInt(dateObj.year),
-      parseInt(dateObj.month) - 1,
-      parseInt(dateObj.day),
-      parseInt(dateObj.hour),
-      parseInt(dateObj.minute),
-      parseInt(dateObj.second || 0)
-    ))
+    // Extraer el offset de la zona horaria (ej: GMT-5 -> -5)
+    const offsetPart = parts.find(p => p.type === 'timeZoneName')
+    if (!offsetPart) {
+      console.warn('No se pudo obtener offset, usando fecha local del navegador')
+      return new Date(dateTimeString)
+    }
+    
+    // Parsear el offset (ej: "GMT-5" o "GMT+2")
+    const offsetMatch = offsetPart.value.match(/GMT([+-]\d+)/)
+    if (!offsetMatch) {
+      console.warn('No se pudo parsear offset, usando fecha local del navegador')
+      return new Date(dateTimeString)
+    }
+    
+    const offsetHours = parseInt(offsetMatch[1])
+    
+    // Convertir: si es GMT-5, la hora local 10:00 es 15:00 UTC
+    // Restamos el offset de la hora local para obtener UTC
+    const utcDate = new Date(Date.UTC(year, month - 1, day, hour - offsetHours, minute, 0))
+    
+    console.log('localToUTC conversion:', {
+      input: { date, time, timezone },
+      offsetHours,
+      result: utcDate.toISOString()
+    })
     
     return utcDate
   } catch (error) {
-    console.error('Error convirtiendo local a UTC:', error)
-    // Fallback: asumir fecha local del navegador
+    console.error('Error convirtiendo local a UTC:', error, { date, time, timezone })
+    // Fallback: crear fecha asumiendo zona horaria del navegador
     return new Date(`${date}T${time}:00`)
   }
 }
