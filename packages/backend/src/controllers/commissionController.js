@@ -1188,6 +1188,7 @@ exports.payCommission = async (req, res) => {
     const paymentProofUrl = req.file?.path || null;
 
     let paymentRequest;
+    let requestNumber;
     
     // Si hay requestIds, actualizar solicitudes existentes
     if (requestIds && requestIds.length > 0) {
@@ -1209,15 +1210,28 @@ exports.payCommission = async (req, res) => {
         transaction
       });
 
-      // Obtener la primera request actualizada como referencia
+      // Obtener todas las requests actualizadas
+      const updatedRequests = await CommissionPaymentRequest.findAll({
+        where: { id: { [Op.in]: requestIds } },
+        attributes: ['requestNumber']
+      });
+
+      // Usar la primera como referencia
       paymentRequest = await CommissionPaymentRequest.findByPk(requestIds[0]);
+      
+      // Generar número compuesto si hay múltiples
+      if (updatedRequests.length > 1) {
+        requestNumber = updatedRequests.map(r => r.requestNumber).join(', ');
+      } else {
+        requestNumber = paymentRequest.requestNumber;
+      }
       
     } else {
       // Flujo original: crear nueva solicitud
       const requestCount = await CommissionPaymentRequest.count({
         where: { businessId }
       });
-      const requestNumber = `CPR-${new Date().getFullYear()}-${String(requestCount + 1).padStart(4, '0')}`;
+      requestNumber = `CPR-${new Date().getFullYear()}-${String(requestCount + 1).padStart(4, '0')}`;
 
       paymentRequest = await CommissionPaymentRequest.create({
         requestNumber,
