@@ -10,9 +10,12 @@ import {
   CheckCircleIcon
 } from 'lucide-react';
 import supplierInvoiceApi from '../../../../api/supplierInvoiceApi';
+import { formatInTimezone } from '../../../../utils/timezone';
 
 const SupplierAccountSummary = ({ supplierId, onClose }) => {
   const { user } = useSelector((state) => state.auth);
+  const currentBusiness = useSelector(state => state.business?.currentBusiness);
+  const timezone = currentBusiness?.timezone || 'America/Bogota';
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState(null);
@@ -50,7 +53,7 @@ const SupplierAccountSummary = ({ supplierId, onClose }) => {
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('es-CO', {
+    return formatInTimezone(date, timezone, {
       year: 'numeric',
       month: 'short',
       day: 'numeric'

@@ -1,12 +1,18 @@
-import React, { useMemo } from 'react';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addDays, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
+import  { useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay,  startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatInTimezone } from '../../../utils/timezone';
 
 /**
  * Vista de calendario para citas del especialista
  * Soporta vista diaria, semanal y mensual
  */
 export default function AppointmentCalendarView({ appointments, currentDate, period, onAppointmentClick }) {
+  
+  // Obtener timezone del negocio
+  const business = useSelector(state => state.business?.currentBusiness)
+  const timezone = business?.timezone || 'America/Bogota'
   
   const getStatusColor = (status) => {
     const colors = {
@@ -19,23 +25,96 @@ export default function AppointmentCalendarView({ appointments, currentDate, per
     return colors[status] || 'bg-gray-400';
   };
 
+  const getStatusText = (status) => {
+    const texts = {
+      PENDING: 'Pendiente',
+      CONFIRMED: 'Confirmado',
+      IN_PROGRESS: 'En Progreso',
+      COMPLETED: 'Completado',
+      CANCELED: 'Cancelado',
+      NO_SHOW: 'No asistió',
+      RESCHEDULED: 'Reprogramado'
+    };
+    return texts[status] || status;
+  };
+
+  // Función para generar el tooltip con información completa (usando timezone)
+  const getTooltipText = (apt) => {
+    const clientName = apt.Client ? `${apt.Client.firstName} ${apt.Client.lastName}` : apt.clientName;
+    const clientPhone = apt.Client?.phone || apt.clientPhone || 'N/A';
+    const serviceName = apt.Service?.name || apt.serviceName;
+    const branchName = apt.branch?.name || apt.branchName || '';
+    const duration = apt.Service?.duration || '';
+    const price = apt.totalAmount || apt.Service?.price || '';
+    
+    // Formatear horas en timezone del negocio
+    const startTimeFormatted = formatInTimezone(apt.startTime, timezone, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    const endTimeFormatted = formatInTimezone(apt.endTime, timezone, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    return `Cliente: ${clientName}
+Teléfono: ${clientPhone}
+Servicio: ${serviceName}${duration ? `\nDuración: ${duration} min` : ''}${price ? `\nPrecio: $${price.toLocaleString()}` : ''}
+Horario: ${startTimeFormatted} - ${endTimeFormatted}
+Estado: ${getStatusText(apt.status)}${branchName ? `\nSucursal: ${branchName}` : ''}${apt.notes ? `\nNotas: ${apt.notes}` : ''}`;
+  };
+
+  // Compute all data at the top level
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+  const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+
+  const appointmentsByHour = useMemo(() => {
+    const byHour = {};
+    appointments.forEach(apt => {
+      const startDate = new Date(apt.startTime);
+      if (isSameDay(startDate, currentDate)) {
+        const hour = startDate.getHours();
+        if (!byHour[hour]) byHour[hour] = [];
+        byHour[hour].push(apt);
+      }
+    });
+    return byHour;
+  }, [appointments, currentDate]);
+
+  const appointmentsByDayWeek = useMemo(() => {
+    const byDay = {};
+    daysOfWeek.forEach(day => {
+      const dayKey = format(day, 'yyyy-MM-dd');
+      byDay[dayKey] = appointments.filter(apt => 
+        isSameDay(new Date(apt.startTime), day)
+      );
+    });
+    return byDay;
+  }, [appointments, daysOfWeek]);
+
+  const appointmentsByDayMonth = useMemo(() => {
+    const byDay = {};
+    calendarDays.forEach(day => {
+      const dayKey = format(day, 'yyyy-MM-dd');
+      byDay[dayKey] = appointments.filter(apt => 
+        isSameDay(new Date(apt.startTime), day)
+      );
+    });
+    return byDay;
+  }, [appointments, calendarDays]);
+
   // Vista Diaria - Timeline por horas
   if (period === 'day') {
     const hours = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM a 8 PM
-    
-    const appointmentsByHour = useMemo(() => {
-      const byHour = {};
-      appointments.forEach(apt => {
-        const startDate = new Date(apt.startTime);
-        if (isSameDay(startDate, currentDate)) {
-          const hour = startDate.getHours();
-          if (!byHour[hour]) byHour[hour] = [];
-          byHour[hour].push(apt);
-        }
-      });
-      return byHour;
-    }, [appointments, currentDate]);
-
     return (
       <div className="space-y-1">
         {hours.map(hour => (
@@ -54,6 +133,7 @@ export default function AppointmentCalendarView({ appointments, currentDate, per
                   <div
                     key={apt.id}
                     onClick={() => onAppointmentClick(apt)}
+                    title={getTooltipText(apt)}
                     className={`${getStatusColor(apt.status)} text-white px-3 py-2 rounded-lg mb-1 cursor-pointer hover:opacity-90 transition-opacity`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -77,26 +157,11 @@ export default function AppointmentCalendarView({ appointments, currentDate, per
 
   // Vista Semanal - Columnas por día
   if (period === 'week') {
-    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Lunes
-    const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
-    const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
-
-    const appointmentsByDay = useMemo(() => {
-      const byDay = {};
-      daysOfWeek.forEach(day => {
-        const dayKey = format(day, 'yyyy-MM-dd');
-        byDay[dayKey] = appointments.filter(apt => 
-          isSameDay(new Date(apt.startTime), day)
-        );
-      });
-      return byDay;
-    }, [appointments, daysOfWeek]);
-
     return (
       <div className="grid grid-cols-7 gap-2">
         {daysOfWeek.map(day => {
           const dayKey = format(day, 'yyyy-MM-dd');
-          const dayAppointments = appointmentsByDay[dayKey] || [];
+          const dayAppointments = appointmentsByDayWeek[dayKey] || [];
           const isCurrentDay = isSameDay(day, new Date());
           
           return (
@@ -123,6 +188,7 @@ export default function AppointmentCalendarView({ appointments, currentDate, per
                     <div
                       key={apt.id}
                       onClick={() => onAppointmentClick(apt)}
+                      title={getTooltipText(apt)}
                       className={`${getStatusColor(apt.status)} text-white px-2 py-1.5 rounded text-xs cursor-pointer hover:opacity-90 transition-opacity`}
                     >
                       <div className="font-semibold truncate">{format(startDate, 'HH:mm')}</div>
@@ -145,23 +211,6 @@ export default function AppointmentCalendarView({ appointments, currentDate, per
 
   // Vista Mensual - Calendario completo
   if (period === 'month') {
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
-    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-    const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-
-    const appointmentsByDay = useMemo(() => {
-      const byDay = {};
-      calendarDays.forEach(day => {
-        const dayKey = format(day, 'yyyy-MM-dd');
-        byDay[dayKey] = appointments.filter(apt => 
-          isSameDay(new Date(apt.startTime), day)
-        );
-      });
-      return byDay;
-    }, [appointments, calendarDays]);
-
     // Agrupar días en semanas
     const weeks = [];
     for (let i = 0; i < calendarDays.length; i += 7) {
@@ -184,7 +233,7 @@ export default function AppointmentCalendarView({ appointments, currentDate, per
           <div key={weekIdx} className="grid grid-cols-7 gap-1">
             {week.map(day => {
               const dayKey = format(day, 'yyyy-MM-dd');
-              const dayAppointments = appointmentsByDay[dayKey] || [];
+              const dayAppointments = appointmentsByDayMonth[dayKey] || [];
               const isCurrentMonth = day.getMonth() === currentDate.getMonth();
               const isToday = isSameDay(day, new Date());
               
@@ -206,6 +255,7 @@ export default function AppointmentCalendarView({ appointments, currentDate, per
                       <div
                         key={apt.id}
                         onClick={() => onAppointmentClick(apt)}
+                        title={getTooltipText(apt)}
                         className={`${getStatusColor(apt.status)} text-white px-1.5 py-0.5 rounded text-xs cursor-pointer hover:opacity-90 transition-opacity truncate`}
                       >
                         {format(new Date(apt.startTime), 'HH:mm')}

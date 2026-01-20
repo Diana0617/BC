@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useSelector } from 'react-redux'
 import {
   XMarkIcon,
   ClockIcon,
@@ -12,6 +13,7 @@ import {
   CheckCircleIcon,
   XCircleIcon
 } from '@heroicons/react/24/outline'
+import { formatInTimezone } from '../../../utils/timezone'
 
 /**
  * AppointmentDetailModal - Modal para ver y gestionar detalles de una cita
@@ -31,6 +33,10 @@ const AppointmentDetailModal = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editedNotes, setEditedNotes] = useState(appointment?.notes || '')
+  
+  // Obtener timezone del negocio
+  const business = useSelector(state => state.business?.currentBusiness)
+  const timezone = business?.timezone || 'America/Bogota'
 
   if (!appointment) return null
 
@@ -56,19 +62,24 @@ const AppointmentDetailModal = ({
   }
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('es-CO', {
+    return formatInTimezone(date, timezone, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      hour: undefined,
+      minute: undefined
     })
   }
 
   const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString('es-CO', {
+    return formatInTimezone(date, timezone, {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
+      year: undefined,
+      month: undefined,
+      day: undefined
     })
   }
 

@@ -20,12 +20,15 @@ import {
   deleteConsentTemplate
 } from '@shared/store/slices/consentSlice';
 import { loadBranding } from '@shared/store/slices/businessConfigurationSlice';
+import { formatInTimezone } from '../utils/timezone';
 
 const ConsentTemplatesPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const businessId = useSelector(state => state.auth.user?.businessId);
   const business = useSelector(state => state.auth.user?.business);
+  const currentBusiness = useSelector(state => state.business?.currentBusiness);
+  const timezone = currentBusiness?.timezone || business?.timezone || 'America/Bogota';
   const branches = useSelector(state => state.auth.user?.branches || []);
   const { templates, loading, error } = useSelector(state => state.consent);
   const { branding, loading: brandingLoading } = useSelector(state => state.businessConfiguration);
@@ -330,11 +333,19 @@ const ConsentTemplatesPage = () => {
                     {/* Metadata */}
                     <div className="text-xs text-gray-500 mb-4 space-y-1">
                       <div>
-                        Creada: {new Date(template.createdAt).toLocaleDateString('es-CO')}
+                        Creada: {formatInTimezone(template.createdAt, timezone, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
                       </div>
                       {template.updatedAt !== template.createdAt && (
                         <div>
-                          Actualizada: {new Date(template.updatedAt).toLocaleDateString('es-CO')}
+                          Actualizada: {formatInTimezone(template.updatedAt, timezone, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
                         </div>
                       )}
                     </div>

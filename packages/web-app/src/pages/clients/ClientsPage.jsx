@@ -15,9 +15,11 @@ import {
 import { apiClient } from '@shared/api/client'
 import CreateEditClientModal from './components/CreateEditClientModal'
 import ClientDetailModal from './components/ClientDetailModal'
+import { formatInTimezone } from '../../utils/timezone'
 
 const ClientsPage = () => {
   const { currentBusiness } = useSelector(state => state.business)
+  const timezone = currentBusiness?.timezone || 'America/Bogota'
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -326,7 +328,11 @@ const ClientsPage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(client.createdAt).toLocaleDateString('es-CO')}
+                        {formatInTimezone(client.createdAt, timezone, {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit'
+                        })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end gap-2">

@@ -1,16 +1,21 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import { 
   BanknotesIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
+import { formatInTimezone } from '../../../utils/timezone';
 
 /**
  * Resumen estadístico del turno de caja activo
  * Muestra totales y gráficos simples
  */
 export default function CashRegisterSummary({ shiftData }) {
+  const currentBusiness = useSelector(state => state.business?.currentBusiness);
+  const timezone = currentBusiness?.timezone || 'America/Bogota';
+  
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -186,7 +191,7 @@ export default function CashRegisterSummary({ shiftData }) {
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">Turno iniciado</span>
             <span className="text-sm font-medium text-gray-900">
-              {new Date(shiftData.openedAt).toLocaleTimeString('es-CO', {
+              {formatInTimezone(shiftData.openedAt, timezone, {
                 hour: '2-digit',
                 minute: '2-digit'
               })}

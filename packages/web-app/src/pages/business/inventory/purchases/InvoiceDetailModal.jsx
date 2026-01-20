@@ -11,9 +11,12 @@ import {
 } from 'lucide-react';
 import branchApi from '../../../../api/branchApi';
 import PayInvoiceModal from './PayInvoiceModal';
+import { formatInTimezone } from '../../../../utils/timezone';
 
 const InvoiceDetailModal = ({ invoice, onClose, onApprove, onRefresh }) => {
   const { user } = useSelector((state) => state.auth);
+  const currentBusiness = useSelector(state => state.business?.currentBusiness);
+  const timezone = currentBusiness?.timezone || 'America/Bogota';
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState('');
   const [approving, setApproving] = useState(false);
@@ -61,7 +64,7 @@ const InvoiceDetailModal = ({ invoice, onClose, onApprove, onRefresh }) => {
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('es-CO', {
+    return formatInTimezone(date, timezone, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'

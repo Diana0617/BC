@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { CurrencyDollarIcon, ClockIcon, CheckCircleIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { formatInTimezone } from '../../../utils/timezone';
 
 /**
  * Resumen de comisiones del especialista
@@ -8,6 +9,8 @@ import { CurrencyDollarIcon, ClockIcon, CheckCircleIcon, ChartBarIcon } from '@h
  */
 export default function CommissionSummary({ specialistId, businessId }) {
   const { token } = useSelector(state => state.auth);
+  const currentBusiness = useSelector(state => state.business?.currentBusiness);
+  const timezone = currentBusiness?.timezone || 'America/Bogota';
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState({
     pending: 0,
@@ -192,7 +195,11 @@ export default function CommissionSummary({ specialistId, businessId }) {
                   {formatCurrency(summary.lastPayment.amount)}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {new Date(summary.lastPayment.date).toLocaleDateString('es-CO')}
+                  {formatInTimezone(summary.lastPayment.date, timezone, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
                 </p>
               </div>
             </div>

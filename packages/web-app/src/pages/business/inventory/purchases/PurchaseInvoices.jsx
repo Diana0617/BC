@@ -17,9 +17,12 @@ import CreateInvoiceModal from './CreateInvoiceModal';
 import InvoiceDetailModal from './InvoiceDetailModal';
 import SupplierAccountSummary from './SupplierAccountSummary';
 import DistributeStockModal from './DistributeStockModal';
+import { formatInTimezone } from '../../../../utils/timezone';
 
 const PurchaseInvoices = () => {
   const { user } = useSelector((state) => state.auth);
+  const currentBusiness = useSelector(state => state.business?.currentBusiness);
+  const timezone = currentBusiness?.timezone || 'America/Bogota';
   const [invoices, setInvoices] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -172,7 +175,7 @@ const PurchaseInvoices = () => {
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('es-CO', {
+    return formatInTimezone(date, timezone, {
       year: 'numeric',
       month: 'short',
       day: 'numeric'

@@ -17,11 +17,13 @@ import CalendarAccessSection from '../business/profile/sections/CalendarAccessSe
 import AppointmentCard from '../../components/specialist/appointments/AppointmentCard'
 import AppointmentDetailsModal from '../../components/specialist/appointments/AppointmentDetailsModal'
 import CreateAppointmentModal from '../../components/calendar/CreateAppointmentModal'
+import { dateRangeToUTC } from '../../utils/timezone'
 
 const BusinessOwnerDashboard = () => {
   const navigate = useNavigate()
   const { user, token } = useSelector(state => state.auth)
   const { currentBusiness } = useSelector(state => state.business)
+  const timezone = currentBusiness?.timezone || 'America/Bogota'
 
   // Estados para gestión de turnos
   const [activeTab, setActiveTab] = useState('calendar') // 'calendar' | 'appointments'
@@ -40,26 +42,29 @@ const BusinessOwnerDashboard = () => {
     try {
       setLoading(true)
       
-      let startDate, endDate
+      let startDateLocal, endDateLocal
       
       if (period === 'day') {
-        startDate = format(currentDate, 'yyyy-MM-dd')
-        endDate = format(currentDate, 'yyyy-MM-dd')
+        startDateLocal = format(currentDate, 'yyyy-MM-dd')
+        endDateLocal = format(currentDate, 'yyyy-MM-dd')
       } else if (period === 'week') {
         const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
         const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 })
-        startDate = format(weekStart, 'yyyy-MM-dd')
-        endDate = format(weekEnd, 'yyyy-MM-dd')
+        startDateLocal = format(weekStart, 'yyyy-MM-dd')
+        endDateLocal = format(weekEnd, 'yyyy-MM-dd')
       } else if (period === 'month') {
         const monthStart = startOfMonth(currentDate)
         const monthEnd = endOfMonth(currentDate)
-        startDate = format(monthStart, 'yyyy-MM-dd')
-        endDate = format(monthEnd, 'yyyy-MM-dd')
+        startDateLocal = format(monthStart, 'yyyy-MM-dd')
+        endDateLocal = format(monthEnd, 'yyyy-MM-dd')
       }
+      
+      // Convertir el rango a UTC para la consulta
+      const { startDateUTC, endDateUTC } = dateRangeToUTC(startDateLocal, endDateLocal, timezone);
       
       // Endpoint para obtener todas las citas del negocio
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/appointments?businessId=${currentBusiness.id}&startDate=${startDate}&endDate=${endDate}`,
+        `${import.meta.env.VITE_API_URL}/api/appointments?businessId=${currentBusiness.id}&startDate=${startDateUTC}&endDate=${endDateUTC}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`

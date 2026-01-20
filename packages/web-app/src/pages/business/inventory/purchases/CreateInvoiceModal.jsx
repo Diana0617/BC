@@ -13,10 +13,13 @@ import supplierInvoiceApi from '../../../../api/supplierInvoiceApi';
 import cloudinaryApi from '../../../../api/cloudinaryApi';
 import { fetchProducts } from '@shared/store/slices/productsSlice';
 import { businessBranchesApi } from '@shared/api';
+import { formatInTimezone } from '../../../../utils/timezone';
 
 const CreateInvoiceModal = ({ onClose, onSuccess }) => {
   const { user } = useSelector((state) => state.auth);
   const { products } = useSelector((state) => state.products);
+  const currentBusiness = useSelector(state => state.business?.currentBusiness);
+  const timezone = currentBusiness?.timezone || 'America/Bogota';
   const dispatch = useDispatch();
 
   const [step, setStep] = useState(1); // 1: Proveedor, 2: Items, 3: Resumen
@@ -1079,13 +1082,21 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Fecha de Emisión:</span>
                   <span className="font-medium text-gray-900">
-                    {new Date(invoiceData.issueDate).toLocaleDateString('es-CO')}
+                    {formatInTimezone(invoiceData.issueDate, timezone, {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Vencimiento:</span>
                   <span className="font-medium text-gray-900">
-                    {new Date(invoiceData.dueDate).toLocaleDateString('es-CO')}
+                    {formatInTimezone(invoiceData.dueDate, timezone, {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
                   </span>
                 </div>
               </div>

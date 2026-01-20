@@ -16,6 +16,7 @@ import {
 import { fetchProducts } from '@shared/store/slices/productsSlice'
 import { apiClient } from '@shared/api/client'
 import ProductSelector from '../sales/ProductSelector'
+import { localToUTC, isValidFutureDateTime } from '../../../utils/timezone'
 
 /**
  * CreateAppointmentModal - Modal para crear una nueva cita
@@ -45,6 +46,8 @@ const CreateAppointmentModal = ({
   const { products } = useSelector(state => state.products)
   // Para SPECIALIST, usar user.businessId; para BUSINESS, usar business.id
   const businessId = user?.businessId || business?.id
+  // Obtener timezone del negocio (default: America/Bogota)
+  const timezone = business?.timezone || 'America/Bogota'
   
   // Si es BUSINESS_SPECIALIST o SPECIALIST, él mismo es el especialista
   const isAutoSpecialist = user?.role === 'BUSINESS_SPECIALIST' || user?.role === 'SPECIALIST'
@@ -587,12 +590,9 @@ const CreateAppointmentModal = ({
       newErrors.endTime = 'Hora de fin es requerida'
     }
 
-    // Validar que la fecha y hora no sean en el pasado
+    // Validar que la fecha y hora no sean en el pasado (usando timezone del negocio)
     if (formData.date && formData.startTime) {
-      const now = new Date()
-      const appointmentDateTime = new Date(`${formData.date}T${formData.startTime}`)
-      
-      if (appointmentDateTime < now) {
+      if (!isValidFutureDateTime(formData.date, formData.startTime, timezone)) {
         newErrors.date = 'No se pueden crear citas con fecha y hora pasadas'
         newErrors.startTime = 'La hora debe ser futura'
       }
@@ -624,9 +624,23 @@ const CreateAppointmentModal = ({
       console.log('  - formData.serviceIds:', formData.serviceIds);
       console.log('  - formData.serviceId:', formData.serviceId);
       
+      // Convertir fecha y hora local a UTC para enviar al backend
+      const startTimeUTC = localToUTC(formData.date, formData.startTime, timezone)
+      const endTimeUTC = localToUTC(formData.date, formData.endTime, timezone)
+      
+      console.log('🌍 [CreateAppointmentModal] Conversión de timezone:');
+      console.log('  - Timezone del negocio:', timezone);
+      console.log('  - Fecha local:', formData.date);
+      console.log('  - Hora inicio local:', formData.startTime);
+      console.log('  - Hora fin local:', formData.endTime);
+      console.log('  - StartTime UTC:', startTimeUTC.toISOString());
+      console.log('  - EndTime UTC:', endTimeUTC.toISOString());
+      
       // Agregar productos al formData si hay seleccionados
       const dataToSubmit = {
         ...formData,
+        startTime: startTimeUTC.toISOString(),
+        endTime: endTimeUTC.toISOString(),
         serviceIds: serviceIds, // Usar el array construido desde selectedServices
         ...(selectedProducts.length > 0 && { productsSold: selectedProducts })
       }

@@ -12,12 +12,15 @@ import {
 } from '@heroicons/react/24/outline';
 import { fetchSales } from '@shared/store/slices/salesSlice';
 import SaleDetailModal from './SaleDetailModal';
+import { formatInTimezone } from '../../utils/timezone';
 
 const SalesList = ({ branchId = null, shiftId = null }) => {
   const dispatch = useDispatch();
   const { sales, loading, total, page, totalPages } = useSelector(state => state.sales);
   const user = useSelector(state => state.auth?.user);
+  const business = useSelector(state => state.business?.currentBusiness);
   const businessId = user?.businessId;
+  const timezone = business?.timezone || 'America/Bogota';
 
   const [filters, setFilters] = useState({
     status: '',
@@ -97,8 +100,7 @@ const SalesList = ({ branchId = null, shiftId = null }) => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-CO', {
+    return formatInTimezone(dateString, timezone, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

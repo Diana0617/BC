@@ -29,6 +29,7 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
     address: '',
     city: '',
     country: 'Colombia',
+    timezone: 'America/Bogota',
     description: ''
   })
 
@@ -49,6 +50,7 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
             address: business.address || '',
             city: business.city || '',
             country: business.country || 'Colombia',
+            timezone: business.timezone || 'America/Bogota',
             description: business.description || ''
           }
         : null
@@ -87,6 +89,32 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
     { value: 'PET_CENTER', label: 'Centro de Cuidado de Mascotas' }
   ]
 
+  const timezones = [
+    { value: 'America/Bogota', label: 'Colombia (GMT-5)' },
+    { value: 'America/Mexico_City', label: 'México (GMT-6)' },
+    { value: 'America/Argentina/Buenos_Aires', label: 'Argentina (GMT-3)' },
+    { value: 'America/Santiago', label: 'Chile (GMT-3)' },
+    { value: 'America/Lima', label: 'Perú (GMT-5)' },
+    { value: 'America/Caracas', label: 'Venezuela (GMT-4)' },
+    { value: 'America/Panama', label: 'Panamá (GMT-5)' },
+    { value: 'America/Costa_Rica', label: 'Costa Rica (GMT-6)' },
+    { value: 'America/Guatemala', label: 'Guatemala (GMT-6)' },
+    { value: 'America/Tegucigalpa', label: 'Honduras (GMT-6)' },
+    { value: 'America/El_Salvador', label: 'El Salvador (GMT-6)' },
+    { value: 'America/Managua', label: 'Nicaragua (GMT-6)' },
+    { value: 'America/Guayaquil', label: 'Ecuador (GMT-5)' },
+    { value: 'America/La_Paz', label: 'Bolivia (GMT-4)' },
+    { value: 'America/Asuncion', label: 'Paraguay (GMT-4)' },
+    { value: 'America/Montevideo', label: 'Uruguay (GMT-3)' },
+    { value: 'America/Sao_Paulo', label: 'Brasil (GMT-3)' },
+    { value: 'America/New_York', label: 'EE.UU. Este (GMT-5)' },
+    { value: 'America/Chicago', label: 'EE.UU. Centro (GMT-6)' },
+    { value: 'America/Denver', label: 'EE.UU. Montaña (GMT-7)' },
+    { value: 'America/Los_Angeles', label: 'EE.UU. Pacífico (GMT-8)' },
+    { value: 'Europe/Madrid', label: 'España (GMT+1)' },
+    { value: 'Europe/London', label: 'Reino Unido (GMT+0)' }
+  ]
+
   const handleInputChange = (e) => {
     const { name, value } = e.target
     
@@ -118,6 +146,7 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
         city: formData.city,
         state: formData.state,
         country: formData.country,
+        timezone: formData.timezone,
         zipCode: formData.zipCode,
         website: formData.website,
         type: formData.type
@@ -333,6 +362,29 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
           />
         </div>
 
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Zona Horaria *
+          </label>
+          <select
+            name="timezone"
+            value={formData.timezone}
+            onChange={handleInputChange}
+            disabled={!isEditing}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
+          >
+            {timezones.map(tz => (
+              <option key={tz.value} value={tz.value}>
+                {tz.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            Esta zona horaria se usará para programar citas y reportes. Los turnos se mostrarán en esta hora local.
+          </p>
+        </div>
+
+        {/* 
         {/* Descripción */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">

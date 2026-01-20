@@ -12,9 +12,11 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline'
 import { apiClient } from '@shared/api/client'
+import { formatInTimezone } from '../../../utils/timezone'
 
 const ClientDetailModal = ({ isOpen, onClose, client, onEdit }) => {
   const { currentBusiness } = useSelector(state => state.business)
+  const timezone = currentBusiness?.timezone || 'America/Bogota'
   const [activeTab, setActiveTab] = useState('info') // 'info', 'history', 'medical'
   const [history, setHistory] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
@@ -196,7 +198,11 @@ const ClientDetailModal = ({ isOpen, onClose, client, onEdit }) => {
                         <span className="text-gray-600">Fecha de Nacimiento:</span>
                         <span className="font-medium">
                           {client.dateOfBirth 
-                            ? new Date(client.dateOfBirth).toLocaleDateString('es-CO')
+                            ? formatInTimezone(client.dateOfBirth, timezone, {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })
                             : 'No especificada'}
                         </span>
                       </div>
@@ -368,7 +374,7 @@ const ClientDetailModal = ({ isOpen, onClose, client, onEdit }) => {
                             <div className="space-y-1 text-sm text-gray-600">
                               <div className="flex items-center gap-2">
                                 <CalendarIcon className="w-4 h-4" />
-                                {new Date(appointment.startTime).toLocaleDateString('es-CO', {
+                                {formatInTimezone(appointment.startTime, timezone, {
                                   weekday: 'long',
                                   year: 'numeric',
                                   month: 'long',
@@ -377,7 +383,7 @@ const ClientDetailModal = ({ isOpen, onClose, client, onEdit }) => {
                               </div>
                               <div className="flex items-center gap-2">
                                 <ClockIcon className="w-4 h-4" />
-                                {new Date(appointment.startTime).toLocaleTimeString('es-CO', {
+                                {formatInTimezone(appointment.startTime, timezone, {
                                   hour: '2-digit',
                                   minute: '2-digit'
                                 })}

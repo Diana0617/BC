@@ -9,6 +9,7 @@ import {
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
+import { formatInTimezone } from '../../../utils/timezone';
 
 /**
  * Card de estado de la caja registradora
@@ -16,6 +17,8 @@ import { useNavigate } from 'react-router-dom';
  */
 export default function CashRegisterCard({ businessId }) {
   const { token } = useSelector(state => state.auth);
+  const currentBusiness = useSelector(state => state.business?.currentBusiness);
+  const timezone = currentBusiness?.timezone || 'America/Bogota';
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [shouldUse, setShouldUse] = useState(false);
@@ -144,9 +147,9 @@ export default function CashRegisterCard({ businessId }) {
             <div className="flex items-center justify-between text-white">
               <span className="text-sm opacity-80">Hora Apertura:</span>
               <span className="text-base font-semibold">
-                {new Date(activeShift.openedAt).toLocaleTimeString('es-CO', {
+                {formatInTimezone(activeShift.openedAt, timezone, {
                   hour: '2-digit',
-                  minute: '2-digit',
+                  minute: '2-digit'
                 })}
               </span>
             </div>

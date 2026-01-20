@@ -14,10 +14,13 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import { fetchSaleById, cancelSale, clearCurrentSale } from '@shared/store/slices/salesSlice';
+import { formatInTimezone } from '../../utils/timezone';
 
 const SaleDetailModal = ({ saleId, isOpen, onClose }) => {
   const dispatch = useDispatch();
   const { currentSale, loading } = useSelector(state => state.sales);
+  const business = useSelector(state => state.business?.currentBusiness);
+  const timezone = business?.timezone || 'America/Bogota';
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
@@ -59,8 +62,7 @@ const SaleDetailModal = ({ saleId, isOpen, onClose }) => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-CO', {
+    return formatInTimezone(dateString, timezone, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

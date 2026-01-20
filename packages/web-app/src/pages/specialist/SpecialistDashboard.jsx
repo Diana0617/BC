@@ -21,6 +21,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { format, addDays, subDays, startOfWeek, endOfWeek, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { dateRangeToUTC } from '../../utils/timezone';
 
 // Components
 import AppointmentCard from '../../components/specialist/appointments/AppointmentCard';
@@ -44,6 +45,7 @@ export default function SpecialistDashboard() {
   const navigate = useNavigate();
   const { user, token } = useSelector(state => state.auth);
   const business = useSelector(state => state.business?.currentBusiness);
+  const timezone = business?.timezone || 'America/Bogota';
   
   // Estados locales
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
@@ -70,26 +72,36 @@ export default function SpecialistDashboard() {
     try {
       setLoading(true);
       
-      // Calcular fechas de inicio y fin según el período
-      let startDate, endDate;
+      // Calcular fechas de inicio y fin según el período (en hora local)
+      let startDateLocal, endDateLocal;
       
       if (period === 'day') {
-        startDate = format(currentDate, 'yyyy-MM-dd');
-        endDate = format(currentDate, 'yyyy-MM-dd');
+        startDateLocal = format(currentDate, 'yyyy-MM-dd');
+        endDateLocal = format(currentDate, 'yyyy-MM-dd');
       } else if (period === 'week') {
         const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
         const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
-        startDate = format(weekStart, 'yyyy-MM-dd');
-        endDate = format(weekEnd, 'yyyy-MM-dd');
+        startDateLocal = format(weekStart, 'yyyy-MM-dd');
+        endDateLocal = format(weekEnd, 'yyyy-MM-dd');
       } else if (period === 'month') {
         const monthStart = startOfMonth(currentDate);
         const monthEnd = endOfMonth(currentDate);
-        startDate = format(monthStart, 'yyyy-MM-dd');
-        endDate = format(monthEnd, 'yyyy-MM-dd');
+        startDateLocal = format(monthStart, 'yyyy-MM-dd');
+        endDateLocal = format(monthEnd, 'yyyy-MM-dd');
       }
       
+      // Convertir el rango a UTC para la consulta
+      const { startDateUTC, endDateUTC } = dateRangeToUTC(startDateLocal, endDateLocal, timezone);
+      
+      console.log('🔍 [SpecialistDashboard] Consultando citas:', {
+        periodo: period,
+        fechaLocal: `${startDateLocal} - ${endDateLocal}`,
+        fechaUTC: `${startDateUTC} - ${endDateUTC}`,
+        timezone
+      });
+      
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/calendar/specialist/${user.id}?startDate=${startDate}&endDate=${endDate}`,
+        `${import.meta.env.VITE_API_URL}/api/calendar/specialist/${user.id}?startDate=${startDateUTC}&endDate=${endDateUTC}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -179,7 +191,7 @@ export default function SpecialistDashboard() {
         }
         
         // Cargar especialistas (solo para roles con permisos)
-        if (user?.role === 'BUSINESS_SPECIALIST' || user?.role === 'BUSINESS') {
+        if (user?.role === 'BUSINESS_SPECIALIST' || user?.role === 'BUSINESS' || user?.role === 'RECEPTIONIST_SPECIALIST' || user?.role === 'RECEPTIONIST') {
           const specialistsResponse = await fetch(
             `${import.meta.env.VITE_API_URL}/api/business/${effectiveBusinessId}/config/specialists`,
             {
