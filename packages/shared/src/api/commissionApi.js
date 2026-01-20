@@ -246,14 +246,14 @@ const commissionApi = {
         formData.append('paymentProof', paymentProofFile);
       }
 
-      const headers = {
-        'Content-Type': 'multipart/form-data'
-      };
+      const headers = {};
 
       // Agregar token si se proporciona
       if (token) {
         headers.Authorization = `Bearer ${token}`;
       }
+
+      // NO establecer Content-Type para FormData - el navegador lo hace automáticamente con el boundary correcto
 
       const response = await apiClient.post(
         `/api/business/${businessId}/commissions/pay`,
