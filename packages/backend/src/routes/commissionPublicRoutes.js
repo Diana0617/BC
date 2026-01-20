@@ -29,4 +29,14 @@ router.get(
   commissionController.getCommissionHistory
 );
 
+/**
+ * Crear solicitud de pago de comisiones
+ * POST /api/commissions/request
+ */
+router.post(
+  '/request',
+  authenticateToken,
+  commissionController.createCommissionRequest
+);
+
 module.exports = router;

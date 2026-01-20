@@ -258,6 +258,90 @@ exports.getCommissionHistory = async (req, res) => {
 };
 
 /**
+ * Crear solicitud de pago de comisiones
+ * POST /api/commissions/request
+ */
+exports.createCommissionRequest = async (req, res) => {
+  try {
+    const { specialistId, amount, notes, paymentMethod } = req.body;
+
+    if (!specialistId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: 'specialistId y amount son requeridos'
+      });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El monto debe ser mayor a 0'
+      });
+    }
+
+    // Obtener el usuario para obtener el businessId
+    const specialist = await User.findByPk(specialistId);
+    if (!specialist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Especialista no encontrado'
+      });
+    }
+
+    // Generar número de solicitud único
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    
+    // Contar solicitudes del mes para generar número secuencial
+    const count = await CommissionPaymentRequest.count({
+      where: {
+        createdAt: {
+          [Op.gte]: startOfMonth(now),
+          [Op.lte]: endOfMonth(now)
+        }
+      }
+    });
+    
+    const requestNumber = `CPR-${year}${month}-${String(count + 1).padStart(3, '0')}`;
+
+    // Período: mes actual por defecto
+    const periodFrom = startOfMonth(now);
+    const periodTo = endOfMonth(now);
+
+    // Crear la solicitud de pago
+    const paymentRequest = await CommissionPaymentRequest.create({
+      requestNumber,
+      specialistId,
+      businessId: specialist.businessId,
+      periodFrom,
+      periodTo,
+      totalAmount: amount,
+      specialistNotes: notes || null,
+      paymentMethod: paymentMethod || 'TRANSFER',
+      status: 'SUBMITTED',
+      submittedAt: new Date()
+    });
+
+    console.log('✅ Solicitud de pago creada:', paymentRequest.id, requestNumber);
+
+    res.status(201).json({
+      success: true,
+      data: paymentRequest,
+      message: 'Solicitud de pago creada exitosamente'
+    });
+
+  } catch (error) {
+    console.error('Error creando solicitud de pago:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al crear solicitud de pago',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Obtener configuración de comisiones del negocio
  * GET /api/business/:businessId/commission-config
  */
