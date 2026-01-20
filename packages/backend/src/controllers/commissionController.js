@@ -1358,13 +1358,13 @@ exports.getPaymentRequests = async (req, res) => {
         },
         {
           model: User,
-          as: 'reviewedByUser',
+          as: 'reviewer',
           attributes: ['firstName', 'lastName'],
           required: false
         },
         {
           model: User,
-          as: 'paidByUser',
+          as: 'payer',
           attributes: ['firstName', 'lastName'],
           required: false
         }
@@ -1398,12 +1398,12 @@ exports.getPaymentRequests = async (req, res) => {
           rejectionReason: req.rejectionReason,
           submittedAt: req.submittedAt,
           reviewedAt: req.reviewedAt,
-          reviewedBy: req.reviewedByUser ? 
-            `${req.reviewedByUser.firstName} ${req.reviewedByUser.lastName}` : 
+          reviewedBy: req.reviewer ? 
+            `${req.reviewer.firstName} ${req.reviewer.lastName}` : 
             null,
           paidAt: req.paidAt,
-          paidBy: req.paidByUser ? 
-            `${req.paidByUser.firstName} ${req.paidByUser.lastName}` : 
+          paidBy: req.payer ? 
+            `${req.payer.firstName} ${req.payer.lastName}` : 
             null
         })),
         pagination: {
