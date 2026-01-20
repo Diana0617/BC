@@ -29,8 +29,11 @@ const SubscriptionPage = () => {
   const [successMessage, setSuccessMessage] = useState('')
 
   // Redux state
-  const { plans, loading } = useSelector(state => state.plans)
+  const { plans: allPlans, loading } = useSelector(state => state.plans)
   const { loading: subscriptionLoading, error: subscriptionError } = useSelector(state => state.subscription)
+  
+  // Filtrar el plan LIFETIME para que no se muestre en la lista de planes disponibles
+  const plans = allPlans.filter(plan => plan.name !== 'LIFETIME');
   
   // Owner permissions
   const isOwner = useSelector(selectIsOwner)
