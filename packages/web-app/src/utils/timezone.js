@@ -12,15 +12,14 @@
  */
 export const localToUTC = (date, time, timezone) => {
   try {
-    // Crear un string ISO que será interpretado en la zona horaria especificada
-    // Usamos un truco: creamos fechas en ambas zonas y calculamos la diferencia
-    const localString = `${date}T${time}:00`
+    const dateTimeString = `${date}T${time}:00`
     
-    // Crear fecha asumiendo UTC
-    const dateUTC = new Date(`${localString}Z`)
+    // Crear dos fechas: una interpretada como local del navegador,
+    // otra formateada en la zona horaria del negocio
+    const tempDate = new Date(dateTimeString)
     
-    // Crear la misma fecha pero formateada en la zona horaria objetivo
-    const formatter = new Intl.DateTimeFormat('en-CA', {
+    // Obtener cómo se ve esta fecha en la zona horaria del negocio
+    const tzString = tempDate.toLocaleString('en-US', { 
       timeZone: timezone,
       year: 'numeric',
       month: '2-digit',
@@ -31,31 +30,42 @@ export const localToUTC = (date, time, timezone) => {
       hour12: false
     })
     
-    // Obtener cómo se ve la fecha UTC en la zona horaria objetivo
-    const localParts = formatter.format(dateUTC).split(', ')
-    const localDate = `${localParts[0]}T${localParts[1]}`
+    // Obtener cómo se ve en UTC
+    const utcString = tempDate.toLocaleString('en-US', { 
+      timeZone: 'UTC',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
     
-    // Calcular la diferencia en milisegundos
-    const localTime = new Date(localString).getTime()
-    const tzTime = new Date(localDate).getTime()
-    const offset = tzTime - localTime
+    // Calcular el offset en milisegundos
+    const tzDate = new Date(tzString)
+    const utcDate = new Date(utcString)
+    const offset = utcDate.getTime() - tzDate.getTime()
     
-    // Ajustar la fecha UTC con el offset inverso
-    const result = new Date(dateUTC.getTime() - offset)
+    // Aplicar el offset a la fecha original interpretada como hora del negocio
+    const result = new Date(new Date(`${date}T${time}:00Z`).getTime() - offset)
     
     console.log('localToUTC conversion:', {
       input: { date, time, timezone },
-      dateUTC: dateUTC.toISOString(),
-      localDate,
       offset: offset / 3600000 + ' hours',
       result: result.toISOString()
     })
     
+    if (isNaN(result.getTime())) {
+      throw new Error('Fecha inválida generada')
+    }
+    
     return result
   } catch (error) {
     console.error('Error convirtiendo local a UTC:', error, { date, time, timezone })
-    // Fallback: crear fecha en UTC directamente
-    return new Date(`${date}T${time}:00Z`)
+    // Fallback más seguro: interpretar como UTC
+    const fallback = new Date(`${date}T${time}:00Z`)
+    return fallback
   }
 }
 
