@@ -28,19 +28,16 @@ const WhatsAppToken = sequelize.define('WhatsAppToken', {
   },
   encryptedToken: {
     type: DataTypes.TEXT,
-    allowNull: false,
-    field: 'encrypted_token'
+    allowNull: false
   },
   tokenType: {
     type: DataTypes.STRING(50),
     allowNull: false,
-    defaultValue: 'USER_ACCESS_TOKEN',
-    field: 'token_type'
+    defaultValue: 'USER_ACCESS_TOKEN'
   },
   expiresAt: {
     type: DataTypes.DATE,
-    allowNull: true,
-    field: 'expires_at'
+    allowNull: true
   },
   metadata: {
     type: DataTypes.JSONB,
@@ -50,13 +47,11 @@ const WhatsAppToken = sequelize.define('WhatsAppToken', {
   isActive: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
-    defaultValue: true,
-    field: 'is_active'
+    defaultValue: true
   },
   lastRotatedAt: {
     type: DataTypes.DATE,
-    allowNull: true,
-    field: 'last_rotated_at'
+    allowNull: true
   }
 }, {
   tableName: 'whatsapp_tokens',
