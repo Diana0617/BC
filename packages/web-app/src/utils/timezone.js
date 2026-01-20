@@ -202,19 +202,33 @@ export const dateRangeToUTC = (startDate, endDate, timezone) => {
     // Fin del día en hora local (23:59:59)
     const endUTC = localToUTC(endDate, '23:59', timezone)
     
-    return {
+    // Validar que las fechas sean válidas
+    if (isNaN(startUTC.getTime()) || isNaN(endUTC.getTime())) {
+      console.error('Fechas inválidas generadas en dateRangeToUTC:', { startDate, endDate, timezone, startUTC, endUTC })
+      throw new Error('Fechas inválidas')
+    }
+    
+    const result = {
       startDateUTC: startUTC.toISOString(),
       endDateUTC: endUTC.toISOString()
     }
+    
+    console.log('[dateRangeToUTC]', {
+      input: { startDate, endDate, timezone },
+      output: result
+    })
+    
+    return result
   } catch (error) {
-    console.error('Error convirtiendo rango de fechas:', error)
-    // Fallback: usar fechas como están
+    console.error('Error convirtiendo rango de fechas:', error, { startDate, endDate, timezone })
+    // Fallback: usar fechas como están pero asegurando formato válido
     return {
-      startDateUTC: `${startDate}T00:00:00Z`,
-      endDateUTC: `${endDate}T23:59:59Z`
+      startDateUTC: `${startDate}T00:00:00.000Z`,
+      endDateUTC: `${endDate}T23:59:59.999Z`
     }
   }
 }
+ 
 
 export default {
   localToUTC,
