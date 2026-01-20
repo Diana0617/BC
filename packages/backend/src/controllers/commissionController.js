@@ -318,7 +318,7 @@ exports.createCommissionRequest = async (req, res) => {
       periodTo,
       totalAmount: amount,
       specialistNotes: notes || null,
-      paymentMethod: paymentMethod || 'TRANSFER',
+      paymentMethod: paymentMethod || 'BANK_TRANSFER',
       status: 'SUBMITTED',
       submittedAt: new Date()
     });

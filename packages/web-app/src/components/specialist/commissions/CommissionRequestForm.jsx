@@ -27,7 +27,7 @@ export default function CommissionRequestForm({
   const [formData, setFormData] = useState({
     amount: pendingAmountProp || 0,
     notes: '',
-    paymentMethod: 'TRANSFER' // 'TRANSFER', 'CASH', 'CHECK'
+    paymentMethod: 'BANK_TRANSFER' // 'BANK_TRANSFER', 'CASH', 'DIGITAL_WALLET', 'CHECK', 'OTHER'
   });
 
   console.log('🟡 CommissionRequestForm - Props recibidos:', { specialistId, businessId, pendingAmount: pendingAmountProp });
@@ -133,8 +133,9 @@ export default function CommissionRequestForm({
   };
 
   const paymentMethodOptions = [
-    { value: 'TRANSFER', label: 'Transferencia Bancaria', icon: '🏦' },
+    { value: 'BANK_TRANSFER', label: 'Transferencia Bancaria', icon: '🏦' },
     { value: 'CASH', label: 'Efectivo', icon: '💵' },
+    { value: 'DIGITAL_WALLET', label: 'Billetera Digital', icon: '📱' },
     { value: 'CHECK', label: 'Cheque', icon: '📝' }
   ];
 
