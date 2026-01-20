@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
@@ -24,6 +25,7 @@ const LandingPage = () => {
 
   // Redux para auth y navegación
   const { isAuthenticated, user } = useSelector(state => state.auth);
+  // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
 
   // Handler para el botón Ingresar
@@ -116,7 +118,7 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 bg-clip-text bg-cyan-200 sm:mb-6 leading-tight">
               La plataforma completa para
               <br className="hidden sm:block" />
               <span className="text-transparent bg-clip-text bg-cyan-200">
