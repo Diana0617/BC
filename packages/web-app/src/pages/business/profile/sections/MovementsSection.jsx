@@ -73,6 +73,14 @@ const MovementsSection = () => {
   const commissionsLoading = useSelector(selectCommissionsLoading)
   const selectedSpecialistDetails = useSelector(selectSpecialistDetails)
 
+  console.log('🔷 MovementsSection - Estado Redux de comisiones:', {
+    specialists,
+    specialistsCount: specialists?.length,
+    commissionConfig,
+    commissionsLoading,
+    selectedSpecialistDetails
+  });
+
   // Local state
   const [activeTab, setActiveTab] = useState('financial') // 'financial', 'appointments', 'expenses', 'commissions'
   const [dateRange, setDateRange] = useState({
@@ -94,7 +102,16 @@ const MovementsSection = () => {
 
   // Cargar datos cuando cambia la pestaña o las fechas
   useEffect(() => {
-    if (!currentBusiness?.id) return
+    console.log('🔷 MovementsSection - useEffect disparado:', { 
+      activeTab, 
+      currentBusinessId: currentBusiness?.id,
+      commissionFilters 
+    });
+    
+    if (!currentBusiness?.id) {
+      console.warn('⚠️ MovementsSection - No hay currentBusiness.id, saltando peticiones');
+      return;
+    }
 
     if (activeTab === 'financial') {
       dispatch(fetchFinancialMovements({
@@ -119,11 +136,19 @@ const MovementsSection = () => {
       }))
       dispatch(fetchExpenseCategories({ businessId: currentBusiness.id }))
     } else if (activeTab === 'commissions') {
+      console.log('🔷 MovementsSection - Despachando fetchSpecialistsSummary:', {
+        businessId: currentBusiness.id,
+        month: commissionFilters.month + 1,
+        year: commissionFilters.year
+      });
+      
       dispatch(fetchSpecialistsSummary({
         businessId: currentBusiness.id,
         month: commissionFilters.month + 1,
         year: commissionFilters.year
       }))
+      
+      console.log('🔷 MovementsSection - Despachando fetchCommissionConfig');
       dispatch(fetchCommissionConfig({ businessId: currentBusiness.id }))
     }
   }, [activeTab, dateRange, currentBusiness, dispatch, expenseFilters, commissionFilters])
