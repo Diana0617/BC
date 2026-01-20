@@ -20,8 +20,11 @@ import { usePublicPlans } from '../../../../shared/src/hooks/usePublicPlans';
 
 const LandingPage = () => {
   // Usar los hooks directamente
-  const { plans, loading, error } = usePublicPlans();
+  const { plans: allPlans, loading, error } = usePublicPlans();
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Filtrar el plan LifeTime para que no se muestre
+  const plans = allPlans.filter(plan => plan.name !== 'LifeTime');
 
   // Redux para auth y navegación
   const { isAuthenticated, user } = useSelector(state => state.auth);
