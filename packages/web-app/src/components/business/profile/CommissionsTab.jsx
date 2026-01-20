@@ -626,7 +626,7 @@ const CommissionsTab = ({
               month: new Date(selectedRequestForPayment.periodFrom).getMonth() + 1,
               year: new Date(selectedRequestForPayment.periodFrom).getFullYear()
             },
-            services: []
+            services: selectedRequestForPayment.appointments || []
           }}
           loading={paymentLoading}
         />

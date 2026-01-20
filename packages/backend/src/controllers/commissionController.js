@@ -894,7 +894,7 @@ exports.getSpecialistsSummary = async (req, res) => {
             businessId,
             specialistId: specialist.id,
             status: 'COMPLETED',
-            startTime: {
+            completedAt: {
               [Op.between]: [periodStart, periodEnd]
             }
           },
@@ -1019,7 +1019,7 @@ exports.getSpecialistDetails = async (req, res) => {
         businessId,
         specialistId,
         status: 'COMPLETED',
-        startTime: {
+        completedAt: {
           [Op.between]: [periodStart, periodEnd]
         }
       },
@@ -1374,10 +1374,61 @@ exports.getPaymentRequests = async (req, res) => {
       offset
     });
 
+    // Para cada request, obtener los appointments del período
+    const requestsWithAppointments = await Promise.all(requests.map(async (req) => {
+      const appointments = await Appointment.findAll({
+        where: {
+          specialistId: req.specialistId,
+          status: 'COMPLETED',
+          completedAt: {
+            [Op.between]: [req.periodFrom, req.periodTo]
+          }
+        },
+        include: [
+          {
+            model: Service,
+            as: 'service',
+            attributes: ['id', 'name', 'price']
+          },
+          {
+            model: Client,
+            as: 'client',
+            attributes: ['id', 'firstName', 'lastName']
+          }
+        ],
+        order: [['completedAt', 'DESC']]
+      });
+
+      // Calcular comisiones para cada appointment
+      const appointmentsWithCommission = appointments.map(appt => {
+        const price = parseFloat(appt.totalAmount || appt.service?.price || 0);
+        const commissionRate = 50; // TODO: obtener de config
+        const commission = (price * commissionRate) / 100;
+
+        return {
+          id: appt.id,
+          date: appt.completedAt || appt.date,
+          serviceName: appt.service?.name,
+          clientName: appt.client 
+            ? `${appt.client.firstName} ${appt.client.lastName}` 
+            : 'Cliente no registrado',
+          totalAmount: price,
+          commissionRate: commissionRate,
+          commission: Math.round(commission * 100) / 100,
+          isPaid: false // Por defecto, se actualiza si hay payment
+        };
+      });
+
+      return {
+        request: req,
+        appointments: appointmentsWithCommission
+      };
+    }));
+
     res.json({
       success: true,
       data: {
-        requests: requests.map(req => ({
+        requests: requestsWithAppointments.map(({ request: req, appointments }) => ({
           id: req.id,
           requestNumber: req.requestNumber,
           specialist: {
@@ -1403,7 +1454,8 @@ exports.getPaymentRequests = async (req, res) => {
           paidAt: req.paidAt,
           paidBy: req.payer ? 
             `${req.payer.firstName} ${req.payer.lastName}` : 
-            null
+            null,
+          appointments: appointments
         })),
         pagination: {
           page: parseInt(page),
