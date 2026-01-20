@@ -246,21 +246,31 @@ const commissionApi = {
         formData.append('paymentProof', paymentProofFile);
       }
 
+      // Usar fetch directamente para evitar problemas con apiClient y FormData
       const headers = {};
-
-      // Agregar token si se proporciona
       if (token) {
         headers.Authorization = `Bearer ${token}`;
       }
+      // NO establecer Content-Type - el navegador lo maneja automáticamente con FormData
 
-      // NO establecer Content-Type para FormData - el navegador lo hace automáticamente con el boundary correcto
+      const url = `${apiClient.baseURL}/api/business/${businessId}/commissions/pay`;
+      console.log('📡 Sending FormData to:', url);
 
-      const response = await apiClient.post(
-        `/api/business/${businessId}/commissions/pay`,
-        formData,
-        { headers }
-      );
-      console.log('✅ API - registerPayment response:', response.data);
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = responseData?.error || responseData?.message || `HTTP Error: ${response.status}`;
+        throw new Error(errorMessage);
+      }
+      
+      console.log('✅ API - registerPayment response:', responseData);
+      return responseData;
       return response.data;
     } catch (error) {
       console.error('❌ API - Error registering payment:', error);
