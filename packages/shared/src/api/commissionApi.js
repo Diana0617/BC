@@ -196,13 +196,19 @@ const commissionApi = {
    * Actualizar estado de solicitud de pago
    * PATCH /api/business/:businessId/commissions/payment-requests/:requestId
    */
-  updatePaymentRequestStatus: async (businessId, requestId, data) => {
+  updatePaymentRequestStatus: async (businessId, requestId, data, token = null) => {
     try {
       console.log('📡 API - updatePaymentRequestStatus:', { businessId, requestId, data });
-      
+
+      const headers = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await apiClient.patch(
         `/api/business/${businessId}/commissions/payment-requests/${requestId}`,
-        data
+        data,
+        { headers }
       );
       console.log('✅ API - updatePaymentRequestStatus response:', response.data);
       return response.data;
@@ -216,9 +222,9 @@ const commissionApi = {
    * Registrar pago de comisión con comprobante
    * POST /api/business/:businessId/commissions/pay
    */
-  registerPayment: async (businessId, data, paymentProofFile = null) => {
+  registerPayment: async (businessId, data, paymentProofFile = null, token = null) => {
     try {
-      console.log('📡 API - registerPayment:', { businessId, data, hasFile: !!paymentProofFile });
+      console.log('📡 API - registerPayment:', { businessId, data, hasFile: !!paymentProofFile, hasToken: !!token });
       
       const formData = new FormData();
       
@@ -240,14 +246,19 @@ const commissionApi = {
         formData.append('paymentProof', paymentProofFile);
       }
 
+      const headers = {
+        'Content-Type': 'multipart/form-data'
+      };
+
+      // Agregar token si se proporciona
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await apiClient.post(
         `/api/business/${businessId}/commissions/pay`,
         formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
+        { headers }
       );
       console.log('✅ API - registerPayment response:', response.data);
       return response.data;

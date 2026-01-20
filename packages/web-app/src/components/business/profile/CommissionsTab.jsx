@@ -27,7 +27,7 @@ const CommissionsTab = ({
   filters,
   onFilterChange
 }) => {
-  const { user } = useSelector(state => state.auth);
+  const { user, token } = useSelector(state => state.auth);
   const [expandedSpecialist, setExpandedSpecialist] = useState(null);
   const [paymentRequests, setPaymentRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
@@ -81,7 +81,8 @@ const CommissionsTab = ({
       const response = await commissionApi.updatePaymentRequestStatus(
         user.businessId,
         requestId,
-        { status: 'APPROVED', businessNotes }
+        { status: 'APPROVED', businessNotes },
+        token
       );
 
       if (response.success) {
@@ -106,7 +107,8 @@ const CommissionsTab = ({
       const response = await commissionApi.updatePaymentRequestStatus(
         user.businessId,
         requestId,
-        { status: 'REJECTED', rejectionReason }
+        { status: 'REJECTED', rejectionReason },
+        token
       );
 
       if (response.success) {
@@ -194,7 +196,8 @@ const CommissionsTab = ({
       const response = await commissionApi.registerPayment(
         user.businessId,
         data,
-        paymentProofFile
+        paymentProofFile,
+        token
       );
 
       if (response.success) {
