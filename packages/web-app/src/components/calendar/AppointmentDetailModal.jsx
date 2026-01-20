@@ -13,7 +13,7 @@ import {
   CheckCircleIcon,
   XCircleIcon
 } from '@heroicons/react/24/outline'
-import { formatInTimezone } from '../../../utils/timezone'
+import { formatInTimezone } from '../../utils/timezone'
 
 /**
  * AppointmentDetailModal - Modal para ver y gestionar detalles de una cita
