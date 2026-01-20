@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
 import { 
   PaperAirplaneIcon,
   BanknotesIcon,
@@ -18,6 +20,7 @@ export default function CommissionRequestForm({
   onSuccess,
   onCancel 
 }) {
+  const { token } = useSelector(state => state.auth);
   const [loading, setLoading] = useState(false);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [pendingAmount, setPendingAmount] = useState(pendingAmountProp || 0);
@@ -28,6 +31,7 @@ export default function CommissionRequestForm({
   });
 
   console.log('🟡 CommissionRequestForm - Props recibidos:', { specialistId, businessId, pendingAmount: pendingAmountProp });
+  console.log('🟡 CommissionRequestForm - Token disponible:', !!token);
 
   // Cargar el monto pendiente si no se pasó como prop
   useEffect(() => {
@@ -47,7 +51,7 @@ export default function CommissionRequestForm({
 
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -84,7 +88,7 @@ export default function CommissionRequestForm({
 
     if (formData.amount <= 0) {
       console.warn('⚠️ CommissionRequestForm - Monto inválido:', formData.amount);
-      alert('El monto debe ser mayor a cero');
+      toast.error('El monto debe ser mayor a cero');
       return;
     }
 
@@ -102,7 +106,7 @@ export default function CommissionRequestForm({
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
@@ -118,11 +122,11 @@ export default function CommissionRequestForm({
 
       const data = await response.json();
       console.log('✅ CommissionRequestForm - Data recibida:', data);
-      alert('Solicitud de pago enviada exitosamente');
+      toast.success('Solicitud de pago enviada exitosamente');
       onSuccess?.(data);
     } catch (error) {
       console.error('❌ CommissionRequestForm - Error creating commission request:', error);
-      alert('Error al crear la solicitud. Intenta nuevamente.');
+      toast.error('Error al crear la solicitud. Intenta nuevamente.');
     } finally {
       setLoading(false);
     }

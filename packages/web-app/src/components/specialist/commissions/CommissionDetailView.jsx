@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
 import { 
   CalendarIcon,
   UserIcon,
@@ -24,11 +26,13 @@ export default function CommissionDetailView({
   endDate,
   onClose 
 }) {
+  const { token } = useSelector(state => state.auth);
   const [loading, setLoading] = useState(false);
   const [commissionData, setCommissionData] = useState(null);
   const [appointments, setAppointments] = useState([]);
 
   console.log('🔵 CommissionDetailView - Props recibidos:', { specialistId, period, startDate, endDate });
+  console.log('🔵 CommissionDetailView - Token disponible:', !!token);
 
   useEffect(() => {
     console.log('🔵 CommissionDetailView - useEffect disparado', { specialistId });
@@ -57,10 +61,11 @@ export default function CommissionDetailView({
       const url = `${import.meta.env.VITE_API_URL}/api/commissions/summary?${params}`;
       console.log('🔵 CommissionDetailView - URL:', url);
       console.log('🔵 CommissionDetailView - Params:', Object.fromEntries(params));
+      console.log('🔵 CommissionDetailView - Token (primeros 20 chars):', token?.substring(0, 20));
 
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -83,7 +88,7 @@ export default function CommissionDetailView({
       }
     } catch (error) {
       console.error('❌ CommissionDetailView - Error loading commission data:', error);
-      alert('Error al cargar los datos de comisiones');
+      toast.error('Error al cargar los datos de comisiones');
     } finally {
       setLoading(false);
     }

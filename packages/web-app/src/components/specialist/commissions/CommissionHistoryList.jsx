@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
 import { 
   CalendarIcon,
   FunnelIcon,
@@ -85,7 +86,7 @@ export default function CommissionHistoryList({ specialistId, businessId }) {
       setTotalPages(data.data?.pagination?.totalPages || 1);
     } catch (error) {
       console.error('❌ CommissionHistoryList - Error loading commissions:', error);
-      alert('Error al cargar el historial');
+      toast.error('Error al cargar el historial de comisiones');
     } finally {
       setLoading(false);
     }
@@ -121,9 +122,11 @@ export default function CommissionHistoryList({ specialistId, businessId }) {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      
+      toast.success('Archivo exportado exitosamente');
     } catch (error) {
       console.error('Error exporting:', error);
-      alert('Error al exportar el historial');
+      toast.error('Error al exportar el historial');
     }
   };
 
