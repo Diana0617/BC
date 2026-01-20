@@ -313,6 +313,149 @@ exports.getCommissionHistory = async (req, res) => {
 };
 
 /**
+ * Exportar historial de comisiones
+ * GET /api/commissions/export
+ */
+exports.exportCommissionHistory = async (req, res) => {
+  try {
+    const { specialistId, businessId, status, startDate, endDate, format = 'excel' } = req.query;
+
+    if (!specialistId) {
+      return res.status(400).json({
+        success: false,
+        message: 'specialistId es requerido'
+      });
+    }
+
+    // Construir filtros
+    const where = {
+      specialistId,
+      ...(businessId && { businessId }),
+      status: 'PAID' // Solo exportar pagadas
+    };
+
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+
+    if (startDate && endDate) {
+      where.paidAt = {
+        [Op.between]: [new Date(startDate), new Date(endDate)]
+      };
+    }
+
+    // Obtener todas las solicitudes de pago
+    const payments = await CommissionPaymentRequest.findAll({
+      where,
+      include: [
+        {
+          model: CommissionDetail,
+          as: 'details',
+          include: [
+            {
+              model: Appointment,
+              as: 'appointment',
+              include: [
+                {
+                  model: Service,
+                  as: 'service',
+                  attributes: ['id', 'name']
+                },
+                {
+                  model: Client,
+                  as: 'client',
+                  attributes: ['id', 'firstName', 'lastName']
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      order: [['paidAt', 'DESC']]
+    });
+
+    // Transformar datos para exportación
+    const exportData = payments.flatMap(payment => {
+      if (!payment.details || payment.details.length === 0) {
+        return [{
+          'Fecha de Pago': payment.paidAt ? new Date(payment.paidAt).toLocaleDateString('es-CO') : 'N/A',
+          'Número de Solicitud': payment.requestNumber,
+          'Fecha de Cita': payment.paidAt ? new Date(payment.paidAt).toLocaleDateString('es-CO') : 'N/A',
+          'Cliente': 'N/A',
+          'Servicio': 'Comisión agrupada',
+          'Monto Total': parseFloat(payment.totalAmount || 0),
+          'Comisión': parseFloat(payment.totalAmount || 0),
+          '% Comisión': 0,
+          'Método de Pago': payment.paymentMethod || 'N/A',
+          'Estado': payment.status
+        }];
+      }
+
+      return payment.details.map(detail => ({
+        'Fecha de Pago': payment.paidAt ? new Date(payment.paidAt).toLocaleDateString('es-CO') : 'N/A',
+        'Número de Solicitud': payment.requestNumber,
+        'Fecha de Cita': detail.appointment?.completedAt 
+          ? new Date(detail.appointment.completedAt).toLocaleDateString('es-CO')
+          : detail.appointment?.startTime
+          ? new Date(detail.appointment.startTime).toLocaleDateString('es-CO')
+          : 'N/A',
+        'Cliente': detail.appointment?.client 
+          ? `${detail.appointment.client.firstName} ${detail.appointment.client.lastName}`.trim()
+          : 'Cliente no disponible',
+        'Servicio': detail.appointment?.service?.name || 'Servicio no disponible',
+        'Monto Total': parseFloat(detail.servicePrice || 0),
+        'Comisión': parseFloat(detail.commissionAmount || 0),
+        '% Comisión': parseFloat(detail.commissionRate || 0),
+        'Método de Pago': payment.paymentMethod || 'N/A',
+        'Estado': payment.status
+      }));
+    });
+
+    if (format === 'excel') {
+      // Generar Excel
+      const XLSX = require('xlsx');
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Comisiones');
+      
+      // Configurar anchos de columna
+      worksheet['!cols'] = [
+        { wch: 12 }, // Fecha de Pago
+        { wch: 18 }, // Número de Solicitud
+        { wch: 12 }, // Fecha de Cita
+        { wch: 25 }, // Cliente
+        { wch: 30 }, // Servicio
+        { wch: 12 }, // Monto Total
+        { wch: 12 }, // Comisión
+        { wch: 10 }, // % Comisión
+        { wch: 15 }, // Método de Pago
+        { wch: 10 }  // Estado
+      ];
+      
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      
+      res.setHeader('Content-Disposition', `attachment; filename=comisiones_${new Date().toISOString().split('T')[0]}.xlsx`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } else {
+      // Formato JSON por defecto
+      res.json({
+        success: true,
+        data: exportData
+      });
+    }
+
+  } catch (error) {
+    console.error('Error exportando historial de comisiones:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al exportar historial de comisiones',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Crear solicitud de pago de comisiones
  * POST /api/commissions/request
  */
@@ -1239,8 +1382,8 @@ exports.payCommission = async (req, res) => {
       });
     }
 
-    // Obtener URL del comprobante si se subió archivo
-    const paymentProofUrl = req.file?.path || null;
+    // Obtener URL del comprobante si se subió archivo (usar URL de Cloudinary)
+    const paymentProofUrl = req.file?.url || req.file?.path || null;
 
     let paymentRequest;
     let requestNumber;

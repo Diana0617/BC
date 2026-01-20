@@ -30,6 +30,16 @@ router.get(
 );
 
 /**
+ * Exportar historial de comisiones
+ * GET /api/commissions/export?specialistId=xxx&format=excel
+ */
+router.get(
+  '/export',
+  authenticateToken,
+  commissionController.exportCommissionHistory
+);
+
+/**
  * Crear solicitud de pago de comisiones
  * POST /api/commissions/request
  */
