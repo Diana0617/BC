@@ -37,6 +37,7 @@ const CommissionsTab = ({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedRequestForPayment, setSelectedRequestForPayment] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [selectedRequests, setSelectedRequests] = useState([]);
 
   console.log('🔶 CommissionsTab - Props recibidos:', {
     specialists,
@@ -118,8 +119,52 @@ const CommissionsTab = ({
     }
   };
 
+  const handleToggleRequestSelection = (requestId) => {
+    setSelectedRequests(prev => {
+      if (prev.includes(requestId)) {
+        return prev.filter(id => id !== requestId);
+      }
+      return [...prev, requestId];
+    });
+  };
+
+  const handleSelectAllApproved = () => {
+    const approvedIds = paymentRequests
+      .filter(req => req.status === 'APPROVED')
+      .map(req => req.id);
+    
+    if (selectedRequests.length === approvedIds.length) {
+      setSelectedRequests([]);
+    } else {
+      setSelectedRequests(approvedIds);
+    }
+  };
+
   const handleOpenPaymentModal = (request) => {
     setSelectedRequestForPayment(request);
+    setShowPaymentModal(true);
+  };
+
+  const handleOpenMultiPaymentModal = () => {
+    const selectedRequestsData = paymentRequests.filter(req => selectedRequests.includes(req.id));
+    
+    if (selectedRequestsData.length === 0) {
+      toast.error('Selecciona al menos una solicitud para pagar');
+      return;
+    }
+
+    // Combinar datos de múltiples solicitudes
+    const totalAmount = selectedRequestsData.reduce((sum, req) => sum + req.totalAmount, 0);
+    const allAppointments = selectedRequestsData.flatMap(req => req.appointments || []);
+    const firstRequest = selectedRequestsData[0];
+
+    setSelectedRequestForPayment({
+      ...firstRequest,
+      totalAmount,
+      appointments: allAppointments,
+      isMultiple: true,
+      requestIds: selectedRequests
+    });
     setShowPaymentModal(true);
   };
 
@@ -131,7 +176,7 @@ const CommissionsTab = ({
   const handlePaymentSubmit = async (paymentData, paymentProofFile) => {
     try {
       setPaymentLoading(true);
-      console.log('💳 Registrando pago de comisión:', { paymentData, hasFile: !!paymentProofFile });
+      console.log('💳 Registrando pago de comisión:', { paymentData, hasFile: !!paymentProofFile, isMultiple: selectedRequestForPayment.isMultiple });
 
       const data = {
         specialistId: selectedRequestForPayment.specialist.id,
@@ -142,7 +187,8 @@ const CommissionsTab = ({
         paymentReference: paymentData.notes,
         paidDate: paymentData.paymentDate,
         notes: paymentData.notes,
-        appointmentIds: [] // Deberías obtener los IDs de los turnos relacionados
+        requestIds: selectedRequestForPayment.isMultiple ? selectedRequestForPayment.requestIds : [selectedRequestForPayment.id],
+        appointmentIds: (selectedRequestForPayment.appointments || []).map(a => a.id)
       };
 
       const response = await commissionApi.registerPayment(
@@ -152,8 +198,10 @@ const CommissionsTab = ({
       );
 
       if (response.success) {
-        toast.success('Pago registrado exitosamente');
+        const count = selectedRequestForPayment.isMultiple ? selectedRequestForPayment.requestIds.length : 1;
+        toast.success(`Pago${count > 1 ? 's' : ''} registrado${count > 1 ? 's' : ''} exitosamente`);
         handleClosePaymentModal();
+        setSelectedRequests([]);
         loadPaymentRequests();
       }
     } catch (error) {
@@ -460,7 +508,24 @@ const CommissionsTab = ({
       {/* Payment Requests Section */}
       <div className="mt-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Solicitudes de Pago</h2>
+          <div className="flex items-center space-x-4">
+            <h2 className="text-xl font-bold text-gray-900">Solicitudes de Pago</h2>
+            {paymentRequests.filter(r => r.status === 'APPROVED').length > 0 && (
+              <button
+                onClick={handleSelectAllApproved}
+                className="text-sm text-pink-600 hover:text-pink-700 font-medium"
+              >
+                {selectedRequests.length === paymentRequests.filter(r => r.status === 'APPROVED').length
+                  ? 'Deseleccionar todas'
+                  : 'Seleccionar todas las aprobadas'}
+              </button>
+            )}
+            {selectedRequests.length > 0 && (
+              <span className="text-sm text-gray-600">
+                {selectedRequests.length} seleccionada{selectedRequests.length > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
           <select
             value={requestFilters.status}
             onChange={(e) => setRequestFilters({ ...requestFilters, status: e.target.value, page: 1 })}
@@ -497,6 +562,15 @@ const CommissionsTab = ({
               <div key={request.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
+                    {/* Checkbox para solicitudes aprobadas */}
+                    {request.status === 'APPROVED' && (
+                      <input
+                        type="checkbox"
+                        checked={selectedRequests.includes(request.id)}
+                        onChange={() => handleToggleRequestSelection(request.id)}
+                        className="h-5 w-5 text-pink-600 focus:ring-pink-500 border-gray-300 rounded cursor-pointer"
+                      />
+                    )}
                     <img
                       src={request.specialist.avatar || '/default-avatar.png'}
                       alt={request.specialist.name}
@@ -579,15 +653,15 @@ const CommissionsTab = ({
                   </div>
                 )}
 
-                {/* Botón de pagar para solicitudes aprobadas */}
-                {request.status === 'APPROVED' && (
+                {/* Botón de pagar para solicitudes aprobadas (solo si no está seleccionada) */}
+                {request.status === 'APPROVED' && !selectedRequests.includes(request.id) && (
                   <div className="mt-4">
                     <button
                       onClick={() => handleOpenPaymentModal(request)}
                       className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
                     >
                       <CurrencyDollarIcon className="w-5 h-5 mr-2" />
-                      Registrar Pago y Comprobante
+                      Registrar Pago Individual
                     </button>
                   </div>
                 )}
@@ -605,6 +679,24 @@ const CommissionsTab = ({
           </div>
         )}
       </div>
+
+      {/* Botón flotante para pago múltiple */}
+      {selectedRequests.length > 0 && (
+        <div className="fixed bottom-8 right-8 z-50">
+          <button
+            onClick={handleOpenMultiPaymentModal}
+            className="inline-flex items-center px-6 py-4 border border-transparent rounded-full shadow-lg text-base font-medium text-white bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transform transition-all duration-200 hover:scale-105"
+          >
+            <CurrencyDollarIcon className="w-6 h-6 mr-2" />
+            Pagar {selectedRequests.length} Solicitud{selectedRequests.length > 1 ? 'es' : ''} (
+            ${paymentRequests
+              .filter(req => selectedRequests.includes(req.id))
+              .reduce((sum, req) => sum + req.totalAmount, 0)
+              .toLocaleString('es-CO')}
+            )
+          </button>
+        </div>
+      )}
 
       {/* Payment Modal */}
       {showPaymentModal && selectedRequestForPayment && (
@@ -628,6 +720,7 @@ const CommissionsTab = ({
             },
             services: selectedRequestForPayment.appointments || []
           }}
+          pendingAmountOverride={selectedRequestForPayment.totalAmount}
           loading={paymentLoading}
         />
       )}

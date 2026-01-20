@@ -15,7 +15,8 @@ const CommissionPaymentModal = ({
   onSubmit,
   specialist,
   details,
-  loading = false
+  loading = false,
+  pendingAmountOverride = null
 }) => {
   const [formData, setFormData] = useState({
     paymentDate: format(new Date(), 'yyyy-MM-dd'),
@@ -29,9 +30,12 @@ const CommissionPaymentModal = ({
   const [paymentProofPreview, setPaymentProofPreview] = useState(null);
 
   // Calcular el monto pendiente total
-  const pendingAmount = details?.services?.reduce((sum, service) => {
+  // Si viene de una solicitud aprobada, usar el monto override
+  const calculatedPending = details?.services?.reduce((sum, service) => {
     return sum + (service.isPaid ? 0 : service.commission);
   }, 0) || 0;
+  
+  const pendingAmount = pendingAmountOverride !== null ? pendingAmountOverride : calculatedPending;
 
   React.useEffect(() => {
     if (isOpen && pendingAmount > 0) {

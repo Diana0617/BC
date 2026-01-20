@@ -1167,7 +1167,8 @@ exports.payCommission = async (req, res) => {
       bankAccount,
       paidDate,
       notes,
-      appointmentIds // IDs de los turnos cuyas comisiones se están pagando
+      appointmentIds, // IDs de los turnos cuyas comisiones se están pagando
+      requestIds // IDs de solicitudes existentes a marcar como pagadas (opcional)
     } = req.body;
 
     // Validar especialista
@@ -1183,33 +1184,59 @@ exports.payCommission = async (req, res) => {
       });
     }
 
-    // Generar número de solicitud
-    const requestCount = await CommissionPaymentRequest.count({
-      where: { businessId }
-    });
-    const requestNumber = `CPR-${new Date().getFullYear()}-${String(requestCount + 1).padStart(4, '0')}`;
-
     // Obtener URL del comprobante si se subió archivo
     const paymentProofUrl = req.file?.path || null;
 
-    // 1. Crear CommissionPaymentRequest
-    const paymentRequest = await CommissionPaymentRequest.create({
-      requestNumber,
-      specialistId,
-      businessId,
-      periodFrom: new Date(periodFrom),
-      periodTo: new Date(periodTo),
-      totalAmount: parseFloat(amount),
-      status: 'PAID',
-      paymentMethod,
-      paymentReference,
-      paymentProofUrl,
-      bankAccount,
-      paidAt: paidDate ? new Date(paidDate) : new Date(),
-      paidBy: req.user.id,
-      specialistNotes: notes,
-      submittedAt: new Date()
-    }, { transaction });
+    let paymentRequest;
+    
+    // Si hay requestIds, actualizar solicitudes existentes
+    if (requestIds && requestIds.length > 0) {
+      // Actualizar todas las solicitudes a PAID
+      await CommissionPaymentRequest.update({
+        status: 'PAID',
+        paymentMethod,
+        paymentReference,
+        paymentProofUrl,
+        paidAt: paidDate ? new Date(paidDate) : new Date(),
+        paidBy: req.user.id,
+        businessNotes: notes
+      }, {
+        where: {
+          id: { [Op.in]: requestIds },
+          businessId,
+          status: 'APPROVED'
+        },
+        transaction
+      });
+
+      // Obtener la primera request actualizada como referencia
+      paymentRequest = await CommissionPaymentRequest.findByPk(requestIds[0]);
+      
+    } else {
+      // Flujo original: crear nueva solicitud
+      const requestCount = await CommissionPaymentRequest.count({
+        where: { businessId }
+      });
+      const requestNumber = `CPR-${new Date().getFullYear()}-${String(requestCount + 1).padStart(4, '0')}`;
+
+      paymentRequest = await CommissionPaymentRequest.create({
+        requestNumber,
+        specialistId,
+        businessId,
+        periodFrom: new Date(periodFrom),
+        periodTo: new Date(periodTo),
+        totalAmount: parseFloat(amount),
+        status: 'PAID',
+        paymentMethod,
+        paymentReference,
+        paymentProofUrl,
+        bankAccount,
+        paidAt: paidDate ? new Date(paidDate) : new Date(),
+        paidBy: req.user.id,
+        specialistNotes: notes,
+        submittedAt: new Date()
+      }, { transaction });
+    }
 
     // 2. Crear CommissionDetails para cada turno
     const appointments = await Appointment.findAll({
