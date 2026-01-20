@@ -16,7 +16,7 @@ import {
 import { fetchProducts } from '@shared/store/slices/productsSlice'
 import { apiClient } from '@shared/api/client'
 import ProductSelector from '../sales/ProductSelector'
-import { localToUTC, isValidFutureDateTime } from '../../../utils/timezone'
+import { localToUTC, isValidFutureDateTime } from '../../utils/timezone'
 
 /**
  * CreateAppointmentModal - Modal para crear una nueva cita
