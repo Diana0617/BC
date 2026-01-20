@@ -165,8 +165,8 @@ const specialistCommissionsSlice = createSlice({
       })
       .addCase(fetchSpecialistsSummary.fulfilled, (state, action) => {
         state.loading = false;
-        state.specialists = action.payload.specialists;
-        state.period = action.payload.period;
+        state.specialists = action.payload.data?.specialists || [];
+        state.period = action.payload.data?.period || state.period;
       })
       .addCase(fetchSpecialistsSummary.rejected, (state, action) => {
         state.loading = false;
