@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   PaperAirplaneIcon,
   BanknotesIcon,
@@ -13,16 +13,62 @@ import {
  */
 export default function CommissionRequestForm({ 
   specialistId,
-  pendingAmount,
+  businessId,
+  pendingAmount: pendingAmountProp,
   onSuccess,
   onCancel 
 }) {
   const [loading, setLoading] = useState(false);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [pendingAmount, setPendingAmount] = useState(pendingAmountProp || 0);
   const [formData, setFormData] = useState({
-    amount: pendingAmount || 0,
+    amount: pendingAmountProp || 0,
     notes: '',
     paymentMethod: 'TRANSFER' // 'TRANSFER', 'CASH', 'CHECK'
   });
+
+  console.log('🟡 CommissionRequestForm - Props recibidos:', { specialistId, businessId, pendingAmount: pendingAmountProp });
+
+  // Cargar el monto pendiente si no se pasó como prop
+  useEffect(() => {
+    if (!pendingAmountProp && specialistId) {
+      loadPendingAmount();
+    }
+  }, [specialistId, businessId]);
+
+  const loadPendingAmount = async () => {
+    setLoadingSummary(true);
+    try {
+      const params = new URLSearchParams({ specialistId });
+      if (businessId) params.append('businessId', businessId);
+
+      const url = `${import.meta.env.VITE_API_URL}/api/commissions/summary?${params}`;
+      console.log('🟡 CommissionRequestForm - Cargando monto pendiente:', url);
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Error loading pending amount');
+      }
+
+      const data = await response.json();
+      console.log('🟡 CommissionRequestForm - Resumen recibido:', data);
+      
+      if (data.success && data.data) {
+        const pending = data.data.pending || 0;
+        setPendingAmount(pending);
+        setFormData(prev => ({ ...prev, amount: pending }));
+      }
+    } catch (error) {
+      console.error('❌ CommissionRequestForm - Error loading pending amount:', error);
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', {
@@ -34,36 +80,48 @@ export default function CommissionRequestForm({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('🟡 CommissionRequestForm - handleSubmit iniciado', formData);
 
     if (formData.amount <= 0) {
+      console.warn('⚠️ CommissionRequestForm - Monto inválido:', formData.amount);
       alert('El monto debe ser mayor a cero');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/commissions/request`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            specialistId,
-            ...formData
-          })
-        }
-      );
+      const payload = {
+        specialistId,
+        ...formData
+      };
+      console.log('🟡 CommissionRequestForm - Payload:', payload);
 
-      if (!response.ok) throw new Error('Error creating request');
+      const url = `${import.meta.env.VITE_API_URL}/api/commissions/request`;
+      console.log('🟡 CommissionRequestForm - URL:', url);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      console.log('🟡 CommissionRequestForm - Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ CommissionRequestForm - Error response:', errorText);
+        throw new Error('Error creating request');
+      }
 
       const data = await response.json();
+      console.log('✅ CommissionRequestForm - Data recibida:', data);
       alert('Solicitud de pago enviada exitosamente');
       onSuccess?.(data);
     } catch (error) {
-      console.error('Error creating commission request:', error);
+      console.error('❌ CommissionRequestForm - Error creating commission request:', error);
       alert('Error al crear la solicitud. Intenta nuevamente.');
     } finally {
       setLoading(false);
@@ -78,18 +136,24 @@ export default function CommissionRequestForm({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-          <PaperAirplaneIcon className="w-10 h-10 text-blue-600" />
+      {loadingSummary ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">
-          Solicitar Pago de Comisiones
-        </h3>
-        <p className="text-gray-600">
-          Completa la información para solicitar tu pago
-        </p>
-      </div>
+      ) : (
+        <>
+          {/* Header */}
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+              <PaperAirplaneIcon className="w-10 h-10 text-blue-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              Solicitar Pago de Comisiones
+            </h3>
+            <p className="text-gray-600">
+              Completa la información para solicitar tu pago
+            </p>
+          </div>
 
       {/* Monto Disponible */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
@@ -235,6 +299,8 @@ export default function CommissionRequestForm({
           <li>Podrás ver el estado en tu historial de comisiones</li>
         </ol>
       </div>
+      </>
+      )}
     </div>
   );
 }

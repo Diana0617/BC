@@ -30,12 +30,23 @@ export default function CommissionHistoryList({ specialistId, businessId }) {
     searchTerm: ''
   });
 
+  console.log('🟢 CommissionHistoryList - Props recibidos:', { specialistId, businessId });
+
   useEffect(() => {
-    loadCommissions();
+    console.log('🟢 CommissionHistoryList - useEffect disparado', { specialistId, page, filters });
+    if (specialistId) {
+      loadCommissions();
+    } else {
+      console.warn('⚠️ CommissionHistoryList - specialistId no está definido');
+    }
   }, [specialistId, page, filters]);
 
   const loadCommissions = async () => {
-    if (!token || !specialistId) return;
+    console.log('🟢 CommissionHistoryList - Validando condiciones', { token: !!token, specialistId });
+    if (!token || !specialistId) {
+      console.warn('⚠️ CommissionHistoryList - No se puede cargar: falta token o specialistId');
+      return;
+    }
     
     setLoading(true);
     try {
@@ -50,22 +61,30 @@ export default function CommissionHistoryList({ specialistId, businessId }) {
         ...(filters.searchTerm && { search: filters.searchTerm })
       });
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/commissions/history?${params}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
+      const url = `${import.meta.env.VITE_API_URL}/api/commissions/history?${params}`;
+      console.log('🟢 CommissionHistoryList - URL:', url);
+      console.log('🟢 CommissionHistoryList - Params:', Object.fromEntries(params));
 
-      if (!response.ok) throw new Error('Error loading commissions');
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log('🟢 CommissionHistoryList - Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ CommissionHistoryList - Error response:', errorText);
+        throw new Error('Error loading commissions');
+      }
 
       const data = await response.json();
+      console.log('✅ CommissionHistoryList - Data recibida:', data);
       setCommissions(data.data?.commissions || []);
       setTotalPages(data.data?.pagination?.totalPages || 1);
     } catch (error) {
-      console.error('Error loading commissions:', error);
+      console.error('❌ CommissionHistoryList - Error loading commissions:', error);
       alert('Error al cargar el historial');
     } finally {
       setLoading(false);

@@ -9,6 +9,9 @@ const CommissionsPage = () => {
   const [activeTab, setActiveTab] = useState('detail') // 'detail', 'history', 'request'
   const { user } = useSelector(state => state.auth)
 
+  console.log('🟣 CommissionsPage - Usuario:', user)
+  console.log('🟣 CommissionsPage - specialistId:', user?.id, 'businessId:', user?.businessId)
+
   const tabs = [
     {
       id: 'detail',
@@ -96,7 +99,10 @@ const CommissionsPage = () => {
                     Revisa el detalle de tus comisiones por servicios y ventas
                   </p>
                 </div>
-                <CommissionDetailView />
+                <CommissionDetailView 
+                  specialistId={user?.id} 
+                  businessId={user?.businessId}
+                />
               </div>
             )}
 
@@ -108,7 +114,10 @@ const CommissionsPage = () => {
                     Consulta el historial completo de tus comisiones pagadas
                   </p>
                 </div>
-                <CommissionHistoryList specialistId={user?.id} businessId={user?.businessId} />
+                <CommissionHistoryList 
+                  specialistId={user?.id} 
+                  businessId={user?.businessId} 
+                />
               </div>
             )}
 
@@ -120,7 +129,10 @@ const CommissionsPage = () => {
                     Crea una solicitud de pago para tus comisiones acumuladas
                   </p>
                 </div>
-                <CommissionRequestForm />
+                <CommissionRequestForm 
+                  specialistId={user?.id}
+                  businessId={user?.businessId}
+                />
               </div>
             )}
           </div>

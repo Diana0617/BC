@@ -18,6 +18,7 @@ import { es } from 'date-fns/locale';
  */
 export default function CommissionDetailView({ 
   specialistId, 
+  businessId,
   period = 'current', // 'current', 'month', 'year', 'custom'
   startDate,
   endDate,
@@ -27,38 +28,61 @@ export default function CommissionDetailView({
   const [commissionData, setCommissionData] = useState(null);
   const [appointments, setAppointments] = useState([]);
 
+  console.log('🔵 CommissionDetailView - Props recibidos:', { specialistId, period, startDate, endDate });
+
   useEffect(() => {
+    console.log('🔵 CommissionDetailView - useEffect disparado', { specialistId });
     if (specialistId) {
       loadCommissionData();
+    } else {
+      console.warn('⚠️ CommissionDetailView - specialistId no está definido');
     }
   }, [specialistId, period, startDate, endDate]);
 
   const loadCommissionData = async () => {
+    console.log('🔵 CommissionDetailView - Iniciando loadCommissionData');
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        specialistId,
-        period,
-        ...(startDate && { startDate: startDate.toISOString() }),
-        ...(endDate && { endDate: endDate.toISOString() })
+        specialistId
       });
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/commissions/detail?${params}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
+      if (businessId) {
+        params.append('businessId', businessId);
+      }
 
-      if (!response.ok) throw new Error('Error loading commission data');
+      // Nota: El endpoint /api/commissions/summary devuelve resumen del mes actual
+      // Si necesitamos filtrar por período, usamos el endpoint /api/specialists/me/commissions
+      
+      const url = `${import.meta.env.VITE_API_URL}/api/commissions/summary?${params}`;
+      console.log('🔵 CommissionDetailView - URL:', url);
+      console.log('🔵 CommissionDetailView - Params:', Object.fromEntries(params));
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      console.log('🔵 CommissionDetailView - Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ CommissionDetailView - Error response:', errorText);
+        throw new Error('Error loading commission data');
+      }
 
       const data = await response.json();
-      setCommissionData(data.summary);
-      setAppointments(data.appointments);
+      console.log('✅ CommissionDetailView - Data recibida:', data);
+      
+      // El endpoint summary devuelve: { success, data: { pending, requested, paid, total, thisMonth, lastPayment } }
+      if (data.success) {
+        setCommissionData(data.data);
+        // TODO: Cargar appointments si es necesario
+        setAppointments([]);
+      }
     } catch (error) {
-      console.error('Error loading commission data:', error);
+      console.error('❌ CommissionDetailView - Error loading commission data:', error);
       alert('Error al cargar los datos de comisiones');
     } finally {
       setLoading(false);
@@ -144,10 +168,10 @@ export default function CommissionDetailView({
             </span>
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            {formatCurrency(commissionData.pending)}
+            {formatCurrency(commissionData.pending || 0)}
           </p>
           <p className="text-sm text-yellow-700 mt-1">
-            {commissionData.pendingCount} cita{commissionData.pendingCount !== 1 ? 's' : ''}
+            Por cobrar
           </p>
         </div>
 
@@ -159,10 +183,10 @@ export default function CommissionDetailView({
             </span>
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            {formatCurrency(commissionData.requested)}
+            {formatCurrency(commissionData.requested || 0)}
           </p>
           <p className="text-sm text-blue-700 mt-1">
-            {commissionData.requestedCount} solicitud{commissionData.requestedCount !== 1 ? 'es' : ''}
+            En proceso
           </p>
         </div>
 
@@ -174,10 +198,10 @@ export default function CommissionDetailView({
             </span>
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            {formatCurrency(commissionData.paid)}
+            {formatCurrency(commissionData.paid || 0)}
           </p>
           <p className="text-sm text-green-700 mt-1">
-            {commissionData.paidCount} pago{commissionData.paidCount !== 1 ? 's' : ''}
+            Este mes
           </p>
         </div>
 
@@ -189,10 +213,10 @@ export default function CommissionDetailView({
             </span>
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            {formatCurrency(commissionData.total)}
+            {formatCurrency(commissionData.thisMonth || 0)}
           </p>
           <p className="text-sm text-purple-700 mt-1">
-            {commissionData.totalCount} cita{commissionData.totalCount !== 1 ? 's' : ''}
+            Mes actual
           </p>
         </div>
       </div>

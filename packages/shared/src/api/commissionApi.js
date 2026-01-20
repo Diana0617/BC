@@ -7,6 +7,79 @@ import apiClient from './client';
 
 const commissionApi = {
   /**
+   * Obtener resumen de comisiones del especialista (para dashboard)
+   * GET /api/commissions/summary?specialistId=xxx&businessId=xxx
+   */
+  getSpecialistSummary: async (specialistId, businessId) => {
+    try {
+      console.log('📡 API - getSpecialistSummary:', { specialistId, businessId });
+      const params = new URLSearchParams({ specialistId });
+      if (businessId) params.append('businessId', businessId);
+      
+      const response = await apiClient.get(`/api/commissions/summary?${params}`);
+      console.log('✅ API - getSpecialistSummary response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ API - Error fetching specialist commission summary:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener historial de comisiones paginado
+   * GET /api/commissions/history?specialistId=xxx&businessId=xxx&page=1&limit=20
+   */
+  getCommissionHistory: async (specialistId, businessId, options = {}) => {
+    try {
+      const { page = 1, limit = 20, status, startDate, endDate, search } = options;
+      console.log('📡 API - getCommissionHistory:', { specialistId, businessId, options });
+      
+      const params = new URLSearchParams({ 
+        specialistId, 
+        page: page.toString(), 
+        limit: limit.toString() 
+      });
+      if (businessId) params.append('businessId', businessId);
+      if (status && status !== 'all') params.append('status', status);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (search) params.append('search', search);
+
+      const response = await apiClient.get(`/api/commissions/history?${params}`);
+      console.log('✅ API - getCommissionHistory response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ API - Error fetching commission history:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener comisiones del especialista desde su endpoint
+   * GET /api/specialists/me/commissions?businessId=xxx
+   */
+  getMyCommissions: async (businessId, options = {}) => {
+    try {
+      const { month, year, startDate, endDate } = options;
+      console.log('📡 API - getMyCommissions:', { businessId, options });
+      
+      const params = new URLSearchParams();
+      if (businessId) params.append('businessId', businessId);
+      if (month) params.append('month', month);
+      if (year) params.append('year', year);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+
+      const response = await apiClient.get(`/api/specialists/me/commissions?${params}`);
+      console.log('✅ API - getMyCommissions response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ API - Error fetching my commissions:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Obtener configuración de comisiones del negocio
    * GET /api/business/:businessId/commission-config
    */
