@@ -151,7 +151,7 @@ const specialistCommissionsSlice = createSlice({
       })
       .addCase(fetchCommissionConfig.fulfilled, (state, action) => {
         state.configLoading = false;
-        state.config = action.payload;
+        state.config = action.payload.data || action.payload;
       })
       .addCase(fetchCommissionConfig.rejected, (state, action) => {
         state.configLoading = false;

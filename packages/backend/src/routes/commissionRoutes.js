@@ -98,10 +98,33 @@ router.get(
  * Registrar pago de comisión a un especialista
  * POST /api/business/:businessId/commissions/pay
  */
+const { uploadImageMiddleware } = require('../config/cloudinary');
+
 router.post(
   '/commissions/pay',
+  uploadImageMiddleware.single('paymentProof'),
   // authenticate,
   commissionController.payCommission
+);
+
+/**
+ * Obtener solicitudes de pago de comisiones
+ * GET /api/business/:businessId/commissions/payment-requests
+ */
+router.get(
+  '/commissions/payment-requests',
+  // authenticate,
+  commissionController.getPaymentRequests
+);
+
+/**
+ * Actualizar estado de solicitud de pago (aprobar/rechazar)
+ * PATCH /api/business/:businessId/commissions/payment-requests/:requestId
+ */
+router.patch(
+  '/commissions/payment-requests/:requestId',
+  // authenticate,
+  commissionController.updatePaymentRequestStatus
 );
 
 module.exports = router;

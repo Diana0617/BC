@@ -1189,6 +1189,9 @@ exports.payCommission = async (req, res) => {
     });
     const requestNumber = `CPR-${new Date().getFullYear()}-${String(requestCount + 1).padStart(4, '0')}`;
 
+    // Obtener URL del comprobante si se subió archivo
+    const paymentProofUrl = req.file?.path || null;
+
     // 1. Crear CommissionPaymentRequest
     const paymentRequest = await CommissionPaymentRequest.create({
       requestNumber,
@@ -1200,6 +1203,7 @@ exports.payCommission = async (req, res) => {
       status: 'PAID',
       paymentMethod,
       paymentReference,
+      paymentProofUrl,
       bankAccount,
       paidAt: paidDate ? new Date(paidDate) : new Date(),
       paidBy: req.user.id,
@@ -1312,3 +1316,182 @@ exports.payCommission = async (req, res) => {
     });
   }
 };
+
+/**
+ * Obtener solicitudes de pago de comisiones
+ * GET /api/business/:businessId/commissions/payment-requests
+ */
+exports.getPaymentRequests = async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    const { status, specialistId, startDate, endDate, page = 1, limit = 20 } = req.query;
+
+    const whereCondition = { businessId };
+
+    // Filtros opcionales
+    if (status && status !== 'all') {
+      whereCondition.status = status;
+    }
+
+    if (specialistId) {
+      whereCondition.specialistId = specialistId;
+    }
+
+    if (startDate && endDate) {
+      whereCondition.submittedAt = {
+        [Op.between]: [new Date(startDate), new Date(endDate)]
+      };
+    }
+
+    // Contar total
+    const total = await CommissionPaymentRequest.count({ where: whereCondition });
+
+    // Obtener solicitudes paginadas
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const requests = await CommissionPaymentRequest.findAll({
+      where: whereCondition,
+      include: [
+        {
+          model: User,
+          as: 'specialist',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'profilePicture']
+        },
+        {
+          model: User,
+          as: 'reviewedByUser',
+          attributes: ['firstName', 'lastName'],
+          required: false
+        },
+        {
+          model: User,
+          as: 'paidByUser',
+          attributes: ['firstName', 'lastName'],
+          required: false
+        }
+      ],
+      order: [['submittedAt', 'DESC']],
+      limit: parseInt(limit),
+      offset
+    });
+
+    res.json({
+      success: true,
+      data: {
+        requests: requests.map(req => ({
+          id: req.id,
+          requestNumber: req.requestNumber,
+          specialist: {
+            id: req.specialist.id,
+            name: `${req.specialist.firstName} ${req.specialist.lastName}`,
+            email: req.specialist.email,
+            avatar: req.specialist.profilePicture
+          },
+          periodFrom: req.periodFrom,
+          periodTo: req.periodTo,
+          totalAmount: parseFloat(req.totalAmount),
+          status: req.status,
+          paymentMethod: req.paymentMethod,
+          paymentReference: req.paymentReference,
+          paymentProofUrl: req.paymentProofUrl,
+          specialistNotes: req.specialistNotes,
+          businessNotes: req.businessNotes,
+          rejectionReason: req.rejectionReason,
+          submittedAt: req.submittedAt,
+          reviewedAt: req.reviewedAt,
+          reviewedBy: req.reviewedByUser ? 
+            `${req.reviewedByUser.firstName} ${req.reviewedByUser.lastName}` : 
+            null,
+          paidAt: req.paidAt,
+          paidBy: req.paidByUser ? 
+            `${req.paidByUser.firstName} ${req.paidByUser.lastName}` : 
+            null
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          totalPages: Math.ceil(total / parseInt(limit))
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo solicitudes de pago:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener solicitudes de pago',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * Actualizar estado de solicitud de pago (aprobar/rechazar)
+ * PATCH /api/business/:businessId/commissions/payment-requests/:requestId
+ */
+exports.updatePaymentRequestStatus = async (req, res) => {
+  try {
+    const { businessId, requestId } = req.params;
+    const { status, businessNotes, rejectionReason } = req.body;
+
+    // Validar estado
+    if (!['APPROVED', 'REJECTED'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Estado inválido. Debe ser APPROVED o REJECTED'
+      });
+    }
+
+    // Buscar solicitud
+    const request = await CommissionPaymentRequest.findOne({
+      where: { id: requestId, businessId }
+    });
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Solicitud de pago no encontrada'
+      });
+    }
+
+    // Validar que esté en estado SUBMITTED
+    if (request.status !== 'SUBMITTED') {
+      return res.status(400).json({
+        success: false,
+        message: `No se puede cambiar el estado de una solicitud con estado ${request.status}`
+      });
+    }
+
+    // Si es rechazo, requiere razón
+    if (status === 'REJECTED' && !rejectionReason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debe proporcionar una razón de rechazo'
+      });
+    }
+
+    // Actualizar
+    await request.update({
+      status,
+      businessNotes,
+      rejectionReason: status === 'REJECTED' ? rejectionReason : null,
+      reviewedAt: new Date(),
+      reviewedBy: req.user?.id
+    });
+
+    res.json({
+      success: true,
+      message: status === 'APPROVED' ? 'Solicitud aprobada exitosamente' : 'Solicitud rechazada',
+      data: request
+    });
+
+  } catch (error) {
+    console.error('Error actualizando solicitud de pago:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar solicitud de pago',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+

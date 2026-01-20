@@ -164,6 +164,97 @@ const commissionApi = {
       console.error('Error calculating commission:', error);
       throw error;
     }
+  },
+
+  /**
+   * Obtener solicitudes de pago de comisiones
+   * GET /api/business/:businessId/commissions/payment-requests
+   */
+  getPaymentRequests: async (businessId, options = {}) => {
+    try {
+      const { status, specialistId, startDate, endDate, page = 1, limit = 20 } = options;
+      console.log('📡 API - getPaymentRequests:', { businessId, options });
+      
+      const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+      if (status && status !== 'all') params.append('status', status);
+      if (specialistId) params.append('specialistId', specialistId);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+
+      const response = await apiClient.get(
+        `/api/business/${businessId}/commissions/payment-requests?${params.toString()}`
+      );
+      console.log('✅ API - getPaymentRequests response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ API - Error fetching payment requests:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Actualizar estado de solicitud de pago
+   * PATCH /api/business/:businessId/commissions/payment-requests/:requestId
+   */
+  updatePaymentRequestStatus: async (businessId, requestId, data) => {
+    try {
+      console.log('📡 API - updatePaymentRequestStatus:', { businessId, requestId, data });
+      
+      const response = await apiClient.patch(
+        `/api/business/${businessId}/commissions/payment-requests/${requestId}`,
+        data
+      );
+      console.log('✅ API - updatePaymentRequestStatus response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ API - Error updating payment request:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Registrar pago de comisión con comprobante
+   * POST /api/business/:businessId/commissions/pay
+   */
+  registerPayment: async (businessId, data, paymentProofFile = null) => {
+    try {
+      console.log('📡 API - registerPayment:', { businessId, data, hasFile: !!paymentProofFile });
+      
+      const formData = new FormData();
+      
+      // Agregar datos
+      Object.keys(data).forEach(key => {
+        if (data[key] !== null && data[key] !== undefined) {
+          if (Array.isArray(data[key])) {
+            data[key].forEach(item => formData.append(`${key}[]`, item));
+          } else if (typeof data[key] === 'object') {
+            formData.append(key, JSON.stringify(data[key]));
+          } else {
+            formData.append(key, data[key]);
+          }
+        }
+      });
+
+      // Agregar archivo si existe
+      if (paymentProofFile) {
+        formData.append('paymentProof', paymentProofFile);
+      }
+
+      const response = await apiClient.post(
+        `/api/business/${businessId}/commissions/pay`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      console.log('✅ API - registerPayment response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ API - Error registering payment:', error);
+      throw error;
+    }
   }
 };
 

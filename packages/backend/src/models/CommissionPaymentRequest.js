@@ -116,6 +116,10 @@ const CommissionPaymentRequest = sequelize.define('CommissionPaymentRequest', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  paymentProofUrl: {
+    type: DataTypes.STRING,
+    allowNull: true // URL del comprobante de pago subido a Cloudinary
+  },
   bankAccount: {
     type: DataTypes.JSON, // Información de la cuenta bancaria
     allowNull: true

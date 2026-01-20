@@ -25,6 +25,8 @@ const CommissionPaymentModal = ({
   });
 
   const [errors, setErrors] = useState({});
+  const [paymentProofFile, setPaymentProofFile] = useState(null);
+  const [paymentProofPreview, setPaymentProofPreview] = useState(null);
 
   // Calcular el monto pendiente total
   const pendingAmount = details?.services?.reduce((sum, service) => {
@@ -47,6 +49,43 @@ const CommissionPaymentModal = ({
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validar tipo de archivo
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+      if (!validTypes.includes(file.type)) {
+        setErrors(prev => ({ ...prev, paymentProof: 'Solo se permiten imágenes (JPG, PNG, WEBP) o PDF' }));
+        return;
+      }
+
+      // Validar tamaño (máx 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, paymentProof: 'El archivo no debe superar 5MB' }));
+        return;
+      }
+
+      setPaymentProofFile(file);
+      setErrors(prev => ({ ...prev, paymentProof: '' }));
+
+      // Crear preview para imágenes
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPaymentProofPreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setPaymentProofPreview(null);
+      }
+    }
+  };
+
+  const removeFile = () => {
+    setPaymentProofFile(null);
+    setPaymentProofPreview(null);
   };
 
   const validate = () => {
@@ -76,17 +115,7 @@ const CommissionPaymentModal = ({
       return;
     }
 
-    const submitData = {
-      specialistId: specialist.id,
-      amount: parseFloat(formData.amount),
-      paymentDate: formData.paymentDate,
-      paymentMethod: formData.paymentMethod,
-      notes: formData.notes,
-      month: details.period?.month,
-      year: details.period?.year
-    };
-
-    await onSubmit(submitData);
+    await onSubmit(formData, paymentProofFile);
   };
 
   const formatCurrency = (amount) => {
@@ -305,6 +334,87 @@ const CommissionPaymentModal = ({
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                     />
                   </div>
+                </div>
+
+                {/* Comprobante de Pago */}
+                <div>
+                  <label htmlFor="paymentProof" className="block text-sm font-medium text-gray-700 mb-1">
+                    Comprobante de Pago (Opcional)
+                  </label>
+                  
+                  {!paymentProofFile ? (
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-pink-400 transition-colors">
+                      <div className="space-y-1 text-center">
+                        <svg
+                          className="mx-auto h-12 w-12 text-gray-400"
+                          stroke="currentColor"
+                          fill="none"
+                          viewBox="0 0 48 48"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <div className="flex text-sm text-gray-600">
+                          <label
+                            htmlFor="paymentProof"
+                            className="relative cursor-pointer bg-white rounded-md font-medium text-pink-600 hover:text-pink-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-pink-500"
+                          >
+                            <span>Subir comprobante</span>
+                            <input
+                              id="paymentProof"
+                              name="paymentProof"
+                              type="file"
+                              className="sr-only"
+                              accept="image/*,application/pdf"
+                              onChange={handleFileChange}
+                            />
+                          </label>
+                          <p className="pl-1">o arrastra y suelta</p>
+                        </div>
+                        <p className="text-xs text-gray-500">PNG, JPG, WEBP, PDF hasta 5MB</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-1 border-2 border-gray-300 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          {paymentProofPreview ? (
+                            <img
+                              src={paymentProofPreview}
+                              alt="Preview"
+                              className="h-16 w-16 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="h-16 w-16 bg-gray-100 rounded flex items-center justify-center">
+                              <DocumentTextIcon className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{paymentProofFile.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {(paymentProofFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={removeFile}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <XMarkIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {errors.paymentProof && (
+                    <p className="mt-1 text-sm text-red-600">{errors.paymentProof}</p>
+                  )}
                 </div>
 
                 {/* Info Box */}

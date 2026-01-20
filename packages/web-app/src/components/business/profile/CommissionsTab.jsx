@@ -1,14 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   UserCircleIcon,
   CurrencyDollarIcon,
   ClockIcon,
   CheckCircleIcon,
+  XCircleIcon,
   ChevronDownIcon,
-  ChevronUpIcon
+  ChevronUpIcon,
+  DocumentTextIcon,
+  EyeIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
+import commissionApi from '@shared/api/commissionApi';
+import CommissionPaymentModal from './CommissionPaymentModal';
 
 const CommissionsTab = ({
   specialists = [],
@@ -20,7 +27,16 @@ const CommissionsTab = ({
   filters,
   onFilterChange
 }) => {
+  const { user } = useSelector(state => state.auth);
   const [expandedSpecialist, setExpandedSpecialist] = useState(null);
+  const [paymentRequests, setPaymentRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [requestFilters, setRequestFilters] = useState({ status: 'SUBMITTED', page: 1, limit: 10 });
+  // eslint-disable-next-line no-unused-vars
+  const [requestsPagination, setRequestsPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedRequestForPayment, setSelectedRequestForPayment] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   console.log('🔶 CommissionsTab - Props recibidos:', {
     specialists,
@@ -30,6 +46,142 @@ const CommissionsTab = ({
     filters,
     selectedSpecialistDetails
   });
+
+  useEffect(() => {
+    if (user?.businessId) {
+      loadPaymentRequests();
+    }
+  }, [user?.businessId, requestFilters]);
+
+  const loadPaymentRequests = async () => {
+    try {
+      setRequestsLoading(true);
+      console.log('🔶 CommissionsTab - loadPaymentRequests:', { businessId: user.businessId, requestFilters });
+      
+      const response = await commissionApi.getPaymentRequests(user.businessId, requestFilters);
+      
+      if (response.success) {
+        setPaymentRequests(response.data.requests);
+        setRequestsPagination(response.data.pagination);
+        console.log('✅ CommissionsTab - Payment requests loaded:', response.data.requests.length);
+      }
+    } catch (error) {
+      console.error('❌ Error loading payment requests:', error);
+      toast.error('Error al cargar solicitudes de pago');
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  const handleApproveRequest = async (requestId) => {
+    try {
+      const businessNotes = prompt('Notas del negocio (opcional):');
+      
+      const response = await commissionApi.updatePaymentRequestStatus(
+        user.businessId,
+        requestId,
+        { status: 'APPROVED', businessNotes }
+      );
+
+      if (response.success) {
+        toast.success('Solicitud aprobada exitosamente');
+        loadPaymentRequests();
+      }
+    } catch (error) {
+      console.error('Error approving request:', error);
+      toast.error('Error al aprobar solicitud');
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    try {
+      const rejectionReason = prompt('¿Por qué rechazas esta solicitud?');
+      
+      if (!rejectionReason) {
+        toast.error('Debes proporcionar una razón de rechazo');
+        return;
+      }
+
+      const response = await commissionApi.updatePaymentRequestStatus(
+        user.businessId,
+        requestId,
+        { status: 'REJECTED', rejectionReason }
+      );
+
+      if (response.success) {
+        toast.success('Solicitud rechazada');
+        loadPaymentRequests();
+      }
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      toast.error('Error al rechazar solicitud');
+    }
+  };
+
+  const handleOpenPaymentModal = (request) => {
+    setSelectedRequestForPayment(request);
+    setShowPaymentModal(true);
+  };
+
+  const handleClosePaymentModal = () => {
+    setShowPaymentModal(false);
+    setSelectedRequestForPayment(null);
+  };
+
+  const handlePaymentSubmit = async (paymentData, paymentProofFile) => {
+    try {
+      setPaymentLoading(true);
+      console.log('💳 Registrando pago de comisión:', { paymentData, hasFile: !!paymentProofFile });
+
+      const data = {
+        specialistId: selectedRequestForPayment.specialist.id,
+        periodFrom: selectedRequestForPayment.periodFrom,
+        periodTo: selectedRequestForPayment.periodTo,
+        amount: paymentData.amount,
+        paymentMethod: paymentData.paymentMethod,
+        paymentReference: paymentData.notes,
+        paidDate: paymentData.paymentDate,
+        notes: paymentData.notes,
+        appointmentIds: [] // Deberías obtener los IDs de los turnos relacionados
+      };
+
+      const response = await commissionApi.registerPayment(
+        user.businessId,
+        data,
+        paymentProofFile
+      );
+
+      if (response.success) {
+        toast.success('Pago registrado exitosamente');
+        handleClosePaymentModal();
+        loadPaymentRequests();
+      }
+    } catch (error) {
+      console.error('❌ Error registering payment:', error);
+      toast.error(error.response?.data?.message || 'Error al registrar pago');
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      SUBMITTED: { text: 'Pendiente', bgColor: 'bg-yellow-100', textColor: 'text-yellow-800', icon: ClockIcon },
+      APPROVED: { text: 'Aprobada', bgColor: 'bg-green-100', textColor: 'text-green-800', icon: CheckCircleIcon },
+      REJECTED: { text: 'Rechazada', bgColor: 'bg-red-100', textColor: 'text-red-800', icon: XCircleIcon },
+      PAID: { text: 'Pagada', bgColor: 'bg-blue-100', textColor: 'text-blue-800', icon: CheckCircleIcon }
+    };
+
+    const config = statusConfig[status] || statusConfig.SUBMITTED;
+    const Icon = config.icon;
+
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}>
+        <Icon className="w-4 h-4 mr-1" />
+        {config.text}
+      </span>
+    );
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', {
@@ -304,6 +456,181 @@ const CommissionsTab = ({
           ))
         )}
       </div>
+
+      {/* Payment Requests Section */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Solicitudes de Pago</h2>
+          <select
+            value={requestFilters.status}
+            onChange={(e) => setRequestFilters({ ...requestFilters, status: e.target.value, page: 1 })}
+            className="rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 text-sm"
+          >
+            <option value="all">Todas</option>
+            <option value="SUBMITTED">Pendientes</option>
+            <option value="APPROVED">Aprobadas</option>
+            <option value="REJECTED">Rechazadas</option>
+            <option value="PAID">Pagadas</option>
+          </select>
+        </div>
+
+        {requestsLoading ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+            <p className="mt-4 text-gray-500">Cargando solicitudes...</p>
+          </div>
+        ) : paymentRequests.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <DocumentTextIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No hay solicitudes de pago
+            </h3>
+            <p className="text-gray-500">
+              {requestFilters.status === 'SUBMITTED' 
+                ? 'No hay solicitudes pendientes de revisión'
+                : 'No se encontraron solicitudes con este filtro'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {paymentRequests.map((request) => (
+              <div key={request.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <img
+                      src={request.specialist.avatar || '/default-avatar.png'}
+                      alt={request.specialist.name}
+                      className="w-12 h-12 rounded-full"
+                    />
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {request.specialist.name}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {request.requestNumber}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-pink-600">
+                      ${parseFloat(request.totalAmount).toLocaleString('es-CO')}
+                    </p>
+                    {getStatusBadge(request.status)}
+                  </div>
+                </div>
+
+                {/* Período */}
+                <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Período:</span>
+                    <span className="ml-2 font-medium">
+                      {format(new Date(request.periodFrom), 'dd MMM', { locale: es })} - {format(new Date(request.periodTo), 'dd MMM yyyy', { locale: es })}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Solicitado:</span>
+                    <span className="ml-2 font-medium">
+                      {format(new Date(request.submittedAt), "dd MMM yyyy 'a las' HH:mm", { locale: es })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Notas del especialista */}
+                {request.specialistNotes && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Notas:</span> {request.specialistNotes}
+                    </p>
+                  </div>
+                )}
+
+                {/* Comprobante de pago */}
+                {request.paymentProofUrl && (
+                  <div className="mt-3">
+                    <a
+                      href={request.paymentProofUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-sm text-pink-600 hover:text-pink-700"
+                    >
+                      <EyeIcon className="w-4 h-4 mr-1" />
+                      Ver comprobante de pago
+                    </a>
+                  </div>
+                )}
+
+                {/* Acciones */}
+                {request.status === 'SUBMITTED' && (
+                  <div className="mt-4 flex items-center space-x-3">
+                    <button
+                      onClick={() => handleApproveRequest(request.id)}
+                      className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    >
+                      <CheckCircleIcon className="w-5 h-5 mr-2" />
+                      Aprobar
+                    </button>
+                    <button
+                      onClick={() => handleRejectRequest(request.id)}
+                      className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      <XCircleIcon className="w-5 h-5 mr-2" />
+                      Rechazar
+                    </button>
+                  </div>
+                )}
+
+                {/* Botón de pagar para solicitudes aprobadas */}
+                {request.status === 'APPROVED' && (
+                  <div className="mt-4">
+                    <button
+                      onClick={() => handleOpenPaymentModal(request)}
+                      className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                    >
+                      <CurrencyDollarIcon className="w-5 h-5 mr-2" />
+                      Registrar Pago y Comprobante
+                    </button>
+                  </div>
+                )}
+
+                {/* Información de rechazo */}
+                {request.status === 'REJECTED' && request.rejectionReason && (
+                  <div className="mt-3 p-3 bg-red-50 rounded-md">
+                    <p className="text-sm text-red-700">
+                      <span className="font-medium">Razón de rechazo:</span> {request.rejectionReason}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && selectedRequestForPayment && (
+        <CommissionPaymentModal
+          isOpen={showPaymentModal}
+          onClose={handleClosePaymentModal}
+          onSubmit={handlePaymentSubmit}
+          specialist={{
+            id: selectedRequestForPayment.specialist.id,
+            firstName: selectedRequestForPayment.specialist.name.split(' ')[0],
+            lastName: selectedRequestForPayment.specialist.name.split(' ').slice(1).join(' '),
+            email: selectedRequestForPayment.specialist.email,
+            totalCommissionsGenerated: selectedRequestForPayment.totalAmount,
+            totalCommissionsPaid: 0,
+            totalCommissionsPending: selectedRequestForPayment.totalAmount
+          }}
+          details={{
+            period: {
+              month: new Date(selectedRequestForPayment.periodFrom).getMonth() + 1,
+              year: new Date(selectedRequestForPayment.periodFrom).getFullYear()
+            },
+            services: []
+          }}
+          loading={paymentLoading}
+        />
+      )}
     </div>
   );
 };
