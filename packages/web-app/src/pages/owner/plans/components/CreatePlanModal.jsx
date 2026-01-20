@@ -162,9 +162,11 @@ const CreatePlanModal = ({ isOpen, onClose }) => {
     if (!formData.name.trim()) errors.name = 'El nombre es requerido';
     if (!formData.description.trim()) errors.description = 'La descripción es requerida';
     
-    // Validación de precio más robusta
-    if (!formData.price || formData.price <= 0) {
-      errors.price = 'El precio debe ser mayor a 0';
+    // Validación de precio - permitir 0 para planes gratuitos
+    if (formData.price === '' || formData.price === null || formData.price === undefined) {
+      errors.price = 'El precio es requerido (use 0 para planes gratuitos)';
+    } else if (parseFloat(formData.price) < 0) {
+      errors.price = 'El precio no puede ser negativo';
     } else if (parseFloat(formData.price) > 99999999.99) {
       errors.price = 'El precio no puede superar $99,999,999.99 COP';
     }

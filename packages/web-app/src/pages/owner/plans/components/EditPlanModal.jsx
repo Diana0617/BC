@@ -164,7 +164,12 @@ const EditPlanModal = ({ isOpen, plan, onClose }) => {
 
     if (!formData.name.trim()) errors.name = 'El nombre es requerido';
     if (!formData.description.trim()) errors.description = 'La descripción es requerida';
-    if (!formData.price || formData.price <= 0) errors.price = 'El precio debe ser mayor a 0';
+    // Permitir precio 0 para planes gratuitos
+    if (formData.price === '' || formData.price === null || formData.price === undefined) {
+      errors.price = 'El precio es requerido (use 0 para planes gratuitos)';
+    } else if (parseFloat(formData.price) < 0) {
+      errors.price = 'El precio no puede ser negativo';
+    }
     if (!formData.duration || formData.duration <= 0) errors.duration = 'La duración debe ser mayor a 0';
     if (selectedModules.length === 0) errors.modules = 'Debe seleccionar al menos un módulo';
 
