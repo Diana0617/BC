@@ -98,11 +98,11 @@ router.get(
  * Registrar pago de comisión a un especialista
  * POST /api/business/:businessId/commissions/pay
  */
-const { uploadImageMiddleware } = require('../config/cloudinary');
+const { uploadEvidenceMiddleware } = require('../config/cloudinary');
 
 router.post(
   '/commissions/pay',
-  uploadImageMiddleware.single('paymentProof'),
+  uploadEvidenceMiddleware.single('paymentProof'),
   // authenticate,
   commissionController.payCommission
 );
