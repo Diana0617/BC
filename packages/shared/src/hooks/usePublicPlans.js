@@ -33,10 +33,16 @@ export const usePublicPlans = () => {
         console.log(`✅ ${plansData.length} planes cargados exitosamente`);
         
         // Transformar datos para la landing page si es necesario
-        const transformedPlans = plansData.map(plan => ({
+        const transformedPlans = plansData.map(plan => {
+          // Convertir precios menores o iguales a 1 a 0 (planes gratuitos)
+          const numericPrice = parseFloat(plan.price) || 0;
+          const actualPrice = numericPrice <= 1 ? 0 : numericPrice;
+          
+          return {
           ...plan,
           // Convertir precio de centavos a pesos si viene en centavos
-          displayPrice: plan.price >= 1000 ? plan.price : plan.price * 100,
+          price: actualPrice,
+          displayPrice: actualPrice >= 1000 ? actualPrice : actualPrice * 100,
           // Extraer features de los módulos si no existen
           features: plan.features && plan.features.length > 0 
             ? plan.features 
@@ -51,7 +57,8 @@ export const usePublicPlans = () => {
           // Formatear duración
           durationType: plan.duration >= 30 ? 'MONTHS' : 'DAYS',
           displayDuration: plan.duration >= 30 ? Math.floor(plan.duration / 30) : plan.duration
-        }));
+          };
+        });
         
         setPlans(transformedPlans);
       } else {

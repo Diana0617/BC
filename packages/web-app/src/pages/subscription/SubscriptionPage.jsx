@@ -99,8 +99,10 @@ const SubscriptionPage = () => {
   const handleRegistrationComplete = async (data) => {
     setRegistrationData(data)
     
-    // Verificar si el plan es gratuito (Básico)
-    const isFreePlan = selectedPlan.price === 0 || selectedPlan.price === '0' || selectedPlan.price === '0.00'
+    // Verificar si el plan es gratuito (Básico o Individual)
+    // Tratar precios <= 1 como gratuitos
+    const planPrice = parseFloat(selectedPlan.price) || 0;
+    const isFreePlan = planPrice <= 1;
     
     if (isFreePlan) {
       console.log('📦 Plan gratuito detectado - creando negocio directamente sin pago')

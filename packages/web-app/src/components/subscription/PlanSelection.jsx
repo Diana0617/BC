@@ -72,10 +72,19 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken, bil
     }
   }
 
+  // Función para determinar si un plan es gratuito
+  const isFreePlan = (plan) => {
+    const price = parseFloat(plan.price) || 0;
+    return price <= 1; // Tratar precios <= 1 como gratuitos
+  };
+
   // Función para calcular el precio según el ciclo
   const getPriceForCycle = (plan, cycle) => {
     // Asegurar que el precio sea un número válido
-    const price = parseFloat(plan.price) || 0
+    const price = parseFloat(plan.price) || 0;
+    
+    // Si es plan gratuito, devolver 0
+    if (price <= 1) return 0;
     
     if (cycle === 'ANNUAL') {
       // Aplicar descuento del 15% para plan anual
@@ -115,11 +124,11 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken, bil
             className={`relative bg-white rounded-2xl sm:rounded-3xl shadow-plan-lg border-2 ${
               plan.isPopular 
                 ? 'border-yellow-400 ring-2 sm:ring-4 ring-yellow-400 scale-100 sm:scale-105 z-10' 
-                : plan.price === 0 ? 'border-green-400' : idx === 0 ? 'border-cyan-400' : idx === 1 ? 'border-yellow-400' : 'border-red-400'
+                : isFreePlan(plan) ? 'border-green-400' : idx === 0 ? 'border-cyan-400' : idx === 1 ? 'border-yellow-400' : 'border-red-400'
             } p-4 sm:p-8 flex flex-col h-full transition-all duration-300 hover:shadow-3xl hover:-translate-y-2`}
           >
             {/* Free badge para plan Básico */}
-            {plan.price === 0 && (
+            {isFreePlan(plan) && (
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-max">
                 <span className="bg-gradient-to-r from-green-400 to-emerald-500 text-white px-2 sm:px-4 py-1 rounded-full text-xs sm:text-sm font-bold shadow-lg">
                   ¡GRATIS PARA SIEMPRE!
@@ -128,7 +137,7 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken, bil
             )}
             
             {/* Popular badge */}
-            {plan.isPopular && plan.price > 0 && (
+            {plan.isPopular && !isFreePlan(plan) && (
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-max">
                 <span className="bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 px-2 sm:px-4 py-1 rounded-full text-xs sm:text-sm font-bold shadow-lg">
                   ⭐ MÁS POPULAR
@@ -146,7 +155,7 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken, bil
               </p>
 
               {/* Billing Cycle Selector dentro de la card - Solo para planes de pago */}
-              {plan.price > 0 && (
+              {!isFreePlan(plan) && (
                 <div className="mb-4">
                   <div className="inline-flex rounded-lg border-2 border-gray-300 bg-gray-50 p-1">
                     <button
@@ -178,7 +187,7 @@ const PlanSelection = ({ plans = [], loading, onPlanSelect, invitationToken, bil
 
               {/* Price */}
               <div className="mb-2 sm:mb-4">
-                {plan.price === 0 ? (
+                {isFreePlan(plan) ? (
                   <div>
                     <span className="text-2xl sm:text-4xl font-bold text-green-600">
                       GRATIS
