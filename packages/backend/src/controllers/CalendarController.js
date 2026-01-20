@@ -39,8 +39,8 @@ class CalendarController {
       const where = {
         businessId,
         startTime: {
-          [Op.gte]: new Date(startDate + 'T00:00:00'),
-          [Op.lte]: new Date(endDate + 'T23:59:59')
+          [Op.gte]: new Date(startDate),
+          [Op.lte]: new Date(endDate)
         }
       };
 
@@ -184,8 +184,8 @@ class CalendarController {
         branchId,
         businessId: branch.businessId,
         startTime: {
-          [Op.gte]: new Date(startDate + 'T00:00:00'),
-          [Op.lte]: new Date(endDate + 'T23:59:59')
+          [Op.gte]: new Date(startDate),
+          [Op.lte]: new Date(endDate)
         }
       };
 
@@ -290,8 +290,8 @@ class CalendarController {
       const where = {
         specialistId,
         startTime: {
-          [Op.gte]: new Date(startDate + 'T00:00:00'),
-          [Op.lte]: new Date(endDate + 'T23:59:59')
+          [Op.gte]: new Date(startDate),
+          [Op.lte]: new Date(endDate)
         }
       };
 
