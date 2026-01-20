@@ -121,10 +121,10 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4  bg-cyan-200 sm:mb-6 leading-tight">
-              La plataforma completa para
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
+              <span className="text-white">La plataforma completa para</span>
               <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-cyan-200">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-cyan-400">
                 {" "}gestionar tu negocio
               </span>
             </h1>
