@@ -12,8 +12,11 @@
  */
 export const localToUTC = (date, time, timezone) => {
   try {
+    console.log('🔍 [localToUTC] Inicio de conversión:', { date, time, timezone });
+    
     // Crear fecha en UTC como referencia
     const utcDate = new Date(`${date}T${time}:00Z`)
+    console.log('🔍 [localToUTC] utcDate creado:', utcDate, 'isValid:', !isNaN(utcDate.getTime()));
     
     // Formatear esta fecha UTC en la zona horaria objetivo
     const formatter = new Intl.DateTimeFormat('en-US', {
@@ -28,24 +31,34 @@ export const localToUTC = (date, time, timezone) => {
     })
     
     const parts = formatter.formatToParts(utcDate)
+    console.log('🔍 [localToUTC] formatToParts resultado:', parts);
+    
     const tzParts = {}
     parts.forEach(part => {
       if (part.type !== 'literal') {
         tzParts[part.type] = part.value
       }
     })
+    console.log('🔍 [localToUTC] tzParts:', tzParts);
     
     // Construir la fecha tal como se ve en la zona horaria objetivo
     const tzDateTime = `${tzParts.year}-${tzParts.month}-${tzParts.day}T${tzParts.hour}:${tzParts.minute}:${tzParts.second}Z`
+    console.log('🔍 [localToUTC] tzDateTime construido:', tzDateTime);
     
     // Calcular el offset: diferencia entre la hora UTC original y cómo se ve en la zona objetivo
     const tzDateAsUTC = new Date(tzDateTime)
+    console.log('🔍 [localToUTC] tzDateAsUTC:', tzDateAsUTC, 'isValid:', !isNaN(tzDateAsUTC.getTime()));
+    
     const offsetMs = utcDate.getTime() - tzDateAsUTC.getTime()
+    console.log('🔍 [localToUTC] offsetMs calculado:', offsetMs, 'hours:', offsetMs / 3600000);
     
     // Crear fecha: queremos que date+time sea la hora LOCAL en timezone
     // Por lo tanto, tomamos esa hora como si fuera UTC y le sumamos el offset inverso
     const localAsUTC = new Date(`${date}T${time}:00Z`)
+    console.log('🔍 [localToUTC] localAsUTC:', localAsUTC, 'isValid:', !isNaN(localAsUTC.getTime()));
+    
     const result = new Date(localAsUTC.getTime() + offsetMs)
+    console.log('🔍 [localToUTC] result final:', result, 'isValid:', !isNaN(result.getTime()));
     
     console.log('localToUTC conversion:', {
       input: { date, time, timezone },
@@ -59,11 +72,11 @@ export const localToUTC = (date, time, timezone) => {
     
     return result
   } catch (error) {
-    console.error('Error convirtiendo local a UTC:', error, { date, time, timezone })
+    console.error('❌ Error convirtiendo local a UTC:', error, { date, time, timezone })
     // Fallback: asumir offset fijo de Colombia (-5 horas)
     const localAsUTC = new Date(`${date}T${time}:00Z`)
     const fallback = new Date(localAsUTC.getTime() + (5 * 3600000)) // +5 horas para Colombia
-    console.log('Usando fallback para Colombia (GMT-5):', fallback.toISOString())
+    console.log('⚠️ Usando fallback para Colombia (GMT-5):', fallback.toISOString())
     return fallback
   }
 }
