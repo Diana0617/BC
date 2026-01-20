@@ -82,7 +82,50 @@ export default function CommissionHistoryList({ specialistId, businessId }) {
 
       const data = await response.json();
       console.log('✅ CommissionHistoryList - Data recibida:', data);
-      setCommissions(data.data?.commissions || []);
+      
+      // Transformar datos si vienen en formato anidado (CommissionPaymentRequest con details)
+      let commissions = data.data?.commissions || [];
+      
+      // Si los datos tienen formato anidado con details, aplanarlos
+      if (commissions.length > 0 && commissions[0].details) {
+        console.log('🔄 CommissionHistoryList - Transformando datos anidados');
+        commissions = commissions.flatMap(payment => {
+          if (!payment.details || payment.details.length === 0) {
+            return [{
+              id: payment.id,
+              appointmentDate: payment.paidAt,
+              clientName: 'N/A',
+              serviceName: 'Comisión agrupada',
+              totalAmount: parseFloat(payment.totalAmount || 0),
+              commissionAmount: parseFloat(payment.totalAmount || 0),
+              commissionPercentage: 0,
+              status: payment.status,
+              paymentProofUrl: payment.paymentProofUrl,
+              paidAt: payment.paidAt,
+              requestNumber: payment.requestNumber
+            }];
+          }
+          
+          return payment.details.map(detail => ({
+            id: `${payment.id}-${detail.id}`,
+            appointmentDate: detail.appointment?.completedAt || detail.appointment?.startTime,
+            clientName: detail.appointment?.client 
+              ? `${detail.appointment.client.firstName} ${detail.appointment.client.lastName}`.trim()
+              : 'Cliente no disponible',
+            serviceName: detail.appointment?.service?.name || 'Servicio no disponible',
+            totalAmount: parseFloat(detail.servicePrice || 0),
+            commissionAmount: parseFloat(detail.commissionAmount || 0),
+            commissionPercentage: parseFloat(detail.commissionRate || 0),
+            status: payment.status,
+            paymentProofUrl: payment.paymentProofUrl,
+            paidAt: payment.paidAt,
+            requestNumber: payment.requestNumber
+          }));
+        });
+      }
+      
+      console.log('✅ CommissionHistoryList - Commissions transformadas:', commissions);
+      setCommissions(commissions);
       setTotalPages(data.data?.pagination?.totalPages || 1);
     } catch (error) {
       console.error('❌ CommissionHistoryList - Error loading commissions:', error);
@@ -258,6 +301,9 @@ export default function CommissionHistoryList({ specialistId, businessId }) {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Estado
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Comprobante
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -291,6 +337,20 @@ export default function CommissionHistoryList({ specialistId, businessId }) {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(commission.status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {commission.paymentProofUrl ? (
+                          <a
+                            href={commission.paymentProofUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline"
+                          >
+                            Ver comprobante
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">Sin comprobante</span>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -250,12 +250,49 @@ exports.getCommissionHistory = async (req, res) => {
       offset
     });
 
+    // Transformar datos para el frontend - aplanar detalles de comisiones
+    const formattedCommissions = payments.flatMap(payment => {
+      if (!payment.details || payment.details.length === 0) {
+        // Si no hay detalles, devolver el pago como un registro básico
+        return [{
+          id: payment.id,
+          appointmentDate: payment.paidAt,
+          clientName: 'N/A',
+          serviceName: 'Comisión agrupada',
+          totalAmount: payment.totalAmount,
+          commissionAmount: payment.totalAmount,
+          commissionPercentage: 0,
+          status: payment.status,
+          paymentProofUrl: payment.paymentProofUrl,
+          paidAt: payment.paidAt,
+          requestNumber: payment.requestNumber
+        }];
+      }
+
+      // Devolver un registro por cada detalle (cita)
+      return payment.details.map(detail => ({
+        id: `${payment.id}-${detail.id}`,
+        appointmentDate: detail.appointment?.completedAt || detail.appointment?.startTime,
+        clientName: detail.appointment?.client 
+          ? `${detail.appointment.client.firstName} ${detail.appointment.client.lastName}`.trim()
+          : 'Cliente no disponible',
+        serviceName: detail.appointment?.service?.name || 'Servicio no disponible',
+        totalAmount: detail.serviceAmount || 0,
+        commissionAmount: detail.commissionAmount || 0,
+        commissionPercentage: detail.commissionPercentage || 0,
+        status: payment.status,
+        paymentProofUrl: payment.paymentProofUrl,
+        paidAt: payment.paidAt,
+        requestNumber: payment.requestNumber
+      }));
+    });
+
     const totalPages = Math.ceil(count / parseInt(limit));
 
     res.json({
       success: true,
       data: {
-        commissions: payments,
+        commissions: formattedCommissions,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
