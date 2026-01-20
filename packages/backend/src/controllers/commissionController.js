@@ -1354,7 +1354,7 @@ exports.getPaymentRequests = async (req, res) => {
         {
           model: User,
           as: 'specialist',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'profilePicture']
+          attributes: ['id', 'firstName', 'lastName', 'email']
         },
         {
           model: User,
@@ -1383,8 +1383,7 @@ exports.getPaymentRequests = async (req, res) => {
           specialist: {
             id: req.specialist.id,
             name: `${req.specialist.firstName} ${req.specialist.lastName}`,
-            email: req.specialist.email,
-            avatar: req.specialist.profilePicture
+            email: req.specialist.email
           },
           periodFrom: req.periodFrom,
           periodTo: req.periodTo,
