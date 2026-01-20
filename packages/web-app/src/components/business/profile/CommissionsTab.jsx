@@ -10,8 +10,6 @@ import {
   DocumentTextIcon,
   EyeIcon
 } from '@heroicons/react/24/outline';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { useSelector } from 'react-redux';
 import toast from 'react-hot-toast';
 import commissionApi from '@shared/api/commissionApi';
@@ -242,6 +240,44 @@ const CommissionsTab = ({
     }).format(amount);
   };
 
+  const formatDateTime = (date) => {
+    if (!date) return 'N/A';
+    try {
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) return 'Fecha inválida';
+      // Usar timezone del negocio (Colombia)
+      return new Intl.DateTimeFormat('es-CO', {
+        timeZone: 'America/Bogota',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(dateObj);
+    } catch (error) {
+      console.error('Error formateando fecha:', error, date);
+      return 'Fecha inválida';
+    }
+  };
+
+  const formatDateOnly = (date) => {
+    if (!date) return 'N/A';
+    try {
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) return 'Fecha inválida';
+      return new Intl.DateTimeFormat('es-CO', {
+        timeZone: 'America/Bogota',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }).format(dateObj);
+    // eslint-disable-next-line no-unused-vars
+    } catch (error) {
+      return 'Fecha inválida';
+    }
+  };
+
   const formatPercentage = (value) => {
     return `${value}%`;
   };
@@ -423,7 +459,7 @@ const CommissionsTab = ({
                               {selectedSpecialistDetails.services?.map((service, index) => (
                                 <tr key={index} className="hover:bg-gray-50">
                                   <td className="px-4 py-2 text-sm text-gray-900">
-                                    {format(new Date(service.date), 'dd/MM/yyyy', { locale: es })}
+                                    {formatDateOnly(service.date)}
                                   </td>
                                   <td className="px-4 py-2 text-sm text-gray-900">
                                     {service.serviceName}
@@ -466,7 +502,7 @@ const CommissionsTab = ({
                               <div key={index} className="flex justify-between items-center p-3 bg-white rounded border border-gray-200">
                                 <div>
                                   <div className="text-sm font-medium text-gray-900">
-                                    {format(new Date(payment.paymentDate), 'dd/MM/yyyy HH:mm', { locale: es })}
+                                    {formatDateTime(payment.paymentDate)}
                                   </div>
                                   <div className="text-xs text-gray-500">
                                     Por: {payment.paidByUser}
@@ -601,13 +637,13 @@ const CommissionsTab = ({
                   <div>
                     <span className="text-gray-500">Período:</span>
                     <span className="ml-2 font-medium">
-                      {format(new Date(request.periodFrom), 'dd MMM', { locale: es })} - {format(new Date(request.periodTo), 'dd MMM yyyy', { locale: es })}
+                      {formatDateOnly(request.periodFrom)} - {formatDateOnly(request.periodTo)}
                     </span>
                   </div>
                   <div>
                     <span className="text-gray-500">Solicitado:</span>
                     <span className="ml-2 font-medium">
-                      {format(new Date(request.submittedAt), "dd MMM yyyy 'a las' HH:mm", { locale: es })}
+                      {formatDateTime(request.submittedAt)}
                     </span>
                   </div>
                 </div>

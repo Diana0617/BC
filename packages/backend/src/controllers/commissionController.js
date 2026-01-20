@@ -73,12 +73,30 @@ exports.getSpecialistCommissionSummary = async (req, res) => {
     let thisMonth = 0;
     const appointmentsWithCommission = [];
     
+    // Obtener CommissionDetails existentes para estos appointments
+    const existingDetails = await CommissionDetail.findAll({
+      where: {
+        appointmentId: { [Op.in]: completedAppointments.map(a => a.id) }
+      },
+      attributes: ['appointmentId', 'paymentStatus']
+    });
+    
+    const paidAppointmentIds = new Set(
+      existingDetails
+        .filter(d => d.paymentStatus === 'PAID')
+        .map(d => d.appointmentId)
+    );
+    
     completedAppointments.forEach(appointment => {
       const price = parseFloat(appointment.totalAmount || appointment.service?.price || 0);
       const commissionRate = 50; // Por defecto 50%, después se puede obtener de config
       const commission = (price * commissionRate) / 100;
       
-      pending += commission;
+      const isPaid = paidAppointmentIds.has(appointment.id);
+      
+      if (!isPaid) {
+        pending += commission;
+      }
       thisMonth += commission;
 
       // Agregar información del appointment con comisión calculada
@@ -93,7 +111,7 @@ exports.getSpecialistCommissionSummary = async (req, res) => {
         totalAmount: price,
         commissionRate: commissionRate,
         commissionAmount: Math.round(commission * 100) / 100,
-        status: 'PENDING' // Por defecto, se puede verificar con CommissionDetail
+        status: isPaid ? 'PAID' : 'PENDING'
       });
     });
 
@@ -117,7 +135,7 @@ exports.getSpecialistCommissionSummary = async (req, res) => {
     }) || 0;
 
     const paid = paidCommissions;
-    pending = pending - paid;
+    // pending ya está calculado correctamente arriba (sin incluir pagados)
 
     // Obtener solicitudes pendientes
     const requestedPayments = await CommissionPaymentRequest.findAll({

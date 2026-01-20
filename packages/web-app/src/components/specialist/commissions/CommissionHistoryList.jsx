@@ -139,7 +139,21 @@ export default function CommissionHistoryList({ specialistId, businessId }) {
   };
 
   const formatDate = (date) => {
-    return format(new Date(date), "d MMM yyyy", { locale: es });
+    if (!date) return 'N/A';
+    try {
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) return 'Fecha inválida';
+      // Usar timezone del negocio (Colombia)
+      return new Intl.DateTimeFormat('es-CO', {
+        timeZone: 'America/Bogota',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }).format(dateObj);
+    } catch (error) {
+      console.error('Error formateando fecha:', error, date);
+      return 'Fecha inválida';
+    }
   };
 
   const getStatusBadge = (status) => {
