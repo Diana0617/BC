@@ -947,7 +947,7 @@ exports.getSpecialistsSummary = async (req, res) => {
           email: specialist.email,
           avatar: specialist.profilePicture,
           role: specialist.role,
-          services: specialist.services.map(s => s.name),
+          services: (specialist.specialistServices || []).map(s => s.name),
           stats: {
             generated: Math.round(generated * 100) / 100,
             paid: Math.round(paid * 100) / 100,
