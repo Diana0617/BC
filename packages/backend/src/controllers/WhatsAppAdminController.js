@@ -22,6 +22,25 @@ const { Op } = require('sequelize');
  */
 
 class WhatsAppAdminController {
+  constructor() {
+    // Bind all methods to preserve 'this' context when used as route handlers
+    this.storeToken = this.storeToken.bind(this);
+    this.getTokenInfo = this.getTokenInfo.bind(this);
+    this.rotateToken = this.rotateToken.bind(this);
+    this.deleteToken = this.deleteToken.bind(this);
+    this.getEmbeddedSignupConfig = this.getEmbeddedSignupConfig.bind(this);
+    this.handleEmbeddedSignupCallback = this.handleEmbeddedSignupCallback.bind(this);
+    this.getTemplates = this.getTemplates.bind(this);
+    this.createTemplate = this.createTemplate.bind(this);
+    this.updateTemplate = this.updateTemplate.bind(this);
+    this.deleteTemplate = this.deleteTemplate.bind(this);
+    this.submitTemplateForReview = this.submitTemplateForReview.bind(this);
+    this.syncTemplates = this.syncTemplates.bind(this);
+    this.getMessageHistory = this.getMessageHistory.bind(this);
+    this.getWebhookEvents = this.getWebhookEvents.bind(this);
+    this.replayWebhookEvent = this.replayWebhookEvent.bind(this);
+  }
+
   // =====================================================================
   // TOKEN MANAGEMENT
   // =====================================================================
