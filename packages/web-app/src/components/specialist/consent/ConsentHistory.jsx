@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { 
   DocumentTextIcon,
   EyeIcon,
@@ -6,16 +7,20 @@ import {
   UserIcon,
   MagnifyingGlassIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatInTimezone } from '../../../utils/timezone';
 
 /**
  * Historial de consentimientos firmados
  * Con filtros, búsqueda y previsualización
  */
 export default function ConsentHistory({ clientId, specialistId }) {
+  const user = useSelector(state => state.auth.user);
+  const businessId = user?.businessId;
+  const timezone = user?.business?.timezone || 'America/Bogota';
+  
   const [consents, setConsents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -29,9 +34,15 @@ export default function ConsentHistory({ clientId, specialistId }) {
   }, [clientId, specialistId, page, searchTerm]);
 
   const loadConsents = async () => {
+    if (!businessId) {
+      console.error('businessId no disponible');
+      return;
+    }
+    
     setLoading(true);
     try {
       const params = new URLSearchParams({
+        businessId,
         page,
         limit: 10,
         ...(clientId && { clientId }),
@@ -40,7 +51,7 @@ export default function ConsentHistory({ clientId, specialistId }) {
       });
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/consent-signatures?${params}`,
+        `${import.meta.env.VITE_API_URL}/api/specialists/consent-signatures?${params}`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -51,8 +62,8 @@ export default function ConsentHistory({ clientId, specialistId }) {
       if (!response.ok) throw new Error('Error loading consents');
 
       const data = await response.json();
-      setConsents(data.consents);
-      setTotalPages(data.totalPages);
+      setConsents(data.data?.consents || []);
+      setTotalPages(data.data?.totalPages || 1);
     } catch (error) {
       console.error('Error loading consents:', error);
       alert('Error al cargar el historial');
@@ -67,7 +78,13 @@ export default function ConsentHistory({ clientId, specialistId }) {
   };
 
   const formatDate = (date) => {
-    return format(new Date(date), "d 'de' MMMM, yyyy - HH:mm", { locale: es });
+    return formatInTimezone(new Date(date), timezone, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
