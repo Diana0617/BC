@@ -411,7 +411,7 @@ class WhatsAppAdminController {
     try {
       const appId = process.env.META_APP_ID;
       const configId = process.env.WHATSAPP_CONFIG_ID;
-      const redirectUri = 'https://beautycontrol-api.azurewebsites.net/api/webhooks/whatsapp';
+      const redirectUri = 'https://www.controldenegocios.com/business/profile';
       
       
       const state = Buffer.from(JSON.stringify({
@@ -538,8 +538,8 @@ class WhatsAppAdminController {
     try {
       const axios = require('axios');
       const appId = process.env.META_APP_ID;
-      const appSecret = process.env.META_APP_SECRET;
-      const redirectUri = 'https://beautycontrol-api.azurewebsites.net/api/webhooks/whatsapp'; // Debe coincidir con Meta config
+      const appSecret = process.env.WHATSAPP_APP_SECRET;
+      const redirectUri = 'https://www.controldenegocios.com/business/profile'; // Debe coincidir con Meta config
 
       logger.info('Exchanging code for token...', { appId, redirectUri });
 
