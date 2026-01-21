@@ -1140,35 +1140,6 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
           try {
             console.log('📝 Datos recibidos del modal:', data)
             
-            // Obtener timezone del negocio (usar America/Bogota como default)
-            const timezone = currentBusiness?.timezone || 'America/Bogota'
-            
-            console.log('🌍 Antes de conversión:', {
-              timezone,
-              date: data.date,
-              startTime: data.startTime,
-              endTime: data.endTime
-            })
-            
-            // Convertir fechas locales a UTC usando timezone
-            const startTimeUTC = localToUTC(data.date, data.startTime, timezone)
-            const endTimeUTC = localToUTC(data.date, data.endTime, timezone)
-            
-            console.log('🌍 Después de conversión:', {
-              startTimeUTC,
-              endTimeUTC,
-              isStartValid: startTimeUTC instanceof Date && !isNaN(startTimeUTC.getTime()),
-              isEndValid: endTimeUTC instanceof Date && !isNaN(endTimeUTC.getTime())
-            })
-            
-            // Validar que las fechas sean válidas
-            if (!startTimeUTC || isNaN(startTimeUTC.getTime())) {
-              throw new Error('Fecha de inicio inválida')
-            }
-            if (!endTimeUTC || isNaN(endTimeUTC.getTime())) {
-              throw new Error('Fecha de fin inválida')
-            }
-            
             // Transformar datos del formulario al formato de la API
             const appointmentData = {
               businessId: currentBusiness.id,
@@ -1177,10 +1148,49 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
               clientEmail: data.clientEmail,
               specialistId: data.specialistId,
               branchId: data.branchId,
-              startTime: startTimeUTC.toISOString(),
-              endTime: endTimeUTC.toISOString(),
               notes: data.notes || ''
             }
+            
+            // El modal puede enviar los datos en dos formatos:
+            // Formato 1: startTime y endTime ya en UTC (desde CreateAppointmentModal)
+            // Formato 2: date + time que necesitan conversión
+            
+            if (data.startTime && data.endTime && (data.startTime.includes('T') || data.startTime.includes('Z'))) {
+              // Formato 1: Ya vienen en UTC
+              console.log('✅ Usando fechas en formato UTC directo')
+              appointmentData.startTime = data.startTime
+              appointmentData.endTime = data.endTime
+            } else if (data.time && typeof data.time === 'string' && data.time.includes('T')) {
+              // El modal envió 'time' como fecha completa en UTC
+              console.log('✅ Usando fecha time en formato UTC')
+              appointmentData.startTime = data.time
+              
+              // Calcular endTime sumando la duración del servicio
+              const startDate = new Date(data.time)
+              const duration = data.duration || 60 // Default 60 minutos
+              const endDate = new Date(startDate.getTime() + duration * 60000)
+              appointmentData.endTime = endDate.toISOString()
+            } else {
+              // Formato 2: Necesita conversión local a UTC
+              console.log('🔄 Convirtiendo fechas locales a UTC')
+              const timezone = currentBusiness?.timezone || 'America/Bogota'
+              
+              const startTimeUTC = localToUTC(data.date, data.startTime, timezone)
+              const endTimeUTC = localToUTC(data.date, data.endTime, timezone)
+              
+              // Validar que las fechas sean válidas
+              if (!startTimeUTC || isNaN(startTimeUTC.getTime())) {
+                throw new Error('Fecha de inicio inválida')
+              }
+              if (!endTimeUTC || isNaN(endTimeUTC.getTime())) {
+                throw new Error('Fecha de fin inválida')
+              }
+              
+              appointmentData.startTime = startTimeUTC.toISOString()
+              appointmentData.endTime = endTimeUTC.toISOString()
+            }
+            
+            console.log('📦 appointmentData preparado:', appointmentData)
 
             // Manejar múltiples servicios o servicio único
             if (data.serviceIds && data.serviceIds.length > 0) {
