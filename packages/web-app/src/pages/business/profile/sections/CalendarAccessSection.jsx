@@ -1139,10 +1139,20 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
         onCreate={async (data) => {
           try {
             console.log('📝 Datos recibidos del modal:', data)
+            console.log('📝 currentBusiness:', currentBusiness)
+            console.log('📝 user:', user)
+            
+            // Obtener businessId: usar currentBusiness.id o fallback a user.businessId
+            const businessId = currentBusiness?.id || user?.businessId
+            
+            if (!businessId) {
+              toast.error('❌ No se pudo obtener la información del negocio')
+              throw new Error('No se pudo obtener el ID del negocio')
+            }
             
             // Transformar datos del formulario al formato de la API
             const appointmentData = {
-              businessId: currentBusiness.id,
+              businessId: businessId,
               clientName: data.clientName,
               clientPhone: data.clientPhone,
               clientEmail: data.clientEmail,

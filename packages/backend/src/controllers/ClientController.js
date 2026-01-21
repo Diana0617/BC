@@ -431,6 +431,27 @@ class ClientController {
     } catch (error) {
       console.error('Error creating client:', error);
       
+      // Manejar error de email duplicado
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        const field = error.errors[0]?.path;
+        const value = error.errors[0]?.value;
+        
+        if (field === 'email') {
+          return res.status(409).json({
+            success: false,
+            error: `Ya existe un cliente con el email ${value}`,
+            field: 'email',
+            code: 'DUPLICATE_EMAIL'
+          });
+        }
+        
+        return res.status(409).json({
+          success: false,
+          error: 'Ya existe un cliente con estos datos',
+          field: field
+        });
+      }
+      
       if (error.name === 'SequelizeValidationError') {
         // Mapear errores de Sequelize a mensajes amigables
         const fieldErrors = {};
