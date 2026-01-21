@@ -60,7 +60,13 @@ const WhatsAppTemplatesList = ({ onCreateTemplate, onEditTemplate }) => {
 
   // Load templates on mount and when filters/pagination change
   useEffect(() => {
-    dispatch(fetchTemplates({ ...filters, ...pagination }))
+    // Only send page and limit from pagination, not total and pages
+    const queryParams = {
+      ...filters,
+      page: pagination.page,
+      limit: pagination.limit
+    };
+    dispatch(fetchTemplates(queryParams))
   }, [dispatch, filters.status, filters.category, pagination.page, pagination.limit])
 
   const handleSync = async () => {

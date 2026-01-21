@@ -618,7 +618,7 @@ class WhatsAppAdminController {
         });
       }
 
-      const where = { business_id: businessId };
+      const where = { businessId }; // Changed from business_id to businessId
       // Only add filters if they have valid values (not null, undefined, or "null" string)
       if (status && status !== 'null') where.status = status;
       if (category && category !== 'null') where.category = category;
@@ -629,7 +629,7 @@ class WhatsAppAdminController {
         where,
         limit: parseInt(limit),
         offset: parseInt(offset),
-        order: [['created_at', 'DESC']]
+        order: [['createdAt', 'DESC']] // Changed from created_at to createdAt
       });
 
       res.status(200).json({
@@ -648,7 +648,8 @@ class WhatsAppAdminController {
       logger.error('Error getting templates:', error);
       res.status(500).json({
         success: false,
-        error: 'Error al obtener plantillas'
+        error: 'Error al obtener plantillas',
+        details: error.message
       });
     }
   }
@@ -680,8 +681,8 @@ class WhatsAppAdminController {
 
       // Create template locally
       const template = await WhatsAppMessageTemplate.create({
-        business_id: businessId,
-        template_name: name,
+        businessId: businessId,
+        templateName: name,
         language: language,
         category: category,
         status: 'PENDING',
@@ -726,7 +727,7 @@ class WhatsAppAdminController {
       }
 
       const template = await WhatsAppMessageTemplate.findOne({
-        where: { id: templateId, business_id: businessId }
+        where: { id: templateId, businessId: businessId }
       });
 
       if (!template) {
@@ -746,7 +747,7 @@ class WhatsAppAdminController {
 
       // Update template
       await template.update({
-        template_name: name || template.template_name,
+        templateName: name || template.templateName,
         language: language || template.language,
         category: category || template.category,
         body: components?.body || template.body,
@@ -788,7 +789,7 @@ class WhatsAppAdminController {
       }
 
       const template = await WhatsAppMessageTemplate.findOne({
-        where: { id: templateId, business_id: businessId }
+        where: { id: templateId, businessId: businessId }
       });
 
       if (!template) {
