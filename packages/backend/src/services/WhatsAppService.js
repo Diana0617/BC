@@ -550,6 +550,38 @@ ${receipt.business?.name ? `\n📍 ${receipt.business.name}` : ''}
       throw error;
     }
   }
+
+  /**
+   * Generic method to make Graph API requests
+   * 
+   * @param {string} endpoint - API endpoint (e.g., '/123456789')
+   * @param {string} method - HTTP method (GET, POST, DELETE)
+   * @param {Object} data - Request body (for POST)
+   * @param {string} accessToken - WhatsApp access token
+   * @returns {Promise<Object>} API response data
+   */
+  async _makeGraphApiRequest(endpoint, method = 'GET', data = null, accessToken = null) {
+    try {
+      const config = {
+        method,
+        url: `${this.baseUrl}${endpoint}`,
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      };
+
+      if (data && (method === 'POST' || method === 'PUT')) {
+        config.data = data;
+      }
+
+      const response = await axios(config);
+      return response.data;
+    } catch (error) {
+      logger.error(`Graph API request failed: ${method} ${endpoint}`, error.response?.data || error.message);
+      throw error;
+    }
+  }
 }
 
 module.exports = new WhatsAppService();
