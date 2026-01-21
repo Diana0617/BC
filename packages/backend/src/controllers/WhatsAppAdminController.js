@@ -833,7 +833,7 @@ class WhatsAppAdminController {
       }
 
       const template = await WhatsAppMessageTemplate.findOne({
-        where: { id: templateId, business_id: businessId }
+        where: { id: templateId, businessId: businessId }
       });
 
       if (!template) {
@@ -971,11 +971,11 @@ class WhatsAppAdminController {
         });
       }
 
-      const where = { business_id: businessId };
+      const where = { businessId: businessId };
       
       // Only add filters if they have valid values (not null, undefined, or "null" string)
       if (status && status !== 'null') where.status = status;
-      if (clientId && clientId !== 'null') where.client_id = clientId;
+      if (clientId && clientId !== 'null') where.clientId = clientId;
       
       if ((startDate && startDate !== 'null') || (endDate && endDate !== 'null')) {
         where.created_at = {};
@@ -1040,7 +1040,7 @@ class WhatsAppAdminController {
       }
 
       const message = await WhatsAppMessage.findOne({
-        where: { id: messageId, business_id: businessId },
+        where: { id: messageId, businessId: businessId },
         include: [
           {
             association: 'client',
@@ -1100,14 +1100,18 @@ class WhatsAppAdminController {
         });
       }
 
-      const where = { business_id: businessId };
+      const where = { businessId: businessId };
       
       // Only add filters if they have valid values (not null, undefined, or "null" string)
-      if (eventType && eventType !== 'null') where.event_type = eventType;
+      if (eventType && eventType !== 'null') where.eventType = eventType;
       
       if ((startDate && startDate !== 'null') || (endDate && endDate !== 'null')) {
-        where.created_at = {};
+        where.createdAt = {};
         if (startDate && startDate !== 'null') {
+          where.createdAt[Op.gte] = new Date(startDate);
+        }
+        if (endDate && endDate !== 'null') {
+          where.createdAt[Op.lte] = new Date(endDate);
           const date = new Date(startDate);
           if (!isNaN(date.getTime())) {
             where.created_at[Op.gte] = date;
@@ -1168,7 +1172,7 @@ class WhatsAppAdminController {
       }
 
       const event = await WhatsAppWebhookEvent.findOne({
-        where: { id: eventId, business_id: businessId }
+        where: { id: eventId, businessId: businessId }
       });
 
       if (!event) {
@@ -1208,7 +1212,7 @@ class WhatsAppAdminController {
       }
 
       const event = await WhatsAppWebhookEvent.findOne({
-        where: { id: eventId, business_id: businessId }
+        where: { id: eventId, businessId: businessId }
       });
 
       if (!event) {
