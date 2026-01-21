@@ -28,8 +28,7 @@ const WhatsAppMessage = sequelize.define('WhatsAppMessage', {
     references: {
       model: 'clients',
       key: 'id'
-    },
-    field: 'client_id'
+    }
   },
   appointmentId: {
     type: DataTypes.UUID,
@@ -37,8 +36,7 @@ const WhatsAppMessage = sequelize.define('WhatsAppMessage', {
     references: {
       model: 'appointments',
       key: 'id'
-    },
-    field: 'appointment_id'
+    }
   },
   to: {
     type: DataTypes.STRING(20),
@@ -46,13 +44,11 @@ const WhatsAppMessage = sequelize.define('WhatsAppMessage', {
   },
   phoneNumberId: {
     type: DataTypes.STRING(100),
-    allowNull: false,
-    field: 'phone_number_id'
+    allowNull: false
   },
   messageType: {
     type: DataTypes.STRING(50),
-    allowNull: false,
-    field: 'message_type'
+    allowNull: false
   },
   payload: {
     type: DataTypes.JSONB,
@@ -60,8 +56,7 @@ const WhatsAppMessage = sequelize.define('WhatsAppMessage', {
   },
   providerMessageId: {
     type: DataTypes.STRING(100),
-    allowNull: true,
-    field: 'provider_message_id'
+    allowNull: true
   },
   status: {
     type: DataTypes.STRING(20),
@@ -70,28 +65,23 @@ const WhatsAppMessage = sequelize.define('WhatsAppMessage', {
   },
   errorCode: {
     type: DataTypes.STRING(50),
-    allowNull: true,
-    field: 'error_code'
+    allowNull: true
   },
   errorMessage: {
     type: DataTypes.TEXT,
-    allowNull: true,
-    field: 'error_message'
+    allowNull: true
   },
   sentAt: {
     type: DataTypes.DATE,
-    allowNull: true,
-    field: 'sent_at'
+    allowNull: true
   },
   deliveredAt: {
     type: DataTypes.DATE,
-    allowNull: true,
-    field: 'delivered_at'
+    allowNull: true
   },
   readAt: {
     type: DataTypes.DATE,
-    allowNull: true,
-    field: 'read_at'
+    allowNull: true
   }
 }, {
   tableName: 'whatsapp_messages',
