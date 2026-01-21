@@ -53,8 +53,24 @@ const BranchesSection = ({ isSetupMode, onComplete, isCompleted }) => {
     
     try {
       setLoading(true);
+      console.log('📥 Cargando sucursales para negocio:', activeBusiness.id);
       const response = await businessBranchesApi.getBranches(activeBusiness.id);
-      const branchesData = response.data || response || [];
+      const branchesData = (response.data || response || []).map(branch => ({
+        ...branch,
+        // ✅ Mapear 'status' del backend a 'isActive' para la UI
+        isActive: branch.status === 'ACTIVE',
+        // ✅ Mapear 'isMain' a 'isMainBranch' para consistencia
+        isMainBranch: branch.isMain || branch.isMainBranch
+      }));
+      console.log('📦 Sucursales recibidas:', branchesData);
+      console.log('📊 Estado de cada sucursal:', branchesData.map(b => ({
+        id: b.id,
+        name: b.name,
+        code: b.code,
+        status: b.status,
+        isActive: b.isActive,
+        isMainBranch: b.isMainBranch
+      })));
       setBranches(branchesData);
       
       // Si no hay sucursales y estamos en modo setup, crear una por defecto
@@ -68,8 +84,8 @@ const BranchesSection = ({ isSetupMode, onComplete, isCompleted }) => {
           country: 'Colombia',
           phone: null,
           email: null,
-          isMainBranch: true,
-          isActive: true
+          isMain: true,
+          status: 'ACTIVE'
         };
         
         try {
@@ -121,13 +137,25 @@ const BranchesSection = ({ isSetupMode, onComplete, isCompleted }) => {
       setLoading(true);
       setError(null);
 
+      // ✅ Transformar datos del frontend al formato del backend
+      const backendData = {
+        ...formData,
+        status: formData.isActive ? 'ACTIVE' : 'INACTIVE',
+        isMain: formData.isMainBranch,
+        zipCode: formData.postalCode
+      };
+      // Remover campos que no existen en el backend
+      delete backendData.isActive;
+      delete backendData.isMainBranch;
+      delete backendData.postalCode;
+
       if (editingBranch) {
         // Actualizar sucursal
-        await businessBranchesApi.updateBranch(activeBusiness.id, editingBranch.id, formData);
+        await businessBranchesApi.updateBranch(activeBusiness.id, editingBranch.id, backendData);
         await loadBranches();
       } else {
         // Crear nueva sucursal
-        await businessBranchesApi.createBranch(activeBusiness.id, formData);
+        await businessBranchesApi.createBranch(activeBusiness.id, backendData);
         await loadBranches();
         
         // Si es el primer registro en modo setup, completar paso
@@ -147,16 +175,17 @@ const BranchesSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const handleEdit = (branch) => {
     setEditingBranch(branch);
     setFormData({
+      code: branch.code,
       name: branch.name,
       address: branch.address,
       city: branch.city,
       state: branch.state,
       country: branch.country,
-      postalCode: branch.postalCode || '',
+      postalCode: branch.zipCode || branch.postalCode || '',
       phone: branch.phone,
       email: branch.email,
-      isMainBranch: branch.isMainBranch,
-      isActive: branch.isActive
+      isMainBranch: branch.isMain || branch.isMainBranch,
+      isActive: branch.status === 'ACTIVE' || branch.isActive
     });
     setIsAddingBranch(true);
   };
@@ -189,11 +218,25 @@ const BranchesSection = ({ isSetupMode, onComplete, isCompleted }) => {
     
     try {
       const branch = branches.find(b => b.id === branchId);
-      await businessBranchesApi.toggleBranchStatus(activeBusiness.id, branchId, !branch.isActive);
+      const newStatus = branch.isActive ? 'INACTIVE' : 'ACTIVE';
+      console.log('🔄 Toggle status - Sucursal actual:', {
+        id: branch.id,
+        name: branch.name,
+        statusActual: branch.status,
+        isActive: branch.isActive,
+        nuevoStatus: newStatus
+      });
+      
+      // ✅ Enviar el objeto completo con 'status' en lugar de 'isActive'
+      await businessBranchesApi.updateBranch(activeBusiness.id, branchId, { status: newStatus });
+      console.log('✅ Toggle status - Cambio exitoso');
+      
       await loadBranches();
     } catch (err) {
-      setError('Error al cambiar estado');
-      console.error(err);
+      const errorMsg = err.response?.data?.message || err.message || 'Error al cambiar estado';
+      setError(`Error al cambiar estado: ${errorMsg}`);
+      console.error('❌ Error en toggleStatus:', err);
+      console.error('❌ Detalles del error:', err.response?.data);
     }
   };
 
