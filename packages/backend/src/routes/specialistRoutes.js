@@ -7,6 +7,7 @@ const AppointmentPaymentController = require('../controllers/AppointmentPaymentC
 const AppointmentProductController = require('../controllers/AppointmentProductController');
 const SpecialistSalesController = require('../controllers/SpecialistSalesController');
 const AppointmentAdvancePaymentController = require('../controllers/AppointmentAdvancePaymentController');
+const consentController = require('../controllers/consentController');
 
 const router = express.Router();
 
@@ -1498,5 +1499,122 @@ router.put('/me/schedules/:branchId', authenticateToken, requireSpecialist, Spec
  *         description: Lista de sucursales del especialista
  */
 router.get('/:specialistId/branches', authenticateToken, SpecialistController.getSpecialistBranches);
+
+// ==================== CONSENT SIGNATURES ====================
+/**
+ * @swagger
+ * /api/specialists/consent-signatures:
+ *   get:
+ *     summary: Listar todas las firmas de consentimiento del negocio
+ *     tags: [Specialists]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del negocio
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [ACTIVE, REVOKED, EXPIRED]
+ *       - in: query
+ *         name: customerId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista paginada de firmas de consentimiento
+ */
+router.get('/consent-signatures', authenticateToken, async (req, res) => {
+  try {
+    const { businessId, page = 1, limit = 10, status, customerId, search } = req.query;
+    
+    if (!businessId) {
+      return res.status(400).json({
+        success: false,
+        error: 'businessId es requerido'
+      });
+    }
+
+    const where = { businessId };
+    
+    if (status) where.status = status;
+    if (customerId) where.customerId = customerId;
+    
+    const { ConsentSignature, ConsentTemplate, Client, Service, Appointment } = require('../models');
+    const { Op } = require('sequelize');
+    
+    // Paginación
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    
+    const { count, rows: signatures } = await ConsentSignature.findAndCountAll({
+      where,
+      include: [
+        {
+          model: ConsentTemplate,
+          as: 'template',
+          attributes: ['id', 'name', 'code', 'category']
+        },
+        {
+          model: Client,
+          as: 'customer',
+          attributes: ['id', 'name', 'email', 'phone'],
+          where: search ? {
+            [Op.or]: [
+              { name: { [Op.iLike]: `%${search}%` } },
+              { email: { [Op.iLike]: `%${search}%` } }
+            ]
+          } : undefined
+        },
+        {
+          model: Service,
+          as: 'service',
+          attributes: ['id', 'name']
+        },
+        {
+          model: Appointment,
+          as: 'appointment',
+          attributes: ['id', 'date', 'startTime', 'status']
+        }
+      ],
+      order: [['signedAt', 'DESC']],
+      limit: parseInt(limit),
+      offset
+    });
+
+    return res.json({
+      success: true,
+      consents: signatures,
+      totalPages: Math.ceil(count / parseInt(limit)),
+      currentPage: parseInt(page),
+      totalConsents: count
+    });
+
+  } catch (error) {
+    console.error('Error loading consent signatures:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error loading consent signatures'
+    });
+  }
+});
 
 module.exports = router;

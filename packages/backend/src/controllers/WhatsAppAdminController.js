@@ -34,11 +34,11 @@ class WhatsAppAdminController {
     this.createTemplate = this.createTemplate.bind(this);
     this.updateTemplate = this.updateTemplate.bind(this);
     this.deleteTemplate = this.deleteTemplate.bind(this);
-    this.submitTemplateForReview = this.submitTemplateForReview.bind(this);
     this.syncTemplates = this.syncTemplates.bind(this);
-    this.getMessageHistory = this.getMessageHistory.bind(this);
     this.getWebhookEvents = this.getWebhookEvents.bind(this);
     this.replayWebhookEvent = this.replayWebhookEvent.bind(this);
+    // Bind private methods too
+    this._exchangeCodeForToken = this._exchangeCodeForToken.bind(this);
   }
 
   // =====================================================================
