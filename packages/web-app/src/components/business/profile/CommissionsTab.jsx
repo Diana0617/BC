@@ -306,28 +306,36 @@ const CommissionsTab = ({
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Configuración de Comisiones</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <div className="text-sm text-gray-600">Porcentaje Comisión</div>
+              <div className="text-sm text-gray-600">Estado</div>
+              <div className="text-lg font-semibold text-gray-900">
+                {config.commissionsEnabled ? (
+                  <span className="text-green-600">✓ Habilitadas</span>
+                ) : (
+                  <span className="text-red-600">✗ Deshabilitadas</span>
+                )}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-600">Tipo de Cálculo</div>
+              <div className="text-lg font-semibold text-gray-900">
+                {config.calculationType === 'GENERAL' ? 'General' : 
+                 config.calculationType === 'POR_SERVICIO' ? 'Por Servicio' : 
+                 'Mixto'}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-600">Porcentaje General</div>
               <div className="text-2xl font-bold text-pink-600">
-                {formatPercentage(config.commissionPercentage || 0)}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600">Cálculo Basado En</div>
-              <div className="text-lg font-semibold text-gray-900">
-                {config.calculationBasis === 'service_price' ? 'Precio del Servicio' : 
-                 config.calculationBasis === 'amount_paid' ? 'Monto Pagado' : 
-                 'Monto Pagado (sin anticipos)'}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600">Frecuencia de Pago</div>
-              <div className="text-lg font-semibold text-gray-900">
-                {config.paymentFrequency === 'weekly' ? 'Semanal' :
-                 config.paymentFrequency === 'biweekly' ? 'Quincenal' :
-                 'Mensual'}
+                {formatPercentage(config.generalPercentage || 0)}
               </div>
             </div>
           </div>
+          {config.notes && (
+            <div className="mt-4 pt-4 border-t border-pink-100">
+              <div className="text-sm text-gray-600">Notas</div>
+              <div className="text-sm text-gray-900">{config.notes}</div>
+            </div>
+          )}
         </div>
       )}
 
@@ -375,18 +383,18 @@ const CommissionsTab = ({
           </div>
         ) : (
           specialists.map((specialist) => (
-            <div key={specialist.id} className="bg-white rounded-lg shadow overflow-hidden">
+            <div key={specialist.specialistId || specialist.id} className="bg-white rounded-lg shadow overflow-hidden">
               {/* Specialist Header */}
               <div
                 className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                onClick={() => toggleSpecialist(specialist.id)}
+                onClick={() => toggleSpecialist(specialist.specialistId || specialist.id)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <UserCircleIcon className="w-12 h-12 text-pink-600" />
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
-                        {specialist.firstName} {specialist.lastName}
+                        {specialist.name || `${specialist.firstName} ${specialist.lastName}`}
                       </h3>
                       <p className="text-sm text-gray-500">{specialist.email}</p>
                     </div>
@@ -395,19 +403,19 @@ const CommissionsTab = ({
                     <div className="text-right">
                       <div className="text-sm text-gray-500">Comisiones Generadas</div>
                       <div className="text-xl font-bold text-gray-900">
-                        {formatCurrency(specialist.totalCommissionsGenerated || 0)}
+                        {formatCurrency(specialist.stats?.generated || 0)}
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm text-gray-500">Comisiones Pagadas</div>
                       <div className="text-xl font-bold text-green-600">
-                        {formatCurrency(specialist.totalCommissionsPaid || 0)}
+                        {formatCurrency(specialist.stats?.paid || 0)}
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm text-gray-500">Pendientes</div>
                       <div className="text-xl font-bold text-yellow-600">
-                        {formatCurrency(specialist.totalCommissionsPending || 0)}
+                        {formatCurrency(specialist.stats?.pending || 0)}
                       </div>
                     </div>
                     {expandedSpecialist === specialist.id ? (
@@ -420,7 +428,7 @@ const CommissionsTab = ({
               </div>
 
               {/* Specialist Details */}
-              {expandedSpecialist === specialist.id && selectedSpecialistDetails && (
+              {expandedSpecialist === (specialist.specialistId || specialist.id) && selectedSpecialistDetails && (
                 <div className="border-t border-gray-200 p-6 bg-gray-50">
                   {selectedSpecialistDetails.loading ? (
                     <div className="text-center py-8">
