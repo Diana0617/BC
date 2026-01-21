@@ -100,7 +100,7 @@ const LandingPage = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-nunito">
       <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 text-white">
+      <section className="relative overflow-hidden bg-gradient-to-br from-gray-600 via-gray-700 to-gray-400 text-white">
         {/* Logo arriba a la izquierda */}
         <div className="absolute top-0 left-0 z-20 p-4">
           <a href="/">
