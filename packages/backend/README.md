@@ -258,4 +258,4 @@ npm test         # Ejecutar tests
 2. Crear rama feature (`git checkout -b feature/nueva-funcionalidad`)
 3. Commit cambios (`git commit -am 'Agregar nueva funcionalidad'`)
 4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crear Pull Request
+5. Crear Pull Request# Force deploy
