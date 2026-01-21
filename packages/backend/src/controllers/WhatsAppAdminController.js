@@ -978,17 +978,17 @@ class WhatsAppAdminController {
       if (clientId && clientId !== 'null') where.clientId = clientId;
       
       if ((startDate && startDate !== 'null') || (endDate && endDate !== 'null')) {
-        where.created_at = {};
+        where.createdAt = {};
         if (startDate && startDate !== 'null') {
           const date = new Date(startDate);
           if (!isNaN(date.getTime())) {
-            where.created_at[Op.gte] = date;
+            where.createdAt[Op.gte] = date;
           }
         }
         if (endDate && endDate !== 'null') {
           const date = new Date(endDate);
           if (!isNaN(date.getTime())) {
-            where.created_at[Op.lte] = date;
+            where.createdAt[Op.lte] = date;
           }
         }
       }
@@ -999,7 +999,7 @@ class WhatsAppAdminController {
         where,
         limit: parseInt(limit),
         offset: parseInt(offset),
-        order: [['created_at', 'DESC']]
+        order: [['createdAt', 'DESC']]
       });
 
       res.status(200).json({
@@ -1108,19 +1108,15 @@ class WhatsAppAdminController {
       if ((startDate && startDate !== 'null') || (endDate && endDate !== 'null')) {
         where.createdAt = {};
         if (startDate && startDate !== 'null') {
-          where.createdAt[Op.gte] = new Date(startDate);
-        }
-        if (endDate && endDate !== 'null') {
-          where.createdAt[Op.lte] = new Date(endDate);
           const date = new Date(startDate);
           if (!isNaN(date.getTime())) {
-            where.created_at[Op.gte] = date;
+            where.createdAt[Op.gte] = date;
           }
         }
         if (endDate && endDate !== 'null') {
           const date = new Date(endDate);
           if (!isNaN(date.getTime())) {
-            where.created_at[Op.lte] = date;
+            where.createdAt[Op.lte] = date;
           }
         }
       }
@@ -1131,7 +1127,7 @@ class WhatsAppAdminController {
         where,
         limit: parseInt(limit),
         offset: parseInt(offset),
-        order: [['created_at', 'DESC']]
+        order: [['createdAt', 'DESC']]
       });
 
       res.status(200).json({
