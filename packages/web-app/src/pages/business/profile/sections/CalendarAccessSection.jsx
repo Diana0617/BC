@@ -1138,18 +1138,36 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
         services={services}
         onCreate={async (data) => {
           try {
+            console.log('📝 Datos recibidos del modal:', data)
+            
             // Obtener timezone del negocio (usar America/Bogota como default)
             const timezone = currentBusiness?.timezone || 'America/Bogota'
+            
+            console.log('🌍 Antes de conversión:', {
+              timezone,
+              date: data.date,
+              startTime: data.startTime,
+              endTime: data.endTime
+            })
             
             // Convertir fechas locales a UTC usando timezone
             const startTimeUTC = localToUTC(data.date, data.startTime, timezone)
             const endTimeUTC = localToUTC(data.date, data.endTime, timezone)
             
-            console.log('🌍 Conversión de timezone:', {
-              timezone,
-              local: { date: data.date, startTime: data.startTime, endTime: data.endTime },
-              utc: { startTime: startTimeUTC.toISOString(), endTime: endTimeUTC.toISOString() }
+            console.log('🌍 Después de conversión:', {
+              startTimeUTC,
+              endTimeUTC,
+              isStartValid: startTimeUTC instanceof Date && !isNaN(startTimeUTC.getTime()),
+              isEndValid: endTimeUTC instanceof Date && !isNaN(endTimeUTC.getTime())
             })
+            
+            // Validar que las fechas sean válidas
+            if (!startTimeUTC || isNaN(startTimeUTC.getTime())) {
+              throw new Error('Fecha de inicio inválida')
+            }
+            if (!endTimeUTC || isNaN(endTimeUTC.getTime())) {
+              throw new Error('Fecha de fin inválida')
+            }
             
             // Transformar datos del formulario al formato de la API
             const appointmentData = {
