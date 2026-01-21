@@ -115,7 +115,7 @@ const LandingPage = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-32">
           <div className="text-center">
             <div className="flex justify-center mb-4 sm:mb-6">
-              <div className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-cyan-400/20 backdrop-blur-sm rounded-full border border-yellow-400/30">
+              <div className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-pink-400/20 backdrop-blur-sm rounded-full border border-yellow-400/30">
                 <SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-yellow-400" />
                 <span className="text-xs sm:text-sm font-medium text-yellow-100">Prueba gratis</span>
               </div>
@@ -124,7 +124,7 @@ const LandingPage = () => {
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
               <span className="text-white">La plataforma completa para</span>
               <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-cyan-400">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-pink-400">
                 {" "}gestionar tu negocio
               </span>
             </h1>
@@ -137,7 +137,7 @@ const LandingPage = () => {
             <div className="flex flex-col xs:flex-row gap-3 sm:gap-4 justify-center mb-8 sm:mb-12 px-4">
               <a 
                 href="/subscribe" 
-                className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-cyan-400 text-gray-900 font-semibold rounded-lg hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-sm sm:text-base"
+                className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-pink-400 text-gray-900 font-semibold rounded-lg hover:from-pink-500 hover:to-pink-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-sm sm:text-base"
               >
                 Ver Planes
                 <ArrowRightIcon className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -153,19 +153,19 @@ const LandingPage = () => {
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 max-w-2xl mx-auto text-center px-4">
               <div className="space-y-1 sm:space-y-2">
-                <div className="text-xl sm:text-2xl font-bold text-cyan-600">1000+</div>
+                <div className="text-xl sm:text-2xl font-bold text-pink-600">1000+</div>
                 <div className="text-gray-400 text-xs sm:text-sm">Negocios activos</div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <div className="text-xl sm:text-2xl font-bold text-cyan-600">50K+</div>
+                <div className="text-xl sm:text-2xl font-bold text-pink-600">50K+</div>
                 <div className="text-gray-400 text-xs sm:text-sm">Citas gestionadas</div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <div className="text-xl sm:text-2xl font-bold text-cyan-600">99.9%</div>
+                <div className="text-xl sm:text-2xl font-bold text-pink-600">99.9%</div>
                 <div className="text-gray-400 text-xs sm:text-sm">Tiempo activo</div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <div className="text-xl sm:text-2xl font-bold text-cyan-600">24/7</div>
+                <div className="text-xl sm:text-2xl font-bold text-pink-600">24/7</div>
                 <div className="text-gray-400 text-xs sm:text-sm">Soporte</div>
               </div>
             </div>
@@ -267,7 +267,7 @@ const LandingPage = () => {
                         {plan.features && plan.features.slice(0, 6).map((feature, idx) => (
                           <li key={idx} className="flex items-start">
                             <div className={`w-5 h-5 rounded-full flex-shrink-0 mt-0.5 mr-3 ${
-                              index === 0 ? 'bg-cyan-400' : 
+                              index === 0 ? 'bg-pink-400' : 
                               index === 1 ? 'bg-yellow-400' : 
                               'bg-red-400'
                             }`}>
@@ -284,7 +284,7 @@ const LandingPage = () => {
                         <a
                           href="/subscribe"
                           className={`w-full py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 transform hover:-translate-y-1 shadow-lg hover:shadow-xl inline-flex items-center justify-center ${
-                            index === 0 ? 'bg-cyan-400 hover:bg-cyan-500 text-white' :
+                            index === 0 ? 'bg-pink-400 hover:bg-pink-500 text-white' :
                             index === 1 ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900' :
                             'bg-red-400 hover:bg-red-500 text-white'
                           }`}
@@ -294,7 +294,7 @@ const LandingPage = () => {
                         <a
                           href="/subscribe"
                           className={`w-full py-3 px-6 rounded-xl font-medium text-sm transition-all duration-200 border-2 inline-flex items-center justify-center ${
-                            index === 0 ? 'border-cyan-400 text-cyan-600 hover:bg-cyan-50' :
+                            index === 0 ? 'border-pink-400 text-pink-600 hover:bg-pink-50' :
                             index === 1 ? 'border-yellow-400 text-yellow-600 hover:bg-yellow-50' :
                             'border-red-400 text-red-600 hover:bg-red-50'
                           }`}
@@ -308,7 +308,7 @@ const LandingPage = () => {
               </div>
               {plans.length > 3 && (
                 <div className="text-center mt-8 sm:block hidden">
-                  <a href="/subscribe" className="inline-block px-8 py-4 rounded-xl bg-cyan-400 text-white font-bold text-lg shadow-lg hover:bg-cyan-500 transition-all duration-200">
+                  <a href="/subscribe" className="inline-block px-8 py-4 rounded-xl bg-pink-400 text-white font-bold text-lg shadow-lg hover:bg-pink-500 transition-all duration-200">
                     Ver más planes
                   </a>
                 </div>
@@ -348,7 +348,7 @@ const LandingPage = () => {
                           <ul className="space-y-4 mb-8">
                             {popular.features && popular.features.slice(0, 6).map((feature, idx) => (
                               <li key={idx} className="flex items-start">
-                                <div className="w-5 h-5 rounded-full flex-shrink-0 mt-0.5 mr-3 bg-cyan-400">
+                                <div className="w-5 h-5 rounded-full flex-shrink-0 mt-0.5 mr-3 bg-pink-400">
                                   <CheckCircleIcon className="h-5 w-5 text-white" />
                                 </div>
                                 <span className="text-gray-700 text-sm leading-relaxed">{feature}</span>
@@ -361,13 +361,13 @@ const LandingPage = () => {
                           <div className="space-y-3 mt-auto">
                             <a
                               href="/subscribe"
-                              className="w-full py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 transform hover:-translate-y-1 shadow-lg hover:shadow-xl inline-flex items-center justify-center bg-cyan-400 hover:bg-cyan-500 text-white"
+                              className="w-full py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 transform hover:-translate-y-1 shadow-lg hover:shadow-xl inline-flex items-center justify-center bg-pink-400 hover:bg-pink-500 text-white"
                             >
                               Probar gratis
                             </a>
                             <a
                               href="/subscribe"
-                              className="w-full py-3 px-6 rounded-xl font-medium text-sm transition-all duration-200 border-2 inline-flex items-center justify-center border-cyan-400 text-cyan-600 hover:bg-cyan-50"
+                              className="w-full py-3 px-6 rounded-xl font-medium text-sm transition-all duration-200 border-2 inline-flex items-center justify-center border-pink-400 text-pink-600 hover:bg-pink-50"
                             >
                               Elegir Plan
                             </a>
@@ -375,7 +375,7 @@ const LandingPage = () => {
                         </div>
                       </div>
                       {plans.length > 1 && (
-                        <a href="/subscribe" className="mt-8 inline-block px-8 py-4 rounded-xl bg-cyan-400 text-white font-bold text-lg shadow-lg hover:bg-cyan-500 transition-all duration-200">
+                        <a href="/subscribe" className="mt-8 inline-block px-8 py-4 rounded-xl bg-pink-400 text-white font-bold text-lg shadow-lg hover:bg-pink-500 transition-all duration-200">
                           Ver más planes
                         </a>
                       )}
@@ -686,7 +686,7 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 sm:py-20 bg-cyan-400">
+      <section className="py-16 sm:py-20 bg-pink-400">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-700 mb-4 sm:mb-6">
             ¿Listo para transformar tu negocio?
