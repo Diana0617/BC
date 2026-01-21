@@ -1,6 +1,6 @@
 {
   "name": "beauty-control-backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Backend para Beauty Control - Sistema de Gestión de Negocios",
   "main": "server.js",
   "scripts": {
