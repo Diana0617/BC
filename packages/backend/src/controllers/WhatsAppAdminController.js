@@ -411,10 +411,9 @@ class WhatsAppAdminController {
     try {
       const appId = process.env.META_APP_ID;
       const configId = process.env.WHATSAPP_CONFIG_ID;
-      const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-      const redirectUri = `${baseUrl}/whatsapp/callback`;
+      const redirectUri = 'https://beautycontrol-api.azurewebsites.net/api/webhooks/whatsapp';
       
-      // Generate secure state token
+      
       const state = Buffer.from(JSON.stringify({
         businessId: req.user.businessId,
         userId: req.user.id,
@@ -455,7 +454,6 @@ class WhatsAppAdminController {
         });
       }
 
-      // Validate state
       let stateData;
       try {
         stateData = JSON.parse(Buffer.from(state, 'base64').toString('utf-8'));
@@ -466,7 +464,7 @@ class WhatsAppAdminController {
         });
       }
 
-      // Exchange code for access token
+      
       const tokenResponse = await this._exchangeCodeForToken(code);
       
       if (!tokenResponse.success) {
