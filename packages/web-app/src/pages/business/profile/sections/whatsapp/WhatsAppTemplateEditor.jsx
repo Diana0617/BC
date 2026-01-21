@@ -18,7 +18,8 @@ import {
   PlusIcon,
   TrashIcon,
   PaperAirplaneIcon,
-  XMarkIcon
+  XMarkIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 
@@ -42,6 +43,9 @@ const WhatsAppTemplateEditor = ({ onClose, onPreview }) => {
   const createError = useSelector(selectCreateError)
   const updateError = useSelector(selectUpdateError)
   const submitError = useSelector(selectSubmitError)
+  
+  // Get business info from Redux
+  const business = useSelector(state => state.business.currentBusiness)
 
   const isEditMode = !!selectedTemplate
 
@@ -93,9 +97,13 @@ const WhatsAppTemplateEditor = ({ onClose, onPreview }) => {
   // Update preview when form changes
   useEffect(() => {
     const components = buildComponents()
-    onPreview && onPreview({ ...formData, components })
+    onPreview && onPreview({ 
+      ...formData, 
+      components,
+      businessName: business?.name || 'Tu Negocio'
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, headerType, headerText, bodyText, footerText, buttons])
+  }, [formData, headerType, headerText, bodyText, footerText, buttons, business])
 
   const buildComponents = () => {
     const components = []
@@ -333,15 +341,35 @@ const WhatsAppTemplateEditor = ({ onClose, onPreview }) => {
 
         {/* Body Section */}
         <div className="border-t border-gray-200 pt-6">
-          <h4 className="text-sm font-semibold text-gray-900 mb-3">
-            Cuerpo del Mensaje *
-          </h4>
+          <div className="flex items-start justify-between mb-3">
+            <h4 className="text-sm font-semibold text-gray-900">
+              Cuerpo del Mensaje *
+            </h4>
+          </div>
+          
+          {/* Variables Guide */}
+          <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-blue-900 mb-2">Variables disponibles para recordatorio de turno:</p>
+                <div className="space-y-1 text-xs text-blue-800">
+                  <div className="font-mono">{'{{1}}'} = Nombre del cliente</div>
+                  <div className="font-mono">{'{{2}}'} = Nombre del servicio</div>
+                  <div className="font-mono">{'{{3}}'} = Fecha del turno</div>
+                  <div className="font-mono">{'{{4}}'} = Hora del turno</div>
+                  <div className="font-mono">{'{{5}}'} = Nombre del profesional</div>
+                  <div className="font-mono">{'{{6}}'} = Tu negocio: <span className="font-bold">{business?.name || 'Beauty Control'}</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
           
           <textarea
             value={bodyText}
             onChange={(e) => setBodyText(e.target.value)}
-            placeholder="Escribe el contenido de tu mensaje aquí...&#10;&#10;Usa {{1}}, {{2}}, etc. para variables dinámicas.&#10;Ejemplo: Hola {{1}}, tu cita es el {{2}} a las {{3}}."
-            rows={6}
+            placeholder="Ejemplo:&#10;Hola {{1}}, te recordamos tu turno:&#10;&#10;📍 Servicio: {{2}}&#10;📅 Fecha: {{3}}&#10;⏰ Hora: {{4}}&#10;👤 Profesional: {{5}}"
+            rows={8}
             maxLength={1024}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono text-sm"
           />

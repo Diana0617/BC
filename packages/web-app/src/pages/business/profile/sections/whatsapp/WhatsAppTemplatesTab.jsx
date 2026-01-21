@@ -47,7 +47,10 @@ const WhatsAppTemplatesTab = () => {
 
           {/* Preview Column */}
           <div className="lg:sticky lg:top-6 lg:self-start">
-            <WhatsAppTemplatePreview template={previewTemplate} />
+            <WhatsAppTemplatePreview 
+              template={previewTemplate}
+              businessName={previewTemplate?.businessName}
+            />
           </div>
         </div>
       ) : (

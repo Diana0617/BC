@@ -9,8 +9,9 @@ import { DevicePhoneMobileIcon } from '@heroicons/react/24/outline'
  * 
  * @param {Object} template - Template object con components
  * @param {Array} variables - Valores de ejemplo para variables {{1}}, {{2}}, etc.
+ * @param {string} businessName - Nombre del negocio actual
  */
-const WhatsAppTemplatePreview = ({ template, variables = [] }) => {
+const WhatsAppTemplatePreview = ({ template, variables = [], businessName }) => {
   if (!template || !template.components) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -34,13 +35,14 @@ const WhatsAppTemplatePreview = ({ template, variables = [] }) => {
     if (!text) return ''
     let result = text
     
-    // Default example values if not provided
+    // Default example values for appointment reminder
     const defaultVars = [
-      'Juan',
-      '15 de Noviembre',
-      '10:30 AM',
-      'Beauty Control',
-      '$50.000'
+      'Juan Pérez',           // {{1}} - Nombre del cliente
+      'Corte de Cabello',     // {{2}} - Servicio
+      'Viernes 24 de Enero',  // {{3}} - Fecha
+      '15:30',                // {{4}} - Hora
+      'Laura González',       // {{5}} - Profesional
+      businessName || 'Beauty Control' // {{6}} - Nombre del negocio
     ]
     
     const varsToUse = variables.length > 0 ? variables : defaultVars
@@ -72,10 +74,12 @@ const WhatsAppTemplatePreview = ({ template, variables = [] }) => {
             {/* Phone Header (WhatsApp style) */}
             <div className="bg-green-600 text-white px-4 py-3 flex items-center space-x-3">
               <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                <span className="text-gray-600 text-sm font-bold">BC</span>
+                <span className="text-gray-600 text-sm font-bold">
+                  {(businessName || 'BC').substring(0, 2).toUpperCase()}
+                </span>
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-sm">Beauty Control</p>
+                <p className="font-semibold text-sm">{businessName || 'Beauty Control'}</p>
                 <p className="text-xs text-green-100">WhatsApp Business</p>
               </div>
             </div>
