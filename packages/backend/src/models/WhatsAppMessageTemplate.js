@@ -17,7 +17,6 @@ const WhatsAppMessageTemplate = sequelize.define('WhatsAppMessageTemplate', {
   businessId: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'business_id',
     references: {
       model: 'businesses',
       key: 'id'
@@ -26,7 +25,6 @@ const WhatsAppMessageTemplate = sequelize.define('WhatsAppMessageTemplate', {
   templateName: {
     type: DataTypes.STRING(100),
     allowNull: false,
-    field: 'template_name',
     comment: 'Template name (lowercase, underscores only)'
   },
   language: {
@@ -70,19 +68,16 @@ const WhatsAppMessageTemplate = sequelize.define('WhatsAppMessageTemplate', {
   metaTemplateId: {
     type: DataTypes.STRING(100),
     allowNull: true,
-    field: 'meta_template_id',
     comment: 'Template ID assigned by Meta after submission'
   },
   rejectionReason: {
     type: DataTypes.TEXT,
     allowNull: true,
-    field: 'rejection_reason',
     comment: 'Reason for rejection if status is REJECTED'
   },
   approvedAt: {
     type: DataTypes.DATE,
     allowNull: true,
-    field: 'approved_at',
     comment: 'When template was approved by Meta'
   }
 }, {
