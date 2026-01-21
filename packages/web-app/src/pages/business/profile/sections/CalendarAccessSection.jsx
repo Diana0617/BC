@@ -29,6 +29,7 @@ import appointmentApi from '@shared/api/appointmentApi'
 import FullCalendarView from '../../../../components/calendar/FullCalendarView'
 import AppointmentDetailsModal from '../../../../components/specialist/appointments/AppointmentDetailsModal'
 import CreateAppointmentModal from '../../../../components/calendar/CreateAppointmentModal'
+import { localToUTC } from '../../../../utils/timezone'
 
 const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const { currentBusiness } = useSelector(state => state.business)
@@ -1137,6 +1138,19 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
         services={services}
         onCreate={async (data) => {
           try {
+            // Obtener timezone del negocio (usar America/Bogota como default)
+            const timezone = currentBusiness?.timezone || 'America/Bogota'
+            
+            // Convertir fechas locales a UTC usando timezone
+            const startTimeUTC = localToUTC(data.date, data.startTime, timezone)
+            const endTimeUTC = localToUTC(data.date, data.endTime, timezone)
+            
+            console.log('🌍 Conversión de timezone:', {
+              timezone,
+              local: { date: data.date, startTime: data.startTime, endTime: data.endTime },
+              utc: { startTime: startTimeUTC.toISOString(), endTime: endTimeUTC.toISOString() }
+            })
+            
             // Transformar datos del formulario al formato de la API
             const appointmentData = {
               businessId: currentBusiness.id,
@@ -1145,8 +1159,8 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
               clientEmail: data.clientEmail,
               specialistId: data.specialistId,
               branchId: data.branchId,
-              startTime: `${data.date}T${data.startTime}:00`,
-              endTime: `${data.date}T${data.endTime}:00`,
+              startTime: startTimeUTC.toISOString(),
+              endTime: endTimeUTC.toISOString(),
               notes: data.notes || ''
             }
 
