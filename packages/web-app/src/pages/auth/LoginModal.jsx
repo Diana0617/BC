@@ -13,7 +13,6 @@ const LoginModal = ({ isOpen, onClose }) => {
   const { isLoggingIn, loginError } = useSelector(state => state.auth)
 
   const [credentials, setCredentials] = useState({
-    subdomain: '',
     email: '',
     password: ''
   })
@@ -27,27 +26,19 @@ const LoginModal = ({ isOpen, onClose }) => {
     const { name, value } = e.target
     setCredentials(prev => ({
       ...prev,
-      [name]: name === 'subdomain' ? value.toLowerCase().trim() : value
+      [name]: value
     }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Preparar credenciales - solo enviar subdomain si tiene valor
-    const loginCredentials = {
-      email: credentials.email,
-      password: credentials.password
-    }
-    
-    // Solo agregar subdomain si fue proporcionado
-    if (credentials.subdomain && credentials.subdomain.trim()) {
-      loginCredentials.subdomain = credentials.subdomain
-    }
-    
     try {
       const result = await dispatch(loginUser({ 
-        credentials: loginCredentials, 
+        credentials: {
+          email: credentials.email,
+          password: credentials.password
+        }, 
         rememberMe: false 
       })).unwrap()
       if (result.token) {
@@ -104,25 +95,6 @@ const LoginModal = ({ isOpen, onClose }) => {
           {!showForgot ? (
             <>
               <form onSubmit={handleSubmit} className="mb-4">
-                {/* Subdomain Input - OPCIONAL */}
-                <div className="mb-3">
-                  <label htmlFor="subdomain" className="block mb-1.5 font-medium text-gray-700 text-sm">
-                    Código de tu negocio <span className="text-gray-400 font-normal">(opcional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="subdomain"
-                    name="subdomain"
-                    value={credentials.subdomain}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm transition-all bg-slate-50 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100"
-                    placeholder="bella-vista"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Solo para negocios. Déjalo vacío si eres administrador de la plataforma.
-                  </p>
-                </div>
-                
                 <div className="mb-3">
                   <label htmlFor="email" className="block mb-1.5 font-medium text-gray-700 text-sm">
                     Email
