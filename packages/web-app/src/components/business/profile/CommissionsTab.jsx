@@ -464,25 +464,25 @@ const CommissionsTab = ({
                               </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                              {selectedSpecialistDetails.services?.map((service, index) => (
+                              {(selectedSpecialistDetails.commissionDetails || selectedSpecialistDetails.services)?.map((detail, index) => (
                                 <tr key={index} className="hover:bg-gray-50">
                                   <td className="px-4 py-2 text-sm text-gray-900">
-                                    {formatDateOnly(service.date)}
+                                    {formatDateOnly(detail.date)}
                                   </td>
                                   <td className="px-4 py-2 text-sm text-gray-900">
-                                    {service.serviceName}
+                                    {detail.service?.name || detail.serviceName}
                                   </td>
                                   <td className="px-4 py-2 text-sm text-gray-500">
-                                    {service.clientName}
+                                    {detail.client?.name || detail.clientName}
                                   </td>
                                   <td className="px-4 py-2 text-sm text-gray-900 text-right">
-                                    {formatCurrency(service.servicePrice)}
+                                    {formatCurrency(detail.service?.price || detail.servicePrice || 0)}
                                   </td>
                                   <td className="px-4 py-2 text-sm font-medium text-pink-600 text-right">
-                                    {formatCurrency(service.commission)}
+                                    {formatCurrency(detail.commissionAmount || detail.commission || 0)}
                                   </td>
                                   <td className="px-4 py-2 text-center">
-                                    {service.isPaid ? (
+                                    {(detail.status === 'PAID' || detail.isPaid) ? (
                                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                         <CheckCircleIcon className="w-4 h-4 mr-1" />
                                         Pagado
