@@ -177,8 +177,15 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
       
       setBranches(branchesData)
       
-      // No seleccionar ninguna sucursal por defecto para mostrar todas las citas
-      console.log('📋 Sucursales cargadas, mostrando vista de todas las sucursales')
+      // Si solo hay una sucursal, seleccionarla automáticamente
+      // Esto ayuda cuando el negocio tiene multisucursal activado pero solo gestiona una sucursal
+      if (branchesData.length === 1) {
+        console.log('📋 Solo hay una sucursal, seleccionándola automáticamente:', branchesData[0].name)
+        setSelectedBranch(branchesData[0])
+      } else {
+        // Si hay múltiples sucursales, no seleccionar ninguna por defecto para mostrar todas las citas
+        console.log('📋 Sucursales cargadas, mostrando vista de todas las sucursales')
+      }
     } catch (error) {
       console.error('❌ Error cargando sucursales:', error)
       // Solo mostrar toast si es un error real (no de conexión)
