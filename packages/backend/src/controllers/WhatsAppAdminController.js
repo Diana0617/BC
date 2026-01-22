@@ -91,7 +91,8 @@ class WhatsAppAdminController {
         });
       }
 
-      // Test token before saving
+      // Test token before saving and get phone number from Graph API
+      let verifiedPhoneNumber = phoneNumber;
       try {
         const testResponse = await whatsappService._makeGraphApiRequest(
           `/${phoneNumberId}`,
@@ -102,6 +103,12 @@ class WhatsAppAdminController {
 
         if (!testResponse || !testResponse.verified_name) {
           throw new Error('Token inválido o Phone Number ID incorrecto');
+        }
+
+        // Get phone number from Graph API response if not provided
+        if (!verifiedPhoneNumber && testResponse.display_phone_number) {
+          verifiedPhoneNumber = testResponse.display_phone_number;
+          logger.info(`Phone number obtained from Graph API: ${verifiedPhoneNumber}`);
         }
       } catch (error) {
         logger.error('Error validating token:', error);
@@ -117,6 +124,7 @@ class WhatsAppAdminController {
         metadata: {
           wabaId,
           phoneNumberId,
+          phoneNumber: verifiedPhoneNumber,
           permissions: ['whatsapp_business_messaging', 'whatsapp_business_management'],
           source: 'manual',
           ...metadata
@@ -126,7 +134,7 @@ class WhatsAppAdminController {
       // Update business fields
       await business.update({
         whatsapp_enabled: true,
-        whatsapp_phone_number: phoneNumber,
+        whatsapp_phone_number: verifiedPhoneNumber,
         whatsapp_phone_number_id: phoneNumberId,
         whatsapp_platform_metadata: {
           wabaId,
@@ -135,6 +143,8 @@ class WhatsAppAdminController {
         }
       });
 
+      logger.info(`WhatsApp token stored and business updated for ${businessId}, phone: ${verifiedPhoneNumber}`);
+
       logger.info(`WhatsApp token stored for business ${businessId}`);
 
       res.status(200).json({
@@ -142,7 +152,7 @@ class WhatsAppAdminController {
         message: 'Token almacenado correctamente',
         data: {
           businessId,
-          phoneNumber,
+          phoneNumber: verifiedPhoneNumber,
           phoneNumberId,
           hasToken: true,
           isActive: tokenData.isActive,
