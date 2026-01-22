@@ -135,6 +135,29 @@ const Business = sequelize.define('Business', {
     type: DataTypes.JSONB,
     allowNull: true,
     defaultValue: {}
+  },
+  // WhatsApp Business Platform Integration
+  whatsapp_enabled: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Indica si WhatsApp Business Platform está habilitado para este negocio'
+  },
+  whatsapp_phone_number: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Número de teléfono de WhatsApp asociado (formato: +57 304 4731739)'
+  },
+  whatsapp_phone_number_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Phone Number ID de WhatsApp Business Platform API'
+  },
+  whatsapp_platform_metadata: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null,
+    comment: 'Metadata de conexión WhatsApp: wabaId, connectedAt, source, etc.'
   }
 }, {
   tableName: 'businesses',
