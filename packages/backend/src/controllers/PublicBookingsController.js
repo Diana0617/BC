@@ -515,21 +515,20 @@ class PublicBookingsController {
             status: 'ACTIVE'
           }, { transaction });
         } catch (createError) {
-          // Si falla por duplicate key, intentar buscar nuevamente
-          // (puede ser race condition o el email existe sin businessId correcto)
+          // Si falla por duplicate key, intentar buscar nuevamente SIN transacción
+          // porque la transacción ya está abortada por el error del create
           if (createError.name === 'SequelizeUniqueConstraintError') {
-            console.log('⚠️ Cliente duplicado, intentando buscar nuevamente...');
+            console.log('⚠️ Cliente duplicado, buscando sin transacción...');
             client = await Client.findOne({
               where: {
                 businessId: business.id,
                 email: clientEmail
-              },
-              transaction
+              }
+              // NO usar transaction aquí porque está abortada
             });
             
             if (!client) {
               // Si aún no existe, el problema es que el email existe en otro negocio
-              // Usar el email con sufijo del negocio o actualizar el existente
               console.error('❌ Email ya existe en otro negocio:', clientEmail);
               await transaction.rollback();
               return res.status(400).json({
