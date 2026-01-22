@@ -505,14 +505,42 @@ class PublicBookingsController {
         const firstName = nameParts[0] || clientName;
         const lastName = nameParts.slice(1).join(' ') || clientName;
 
-        client = await Client.create({
-          businessId: business.id,
-          firstName,
-          lastName,
-          email: clientEmail,
-          phone: clientPhone,
-          status: 'ACTIVE'
-        }, { transaction });
+        try {
+          client = await Client.create({
+            businessId: business.id,
+            firstName,
+            lastName,
+            email: clientEmail,
+            phone: clientPhone,
+            status: 'ACTIVE'
+          }, { transaction });
+        } catch (createError) {
+          // Si falla por duplicate key, intentar buscar nuevamente
+          // (puede ser race condition o el email existe sin businessId correcto)
+          if (createError.name === 'SequelizeUniqueConstraintError') {
+            console.log('⚠️ Cliente duplicado, intentando buscar nuevamente...');
+            client = await Client.findOne({
+              where: {
+                businessId: business.id,
+                email: clientEmail
+              },
+              transaction
+            });
+            
+            if (!client) {
+              // Si aún no existe, el problema es que el email existe en otro negocio
+              // Usar el email con sufijo del negocio o actualizar el existente
+              console.error('❌ Email ya existe en otro negocio:', clientEmail);
+              await transaction.rollback();
+              return res.status(400).json({
+                success: false,
+                message: 'Este email ya está registrado. Por favor, contacta al negocio para actualizar tus datos.'
+              });
+            }
+          } else {
+            throw createError;
+          }
+        }
       }
 
       // Combinar fecha y hora

@@ -19,7 +19,7 @@ const Client = sequelize.define('Client', {
   email: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
+    // NOTA: Unique compuesto se define en indexes más abajo
     validate: {
       isEmail: true
     }
@@ -130,6 +130,13 @@ const Client = sequelize.define('Client', {
 }, {
   tableName: 'clients',
   timestamps: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['businessId', 'email'],
+      name: 'clients_business_email_unique'
+    }
+  ],
   scopes: {
     active: {
       where: {
