@@ -271,27 +271,16 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
         {bookingData.paymentMethodData?.type === 'ONLINE' && (
           <div className="text-sm text-blue-800">
             <p className="mb-2">
-              • Serás redirigido a la pasarela de pagos segura
+              • Presenta tu reserva el día de la cita
             </p>
-            <p className="mb-2">
-              • Una vez completado el pago, tu reserva se confirmará automáticamente
-            </p>
-            <p>
-              • Recibirás un email de confirmación con los detalles
-            </p>
+            
           </div>
         )}
 
         {bookingData.paymentMethodData?.type === 'TRANSFER' && (
           <div className="text-sm text-blue-800">
             <p className="mb-2">
-              • Realiza la transferencia usando los datos bancarios proporcionados
-            </p>
-            <p className="mb-2">
-              • Tu reserva quedará en estado "Pendiente de verificación"
-            </p>
-            <p>
-              • Una vez recibido el pago, te confirmaremos por email
+              • Presenta tu reserva el día de la cita
             </p>
           </div>
         )}
@@ -313,27 +302,15 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
         {bookingData.paymentMethodData?.type === 'QR' && (
           <div className="text-sm text-blue-800">
             <p className="mb-2">
-              • Realiza el pago usando el código QR proporcionado
-            </p>
-            <p className="mb-2">
-              • Tu comprobante ya fue cargado en el sistema
-            </p>
-            <p>
-              • Tu reserva se confirmará una vez verifiquemos tu pago
+              • Presenta tu reserva el día de la cita
             </p>
           </div>
         )}
 
         {bookingData.paymentMethodData?.type === 'CARD' && (
           <div className="text-sm text-blue-800">
-            <p className="mb-2">
-              • Procesaremos tu pago con tarjeta de forma segura
-            </p>
-            <p className="mb-2">
-              • Tu reserva se confirmará automáticamente
-            </p>
-            <p>
-              • Recibirás un email de confirmación
+           <p className="mb-2">
+              • Presenta tu reserva el día de la cita
             </p>
           </div>
         )}
