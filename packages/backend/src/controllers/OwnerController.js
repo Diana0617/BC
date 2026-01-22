@@ -677,7 +677,7 @@ class OwnerController {
    */
   static async createCashSubscription(req, res) {
     try {
-      const { businessId, planId, months = 1, notes } = req.body;
+      const { businessId, planId, months = 1, notes, isLifetime = false } = req.body;
 
       // Validar que el usuario sea Owner
       if (req.user.role !== 'OWNER') {
@@ -730,8 +730,22 @@ class OwnerController {
 
       // Calcular fechas
       const startDate = new Date();
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + months);
+      let endDate;
+      let subscriptionNotes;
+
+      if (isLifetime) {
+        // ⭐ LIFETIME ACCESS: Fecha muy lejana (fin del siglo)
+        endDate = new Date('2099-12-31 23:59:59');
+        subscriptionNotes = notes 
+          ? `LIFETIME ACCESS - ${notes}` 
+          : 'LIFETIME ACCESS - No expiration';
+        console.log('⭐ Creando suscripción LIFETIME para:', businessId);
+      } else {
+        // Suscripción temporal normal
+        endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + months);
+        subscriptionNotes = notes || null;
+      }
 
       // Crear BusinessSubscription
       const subscription = await BusinessSubscription.create({
@@ -740,7 +754,8 @@ class OwnerController {
         status: 'ACTIVE',
         startDate: startDate,
         endDate: endDate,
-        autoRenewal: false, // No auto-renovar pagos efectivos
+        autoRenewal: false, // No auto-renovar pagos efectivos ni LIFETIME
+        notes: subscriptionNotes,
         createdBy: req.user.id
       });
 
@@ -778,11 +793,13 @@ class OwnerController {
         ]
       });
 
-      console.log(`💰 Suscripción efectivo creada: ${subscription.id} para ${business.businessName}`);
+      console.log(`💰 Suscripción efectivo creada: ${subscription.id} para ${business.businessName}${isLifetime ? ' ⭐ LIFETIME' : ''}`);
 
       return res.status(201).json({
         success: true,
-        message: 'Suscripción con pago efectivo creada exitosamente',
+        message: isLifetime 
+          ? '⭐ Suscripción LIFETIME creada exitosamente - Sin fecha de expiración'
+          : 'Suscripción con pago efectivo creada exitosamente',
         data: {
           subscription: {
             id: subscription.id,
@@ -793,8 +810,10 @@ class OwnerController {
             status: subscription.status,
             startDate: subscription.startDate,
             endDate: subscription.endDate,
-            months: months,
+            months: isLifetime ? '∞ (LIFETIME)' : months,
+            isLifetime: isLifetime,
             autoRenewal: subscription.autoRenewal,
+            notes: subscription.notes,
             createdBy: req.user.id
           },
           payment: {
