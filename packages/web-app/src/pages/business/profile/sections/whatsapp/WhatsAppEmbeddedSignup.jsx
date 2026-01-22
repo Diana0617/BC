@@ -179,17 +179,41 @@ const WhatsAppEmbeddedSignup = () => {
         </ul>
       </div>
 
-      {/* Debug Info - Remove in production */}
+      {/* Status Message */}
       {(!embeddedSignupConfig.appId || !embeddedSignupConfig.configId) && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <p className="text-sm text-red-800 font-medium mb-2">⚠️ Configuración incompleta</p>
-          <ul className="text-xs text-red-700 space-y-1">
-            {!embeddedSignupConfig.appId && <li>• App ID no configurado en el backend</li>}
-            {!embeddedSignupConfig.configId && <li>• Configuration ID no configurado en el backend</li>}
-          </ul>
-          <p className="text-xs text-red-600 mt-2">
-            Contacte al administrador del sistema para configurar las variables de entorno.
-          </p>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className="text-sm font-medium text-blue-800">
+                🚀 Conexión Automática en Proceso de Activación
+              </h3>
+              <div className="mt-2 text-sm text-blue-700">
+                <p className="mb-2">
+                  La conexión automática con Facebook está siendo habilitada para todos los negocios. 
+                  Este proceso es realizado por el equipo de Beauty Control y no requiere acción de tu parte.
+                </p>
+                <p className="mb-3 font-medium">
+                  📱 Mientras tanto, puedes conectar WhatsApp usando el método manual arriba.
+                </p>
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium">
+                    ¿Qué pasará cuando se active? →
+                  </summary>
+                  <ul className="mt-2 space-y-1 text-xs ml-4 list-disc">
+                    <li>Conectarás WhatsApp en <strong>1 solo clic</strong> con Facebook</li>
+                    <li>No tendrás que copiar tokens manualmente</li>
+                    <li>La configuración será 100% automática</li>
+                    <li>Te notificaremos cuando esté disponible</li>
+                  </ul>
+                </details>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -198,6 +222,9 @@ const WhatsAppEmbeddedSignup = () => {
         onClick={handleEmbeddedSignupClick}
         disabled={isLoadingConfig || isHandlingCallback || !embeddedSignupConfig.appId || !embeddedSignupConfig.configId}
         className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        title={(!embeddedSignupConfig.appId || !embeddedSignupConfig.configId) ? 
+          "Conexión automática en proceso de activación - Usa el método manual mientras tanto" : 
+          ""}
       >
         {isLoadingConfig ? (
           <>
@@ -209,6 +236,13 @@ const WhatsAppEmbeddedSignup = () => {
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
             Procesando conexión...
           </>
+        ) : (!embeddedSignupConfig.appId || !embeddedSignupConfig.configId) ? (
+          <>
+            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Activación en Proceso...
+          </>
         ) : (
           <>
             <ArrowTopRightOnSquareIcon className="h-5 w-5 mr-2" />
@@ -216,6 +250,13 @@ const WhatsAppEmbeddedSignup = () => {
           </>
         )}
       </button>
+
+      {/* Disabled Explanation */}
+      {(!embeddedSignupConfig.appId || !embeddedSignupConfig.configId) && (
+        <p className="mt-2 text-xs text-center text-gray-500">
+          El equipo de Beauty Control está activando esta función. Te notificaremos cuando esté lista.
+        </p>
+      )}
 
       {/* Error Display */}
       {callbackError && (
