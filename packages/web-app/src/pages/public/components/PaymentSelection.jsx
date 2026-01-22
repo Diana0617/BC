@@ -40,6 +40,7 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
 
