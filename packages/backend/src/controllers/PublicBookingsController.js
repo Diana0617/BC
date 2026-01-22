@@ -391,7 +391,8 @@ class PublicBookingsController {
         clientEmail,
         clientPhone,
         notes,
-        paymentMethod = 'WOMPI'
+        paymentMethod = 'WOMPI',
+        paymentProofUrl = null
       } = req.body;
 
       // Validar entrada
@@ -561,7 +562,8 @@ class PublicBookingsController {
         notes: notes || '',
         bookingCode,
         paymentMethod,
-        paymentStatus: paymentMethod === 'WOMPI' ? 'PENDING' : 'PENDING',
+        paymentStatus: paymentProofUrl ? 'PENDING_VERIFICATION' : (paymentMethod === 'WOMPI' ? 'PENDING' : 'PENDING'),
+        paymentProofUrl: paymentProofUrl || null,
         source: 'ONLINE_BOOKING'
       }, { transaction });
 

@@ -54,6 +54,28 @@ export const cloudinaryApi = {
   },
 
   /**
+   * Subir comprobante de pago (para reservas online)
+   * @param {File} file - Imagen del comprobante
+   * @param {string} bookingReference - Referencia de la reserva (opcional, para nombrar el archivo)
+   */
+  uploadPaymentProof: async (file, bookingReference = null) => {
+    console.log('📤 Subiendo comprobante de pago:', { file, bookingReference, type: file?.type, size: file?.size });
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    if (bookingReference) {
+      formData.append('bookingReference', bookingReference);
+    }
+
+    // Endpoint público para subir comprobantes
+    const response = await apiClient.post(
+      '/api/public/bookings/upload-payment-proof',
+      formData
+    );
+    return response.data;
+  },
+
+  /**
    * Eliminar archivo de Cloudinary
    * @param {string} businessId - ID del negocio
    * @param {string} publicId - Public ID del archivo en Cloudinary

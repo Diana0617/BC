@@ -68,7 +68,8 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
       clientEmail: bookingData.clientData?.email,
       clientPhone: bookingData.clientData?.phone,
       notes: bookingData.clientData?.notes || '',
-      paymentMethod: bookingData.paymentMethod
+      paymentMethod: bookingData.paymentMethod,
+      paymentProofUrl: bookingData.paymentProofUrl || null
     };
 
     console.log('📤 Enviando reserva al backend:', bookingPayload);
@@ -187,6 +188,24 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
               <p className="text-sm text-gray-600">
                 Total: ${bookingData.service?.price?.toLocaleString('es-CO') || '0'}
               </p>
+              {bookingData.paymentProofUrl && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Comprobante de pago:</p>
+                  <a 
+                    href={bookingData.paymentProofUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-block"
+                  >
+                    <img 
+                      src={bookingData.paymentProofUrl} 
+                      alt="Comprobante de pago" 
+                      className="w-32 h-32 object-cover rounded border border-gray-300 hover:opacity-80 transition-opacity"
+                    />
+                  </a>
+                  <p className="text-xs text-green-600 mt-1">✓ Comprobante cargado</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

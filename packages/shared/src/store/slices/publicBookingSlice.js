@@ -123,7 +123,9 @@ const initialState = {
     dateTime: null,
     clientData: null,
     paymentMethod: null,
-    paymentMethodData: null
+    paymentMethodData: null,
+    paymentProofUrl: null,
+    paymentProofPublicId: null
   },
 
   // Estado de la reserva actual
@@ -204,7 +206,9 @@ const publicBookingSlice = createSlice({
         dateTime: null,
         clientData: null,
         paymentMethod: null,
-        paymentMethodData: null
+        paymentMethodData: null,
+        paymentProofUrl: null,
+        paymentProofPublicId: null
       };
       state.services = [];
       state.specialists = [];

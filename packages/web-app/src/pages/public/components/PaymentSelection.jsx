@@ -1,14 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
 import { 
   CreditCardIcon, 
   BanknotesIcon, 
   DevicePhoneMobileIcon,
   ArrowsRightLeftIcon,
   QrCodeIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  CloudArrowUpIcon,
+  PhotoIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { updateBookingData, fetchPaymentMethods } from '@shared/store/slices/publicBookingSlice';
+import cloudinaryApi from '../../../api/cloudinaryApi';
 
 // Mapeo de tipos a iconos
 const PAYMENT_TYPE_ICONS = {
@@ -33,6 +38,10 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
   } = useSelector(state => state.publicBooking);
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Cargar métodos de pago al montar
   useEffect(() => {
@@ -40,6 +49,12 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
       dispatch(fetchPaymentMethods(businessCode));
     }
   }, [businessCode, paymentMethods.length, dispatch]);
+
+  // Limpiar preview cuando cambie el método de pago
+  useEffect(() => {
+    setSelectedFile(null);
+    setFilePreview(null);
+  }, [bookingData.paymentMethod]);
 
   const handlePaymentSelect = (methodId) => {
     const selectedMethod = paymentMethods.find(m => m.id === methodId);
@@ -50,9 +65,81 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
     }));
   };
 
-  const handleContinue = () => {
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten archivos de imagen');
+      return;
+    }
+
+    // Validar tamaño (máx 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('El archivo no debe superar los 5MB');
+      return;
+    }
+
+    setSelectedFile(file);
+    
+    // Crear preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFilePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleContinue = async () => {
     if (!bookingData.paymentMethod) return;
     if (!acceptedTerms) return;
+
+    const selectedMethod = paymentMethods.find(m => m.id === bookingData.paymentMethod);
+    
+    // Si el método requiere comprobante y no se ha subido, pedir que lo haga
+    if (selectedMethod?.requiresProof && !selectedFile && !bookingData.paymentProofUrl) {
+      toast.error('Por favor, sube tu comprobante de pago');
+      return;
+    }
+
+    // Si hay un archivo seleccionado, subirlo primero
+    if (selectedFile) {
+      try {
+        setIsUploading(true);
+        const response = await cloudinaryApi.uploadPaymentProof(
+          selectedFile,
+          `booking_${Date.now()}`
+        );
+
+        if (response.success) {
+          console.log('✅ Comprobante subido:', response.data.url);
+          
+          // Guardar URL en Redux
+          dispatch(updateBookingData({ 
+            paymentProofUrl: response.data.url,
+            paymentProofPublicId: response.data.publicId
+          }));
+          
+          toast.success('Comprobante subido exitosamente');
+        }
+      } catch (error) {
+        console.error('❌ Error subiendo comprobante:', error);
+        toast.error('Error al subir el comprobante. Intenta nuevamente.');
+        setIsUploading(false);
+        return;
+      } finally {
+        setIsUploading(false);
+      }
+    }
 
     onNext();
   };
@@ -186,7 +273,8 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
 
       {/* Información adicional según método seleccionado */}
       {selectedMethod && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <h4 className="font-medium text-blue-900 mb-3">
             Información de pago
           </h4>
@@ -320,6 +408,78 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
             </div>
           )}
         </div>
+
+        {/* Sección para subir comprobante si lo requiere */}
+        {selectedMethod.requiresProof && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+            <h4 className="font-medium text-amber-900 mb-2 flex items-center gap-2">
+              <CloudArrowUpIcon className="w-5 h-5" />
+              Comprobante de pago
+            </h4>
+            <p className="text-sm text-amber-700 mb-4">
+              Este método de pago requiere que subas tu comprobante para confirmar la reserva
+            </p>
+
+            {!filePreview ? (
+              <div className="space-y-3">
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-amber-300 rounded-lg p-6 text-center cursor-pointer hover:border-amber-400 hover:bg-amber-100 transition-colors"
+                >
+                  <PhotoIcon className="w-12 h-12 text-amber-400 mx-auto mb-2" />
+                  <p className="text-sm text-amber-700 font-medium">
+                    Click para seleccionar tu comprobante
+                  </p>
+                  <p className="text-xs text-amber-600 mt-1">
+                    JPG, PNG o WEBP (máx. 5MB)
+                  </p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="relative bg-white border border-amber-200 rounded-lg p-4">
+                  <button
+                    onClick={handleRemoveFile}
+                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                  <img 
+                    src={filePreview} 
+                    alt="Preview del comprobante" 
+                    className="w-full h-48 object-cover rounded"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-green-600 font-medium flex items-center gap-1">
+                    ✓ Comprobante seleccionado
+                  </span>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Cambiar
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        </>
       )}
 
       {/* Términos y condiciones */}

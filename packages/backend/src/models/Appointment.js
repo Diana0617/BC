@@ -75,7 +75,7 @@ const Appointment = sequelize.define('Appointment', {
     defaultValue: 'PENDING'
   },
   paymentStatus: {
-    type: DataTypes.ENUM('PENDING', 'PARTIAL', 'PAID', 'REFUNDED'),
+    type: DataTypes.ENUM('PENDING', 'PARTIAL', 'PAID', 'REFUNDED', 'PENDING_VERIFICATION'),
     allowNull: false,
     defaultValue: 'PENDING'
   },
@@ -224,6 +224,29 @@ const Appointment = sequelize.define('Appointment', {
     allowNull: false,
     defaultValue: 'NOT_REQUIRED',
     comment: 'Estado del depósito requerido para agendar la cita'
+  },
+  // Campos para reservas online
+  paymentProofUrl: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'URL del comprobante de pago subido por el cliente (para reservas online)'
+  },
+  paymentMethod: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Método de pago seleccionado (CASH, TRANSFER, CARD, etc.)'
+  },
+  source: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'SYSTEM',
+    comment: 'Origen de la cita (SYSTEM, ONLINE_BOOKING, MOBILE_APP, etc.)'
+  },
+  bookingCode: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+    comment: 'Código único de reserva para tracking'
   },
   metadata: {
     type: DataTypes.JSONB,

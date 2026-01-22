@@ -8,8 +8,40 @@ const express = require('express');
 const { body, param, query } = require('express-validator');
 const PublicBookingsController = require('../controllers/PublicBookingsController');
 const AppointmentPaymentController = require('../controllers/AppointmentPaymentController');
+const cloudinary = require('../config/cloudinary').cloudinary;
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs').promises;
 
 const router = express.Router();
+
+// Configurar multer para uploads públicos
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '../../uploads/temp');
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'payment-proof-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const imageFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Solo se permiten imágenes'), false);
+  }
+};
+
+const uploadPaymentProof = multer({
+  storage: storage,
+  fileFilter: imageFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+  }
+});
 
 /**
  * @swagger
@@ -488,6 +520,106 @@ router.post('/business/:businessCode/upload-proof/:bookingCode',
     param('bookingCode').isString().notEmpty()
   ],
   PublicBookingsController.uploadPaymentProof
+);
+
+/**
+ * @swagger
+ * /api/public/bookings/upload-payment-proof:
+ *   post:
+ *     tags:
+ *       - Public Bookings
+ *     summary: Subir comprobante de pago antes de crear reserva
+ *     description: Permite subir un comprobante de pago a Cloudinary antes de confirmar la reserva
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: Imagen del comprobante de pago
+ *               bookingReference:
+ *                 type: string
+ *                 description: Referencia opcional para nombrar el archivo
+ *     responses:
+ *       200:
+ *         description: Comprobante subido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     url:
+ *                       type: string
+ *                     publicId:
+ *                       type: string
+ */
+router.post('/upload-payment-proof',
+  uploadPaymentProof.single('file'),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No se proporcionó ningún archivo'
+        });
+      }
+
+      const { bookingReference } = req.body;
+      const tempFilePath = req.file.path;
+
+      // Subir a Cloudinary
+      const result = await cloudinary.uploader.upload(tempFilePath, {
+        folder: 'beauty-control/payment-proofs',
+        resource_type: 'image',
+        public_id: bookingReference ? `proof_${bookingReference}` : undefined,
+        transformation: [
+          { width: 1200, height: 1200, crop: 'limit' },
+          { quality: 'auto:good' },
+          { format: 'webp' }
+        ]
+      });
+
+      // Limpiar archivo temporal
+      await fs.unlink(tempFilePath);
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          url: result.secure_url,
+          publicId: result.public_id,
+          format: result.format,
+          bytes: result.bytes
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Error uploading payment proof:', error);
+      
+      // Limpiar archivo temporal si existe
+      if (req.file?.path) {
+        try {
+          await fs.unlink(req.file.path);
+        } catch (unlinkError) {
+          console.error('Error deleting temp file:', unlinkError);
+        }
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Error al subir el comprobante',
+        error: error.message
+      });
+    }
+  }
 );
 
 module.exports = router;
