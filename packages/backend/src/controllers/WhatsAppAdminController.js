@@ -411,8 +411,11 @@ class WhatsAppAdminController {
     try {
       const appId = process.env.META_APP_ID;
       const configId = process.env.WHATSAPP_CONFIG_ID;
-      const redirectUri = 'https://www.controldenegocios.com/business/profile';
+      // IMPORTANTE: Esta URL DEBE estar configurada en Meta Developer Dashboard
+      // Settings → Basic → OAuth Redirect URLs
+      const redirectUri = process.env.WHATSAPP_REDIRECT_URI || 'https://www.controldenegocios.com/oauth/whatsapp/callback';
       
+      logger.info('Embedded Signup Config requested', { appId, configId, redirectUri, businessId: req.user.businessId });
       
       const state = Buffer.from(JSON.stringify({
         businessId: req.user.businessId,
@@ -539,9 +542,10 @@ class WhatsAppAdminController {
       const axios = require('axios');
       const appId = process.env.META_APP_ID;
       const appSecret = process.env.WHATSAPP_APP_SECRET;
-      const redirectUri = 'https://www.controldenegocios.com/business/profile'; // Debe coincidir con Meta config
+      // CRÍTICO: Debe coincidir EXACTAMENTE con la URL configurada en Meta Dashboard
+      const redirectUri = process.env.WHATSAPP_REDIRECT_URI || 'https://www.controldenegocios.com/oauth/whatsapp/callback';
 
-      logger.info('Exchanging code for token...', { appId, redirectUri });
+      logger.info('Exchanging code for token...', { appId, redirectUri, codeLength: code?.length });
 
       // Exchange authorization code for access token
       // https://developers.facebook.com/docs/facebook-login/guides/access-tokens/get-long-lived
@@ -583,18 +587,25 @@ class WhatsAppAdminController {
 
       // If WABA ID found, get phone numbers
       if (wabaId) {
-        const phoneNumbersResponse = await axios.get(
-          `https://graph.facebook.com/v18.0/${wabaId}/phone_numbers`,
-          {
-            params: { access_token: accessToken }
+        try {
+          const phoneNumbersResponse = await axios.get(
+            `https://graph.facebook.com/v18.0/${wabaId}/phone_numbers`,
+            {
+              params: { access_token: accessToken }
+            }
+          );
+
+          if (phoneNumbersResponse.data.data && phoneNumbersResponse.data.data.length > 0) {
+            phoneNumberId = phoneNumbersResponse.data.data[0].id;
+            logger.info('WABA and phone number found', { wabaId, phoneNumberId, phoneNumbersCount: phoneNumbersResponse.data.data.length });
+          } else {
+            logger.warn('WABA found but no phone numbers available', { wabaId });
           }
-        );
-
-        if (phoneNumbersResponse.data.data && phoneNumbersResponse.data.data.length > 0) {
-          phoneNumberId = phoneNumbersResponse.data.data[0].id;
+        } catch (phoneError) {
+          logger.error('Error fetching phone numbers for WABA', { wabaId, error: phoneError.response?.data || phoneError.message });
         }
-
-        logger.info('WABA and phone number found', { wabaId, phoneNumberId });
+      } else {
+        logger.error('No WABA ID found in token scopes. User may not have WhatsApp Business Account.');
       }
 
       return {
