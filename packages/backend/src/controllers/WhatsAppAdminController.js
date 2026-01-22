@@ -546,18 +546,15 @@ class WhatsAppAdminController {
       logger.info('Exchanging code for token...', { appId, codeLength: code?.length });
 
       // Exchange authorization code for access token
-      // IMPORTANTE: Para Embedded Signup, redirect_uri debe coincidir EXACTAMENTE
-      // con el configurado en Meta Dashboard > WhatsApp > Configuration
-      const redirectUri = process.env.WHATSAPP_REDIRECT_URI;
-      
-      logger.info('Using redirect_uri for token exchange:', { redirectUri });
-
+      // IMPORTANTE: Para Embedded Signup con FB.login() + config_id,
+      // NO se debe incluir redirect_uri porque el SDK de Facebook maneja el OAuth internamente
+      // y no usa redirect_uri tradicional. Ver: https://developers.facebook.com/docs/whatsapp/embedded-signup
       const response = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
         params: {
           client_id: appId,
           client_secret: appSecret,
-          code: code,
-          redirect_uri: redirectUri
+          code: code
+          // NO incluir redirect_uri para Embedded Signup con FB.login()
         }
       });
 
