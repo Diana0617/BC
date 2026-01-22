@@ -38,17 +38,17 @@ class WhatsAppService {
       }
 
       // NUEVO SISTEMA: Intentar obtener token del WhatsAppTokenManager
-      if (this.useNewTokenSystem || business.whatsappEnabled) {
+      if (this.useNewTokenSystem || business.whatsapp_enabled) {
         try {
           const tokenData = await whatsappTokenManager.getToken(businessId);
           
-          if (tokenData && business.whatsappPhoneNumberId) {
+          if (tokenData && business.whatsapp_phone_number_id) {
             logger.info(`Using new token system for business ${businessId}`);
             
             return {
-              phoneNumberId: business.whatsappPhoneNumberId,
+              phoneNumberId: business.whatsapp_phone_number_id,
               accessToken: tokenData.token,
-              phoneNumber: business.whatsappPhoneNumber || '',
+              phoneNumber: business.whatsapp_phone_number || '',
               sendReminders: true,  // TODO: leer de settings o DB
               sendAppointments: true,
               sendReceipts: true,
