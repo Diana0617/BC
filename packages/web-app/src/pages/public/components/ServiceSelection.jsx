@@ -44,7 +44,7 @@ const ServiceSelection = ({ businessCode, onNext }) => {
     
     // Calcular duración total y precio total
     const totalDuration = currentServices.reduce((sum, s) => sum + (s.duration || 0), 0);
-    const totalPrice = currentServices.reduce((sum, s) => sum + (s.price || 0), 0);
+    const totalPrice = currentServices.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
     
     dispatch(updateBookingData({ 
       services: currentServices,

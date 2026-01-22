@@ -331,7 +331,7 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
               {businessInfo?.phone && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-sm text-green-800 mb-2">
-                    📱 <strong>Importante:</strong> Envía tu comprobante de pago por WhatsApp al:
+                    📱  Podes consultarnos por WhastApp:
                   </p>
                   <a 
                     href={`https://wa.me/${businessInfo.phone.replace(/\D/g, '')}`}
@@ -348,7 +348,7 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
               )}
               
               <p className="text-xs text-blue-700">
-                💡 Tu reserva se confirmará una vez que verifiquemos tu pago (máximo 24 horas)
+                💡 Tu reserva se confirmará una vez que recibamos  tu pago 
               </p>
             </div>
           )}
@@ -385,9 +385,7 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
               <p className="mb-2">
                 • Tu reserva queda confirmada, pero recuerda llegar puntual
               </p>
-              <p>
-                • Recibirás recordatorios por email{businessInfo?.phone && ' y WhatsApp'}
-              </p>
+              
             </div>
           )}
 
@@ -399,9 +397,7 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
               <p className="mb-2">
                 • Tu reserva se confirmará automáticamente después del pago
               </p>
-              <p>
-                • Recibirás un comprobante por email
-              </p>
+              
             </div>
           )}
 
