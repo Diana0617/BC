@@ -32,8 +32,11 @@ class WhatsAppTokenManager {
         throw new Error('businessId and token are required');
       }
 
+      logger.info(`📝 Storing WhatsApp token for business ${businessId}...`);
+
       // Encrypt the token
       const encryptedToken = encryptionService.encrypt(token);
+      logger.info(`🔐 Token encrypted successfully (length: ${encryptedToken.length})`);
 
       const tokenData = {
         businessId,
@@ -45,12 +48,23 @@ class WhatsAppTokenManager {
         lastRotatedAt: new Date()
       };
 
+      logger.info(`📊 Token data prepared:`, {
+        businessId: tokenData.businessId,
+        tokenType: tokenData.tokenType,
+        hasMetadata: !!tokenData.metadata,
+        isActive: tokenData.isActive
+      });
+
       // Upsert token (update if exists, create if not)
       const [tokenRecord, created] = await WhatsAppToken.upsert(tokenData, {
         returning: true
       });
 
-      logger.info(`WhatsApp token ${created ? 'created' : 'updated'} for business ${businessId}`);
+      logger.info(`✅ WhatsApp token ${created ? 'created' : 'updated'} for business ${businessId}`, {
+        tokenId: tokenRecord.id,
+        businessId: tokenRecord.businessId,
+        isActive: tokenRecord.isActive
+      });
 
       return {
         id: tokenRecord.id,
@@ -61,7 +75,7 @@ class WhatsAppTokenManager {
         created
       };
     } catch (error) {
-      logger.error('Error storing WhatsApp token:', error);
+      logger.error('❌ Error storing WhatsApp token:', error);
       throw new Error(`Failed to store token: ${error.message}`);
     }
   }
