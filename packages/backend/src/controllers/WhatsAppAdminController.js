@@ -542,19 +542,19 @@ class WhatsAppAdminController {
       const axios = require('axios');
       const appId = process.env.META_APP_ID;
       const appSecret = process.env.WHATSAPP_APP_SECRET;
-      // CRÍTICO: Debe coincidir EXACTAMENTE con la URL configurada en Meta Dashboard
-      const redirectUri = process.env.WHATSAPP_REDIRECT_URI || 'https://www.controldenegocios.com/oauth/whatsapp/callback';
 
-      logger.info('Exchanging code for token...', { appId, redirectUri, codeLength: code?.length });
+      logger.info('Exchanging code for token...', { appId, codeLength: code?.length });
 
       // Exchange authorization code for access token
-      // https://developers.facebook.com/docs/facebook-login/guides/access-tokens/get-long-lived
+      // IMPORTANTE: Para Embedded Signup con SDK de Facebook (FB.login),
+      // NO se debe incluir redirect_uri porque el SDK maneja el OAuth internamente
+      // https://developers.facebook.com/docs/whatsapp/embedded-signup/get-started/implement-the-flow
       const response = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
         params: {
           client_id: appId,
           client_secret: appSecret,
-          code: code,
-          redirect_uri: redirectUri
+          code: code
+          // NO incluir redirect_uri para Embedded Signup con SDK
         }
       });
 
