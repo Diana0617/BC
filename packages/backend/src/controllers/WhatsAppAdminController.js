@@ -131,21 +131,30 @@ class WhatsAppAdminController {
         }
       });
 
-      // Update business fields
-      await business.update({
-        whatsapp_enabled: true,
-        whatsapp_phone_number: verifiedPhoneNumber,
-        whatsapp_phone_number_id: phoneNumberId,
-        whatsapp_platform_metadata: {
-          wabaId,
-          connectedAt: new Date(),
-          source: 'manual'
-        }
-      });
-
-      logger.info(`WhatsApp token stored and business updated for ${businessId}, phone: ${verifiedPhoneNumber}`);
-
-      logger.info(`WhatsApp token stored for business ${businessId}`);
+      // Update business fields - CRITICAL: This must succeed
+      logger.info(`Updating business ${businessId} with whatsapp_enabled=true`);
+      try {
+        const updateResult = await business.update({
+          whatsapp_enabled: true,
+          whatsapp_phone_number: verifiedPhoneNumber,
+          whatsapp_phone_number_id: phoneNumberId,
+          whatsapp_platform_metadata: {
+            wabaId,
+            connectedAt: new Date(),
+            source: 'manual'
+          }
+        });
+        
+        logger.info(`✅ Business updated successfully:`, {
+          businessId,
+          whatsapp_enabled: updateResult.whatsapp_enabled,
+          phone: updateResult.whatsapp_phone_number,
+          phoneNumberId: updateResult.whatsapp_phone_number_id
+        });
+      } catch (updateError) {
+        logger.error(`❌ CRITICAL: Failed to update business ${businessId}:`, updateError);
+        throw new Error(`No se pudo actualizar el negocio: ${updateError.message}`);
+      }
 
       res.status(200).json({
         success: true,
