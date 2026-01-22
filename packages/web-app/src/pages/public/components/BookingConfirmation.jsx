@@ -59,7 +59,10 @@ const BookingConfirmation = ({ businessCode, onBack }) => {
 
     // Preparar datos para la API
     const bookingPayload = {
-      serviceId: bookingData.service?.id,
+      serviceId: bookingData.service?.id, // Para compatibilidad
+      services: bookingData.services || [], // Array de servicios
+      totalPrice: bookingData.totalPrice || 0,
+      totalDuration: bookingData.totalDuration || 0,
       specialistId: bookingData.specialist?.id,
       branchId: bookingData.dateTime?.branchId,
       date: bookingData.dateTime?.date,

@@ -114,6 +114,12 @@ class AppointmentController {
             attributes: ['id', 'name', 'duration', 'price', 'category']
           },
           {
+            model: Service,
+            as: 'services',
+            through: { attributes: ['price', 'duration', 'order'] },
+            attributes: ['id', 'name', 'duration', 'price', 'category']
+          },
+          {
             model: Client,
             as: 'client',
             attributes: ['id', 'firstName', 'lastName', 'phone', 'email']

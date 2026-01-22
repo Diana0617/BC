@@ -383,6 +383,9 @@ class PublicBookingsController {
       const { businessCode } = req.params;
       const {
         serviceId,
+        services = [], // Array de servicios múltiples
+        totalPrice = 0,
+        totalDuration = 0,
         specialistId,
         branchId,
         date,
@@ -437,15 +440,47 @@ class PublicBookingsController {
         });
       }
 
-      // Verificar que el servicio existe
-      const service = await Service.findOne({
-        where: {
-          id: serviceId,
-          businessId: business.id,
-          isActive: true
-        },
-        transaction
-      });
+      // Determinar servicios a procesar (múltiples o uno solo para backward compatibility)
+      const servicesToProcess = services.length > 0 ? services : (serviceId ? [{ id: serviceId }] : []);
+      
+      if (servicesToProcess.length === 0) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Debe seleccionar al menos un servicio'
+        });
+      }
+
+      // Verificar que todos los servicios existen y calcular totales
+      const serviceRecords = [];
+      let calculatedTotalPrice = 0;
+      let calculatedTotalDuration = 0;
+
+      for (const svcData of servicesToProcess) {
+        const service = await Service.findOne({
+          where: {
+            id: svcData.id,
+            businessId: business.id,
+            isActive: true
+          },
+          transaction
+        });
+
+        if (!service) {
+          await transaction.rollback();
+          return res.status(404).json({
+            success: false,
+            message: `Servicio ${svcData.id} no encontrado`
+          });
+        }
+
+        serviceRecords.push(service);
+        calculatedTotalPrice += parseFloat(service.price);
+        calculatedTotalDuration += parseInt(service.duration);
+      }
+
+      // Usar el primer servicio para backward compatibility
+      const service = serviceRecords[0];
 
       if (!service) {
         await transaction.rollback();
@@ -545,27 +580,9 @@ class PublicBookingsController {
       // Combinar fecha y hora
       const appointmentDateTime = new Date(`${date}T${time}`);
       
-      // Calcular startTime y endTime
+      // Calcular startTime y endTime usando la duración total
       const startTime = appointmentDateTime;
-      const endTime = new Date(appointmentDateTime.getTime() + service.duration * 60000); // duration en minutos
-
-      // TODO: Implementar verificación de disponibilidad
-      // Verificar que el slot esté disponible
-      // const isAvailable = await TimeSlotService.checkSlotAvailability({
-      //   businessId: business.id,
-      //   specialistId,
-      //   date: date,
-      //   time: time,
-      //   duration: service.duration
-      // });
-
-      // if (!isAvailable) {
-      //   await transaction.rollback();
-      //   return res.status(409).json({
-      //     success: false,
-      //     message: 'El horario seleccionado ya no está disponible'
-      //   });
-      // }
+      const endTime = new Date(appointmentDateTime.getTime() + calculatedTotalDuration * 60000);
 
       // Generar código único para la reserva
       const bookingCode = `BK-${Date.now().toString().slice(-6)}`;
@@ -573,26 +590,40 @@ class PublicBookingsController {
       // Determinar estado inicial - Las reservas online siempre inician como PENDING
       const initialStatus = 'PENDING';
 
-      // Crear la cita
+      // Crear la cita con totalAmount correcto
       const appointment = await Appointment.create({
         businessId: business.id,
         branchId: branchId || null,
         clientId: client.id,
         specialistId: specialist.userId, // Usar userId para foreign key a users
-        serviceId,
-        date: appointmentDateTime,
+        serviceId: service.id, // Servicio principal para backward compatibility
         startTime,
         endTime,
-        duration: service.duration,
-        price: service.price,
+        totalAmount: calculatedTotalPrice,
+        paidAmount: 0,
+        discountAmount: 0,
         status: initialStatus,
         notes: notes || '',
         bookingCode,
         paymentMethod,
-        paymentStatus: paymentProofUrl ? 'PENDING_VERIFICATION' : (paymentMethod === 'WOMPI' ? 'PENDING' : 'PENDING'),
+        paymentStatus: paymentProofUrl ? 'PENDING_VERIFICATION' : 'PENDING',
         paymentProofUrl: paymentProofUrl || null,
         source: 'ONLINE_BOOKING'
       }, { transaction });
+
+      // 🔗 CREAR REGISTROS EN APPOINTMENTSERVICE PARA CADA SERVICIO
+      const AppointmentService = require('../models/AppointmentService');
+      for (let i = 0; i < serviceRecords.length; i++) {
+        const svc = serviceRecords[i];
+        
+        await AppointmentService.create({
+          appointmentId: appointment.id,
+          serviceId: svc.id,
+          price: parseFloat(svc.price),
+          duration: parseInt(svc.duration),
+          order: i
+        }, { transaction });
+      }
 
       // Si es pago con Wompi, crear transacción
       let paymentUrl = null;
@@ -648,14 +679,21 @@ class PublicBookingsController {
             id: appointment.id,
             code: bookingCode,
             status: appointment.status,
-            totalAmount: service.price,
+            totalAmount: calculatedTotalPrice,
             paymentMethod,
-            date: appointment.date,
-            duration: service.duration,
+            startTime: appointment.startTime,
+            endTime: appointment.endTime,
+            duration: calculatedTotalDuration,
             service: {
               name: service.name,
               price: service.price
             },
+            services: serviceRecords.map(svc => ({
+              id: svc.id,
+              name: svc.name,
+              price: svc.price,
+              duration: svc.duration
+            })),
             specialist: {
               name: `${specialist.user.firstName} ${specialist.user.lastName}`.trim()
             },
