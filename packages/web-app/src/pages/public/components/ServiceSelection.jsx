@@ -25,7 +25,39 @@ const ServiceSelection = ({ businessCode, onNext }) => {
 
   const handleServiceSelect = (service) => {
     console.log('✅ ServiceSelection - Servicio seleccionado:', service);
-    dispatch(updateBookingData({ service }));
+    
+    // Obtener servicios actuales (array) o inicializar como array vacío
+    const currentServices = Array.isArray(bookingData.services) ? [...bookingData.services] : [];
+    
+    // Verificar si el servicio ya está seleccionado
+    const serviceIndex = currentServices.findIndex(s => s.id === service.id);
+    
+    if (serviceIndex > -1) {
+      // Si ya está, quitarlo
+      currentServices.splice(serviceIndex, 1);
+    } else {
+      // Si no está, agregarlo
+      currentServices.push(service);
+    }
+    
+    console.log('✅ ServiceSelection - Servicios actualizados:', currentServices);
+    
+    // Calcular duración total y precio total
+    const totalDuration = currentServices.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const totalPrice = currentServices.reduce((sum, s) => sum + (s.price || 0), 0);
+    
+    dispatch(updateBookingData({ 
+      services: currentServices,
+      totalDuration,
+      totalPrice,
+      // Mantener service por compatibilidad (usar el primero seleccionado)
+      service: currentServices[0] || null
+    }));
+  };
+
+  const isServiceSelected = (serviceId) => {
+    const currentServices = Array.isArray(bookingData.services) ? bookingData.services : [];
+    return currentServices.some(s => s.id === serviceId);
   };
 
   if (isLoadingServices) {
@@ -67,19 +99,30 @@ const ServiceSelection = ({ businessCode, onNext }) => {
     <div>
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-2">
-          Selecciona un servicio
+          Selecciona uno o más servicios
         </h2>
         <p className="text-gray-600">
-          Elige el servicio que deseas reservar
+          Puedes seleccionar múltiples servicios para tu cita
         </p>
+        {bookingData.services && bookingData.services.length > 0 && (
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800 font-medium">
+              {bookingData.services.length} servicio{bookingData.services.length > 1 ? 's' : ''} seleccionado{bookingData.services.length > 1 ? 's' : ''} • 
+              Duración total: {bookingData.totalDuration || 0} min • 
+              Total: ${(bookingData.totalPrice || 0).toLocaleString('es-CO')}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {services.map((service) => (
+        {services.map((service) => {
+          const selected = isServiceSelected(service.id);
+          return (
           <div
             key={service.id}
             className={`border rounded-lg p-4 cursor-pointer transition-all ${
-              bookingData.service?.id === service.id
+              selected
                 ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
@@ -105,20 +148,21 @@ const ServiceSelection = ({ businessCode, onNext }) => {
                   </span>
                 )}
               </div>
-              {bookingData.service?.id === service.id && (
+              {selected && (
                 <CheckCircleIcon className="w-6 h-6 text-blue-600 flex-shrink-0" />
               )}
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       <div className="mt-8 flex justify-end">
         <button
           onClick={onNext}
-          disabled={!bookingData.service}
+          disabled={!bookingData.services || bookingData.services.length === 0}
           className={`px-6 py-2 rounded-lg font-medium ${
-            bookingData.service
+            bookingData.services && bookingData.services.length > 0
               ? 'bg-blue-600 text-white hover:bg-blue-700'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}

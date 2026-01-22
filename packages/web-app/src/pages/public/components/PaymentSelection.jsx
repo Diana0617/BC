@@ -187,8 +187,18 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
         <h3 className="font-medium text-gray-900 mb-3">Resumen de tu reserva</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600">Servicio:</span>
-            <span className="font-medium">{bookingData.service?.name}</span>
+            <span className="text-gray-600">Servicio{bookingData.services && bookingData.services.length > 1 ? 's' : ''}:</span>
+            <div className="text-right">
+              {bookingData.services && bookingData.services.length > 0 ? (
+                bookingData.services.map((service, index) => (
+                  <div key={service.id || index} className="font-medium">
+                    {service.name}
+                  </div>
+                ))
+              ) : (
+                <span className="font-medium">{bookingData.service?.name}</span>
+              )}
+            </div>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Especialista:</span>
@@ -207,13 +217,13 @@ const PaymentSelection = ({ businessCode, onNext, onBack }) => {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Duración:</span>
-            <span className="font-medium">{bookingData.service?.duration} min</span>
+            <span className="text-gray-600">Duración total:</span>
+            <span className="font-medium">{bookingData.totalDuration || bookingData.service?.duration || 0} min</span>
           </div>
           <div className="border-t pt-2 mt-3">
             <div className="flex justify-between font-semibold text-gray-900">
               <span>Total a pagar:</span>
-              <span>${bookingData.service?.price?.toLocaleString('es-CO')}</span>
+              <span>${(bookingData.totalPrice || bookingData.service?.price || 0).toLocaleString('es-CO')}</span>
             </div>
           </div>
         </div>

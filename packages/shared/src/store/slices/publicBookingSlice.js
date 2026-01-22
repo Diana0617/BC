@@ -118,7 +118,10 @@ const initialState = {
   // Estado del flujo de booking
   currentStep: 1,
   bookingData: {
-    service: null,
+    service: null, // Mantener para compatibilidad
+    services: [], // Array de servicios seleccionados
+    totalDuration: 0,
+    totalPrice: 0,
     specialist: null,
     dateTime: null,
     clientData: null,
@@ -202,6 +205,9 @@ const publicBookingSlice = createSlice({
       state.currentStep = 1;
       state.bookingData = {
         service: null,
+        services: [],
+        totalDuration: 0,
+        totalPrice: 0,
         specialist: null,
         dateTime: null,
         clientData: null,
