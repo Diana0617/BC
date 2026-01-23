@@ -11,7 +11,7 @@ import {
   uploadLogo,
   saveBranding,
   completeStep,
-  updateBranding
+  
 } from '@shared/store/slices/businessConfigurationSlice'
 import { businessBrandingApi } from '@shared/api'
 
@@ -206,24 +206,63 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
         {!isSetupMode && !isEditing && (
           <button
             onClick={() => setIsEditing(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 animate-pulse"
           >
-            Editar
+            ✏️ Editar Branding
           </button>
         )}
       </div>
 
+      {/* Banner de ayuda interactivo cuando NO está editando */}
+      {!isSetupMode && !isEditing && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4 shadow-md">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <div className="bg-blue-600 text-white rounded-full p-2 animate-bounce">
+                <PaintBrushIcon className="h-6 w-6" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-blue-900 mb-1">
+                👋 ¿Quieres personalizar tu branding?
+              </h3>
+              <p className="text-blue-800 mb-3">
+                Haz clic en el botón <strong>"✏️ Editar Branding"</strong> arriba para empezar a personalizar tu logo y colores corporativos.
+              </p>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold shadow-md hover:shadow-lg transition-all duration-200 inline-flex items-center gap-2"
+              >
+                <PaintBrushIcon className="h-5 w-5" />
+                Comenzar a editar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Logo Upload Section */}
-      <div className="bg-gray-50 rounded-lg p-6">
-        <div className="flex items-center mb-4">
-          <PhotoIcon className="h-5 w-5 text-gray-600 mr-2" />
-          <h3 className="text-lg font-semibold text-gray-900">Logo del Negocio</h3>
+      <div className={`rounded-lg p-6 transition-all duration-300 ${
+        isEditing ? 'bg-blue-50 border-2 border-blue-400 shadow-lg' : 'bg-gray-50 border-2 border-gray-200'
+      }`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center">
+            <PhotoIcon className="h-5 w-5 text-gray-600 mr-2" />
+            <h3 className="text-lg font-semibold text-gray-900">Logo del Negocio</h3>
+          </div>
+          {isEditing && (
+            <span className="bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full animate-pulse">
+              ✏️ MODO EDICIÓN
+            </span>
+          )}
         </div>
 
         <div className="flex flex-col md:flex-row gap-6 items-center">
           {/* Preview */}
           <div className="flex-shrink-0">
-            <div className="w-32 h-32 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">
+            <div className={`w-32 h-32 bg-white border-2 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 ${
+              isEditing ? 'border-blue-500 shadow-lg ring-2 ring-blue-200' : 'border-gray-300'
+            }`}>
               {logoPreview ? (
                 <img src={logoPreview} alt="Logo" className="max-w-full max-h-full object-contain" />
               ) : (
@@ -233,10 +272,10 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
           </div>
 
           {/* Upload Controls */}
-          {isEditing && (
+          {isEditing ? (
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subir nuevo logo
+                📤 Subir nuevo logo
               </label>
               <div className="flex items-center gap-4">
                 <input
@@ -267,22 +306,41 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 Formatos soportados: JPG, PNG, WEBP. Tamaño máximo: 10MB. El logo se subirá al guardar.
               </p>
             </div>
+          ) : (
+            <div className="flex-1">
+              <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <PhotoIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600 font-medium mb-1">Logo actual</p>
+                <p className="text-sm text-gray-500">
+                  Haz clic en "Editar Branding" para cambiar el logo
+                </p>
+              </div>
+            </div>
           )}
         </div>
       </div>
 
       {/* Colors Section */}
-      <div className="bg-gray-50 rounded-lg p-6">
-        <div className="flex items-center mb-4">
-          <PaintBrushIcon className="h-5 w-5 text-gray-600 mr-2" />
-          <h3 className="text-lg font-semibold text-gray-900">Colores Corporativos</h3>
+      <div className={`rounded-lg p-6 transition-all duration-300 ${
+        isEditing ? 'bg-blue-50 border-2 border-blue-400 shadow-lg' : 'bg-gray-50 border-2 border-gray-200'
+      }`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center">
+            <PaintBrushIcon className="h-5 w-5 text-gray-600 mr-2" />
+            <h3 className="text-lg font-semibold text-gray-900">Colores Corporativos</h3>
+          </div>
+          {isEditing && (
+            <span className="bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full animate-pulse">
+              ✏️ MODO EDICIÓN
+            </span>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Primary Color */}
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Color Principal
+              🎨 Color Principal
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -290,23 +348,38 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 value={formData.primaryColor}
                 onChange={(e) => handleColorChange('primaryColor', e.target.value)}
                 disabled={!isEditing}
-                className="h-12 w-12 rounded-lg border-2 border-gray-300 cursor-pointer disabled:opacity-50"
+                title={!isEditing ? "Haz clic en 'Editar Branding' para cambiar este color" : "Selecciona el color principal"}
+                className={`h-12 w-12 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                  isEditing 
+                    ? 'border-blue-500 hover:border-blue-600 hover:scale-110' 
+                    : 'border-gray-300 opacity-50 cursor-not-allowed'
+                }`}
               />
               <input
                 type="text"
                 value={formData.primaryColor}
                 onChange={(e) => handleColorChange('primaryColor', e.target.value)}
                 disabled={!isEditing}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 font-mono text-sm"
                 placeholder="#FF6B9D"
+                title={!isEditing ? "Haz clic en 'Editar Branding' para cambiar este color" : "Código hexadecimal del color"}
+                className={`flex-1 px-3 py-2 border rounded-lg font-mono text-sm transition-all duration-200 ${
+                  isEditing
+                    ? 'border-blue-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               />
             </div>
+            {!isEditing && (
+              <p className="text-xs text-gray-500 mt-1 italic">
+                🔒 Bloqueado - Activa el modo edición
+              </p>
+            )}
           </div>
 
           {/* Secondary Color */}
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Color Secundario
+              🎨 Color Secundario
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -314,23 +387,38 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 value={formData.secondaryColor}
                 onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
                 disabled={!isEditing}
-                className="h-12 w-12 rounded-lg border-2 border-gray-300 cursor-pointer disabled:opacity-50"
+                title={!isEditing ? "Haz clic en 'Editar Branding' para cambiar este color" : "Selecciona el color secundario"}
+                className={`h-12 w-12 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                  isEditing 
+                    ? 'border-blue-500 hover:border-blue-600 hover:scale-110' 
+                    : 'border-gray-300 opacity-50 cursor-not-allowed'
+                }`}
               />
               <input
                 type="text"
                 value={formData.secondaryColor}
                 onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
                 disabled={!isEditing}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 font-mono text-sm"
                 placeholder="#4ECDC4"
+                title={!isEditing ? "Haz clic en 'Editar Branding' para cambiar este color" : "Código hexadecimal del color"}
+                className={`flex-1 px-3 py-2 border rounded-lg font-mono text-sm transition-all duration-200 ${
+                  isEditing
+                    ? 'border-blue-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               />
             </div>
+            {!isEditing && (
+              <p className="text-xs text-gray-500 mt-1 italic">
+                🔒 Bloqueado - Activa el modo edición
+              </p>
+            )}
           </div>
 
           {/* Accent Color */}
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Color de Acento
+              🎨 Color de Acento
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -338,38 +426,55 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 value={formData.accentColor}
                 onChange={(e) => handleColorChange('accentColor', e.target.value)}
                 disabled={!isEditing}
-                className="h-12 w-12 rounded-lg border-2 border-gray-300 cursor-pointer disabled:opacity-50"
+                title={!isEditing ? "Haz clic en 'Editar Branding' para cambiar este color" : "Selecciona el color de acento"}
+                className={`h-12 w-12 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                  isEditing 
+                    ? 'border-blue-500 hover:border-blue-600 hover:scale-110' 
+                    : 'border-gray-300 opacity-50 cursor-not-allowed'
+                }`}
               />
               <input
                 type="text"
                 value={formData.accentColor}
                 onChange={(e) => handleColorChange('accentColor', e.target.value)}
                 disabled={!isEditing}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 font-mono text-sm"
                 placeholder="#FFE66D"
+                title={!isEditing ? "Haz clic en 'Editar Branding' para cambiar este color" : "Código hexadecimal del color"}
+                className={`flex-1 px-3 py-2 border rounded-lg font-mono text-sm transition-all duration-200 ${
+                  isEditing
+                    ? 'border-blue-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               />
             </div>
+            {!isEditing && (
+              <p className="text-xs text-gray-500 mt-1 italic">
+                🔒 Bloqueado - Activa el modo edición
+              </p>
+            )}
           </div>
         </div>
 
         {/* Color Preview */}
         <div className="mt-6">
-          <p className="text-sm font-medium text-gray-700 mb-3">Vista Previa:</p>
+          <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+            <span>👁️</span> Vista Previa de Colores:
+          </p>
           <div className="flex gap-4">
             <div 
-              className="flex-1 h-24 rounded-lg shadow-md flex items-center justify-center text-white font-semibold"
+              className="flex-1 h-24 rounded-lg shadow-md flex items-center justify-center text-white font-semibold transition-all duration-300 hover:scale-105"
               style={{ backgroundColor: formData.primaryColor }}
             >
               Primario
             </div>
             <div 
-              className="flex-1 h-24 rounded-lg shadow-md flex items-center justify-center text-white font-semibold"
+              className="flex-1 h-24 rounded-lg shadow-md flex items-center justify-center text-white font-semibold transition-all duration-300 hover:scale-105"
               style={{ backgroundColor: formData.secondaryColor }}
             >
               Secundario
             </div>
             <div 
-              className="flex-1 h-24 rounded-lg shadow-md flex items-center justify-center text-gray-900 font-semibold"
+              className="flex-1 h-24 rounded-lg shadow-md flex items-center justify-center text-gray-900 font-semibold transition-all duration-300 hover:scale-105"
               style={{ backgroundColor: formData.accentColor }}
             >
               Acento
