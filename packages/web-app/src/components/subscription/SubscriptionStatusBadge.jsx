@@ -18,7 +18,10 @@ import {
  */
 const SubscriptionStatusBadge = ({ subscription, business, compact = false, showDetails = true }) => {
   // 🔑 Verificar si el negocio tiene acceso LIFETIME
-  const hasLifetimeAccess = business?.isLifetime || business?.bypassSubscriptionChecks;
+  const hasLifetimeAccess = business?.isLifetime || 
+                            business?.bypassSubscriptionChecks || 
+                            subscription?.billingCycle === 'LIFETIME' ||
+                            (subscription?.amount === 0 && subscription?.billingCycle === 'LIFETIME');
 
   if (!subscription && !hasLifetimeAccess) {
     return (
@@ -52,16 +55,16 @@ const SubscriptionStatusBadge = ({ subscription, business, compact = false, show
   };
 
   const getStatusConfig = () => {
-    // 🌟 LIFETIME - Acceso ilimitado para desarrollo/testing
+    // 🌟 LIFETIME - Acceso ilimitado gratuito de por vida
     if (hasLifetimeAccess) {
       return {
-        label: 'LIFETIME - Desarrollo',
-        sublabel: 'Acceso Ilimitado',
+        label: 'Suscripción Gratuita',
+        sublabel: 'Acceso de por Vida',
         color: 'bg-purple-100 text-purple-800 border-purple-300',
         icon: ShieldCheckIcon,
         iconColor: 'text-purple-600',
         details: {
-          message: 'Este negocio tiene acceso ilimitado sin restricciones',
+          message: 'Este negocio tiene acceso gratuito ilimitado',
           type: 'info'
         }
       };

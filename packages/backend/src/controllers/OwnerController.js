@@ -145,11 +145,11 @@ class OwnerController {
           {
             model: BusinessSubscription,
             as: 'subscriptions',
-            attributes: ['id', 'status', 'startDate', 'endDate'],
+            attributes: ['id', 'status', 'startDate', 'endDate', 'billingCycle', 'amount', 'currency', 'autoRenew', 'paymentStatus', 'notes'],
             include: [{
               model: SubscriptionPlan,
               as: 'plan',
-              attributes: ['id', 'name', 'price']
+              attributes: ['id', 'name', 'price', 'currency', 'billingCycle']
             }],
             required: false
           }
@@ -222,8 +222,8 @@ class OwnerController {
         });
       }
 
-      // Validar billingCycle
-      if (!['MONTHLY', 'ANNUAL'].includes(billingCycle)) {
+      // Validar billingCycle (no validar si es LIFETIME desde el frontend)
+      if (!isLifetime && !['MONTHLY', 'ANNUAL'].includes(billingCycle)) {
         return res.status(400).json({
           success: false,
           message: 'billingCycle debe ser MONTHLY o ANNUAL'
@@ -234,26 +234,36 @@ class OwnerController {
       let finalPrice;
       let finalDuration;
       let finalDurationType;
+      let finalBillingCycle;
 
-      if (billingCycle === 'ANNUAL') {
+      // 🌟 Si es LIFETIME, forzar valores especiales
+      if (isLifetime) {
+        finalPrice = 0;
+        finalDuration = 100; // Duración simbólica
+        finalDurationType = 'YEARS';
+        finalBillingCycle = 'LIFETIME';
+      } else if (billingCycle === 'ANNUAL') {
         finalPrice = plan.annualPrice || (plan.monthlyPrice || plan.price);
         finalDuration = 1;
         finalDurationType = 'YEARS';
+        finalBillingCycle = 'ANNUAL';
       } else {
         // MONTHLY
         finalPrice = plan.monthlyPrice || plan.price;
         finalDuration = plan.duration;
         finalDurationType = plan.durationType;
+        finalBillingCycle = 'MONTHLY';
       }
 
       console.log('📋 Plan encontrado:', {
         id: plan.id,
         name: plan.name,
         price: plan.price,
-        billingCycle,
+        billingCycle: finalBillingCycle,
         finalPrice,
         finalDuration,
-        finalDurationType
+        finalDurationType,
+        isLifetime: isLifetime ? '⭐ LIFETIME ACCESS' : 'STANDARD'
       });
 
       // Validar y preparar el subdomain (businessCode)
@@ -403,27 +413,33 @@ class OwnerController {
         : null;
 
       // Calcular endDate según la duración calculada (finalDuration/finalDurationType)
-      const endDate = new Date();
-      switch (finalDurationType) {
-        case 'MONTHS':
-          endDate.setMonth(endDate.getMonth() + finalDuration);
-          break;
-        case 'YEARS':
-          endDate.setFullYear(endDate.getFullYear() + finalDuration);
-          break;
-        case 'WEEKS':
-          endDate.setDate(endDate.getDate() + (finalDuration * 7));
-          break;
-        case 'DAYS':
-          endDate.setDate(endDate.getDate() + finalDuration);
-          break;
-        default:
-          // Fallback: 30 días
-          endDate.setDate(endDate.getDate() + 30);
+      let endDate = new Date();
+      
+      // 🌟 Si es LIFETIME, establecer fecha muy lejana
+      if (isLifetime) {
+        endDate = new Date('2099-12-31T23:59:59Z');
+      } else {
+        switch (finalDurationType) {
+          case 'MONTHS':
+            endDate.setMonth(endDate.getMonth() + finalDuration);
+            break;
+          case 'YEARS':
+            endDate.setFullYear(endDate.getFullYear() + finalDuration);
+            break;
+          case 'WEEKS':
+            endDate.setDate(endDate.getDate() + (finalDuration * 7));
+            break;
+          case 'DAYS':
+            endDate.setDate(endDate.getDate() + finalDuration);
+            break;
+          default:
+            // Fallback: 30 días
+            endDate.setDate(endDate.getDate() + 30);
+        }
       }
       
-      // Si tiene trial, crear como TRIAL, sino como ACTIVE (pago efectivo ya confirmado)
-      const subscriptionStatus = plan.trialDays > 0 ? 'TRIAL' : 'ACTIVE';
+      // Si tiene trial y NO es LIFETIME, crear como TRIAL, sino como ACTIVE
+      const subscriptionStatus = (plan.trialDays > 0 && !isLifetime) ? 'TRIAL' : 'ACTIVE';
       
       const subscription = await BusinessSubscription.create({
         businessId: business.id,
@@ -434,31 +450,38 @@ class OwnerController {
         startDate: new Date(),
         endDate: endDate,
         trialEndDate: trialEndDate,
-        paymentMethod: 'CASH',
-        billingCycle: billingCycle
+        paymentMethod: isLifetime ? 'FREE' : 'CASH',
+        billingCycle: finalBillingCycle,
+        autoRenew: !isLifetime, // No auto-renovar si es LIFETIME
+        notes: isLifetime ? 'Suscripción gratuita de por vida (Lifetime) - Creada por Owner' : null
       });
       
-      console.log(`📝 Suscripción creada: ${subscription.id} - Status: ${subscriptionStatus}, Ciclo: ${billingCycle}, Trial hasta: ${trialEndDate ? trialEndDate.toISOString() : 'N/A'}, Duración: ${finalDuration} ${finalDurationType}`);
+      console.log(`📝 Suscripción creada: ${subscription.id} - Status: ${subscriptionStatus}, Ciclo: ${finalBillingCycle}, Trial hasta: ${trialEndDate ? trialEndDate.toISOString() : 'N/A'}, Duración: ${finalDuration} ${finalDurationType}${isLifetime ? ' ⭐ LIFETIME' : ''}`);
 
-      // Crear el registro de pago para el pago efectivo
-      console.log('💰 Creando registro de pago...');
-      const payment = await SubscriptionPayment.create({
-        businessSubscriptionId: subscription.id,
-        amount: finalPrice,
-        currency: plan.currency,
-        status: 'COMPLETED',
-        paymentMethod: 'CASH',
-        paidAt: new Date(),
-        dueDate: new Date(),
-        netAmount: finalPrice,
-        commissionFee: 0,
-        description: `Pago efectivo para suscripción al plan ${plan.name} - Ciclo: ${billingCycle}`,
-        notes: 'Pago creado manualmente por Owner desde panel administrativo',
-        paymentAttempts: 1,
-        lastAttemptAt: new Date(),
-        maxAttempts: 1
-      });
-      console.log('💰 Pago creado:', payment.id);
+      // Crear el registro de pago (solo si NO es LIFETIME)
+      let payment = null;
+      if (!isLifetime) {
+        console.log('💰 Creando registro de pago...');
+        payment = await SubscriptionPayment.create({
+          businessSubscriptionId: subscription.id,
+          amount: finalPrice,
+          currency: plan.currency,
+          status: 'COMPLETED',
+          paymentMethod: 'CASH',
+          paidAt: new Date(),
+          dueDate: new Date(),
+          netAmount: finalPrice,
+          commissionFee: 0,
+          description: `Pago efectivo para suscripción al plan ${plan.name} - Ciclo: ${finalBillingCycle}`,
+          notes: 'Pago creado manualmente por Owner desde panel administrativo',
+          paymentAttempts: 1,
+          lastAttemptAt: new Date(),
+          maxAttempts: 1
+        });
+        console.log('💰 Pago creado:', payment.id);
+      } else {
+        console.log('⭐ LIFETIME: No se crea registro de pago (suscripción gratuita)');
+      }
 
       // Generar tokens de autenticación para auto-login
       const payload = {

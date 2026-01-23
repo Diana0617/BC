@@ -423,7 +423,12 @@ const OwnerBusinessesPage = () => {
                             
                             {/* Dates */}
                             <div className="text-xs text-gray-500 space-y-0.5">
-                              {currentSub.status === 'TRIAL' ? (
+                              {currentSub.billingCycle === 'LIFETIME' ? (
+                                <>
+                                  <div className="text-purple-600 font-medium">🎁 Gratis de por vida</div>
+                                  <div>Inicio: {currentSub.startDate ? new Date(currentSub.startDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</div>
+                                </>
+                              ) : currentSub.status === 'TRIAL' ? (
                                 <>
                                   <div>Trial termina: {currentSub.trialEndDate ? new Date(currentSub.trialEndDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</div>
                                   <div className="text-blue-600 font-medium">
