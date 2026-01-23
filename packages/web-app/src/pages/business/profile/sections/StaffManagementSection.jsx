@@ -58,6 +58,7 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
   const [specialists, setSpecialists] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [enrichedBranches, setEnrichedBranches] = useState([]); // Sucursales con businessHours completos
   const [isAddingSpecialist, setIsAddingSpecialist] = useState(false);
   const [editingSpecialist, setEditingSpecialist] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -132,6 +133,14 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeBusiness?.id]);
 
+  // Cargar sucursales enriquecidas cuando se abre la pestaña de calendario
+  useEffect(() => {
+    if (currentTab === 'calendar' && editingSpecialist?.branches) {
+      loadEnrichedBranches(editingSpecialist.branches);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTab, editingSpecialist?.id]);
+
   const loadSpecialists = async () => {
     try {
       setLoading(true);
@@ -156,6 +165,39 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
       console.error('Error al cargar sucursales:', err);
       // Si no hay sucursales, usar un array vacío
       setBranches([]);
+    }
+  };
+
+  // Cargar sucursales completas con businessHours cuando se edita un especialista
+  const loadEnrichedBranches = async (specialistBranches) => {
+    if (!specialistBranches || specialistBranches.length === 0) {
+      setEnrichedBranches([]);
+      return;
+    }
+
+    try {
+      console.log('🔄 Cargando sucursales completas con horarios...');
+      const branchIds = specialistBranches.map(b => b.id);
+      
+      // Cargar cada sucursal completa desde el API para obtener businessHours
+      const enrichedPromises = branchIds.map(async (branchId) => {
+        try {
+          const response = await businessBranchesApi.getBranch(activeBusiness.id, branchId);
+          return response.data || response;
+        } catch (err) {
+          console.error(`Error cargando sucursal ${branchId}:`, err);
+          // Fallback a los datos básicos
+          return specialistBranches.find(b => b.id === branchId);
+        }
+      });
+
+      const enriched = await Promise.all(enrichedPromises);
+      console.log('✅ Sucursales enriquecidas:', enriched);
+      setEnrichedBranches(enriched);
+    } catch (err) {
+      console.error('Error al enriquecer sucursales:', err);
+      // Usar las sucursales básicas como fallback
+      setEnrichedBranches(specialistBranches);
     }
   };
 
@@ -1091,7 +1133,10 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
     }
 
     // Obtener sucursales asignadas al especialista
-    const specialistBranches = editingSpecialist?.branches || [];
+    // Usar sucursales enriquecidas si están disponibles (incluyen businessHours completos)
+    const specialistBranches = enrichedBranches.length > 0 
+      ? enrichedBranches 
+      : (editingSpecialist?.branches || []);
     
     if (specialistBranches.length === 0) {
       return (
@@ -1534,12 +1579,20 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, allB
         response: response.data
       });
       
+      console.log('🏢 Datos de la sucursal:', {
+        branchId: branch.id,
+        branchName: branch.name,
+        weeklySchedule: branch.weeklySchedule,
+        businessHours: branch.businessHours
+      });
+      
       // Convertir array de horarios a nueva estructura con shifts
       const schedulesByDay = {};
       
       // Inicializar con estructura por defecto basada en horarios de la sucursal
       // El especialista hereda los horarios de la sucursal como punto de partida
       const branchSchedule = branch.weeklySchedule || branch.businessHours;
+      console.log('📋 branchSchedule a usar:', branchSchedule);
       daysOfWeek.forEach(({ key }) => {
         const branchDay = branchSchedule?.[key];
         
