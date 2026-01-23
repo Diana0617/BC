@@ -27,6 +27,7 @@ export default function AppointmentWorkflowModal({
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [consentRequired, setConsentRequired] = useState(false);
+  const [consentTemplateId, setConsentTemplateId] = useState(null);
   const [consentCompleted, setConsentCompleted] = useState(false);
   const [beforeEvidenceUploaded, setBeforeEvidenceUploaded] = useState(false);
   const [afterEvidenceUploaded, setAfterEvidenceUploaded] = useState(false);
@@ -49,11 +50,24 @@ export default function AppointmentWorkflowModal({
       return;
     }
 
-    // Verificar si el servicio requiere consentimiento
-    // Soportar ambos formatos: Service/service
+    // Verificar si ALGUNO de los servicios requiere consentimiento
+    // Soportar ambos formatos: Service/service y services array
     const service = appointment.Service || appointment.service;
-    const requiresConsent = service?.requiresConsent || false;
-    const templateId = service?.consentTemplateId || null;
+    const services = appointment.services || [];
+    
+    // Si hay múltiples servicios, verificar si alguno requiere consentimiento
+    let requiresConsent = service?.requiresConsent || false;
+    let templateId = service?.consentTemplateId || null;
+    
+    if (services.length > 0) {
+      // Verificar si alguno de los servicios requiere consentimiento
+      const serviceRequiringConsent = services.find(s => s.requiresConsent);
+      if (serviceRequiringConsent) {
+        requiresConsent = true;
+        templateId = serviceRequiringConsent.consentTemplateId;
+      }
+    }
+    
     const alreadyHasConsent = appointment.hasConsent || false;
     
     console.log('🔍 Inicializando workflow:', {
@@ -61,11 +75,14 @@ export default function AppointmentWorkflowModal({
       requiresConsent,
       templateId,
       serviceName: service?.name,
+      servicesCount: services.length,
+      servicesRequiringConsent: services.filter(s => s.requiresConsent).map(s => s.name),
       hasConsent: alreadyHasConsent,
       hasToken: !!token
     });
     
     setConsentRequired(requiresConsent);
+    setConsentTemplateId(templateId);
     
     // Si ya tiene consentimiento firmado, marcarlo como completado
     if (alreadyHasConsent) {
@@ -202,7 +219,7 @@ export default function AppointmentWorkflowModal({
 
             <ConsentFormView
               appointment={appointment}
-              templateId={(appointment.Service || appointment.service)?.consentTemplateId}
+              templateId={consentTemplateId}
               onSuccess={handleConsentComplete}
               onCancel={onClose}
               token={token}

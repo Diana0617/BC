@@ -117,7 +117,7 @@ class AppointmentController {
             model: Service,
             as: 'services',
             through: { attributes: ['price', 'duration', 'order'] },
-            attributes: ['id', 'name', 'duration', 'price', 'category']
+            attributes: ['id', 'name', 'duration', 'price', 'category', 'requiresConsent', 'consentTemplateId']
           },
           {
             model: Client,
@@ -232,7 +232,7 @@ class AppointmentController {
               attributes: ['price', 'duration', 'order'],
               as: 'appointmentService'
             },
-            attributes: ['id', 'name', 'description', 'duration', 'price', 'category']
+            attributes: ['id', 'name', 'description', 'duration', 'price', 'category', 'requiresConsent', 'consentTemplateId']
           }
         ]
       });
