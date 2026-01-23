@@ -1596,29 +1596,38 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
   // Cargar horarios del especialista de TODAS las sucursales
   const loadAllBranchesSchedules = async () => {
     try {
-      const response = await businessSpecialistsApi.getSpecialistSchedules(businessId, specialistId);
+      // Obtener las sucursales del especialista a través del editingSpecialist
+      // que debería tener la información de branches
+      const specialistBranches = await businessSpecialistsApi.getSpecialist(businessId, specialistId);
+      const branches = specialistBranches.data?.branches || [];
       
-      // Agrupar por sucursal
-      const schedulesByBranch = {};
-      if (response.data && Array.isArray(response.data)) {
-        response.data.forEach(schedule => {
-          if (!schedulesByBranch[schedule.branchId]) {
-            schedulesByBranch[schedule.branchId] = {
-              branchId: schedule.branchId,
-              branchName: schedule.branch?.name || 'Sucursal',
-              schedules: []
-            };
-          }
-          schedulesByBranch[schedule.branchId].schedules.push({
-            day: schedule.dayOfWeek,
-            start: schedule.startTime.substring(0, 5),
-            end: schedule.endTime.substring(0, 5),
-            isActive: schedule.isActive
+      // Cargar horarios de cada sucursal
+      const schedulesByBranch = [];
+      
+      for (const branchData of branches) {
+        try {
+          const response = await businessBranchesApi.getBranchSchedules(businessId, branchData.id, {
+            specialistId: specialistId
           });
-        });
+          
+          if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+            schedulesByBranch.push({
+              branchId: branchData.id,
+              branchName: branchData.name || 'Sucursal',
+              schedules: response.data.map(schedule => ({
+                day: schedule.dayOfWeek,
+                start: schedule.startTime.substring(0, 5),
+                end: schedule.endTime.substring(0, 5),
+                isActive: schedule.isActive
+              }))
+            });
+          }
+        } catch (branchErr) {
+          console.warn(`No se pudieron cargar horarios de sucursal ${branchData.name}:`, branchErr);
+        }
       }
       
-      setAllBranchesSchedules(Object.values(schedulesByBranch));
+      setAllBranchesSchedules(schedulesByBranch);
     } catch (err) {
       console.error('Error cargando horarios de todas las sucursales:', err);
       setAllBranchesSchedules([]);
