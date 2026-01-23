@@ -229,11 +229,17 @@ const CreateAppointmentModal = ({
       
       // Manejar diferentes formatos de respuesta
       let slots = []
-      if (response.data.data && Array.isArray(response.data.data)) {
+      if (response.data.data?.slots && Array.isArray(response.data.data.slots)) {
+        // Formato: { success, data: { slots: [...] } }
+        slots = response.data.data.slots
+      } else if (response.data.data && Array.isArray(response.data.data)) {
+        // Formato: { success, data: [...] }
         slots = response.data.data
       } else if (response.data.slots && Array.isArray(response.data.slots)) {
+        // Formato: { slots: [...] }
         slots = response.data.slots
       } else if (Array.isArray(response.data)) {
+        // Formato: [...]
         slots = response.data
       }
       
