@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, } from 'react'
 import { useSelector } from 'react-redux'
 import { usePermissions } from '@shared/hooks'
 import {
@@ -74,9 +74,7 @@ const AppointmentsConfigSection = ({ isSetupMode, onComplete }) => {
     setIsSaving(true)
 
     try {
-      // TODO: Implementar guardado en API
-      console.log('Guardando configuración de citas:', config)
-
+     
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       if (isSetupMode && onComplete) {

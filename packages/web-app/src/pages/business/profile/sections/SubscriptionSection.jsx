@@ -175,7 +175,9 @@ const SubscriptionSection = ({ isSetupMode }) => {
   }
 
   // 🔑 Verificar si el negocio tiene acceso LIFETIME
-  const hasLifetimeAccess = business?.isLifetime || business?.bypassSubscriptionChecks;
+  const hasLifetimeAccess = business?.isLifetime || 
+                            business?.bypassSubscriptionChecks || 
+                            effectiveSubscription?.billingCycle === 'LIFETIME';
 
   return (
     <div className="space-y-6">
@@ -272,11 +274,14 @@ const SubscriptionSection = ({ isSetupMode }) => {
                 <p className="text-sm text-gray-600">Ciclo de facturación</p>
                 <p className="font-medium text-gray-900">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    effectiveSubscription?.billingCycle === 'ANNUAL' 
+                    effectiveSubscription?.billingCycle === 'LIFETIME' 
+                      ? 'bg-purple-100 text-purple-800'
+                      : effectiveSubscription?.billingCycle === 'ANNUAL' 
                       ? 'bg-purple-100 text-purple-800' 
                       : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {effectiveSubscription?.billingCycle === 'ANNUAL' ? '📅 Anual' : '📆 Mensual'}
+                    {effectiveSubscription?.billingCycle === 'LIFETIME' ? '🌟 Gratis de por vida' :
+                     effectiveSubscription?.billingCycle === 'ANNUAL' ? '📅 Anual' : '📆 Mensual'}
                   </span>
                 </p>
               </div>
@@ -289,10 +294,11 @@ const SubscriptionSection = ({ isSetupMode }) => {
               <div>
                 <p className="text-sm text-gray-600">Estado del pago</p>
                 <p className="font-medium text-gray-900">
-                  {effectiveSubscription?.status === 'TRIAL' && 'Período de prueba - Sin cargo'}
-                  {effectiveSubscription?.status === 'ACTIVE' && 'Al día'}
-                  {effectiveSubscription?.status === 'PENDING' && 'Procesando pago'}
-                  {(effectiveSubscription?.status === 'OVERDUE' || effectiveSubscription?.status === 'SUSPENDED') && 'Requiere atención'}
+                  {hasLifetimeAccess && 'Suscripción Gratuita'}
+                  {!hasLifetimeAccess && effectiveSubscription?.status === 'TRIAL' && 'Período de prueba - Sin cargo'}
+                  {!hasLifetimeAccess && effectiveSubscription?.status === 'ACTIVE' && 'Al día'}
+                  {!hasLifetimeAccess && effectiveSubscription?.status === 'PENDING' && 'Procesando pago'}
+                  {!hasLifetimeAccess && (effectiveSubscription?.status === 'OVERDUE' || effectiveSubscription?.status === 'SUSPENDED') && 'Requiere atención'}
                 </p>
               </div>
             </div>
@@ -312,7 +318,7 @@ const SubscriptionSection = ({ isSetupMode }) => {
 
       {/* Información de próximo pago / Trial */}
       {(() => {
-        if (isFreePlan) return null;
+        if (isFreePlan || hasLifetimeAccess) return null;
         
         const paymentInfo = getNextPaymentInfo()
         const isTrial = effectiveSubscription?.status === 'TRIAL'
