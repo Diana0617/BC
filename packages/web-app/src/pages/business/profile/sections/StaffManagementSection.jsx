@@ -1530,30 +1530,36 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
         specialistId: specialistId
       });
       
+      console.log('📅 Horarios cargados para sucursal actual:', {
+        branchName: branch.name,
+        response: response.data
+      });
+      
       // Convertir array de horarios a nueva estructura con shifts
       const schedulesByDay = {};
       
-      // Inicializar con estructura por defecto basada en horarios del negocio
+      // Inicializar con estructura por defecto basada en horarios de la sucursal
+      const branchSchedule = branch.weeklySchedule || branch.businessHours;
       daysOfWeek.forEach(({ key }) => {
-        const businessDay = businessHours?.[key];
+        const branchDay = branchSchedule?.[key];
         
-        if (businessDay?.enabled && businessDay?.shifts?.length > 0) {
-          // Si el negocio tiene horarios con shifts, usar esa estructura como base
+        if (branchDay?.enabled && branchDay?.shifts?.length > 0) {
+          // Si la sucursal tiene horarios con shifts, usar esa estructura como base
           schedulesByDay[key] = {
             enabled: false, // Por defecto deshabilitado para el especialista
             shifts: []
           };
-        } else if (businessDay && !businessDay.closed && businessDay.open) {
+        } else if (branchDay && !branchDay.closed && branchDay.open) {
           // Backward compatibility: convertir estructura antigua
           schedulesByDay[key] = {
             enabled: false,
             shifts: [{
-              start: businessDay.open,
-              end: businessDay.close
+              start: branchDay.open,
+              end: branchDay.close
             }]
           };
         } else {
-          // Sin horarios del negocio, usar valores por defecto
+          // Sin horarios de la sucursal, usar valores por defecto
           schedulesByDay[key] = {
             enabled: false,
             shifts: []
@@ -1597,6 +1603,11 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
   // Cargar horarios del especialista de TODAS las sucursales
   const loadAllBranchesSchedules = async () => {
     try {
+      console.log('🏢 Cargando horarios de todas las sucursales:', {
+        allBranches: allBranches.map(b => ({ id: b.id, name: b.name })),
+        currentBranchId: branch.id
+      });
+      
       // Usar las sucursales pasadas como prop
       const schedulesByBranch = [];
       
@@ -1623,9 +1634,10 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
         }
       }
       
+      console.log('✅ Horarios de todas las sucursales cargados:', schedulesByBranch);
       setAllBranchesSchedules(schedulesByBranch);
     } catch (err) {
-      console.error('Error cargando horarios de todas las sucursales:', err);
+      console.error('❌ Error cargando horarios de todas las sucursales:', err);
       setAllBranchesSchedules([]);
     }
   };
@@ -1892,20 +1904,21 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
         )}
       </div>
 
-      {/* Info del horario del negocio */}
+      {/* Info del horario de la sucursal */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-4">
         <div className="flex items-start gap-3">
           <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <h6 className="text-sm font-semibold text-blue-900 mb-2">
-              📋 Horario de Operación del Negocio
+              📋 Horario de Operación de {branch.name}
             </h6>
             <p className="text-xs text-blue-700 mb-3">
-              El especialista debe configurar sus horarios dentro de estos límites. Los breaks del negocio se muestran como referencia.
+              El especialista debe configurar sus horarios dentro de estos límites de la sucursal. Los breaks se muestran como referencia.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {daysOfWeek.map(day => {
-                const dayHours = businessHours?.[day.key];
+                const branchSchedule = branch.weeklySchedule || branch.businessHours;
+                const dayHours = branchSchedule?.[day.key];
                 const hasShifts = dayHours?.shifts && dayHours.shifts.length > 0;
                 const isClosed = dayHours?.closed || (!dayHours?.enabled && !dayHours?.open);
                 
