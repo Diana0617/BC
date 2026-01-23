@@ -1124,7 +1124,6 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
             branch={branch}
             specialistId={editingSpecialist.id}
             businessId={activeBusiness.id}
-            businessHours={activeBusiness.businessHours}
             allBranches={specialistBranches}
           />
         ))}
@@ -1498,7 +1497,7 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
 };
 
 // Componente para editar horarios de un especialista en una sucursal específica
-const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, businessHours, allBranches = [] }) => {
+const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, allBranches = [] }) => {
   const [schedules, setSchedules] = useState({});
   const [allBranchesSchedules, setAllBranchesSchedules] = useState([]); // Horarios de todas las sucursales
   const [loading, setLoading] = useState(false);
@@ -1673,23 +1672,26 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
   const validateScheduleAgainstBusiness = () => {
     const errors = [];
     
+    // Usar los horarios de la sucursal en lugar de los horarios generales del negocio
+    const branchBusinessHours = branch.businessHours || branch.weeklySchedule;
+    
     Object.entries(schedules).forEach(([day, schedule]) => {
       if (!schedule.enabled || !schedule.shifts?.length) return;
       
-      const businessDay = businessHours?.[day];
+      const businessDay = branchBusinessHours?.[day];
       const dayLabel = daysOfWeek.find(d => d.key === day)?.label;
       
-      // Validar si el negocio está abierto ese día
+      // Validar si la sucursal está abierta ese día
       if (!businessDay || businessDay.closed || (!businessDay.enabled && !businessDay.open)) {
-        errors.push(`${dayLabel}: El negocio está cerrado este día`);
+        errors.push(`${dayLabel}: La sucursal está cerrada este día`);
         return;
       }
       
-      // Obtener límites del negocio
+      // Obtener límites de la sucursal
       let businessStart, businessEnd;
       
       if (businessDay.shifts && businessDay.shifts.length > 0) {
-        // Nueva estructura: encontrar el rango completo del negocio
+        // Nueva estructura: encontrar el rango completo de la sucursal
         businessStart = businessDay.shifts[0].start;
         businessEnd = businessDay.shifts[businessDay.shifts.length - 1].end;
       } else {
@@ -1707,11 +1709,11 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
         const shiftEnd = parseTime(shift.end);
         
         if (shiftStart < businessStartMin) {
-          errors.push(`${dayLabel} - Turno ${idx + 1}: Inicia antes del horario del negocio (${businessStart})`);
+          errors.push(`${dayLabel} - Turno ${idx + 1}: Inicia antes del horario de la sucursal (${businessStart})`);
         }
         
         if (shiftEnd > businessEndMin) {
-          errors.push(`${dayLabel} - Turno ${idx + 1}: Termina después del horario del negocio (${businessEnd})`);
+          errors.push(`${dayLabel} - Turno ${idx + 1}: Termina después del horario de la sucursal (${businessEnd})`);
         }
       });
     });
