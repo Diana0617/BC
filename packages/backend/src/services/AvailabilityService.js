@@ -17,6 +17,7 @@ const {
   SpecialistProfile,
   User
 } = require('../models');
+const SpecialistIdNormalizer = require('../utils/specialistIdNormalizer');
 
 class AvailabilityService {
   /**
@@ -65,32 +66,31 @@ class AvailabilityService {
         };
       }
 
-      // 4. Obtener horario del especialista para ese día/sucursal
+      // 4. Normalizar specialistId: obtener ambos IDs (userId y specialistProfileId)
+      console.log('🔧 Normalizando specialistId:', specialistId);
+      const normalized = await SpecialistIdNormalizer.normalize(specialistId, businessId);
+      const { userId, specialistProfileId, user, specialistProfile } = normalized;
+      
+      console.log('✅ IDs normalizados:', {
+        userId,
+        specialistProfileId,
+        source: normalized.source
+      });
+
+      // 5. Obtener horario del especialista para ese día/sucursal
       console.log('🔍 Buscando horario del especialista:', {
-        specialistId,
+        specialistProfileId,
         branchId,
         dayOfWeek
       });
 
       const specialistSchedule = await SpecialistBranchSchedule.findOne({
         where: {
-          specialistId,
+          specialistId: specialistProfileId, // Usar specialistProfileId para schedules
           branchId,
           dayOfWeek,
           isActive: true
-        },
-        include: [
-          {
-            model: SpecialistProfile,
-            as: 'specialist',
-            attributes: ['id', 'specialization'],
-            include: [{
-              model: User,
-              as: 'user',
-              attributes: ['id', 'firstName', 'lastName']
-            }]
-          }
-        ]
+        }
       });
 
       console.log('📋 Horario del especialista encontrado:', specialistSchedule ? {
@@ -159,6 +159,7 @@ class AvailabilityService {
       const allSlots = this.generateTimeSlots(workStartTime, workEndTime, slotDuration);
 
       // 8. Obtener citas existentes del especialista ese día
+      // Buscar por userId (appointments usan userId como specialistId)
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
       
@@ -168,7 +169,7 @@ class AvailabilityService {
       const existingAppointments = await Appointment.findAll({
         where: {
           businessId,
-          specialistId,
+          specialistId: userId, // Appointments usan userId
           branchId,
           startTime: {
             [Op.gte]: startOfDay,
@@ -194,15 +195,6 @@ class AvailabilityService {
       // 10. Filtrar solo slots disponibles
       const availableSlots = slotsWithAvailability.filter(slot => slot.available);
 
-      // Obtener información del especialista para la respuesta
-      const specialistInfo = await SpecialistProfile.findByPk(specialistId, {
-        include: [{
-          model: User,
-          as: 'user',
-          attributes: ['id', 'firstName', 'lastName']
-        }]
-      });
-
       return {
         date,
         dayOfWeek,
@@ -212,8 +204,9 @@ class AvailabilityService {
           hours: branchHours
         },
         specialist: {
-          id: specialistInfo.id,
-          name: `${specialistInfo.user.firstName} ${specialistInfo.user.lastName}`,
+          id: specialistProfileId, // Retornar specialistProfileId
+          userId: userId, // También incluir userId para compatibilidad
+          name: `${user.firstName} ${user.lastName}`,
           schedule: {
             startTime: workingHours.startTime,
             endTime: workingHours.endTime,
