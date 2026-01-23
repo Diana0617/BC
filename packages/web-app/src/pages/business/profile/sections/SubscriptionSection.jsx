@@ -128,7 +128,6 @@ const SubscriptionSection = ({ isSetupMode }) => {
   }
 
   const formatPrice = (price, currency = 'COP') => {
-    console.log('Debug - formatPrice called with:', price, currency)
     if (!price || price === 0 || price === '0' || price === '0.00') return '$0'
     const numericPrice = typeof price === 'string' ? parseFloat(price) : price
     if (isNaN(numericPrice) || numericPrice <= 0) return '$0'
@@ -577,8 +576,8 @@ const SubscriptionSection = ({ isSetupMode }) => {
         </div>
       )}
 
-      {/* Acciones */}
-      {!isSetupMode && (
+      {/* Acciones - Ocultar para suscripciones LIFETIME */}
+      {!isSetupMode && !hasLifetimeAccess && (
         <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-200">
           {/* Botón de renovación para suscripciones suspendidas o vencidas */}
           {(effectiveSubscription?.status === 'SUSPENDED' || effectiveSubscription?.status === 'OVERDUE') && (
@@ -754,10 +753,6 @@ const SubscriptionSection = ({ isSetupMode }) => {
                   try {
                     const result = await businessProfileApi.changeBusinessPlan(selectedPlanId);
                     alert(result.message || 'Plan cambiado correctamente');
-                    if (result.data && result.data.debug) {
-                      console.log('change-plan debug:', result.data.debug);
-                      // Debug info removed for production
-                    }
                     if (result.data && result.data.currentBusiness) {
                       try {
                         dispatch(setCurrentBusiness(result.data.currentBusiness));
