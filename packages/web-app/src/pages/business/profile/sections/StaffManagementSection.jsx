@@ -15,13 +15,16 @@ import {
   PhoneIcon,
   UserIcon,
   EyeIcon,
-  EyeSlashIcon
+  EyeSlashIcon,
+  InformationCircleIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { businessSpecialistsApi, businessBranchesApi, specialistServicesApi, businessServicesApi } from '@shared/api';
 import { usePermissions } from '@shared/hooks';
 import UpgradePlanModal from '../../../../components/common/UpgradePlanModal';
 import StaffKanbanBoard from '../../../../components/staff/StaffKanbanBoard.jsx';
 import PhoneInput from '../../../../components/PhoneInput';
+import ScheduleEditor from '../../../../components/schedule/ScheduleEditor';
 
 const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
   // Corrección: el estado en businessSlice se llama currentBusiness, not activeBusiness
@@ -1496,10 +1499,12 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
 // Componente para editar horarios de un especialista en una sucursal específica
 const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, businessHours }) => {
   const [schedules, setSchedules] = useState({});
+  const [allBranchesSchedules, setAllBranchesSchedules] = useState([]); // Horarios de todas las sucursales
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const daysOfWeek = [
     { key: 'monday', label: 'Lunes' },
@@ -1514,6 +1519,7 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
   // Cargar horarios existentes del especialista en esta sucursal
   useEffect(() => {
     loadSchedules();
+    loadAllBranchesSchedules();
   }, [specialistId, branch.id]);
 
   const loadSchedules = async () => {
@@ -1523,46 +1529,208 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
         specialistId: specialistId
       });
       
-      // Convertir array de horarios a objeto por día
+      // Convertir array de horarios a nueva estructura con shifts
       const schedulesByDay = {};
-      response.data.forEach(schedule => {
-        schedulesByDay[schedule.dayOfWeek] = {
-          id: schedule.id,
-          enabled: schedule.isActive,
-          startTime: schedule.startTime.substring(0, 5), // HH:MM
-          endTime: schedule.endTime.substring(0, 5)
-        };
+      
+      // Inicializar con estructura por defecto basada en horarios del negocio
+      daysOfWeek.forEach(({ key }) => {
+        const businessDay = businessHours?.[key];
+        
+        if (businessDay?.enabled && businessDay?.shifts?.length > 0) {
+          // Si el negocio tiene horarios con shifts, usar esa estructura como base
+          schedulesByDay[key] = {
+            enabled: false, // Por defecto deshabilitado para el especialista
+            shifts: []
+          };
+        } else if (businessDay && !businessDay.closed && businessDay.open) {
+          // Backward compatibility: convertir estructura antigua
+          schedulesByDay[key] = {
+            enabled: false,
+            shifts: [{
+              start: businessDay.open,
+              end: businessDay.close
+            }]
+          };
+        } else {
+          // Sin horarios del negocio, usar valores por defecto
+          schedulesByDay[key] = {
+            enabled: false,
+            shifts: []
+          };
+        }
       });
+      
+      // Aplicar horarios guardados del especialista
+      if (response.data && Array.isArray(response.data)) {
+        response.data.forEach(schedule => {
+          if (schedulesByDay[schedule.dayOfWeek]) {
+            schedulesByDay[schedule.dayOfWeek] = {
+              id: schedule.id,
+              enabled: schedule.isActive,
+              shifts: [{
+                start: schedule.startTime.substring(0, 5),
+                end: schedule.endTime.substring(0, 5)
+              }]
+            };
+          }
+        });
+      }
       
       setSchedules(schedulesByDay);
     } catch (err) {
       console.error('Error cargando horarios:', err);
-      // No mostrar error si no hay horarios aún
+      // Inicializar con valores por defecto si hay error
+      const defaultSchedules = {};
+      daysOfWeek.forEach(({ key }) => {
+        defaultSchedules[key] = {
+          enabled: false,
+          shifts: []
+        };
+      });
+      setSchedules(defaultSchedules);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDayToggle = (day) => {
-    setSchedules(prev => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        enabled: !prev[day]?.enabled,
-        startTime: prev[day]?.startTime || '09:00',
-        endTime: prev[day]?.endTime || '18:00'
+  // Cargar horarios del especialista de TODAS las sucursales
+  const loadAllBranchesSchedules = async () => {
+    try {
+      const response = await businessSpecialistsApi.getSpecialistSchedules(businessId, specialistId);
+      
+      // Agrupar por sucursal
+      const schedulesByBranch = {};
+      if (response.data && Array.isArray(response.data)) {
+        response.data.forEach(schedule => {
+          if (!schedulesByBranch[schedule.branchId]) {
+            schedulesByBranch[schedule.branchId] = {
+              branchId: schedule.branchId,
+              branchName: schedule.branch?.name || 'Sucursal',
+              schedules: []
+            };
+          }
+          schedulesByBranch[schedule.branchId].schedules.push({
+            day: schedule.dayOfWeek,
+            start: schedule.startTime.substring(0, 5),
+            end: schedule.endTime.substring(0, 5),
+            isActive: schedule.isActive
+          });
+        });
       }
-    }));
+      
+      setAllBranchesSchedules(Object.values(schedulesByBranch));
+    } catch (err) {
+      console.error('Error cargando horarios de todas las sucursales:', err);
+      setAllBranchesSchedules([]);
+    }
   };
 
-  const handleTimeChange = (day, field, value) => {
-    setSchedules(prev => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        [field]: value
+  const handleScheduleChange = (newSchedule) => {
+    setSchedules(newSchedule);
+  };
+
+  const parseTime = (timeStr) => {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  const checkTimeOverlap = (start1, end1, start2, end2) => {
+    const s1 = parseTime(start1);
+    const e1 = parseTime(end1);
+    const s2 = parseTime(start2);
+    const e2 = parseTime(end2);
+    
+    // Hay overlap si un turno empieza antes de que termine el otro
+    return s1 < e2 && s2 < e1;
+  };
+
+  const validateScheduleAgainstBusiness = () => {
+    const errors = [];
+    
+    Object.entries(schedules).forEach(([day, schedule]) => {
+      if (!schedule.enabled || !schedule.shifts?.length) return;
+      
+      const businessDay = businessHours?.[day];
+      const dayLabel = daysOfWeek.find(d => d.key === day)?.label;
+      
+      // Validar si el negocio está abierto ese día
+      if (!businessDay || businessDay.closed || (!businessDay.enabled && !businessDay.open)) {
+        errors.push(`${dayLabel}: El negocio está cerrado este día`);
+        return;
       }
-    }));
+      
+      // Obtener límites del negocio
+      let businessStart, businessEnd;
+      
+      if (businessDay.shifts && businessDay.shifts.length > 0) {
+        // Nueva estructura: encontrar el rango completo del negocio
+        businessStart = businessDay.shifts[0].start;
+        businessEnd = businessDay.shifts[businessDay.shifts.length - 1].end;
+      } else {
+        // Estructura antigua
+        businessStart = businessDay.open || '00:00';
+        businessEnd = businessDay.close || '23:59';
+      }
+      
+      const businessStartMin = parseTime(businessStart);
+      const businessEndMin = parseTime(businessEnd);
+      
+      // Validar cada turno del especialista
+      schedule.shifts.forEach((shift, idx) => {
+        const shiftStart = parseTime(shift.start);
+        const shiftEnd = parseTime(shift.end);
+        
+        if (shiftStart < businessStartMin) {
+          errors.push(`${dayLabel} - Turno ${idx + 1}: Inicia antes del horario del negocio (${businessStart})`);
+        }
+        
+        if (shiftEnd > businessEndMin) {
+          errors.push(`${dayLabel} - Turno ${idx + 1}: Termina después del horario del negocio (${businessEnd})`);
+        }
+      });
+    });
+    
+    return errors;
+  };
+
+  // Validar que no haya overlaps con otras sucursales
+  const validateScheduleAgainstOtherBranches = () => {
+    const errors = [];
+    
+    // Filtrar horarios de otras sucursales (no la actual)
+    const otherBranches = allBranchesSchedules.filter(b => b.branchId !== branch.id);
+    
+    if (otherBranches.length === 0) {
+      return errors; // No hay otras sucursales, no hay conflictos posibles
+    }
+    
+    Object.entries(schedules).forEach(([day, schedule]) => {
+      if (!schedule.enabled || !schedule.shifts?.length) return;
+      
+      const dayLabel = daysOfWeek.find(d => d.key === day)?.label;
+      
+      // eslint-disable-next-line no-unused-vars
+      schedule.shifts.forEach((shift, shiftIdx) => {
+        // Buscar conflictos en otras sucursales
+        otherBranches.forEach(otherBranch => {
+          const conflictingSchedule = otherBranch.schedules.find(s => 
+            s.day === day && 
+            s.isActive && 
+            checkTimeOverlap(shift.start, shift.end, s.start, s.end)
+          );
+          
+          if (conflictingSchedule) {
+            errors.push(
+              `${dayLabel} ${shift.start}-${shift.end}: Conflicto con ${otherBranch.branchName} ` +
+              `(${conflictingSchedule.start}-${conflictingSchedule.end}). ` +
+              `El especialista no puede estar en dos lugares al mismo tiempo.`
+            );
+          }
+        });
+      });
+    });
+    
+    return errors;
   };
 
   const handleSaveSchedules = async () => {
@@ -1571,9 +1739,21 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
     setSuccess(null);
 
     try {
+      // Validar contra horarios del negocio
+      const validationErrors = validateScheduleAgainstBusiness();
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join('\n'));
+      }
+
+      // Validar contra horarios de otras sucursales
+      const branchConflicts = validateScheduleAgainstOtherBranches();
+      if (branchConflicts.length > 0) {
+        throw new Error(branchConflicts.join('\n'));
+      }
+
       // Para cada día con horarios configurados
       for (const [day, schedule] of Object.entries(schedules)) {
-        if (!schedule.enabled) {
+        if (!schedule.enabled || !schedule.shifts || schedule.shifts.length === 0) {
           // Si existe y se deshabilitó, eliminarlo
           if (schedule.id) {
             await businessBranchesApi.deleteSpecialistSchedule(
@@ -1585,16 +1765,19 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
           continue;
         }
 
-        // Validar horarios
-        if (!schedule.startTime || !schedule.endTime) {
+        // Por ahora solo soportamos el primer turno (backward compatibility)
+        // TODO: En el futuro, el backend debería soportar múltiples turnos
+        const mainShift = schedule.shifts[0];
+        
+        if (!mainShift.start || !mainShift.end) {
           throw new Error(`Falta configurar horarios para ${daysOfWeek.find(d => d.key === day)?.label}`);
         }
 
         const scheduleData = {
           specialistId: specialistId,
           dayOfWeek: day,
-          startTime: schedule.startTime,
-          endTime: schedule.endTime,
+          startTime: mainShift.start,
+          endTime: mainShift.end,
           isActive: true
         };
 
@@ -1622,6 +1805,11 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
       }
 
       setSuccess('✅ Horarios guardados correctamente');
+      setIsEditing(false);
+      
+      // Recargar horarios de todas las sucursales para mantener validación actualizada
+      await loadAllBranchesSchedules();
+      
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Error guardando horarios:', err);
@@ -1629,6 +1817,11 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    loadSchedules(); // Recargar horarios originales
   };
 
   if (loading) {
@@ -1650,131 +1843,174 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
         <div className="flex items-center gap-3">
           <BuildingOfficeIcon className="h-5 w-5 text-blue-600" />
           <h5 className="font-medium text-gray-900">{branch.name}</h5>
+          {branch.code && (
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              {branch.code}
+            </span>
+          )}
         </div>
-        {branch.code && (
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-            {branch.code}
-          </span>
+        
+        {!isEditing ? (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+          >
+            <PencilIcon className="h-4 w-4" />
+            Editar Horarios
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={handleCancelEdit}
+              className="bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSaveSchedules}
+              disabled={saving}
+              className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium"
+            >
+              {saving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <CheckCircleIcon className="h-4 w-4" />
+                  Guardar
+                </>
+              )}
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Horarios del negocio (referencia) */}
-      {businessHours && (
-        <div className="bg-gray-50 rounded-lg p-3 mb-4">
-          <p className="text-xs text-gray-600 font-medium mb-2">
-            ℹ️ Horario de operación del negocio:
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-            {daysOfWeek.map(day => {
-              const dayHours = businessHours?.[day.key];
-              return (
-                <div key={day.key} className="text-gray-700">
-                  <span className="font-medium">{day.label}:</span>{' '}
-                  {dayHours?.closed ? (
-                    <span className="text-gray-400">Cerrado</span>
-                  ) : (
-                    <span>{dayHours?.open || '09:00'} - {dayHours?.close || '18:00'}</span>
-                  )}
-                </div>
-              );
-            })}
+      {/* Info del horario del negocio */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <div className="flex items-start gap-3">
+          <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h6 className="text-sm font-semibold text-blue-900 mb-2">
+              📋 Horario de Operación del Negocio
+            </h6>
+            <p className="text-xs text-blue-700 mb-3">
+              El especialista debe configurar sus horarios dentro de estos límites. Los breaks del negocio se muestran como referencia.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {daysOfWeek.map(day => {
+                const dayHours = businessHours?.[day.key];
+                const hasShifts = dayHours?.shifts && dayHours.shifts.length > 0;
+                const isClosed = dayHours?.closed || (!dayHours?.enabled && !dayHours?.open);
+                
+                return (
+                  <div key={day.key} className="bg-white rounded px-2 py-1.5 text-xs">
+                    <span className="font-semibold text-gray-900">{day.label}:</span>{' '}
+                    {isClosed ? (
+                      <span className="text-gray-400">Cerrado</span>
+                    ) : hasShifts ? (
+                      <div className="mt-1 space-y-1">
+                        {dayHours.shifts.map((shift, idx) => (
+                          <div key={idx} className="text-gray-700">
+                            {shift.start} - {shift.end}
+                            {shift.breakStart && shift.breakEnd && (
+                              <span className="text-amber-600 block text-[10px]">
+                                ☕ Break {shift.breakStart}-{shift.breakEnd}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-700">
+                        {dayHours?.open || '09:00'} - {dayHours?.close || '18:00'}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Nuevo ScheduleEditor para el especialista */}
+      <ScheduleEditor
+        initialSchedule={schedules}
+        onChange={handleScheduleChange}
+        readOnly={!isEditing}
+        showTemplates={false}
+        compactMode={true}
+      />
+
+      {/* Alerta de otras sucursales configuradas */}
+      {allBranchesSchedules.filter(b => b.branchId !== branch.id).length > 0 && (
+        <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <BuildingOfficeIcon className="h-4 w-4 text-purple-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-xs text-purple-800">
+                <strong>💼 Otras sucursales configuradas:</strong>
+              </p>
+              <div className="mt-2 space-y-1">
+                {allBranchesSchedules
+                  .filter(b => b.branchId !== branch.id)
+                  .map(otherBranch => (
+                    <div key={otherBranch.branchId} className="text-xs text-purple-700">
+                      <strong>{otherBranch.branchName}:</strong>
+                      {otherBranch.schedules.filter(s => s.isActive).map((s, idx) => {
+                        const dayLabel = daysOfWeek.find(d => d.key === s.day)?.label;
+                        return (
+                          <span key={idx} className="ml-1">
+                            {idx > 0 && ', '}
+                            {dayLabel} {s.start}-{s.end}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Configuración de horarios */}
-      <div className="space-y-3">
-        {daysOfWeek.map(day => {
-          const daySchedule = schedules[day.key] || {};
-          const businessDayHours = businessHours?.[day.key];
-          const isBusinessClosed = businessDayHours?.closed;
-
-          return (
-            <div
-              key={day.key}
-              className={`flex items-center gap-4 p-3 rounded-lg border ${
-                daySchedule.enabled
-                  ? 'bg-blue-50 border-blue-200'
-                  : 'bg-gray-50 border-gray-200'
-              }`}
-            >
-              {/* Checkbox para habilitar día */}
-              <label className="flex items-center gap-2 cursor-pointer min-w-[120px]">
-                <input
-                  type="checkbox"
-                  checked={daySchedule.enabled || false}
-                  onChange={() => handleDayToggle(day.key)}
-                  disabled={isBusinessClosed}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className={`font-medium ${daySchedule.enabled ? 'text-blue-900' : 'text-gray-600'}`}>
-                  {day.label}
-                </span>
-              </label>
-
-              {/* Inputs de hora */}
-              {daySchedule.enabled ? (
-                <div className="flex items-center gap-2 flex-1">
-                  <input
-                    type="time"
-                    value={daySchedule.startTime || '09:00'}
-                    onChange={(e) => handleTimeChange(day.key, 'startTime', e.target.value)}
-                    min={businessDayHours?.open || '00:00'}
-                    max={daySchedule.endTime || businessDayHours?.close || '23:59'}
-                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-gray-500">-</span>
-                  <input
-                    type="time"
-                    value={daySchedule.endTime || '18:00'}
-                    onChange={(e) => handleTimeChange(day.key, 'endTime', e.target.value)}
-                    min={daySchedule.startTime || businessDayHours?.open || '00:00'}
-                    max={businessDayHours?.close || '23:59'}
-                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              ) : (
-                <span className="text-sm text-gray-400 flex-1">
-                  {isBusinessClosed ? 'Negocio cerrado este día' : 'No atiende este día'}
-                </span>
-              )}
+      {/* Nota adicional */}
+      {isEditing && (
+        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <ExclamationTriangleIcon className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-800">
+              <p className="mb-2">
+                <strong>⚠️ Validaciones automáticas:</strong>
+              </p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Los horarios deben estar dentro del horario de operación del negocio</li>
+                {allBranchesSchedules.filter(b => b.branchId !== branch.id).length > 0 && (
+                  <li><strong>No puede haber horarios solapados entre sucursales</strong> (el especialista no puede estar en dos lugares a la vez)</li>
+                )}
+              </ul>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        </div>
+      )}
 
       {/* Mensajes */}
       {success && (
-        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800 flex items-center gap-2">
+          <CheckCircleIcon className="h-5 w-5 flex-shrink-0" />
           {success}
         </div>
       )}
       {error && (
         <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
-          {error}
+          <div className="flex items-start gap-2">
+            <ExclamationTriangleIcon className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="whitespace-pre-line">{error}</div>
+          </div>
         </div>
       )}
-
-      {/* Botón guardar */}
-      <div className="mt-4 flex justify-end">
-        <button
-          onClick={handleSaveSchedules}
-          disabled={saving}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-        >
-          {saving ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              Guardando...
-            </>
-          ) : (
-            <>
-              <CheckCircleIcon className="h-4 w-4" />
-              Guardar Horarios
-            </>
-          )}
-        </button>
-      </div>
     </div>
   );
 };
