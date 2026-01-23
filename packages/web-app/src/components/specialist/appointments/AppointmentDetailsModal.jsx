@@ -163,34 +163,9 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
   };
 
   const handleStart = async () => {
-    try {
-      setActionLoading('start');
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentDetails.id}/status`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            status: 'IN_PROGRESS',
-            businessId: businessId
-          })
-        }
-      );
-
-      if (!response.ok) throw new Error('Error iniciando turno');
-
-      const data = await response.json();
-      setAppointmentDetails(prev => ({ ...prev, status: 'IN_PROGRESS' }));
-      toast.success('✅ Turno iniciado');
-      onUpdate();
-    } catch (error) {
-      toast.error(error.message || 'No se pudo iniciar el turno');
-    } finally {
-      setActionLoading(null);
-    }
+    // Abrir workflow modal para validar consentimiento, fotos y arrancar
+    setWorkflowAction('start');
+    setShowWorkflowModal(true);
   };
 
   const handleUploadBeforePhoto = () => {
