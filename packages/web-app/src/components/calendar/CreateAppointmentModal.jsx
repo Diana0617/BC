@@ -275,11 +275,13 @@ const CreateAppointmentModal = ({
 
   // Cargar slots cuando cambien los parámetros relevantes
   useEffect(() => {
+    // Limpiar slot seleccionado cuando cambian los parámetros
+    setSelectedSlot(null)
+    
     if (formData.branchId && formData.specialistId && formData.date && selectedServices.length > 0) {
       loadAvailableSlots()
     } else {
       setAvailableSlots([])
-      setSelectedSlot(null)
     }
   }, [formData.branchId, formData.specialistId, formData.date, selectedServices, loadAvailableSlots])
 
