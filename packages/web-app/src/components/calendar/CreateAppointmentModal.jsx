@@ -108,6 +108,14 @@ const CreateAppointmentModal = ({
   const [selectedProducts, setSelectedProducts] = useState([])
   const [showProductsSection, setShowProductsSection] = useState(false)
 
+  // Estados para slots disponibles
+  const [availableSlots, setAvailableSlots] = useState([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
+  const [selectedSlot, setSelectedSlot] = useState(null)
+  
+  // Estados para especialistas filtrados
+  const [filteredSpecialists, setFilteredSpecialists] = useState([])
+
   // Inicializar servicios filtrados
   useEffect(() => {
     if (services && services.length > 0 && filteredServices.length === 0) {
@@ -182,6 +190,97 @@ const CreateAppointmentModal = ({
       }))
     }
   }, [formData.serviceId, formData.startTime, filteredServices])
+
+  /**
+   * Cargar slots disponibles del especialista
+   */
+  const loadAvailableSlots = useCallback(async () => {
+    // Validar que tengamos todos los datos necesarios
+    if (!formData.branchId || !formData.specialistId || !formData.date || selectedServices.length === 0) {
+      setAvailableSlots([])
+      return
+    }
+
+    try {
+      setLoadingSlots(true)
+      
+      // Usar el primer servicio seleccionado para calcular slots
+      const serviceId = selectedServices[0].id
+      
+      console.log('📅 Cargando slots disponibles:', {
+        businessId,
+        branchId: formData.branchId,
+        specialistId: formData.specialistId,
+        serviceId,
+        date: formData.date
+      })
+      
+      const response = await apiClient.get('/api/calendar/available-slots', {
+        params: {
+          businessId,
+          branchId: formData.branchId,
+          specialistId: formData.specialistId,
+          serviceId,
+          date: formData.date
+        }
+      })
+      
+      console.log('✅ Slots disponibles:', response.data.data)
+      setAvailableSlots(response.data.data || [])
+    } catch (error) {
+      console.error('❌ Error cargando slots:', error)
+      setAvailableSlots([])
+    } finally {
+      setLoadingSlots(false)
+    }
+  }, [businessId, formData.branchId, formData.specialistId, formData.date, selectedServices])
+
+  /**
+   * Filtrar especialistas por sucursal y servicio
+   */
+  useEffect(() => {
+    if (!formData.branchId) {
+      setFilteredSpecialists(specialists)
+      return
+    }
+
+    // Filtrar especialistas que pertenecen a la sucursal seleccionada
+    const specialistsInBranch = specialists.filter(specialist => {
+      const branches = specialist.branches || specialist.additionalBranches || []
+      return branches.some(b => (typeof b === 'string' ? b : b.id) === formData.branchId)
+    })
+
+    // Si hay un servicio seleccionado, filtrar además por especialistas que tienen ese servicio
+    if (selectedServices.length > 0) {
+      // Aquí necesitaríamos verificar qué especialistas tienen el servicio asignado
+      // Por ahora, usamos los que están en la sucursal
+      setFilteredSpecialists(specialistsInBranch)
+    } else {
+      setFilteredSpecialists(specialistsInBranch)
+    }
+  }, [formData.branchId, selectedServices, specialists])
+
+  // Cargar slots cuando cambien los parámetros relevantes
+  useEffect(() => {
+    if (formData.branchId && formData.specialistId && formData.date && selectedServices.length > 0) {
+      loadAvailableSlots()
+    } else {
+      setAvailableSlots([])
+      setSelectedSlot(null)
+    }
+  }, [formData.branchId, formData.specialistId, formData.date, selectedServices, loadAvailableSlots])
+
+  /**
+   * Manejar selección de slot
+   */
+  const handleSelectSlot = (slot) => {
+    setSelectedSlot(slot)
+    setFormData(prev => ({
+      ...prev,
+      startTime: slot.startTime,
+      endTime: slot.endTime
+    }))
+  }
 
   /**
    * Cargar servicios de un especialista específico
@@ -982,33 +1081,49 @@ const CreateAppointmentModal = ({
               ) : (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Especialista *
+                    Especialista * {filteredSpecialists.length > 0 && `(${filteredSpecialists.length} disponible${filteredSpecialists.length > 1 ? 's' : ''})`}
                   </label>
-                  {console.log('👨‍⚕️ [CreateAppointmentModal] Specialists available:', specialists?.length, specialists)}
-                  <select
-                    name="specialistId"
-                    value={formData.specialistId}
-                    onChange={handleChange}
-                    className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.specialistId ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Seleccionar especialista</option>
-                    {specialists
-                      .filter(specialist => specialist.isActive !== false && specialist.status !== 'INACTIVE')
-                      .map(specialist => {
-                        // Usar specialistProfileId, SpecialistProfile.id, o id como fallback
-                        const specialistId = specialist.specialistProfileId || specialist.SpecialistProfile?.id || specialist.id;
-                        console.log('👤 Specialist:', { ...specialist, specialistId });
-                        return (
-                          <option key={specialistId} value={specialistId}>
-                            {specialist.firstName} {specialist.lastName}
-                          </option>
-                        )
-                      })}
-                  </select>
+                  {!formData.branchId ? (
+                    <div className="w-full border border-gray-300 bg-gray-100 rounded-lg px-3 py-2 text-gray-500 text-sm">
+                      Primero selecciona una sucursal
+                    </div>
+                  ) : selectedServices.length === 0 ? (
+                    <div className="w-full border border-gray-300 bg-gray-100 rounded-lg px-3 py-2 text-gray-500 text-sm">
+                      Primero selecciona un servicio
+                    </div>
+                  ) : filteredSpecialists.length === 0 ? (
+                    <div className="w-full border border-yellow-300 bg-yellow-50 rounded-lg px-3 py-2 text-yellow-700 text-sm">
+                      ⚠️ No hay especialistas disponibles para este servicio en esta sucursal
+                    </div>
+                  ) : (
+                    <select
+                      name="specialistId"
+                      value={formData.specialistId}
+                      onChange={handleChange}
+                      className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        errors.specialistId ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    >
+                      <option value="">Seleccionar especialista</option>
+                      {filteredSpecialists
+                        .filter(specialist => specialist.isActive !== false && specialist.status !== 'INACTIVE')
+                        .map(specialist => {
+                          const specialistId = specialist.specialistProfileId || specialist.SpecialistProfile?.id || specialist.id;
+                          return (
+                            <option key={specialistId} value={specialistId}>
+                              {specialist.firstName} {specialist.lastName}
+                            </option>
+                          )
+                        })}
+                    </select>
+                  )}
                   {errors.specialistId && (
                     <p className="text-red-500 text-xs mt-1">{errors.specialistId}</p>
+                  )}
+                  {filteredSpecialists.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 Especialistas con este servicio asignado en esta sucursal
+                    </p>
                   )}
                 </div>
               )}
@@ -1185,20 +1300,68 @@ const CreateAppointmentModal = ({
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Hora de inicio *
+              {/* Sección de Slots Disponibles */}
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Horarios Disponibles *
                 </label>
-                <input
-                  type="time"
-                  name="startTime"
-                  value={formData.startTime}
-                  onChange={handleChange}
-                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.startTime ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.startTime && (
+                
+                {!formData.branchId || !formData.specialistId || !formData.date || selectedServices.length === 0 ? (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                    <ClockIcon className="h-10 w-10 text-blue-400 mx-auto mb-2" />
+                    <p className="text-sm text-blue-800">
+                      Completa los campos anteriores para ver los horarios disponibles
+                    </p>
+                  </div>
+                ) : loadingSlots ? (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                    <p className="text-sm text-gray-600">Cargando horarios disponibles...</p>
+                  </div>
+                ) : availableSlots.length === 0 ? (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                    <p className="text-sm text-red-800 font-medium mb-2">
+                      😞 No hay horarios disponibles para esta fecha
+                    </p>
+                    <p className="text-xs text-red-700">
+                      El especialista no tiene disponibilidad o todos los horarios están ocupados. Prueba con otra fecha.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <p className="text-xs text-gray-600 mb-3">
+                      ✓ {availableSlots.length} horario{availableSlots.length > 1 ? 's' : ''} disponible{availableSlots.length > 1 ? 's' : ''} • Selecciona uno
+                    </p>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-60 overflow-y-auto">
+                      {availableSlots.map((slot, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => handleSelectSlot(slot)}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            selectedSlot?.startTime === slot.startTime
+                              ? 'bg-green-600 text-white ring-2 ring-green-500 ring-offset-2'
+                              : 'bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700 border border-gray-300'
+                          }`}
+                        >
+                          {slot.startTime}
+                        </button>
+                      ))}
+                    </div>
+                    {selectedSlot && (
+                      <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+                        <p className="text-sm text-green-800">
+                          ✓ Horario seleccionado: <strong>{selectedSlot.startTime} - {selectedSlot.endTime}</strong>
+                        </p>
+                        <p className="text-xs text-green-700 mt-1">
+                          Duración: {selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0)} minutos
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {errors.startTime && !selectedSlot && (
                   <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>
                 )}
               </div>

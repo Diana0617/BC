@@ -561,9 +561,14 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   )
 
   // Renderizado de selector de sucursal (solo si tiene multisucursal o más de 1 sucursal)
-  const renderBranchSelector = () => {
-    // No mostrar selector si solo hay una sucursal y no tiene módulo multisucursal
-    if (!hasMultiBranch && branches.length <= 1) {
+  const renderBranchSelector = (forceShow = false) => {
+    // En la pestaña de turnos, siempre mostrar el selector si hay sucursales
+    // En la pestaña de horarios, solo mostrar si tiene multisucursal o más de 1 sucursal
+    if (!forceShow && !hasMultiBranch && branches.length <= 1) {
+      return null
+    }
+    
+    if (branches.length === 0) {
       return null
     }
     
@@ -713,7 +718,7 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   // Renderizado de tab de turnos
   const renderTurnosTab = () => (
     <div className="space-y-6">
-      {renderBranchSelector()}
+      {renderBranchSelector(true)}
 
       {/* Mensaje si no hay sucursal seleccionada */}
       {!selectedBranch && branches.length === 0 && (
@@ -754,6 +759,9 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
             {/* Botón Crear Turno */}
             <button
               onClick={() => {
+                console.log('🔘 Abriendo modal con branches:', branches);
+                console.log('🔘 Specialists:', specialists);
+                console.log('🔘 Services:', services);
                 setCreateModalData({ 
                   date: new Date().toISOString().split('T')[0],
                   branchId: selectedBranch?.id 
@@ -792,9 +800,9 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-3 text-gray-600">Cargando turnos...</span>
           </div>
-        ) : calendarAppointments && calendarAppointments.length > 0 ? (
+        ) : (
           <div className="space-y-4">
-            {/* FullCalendar View */}
+            {/* FullCalendar View - Siempre visible para poder crear turnos */}
             <FullCalendarView
               appointments={calendarAppointments}
               initialDate={currentMonth}
@@ -832,12 +840,21 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
             
             {/* Contador de citas y leyenda de colores */}
             <div className="space-y-3">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-700">
-                  📅 {calendarAppointments.length} cita{calendarAppointments.length !== 1 ? 's' : ''} encontrada{calendarAppointments.length !== 1 ? 's' : ''} en este período
-                  {selectedBranch && ` en ${selectedBranch.name}`}
-                </p>
-              </div>
+              {calendarAppointments && calendarAppointments.length > 0 ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-700">
+                    📅 {calendarAppointments.length} cita{calendarAppointments.length !== 1 ? 's' : ''} encontrada{calendarAppointments.length !== 1 ? 's' : ''} en este período
+                    {selectedBranch && ` en ${selectedBranch.name}`}
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-600">
+                    📅 No hay citas programadas en este período. Haz click en una fecha del calendario para crear una.
+                    {selectedBranch && ` (Sucursal: ${selectedBranch.name})`}
+                  </p>
+                </div>
+              )}
               
               {/* Leyenda de colores cuando se muestran todas las sucursales */}
               {!selectedBranch && branches.length > 1 && (
@@ -856,20 +873,6 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Vista vacía */}
-            <div className="text-center text-gray-500 py-12">
-              <CalendarDaysIcon className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-              <p className="text-lg font-medium">No hay citas programadas</p>
-              <p className="text-sm mt-2">
-                {selectedBranch 
-                  ? `No hay citas en ${selectedBranch.name} para este período`
-                  : 'No hay citas programadas en ninguna sucursal para este período'
-                }
-              </p>
             </div>
           </div>
         )}
