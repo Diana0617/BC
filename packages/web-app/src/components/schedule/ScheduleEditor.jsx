@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
   ClockIcon,
   PlusIcon,
@@ -42,15 +42,45 @@ const ScheduleEditor = ({
     }
   })
 
-  const [expandedDays, setExpandedDays] = useState({
-    monday: true,
-    tuesday: false,
-    wednesday: false,
-    thursday: false,
-    friday: false,
-    saturday: false,
-    sunday: false
+  const [expandedDays, setExpandedDays] = useState(() => {
+    // Expandir automáticamente los días que tienen horarios configurados
+    const expanded = {}
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+    
+    days.forEach(day => {
+      const daySchedule = initialSchedule?.[day]
+      // Expandir si el día está habilitado y tiene turnos
+      expanded[day] = daySchedule?.enabled && daySchedule?.shifts?.length > 0
+    })
+    
+    // Si ningún día está expandido, expandir el lunes por defecto
+    const hasAnyExpanded = Object.values(expanded).some(v => v)
+    if (!hasAnyExpanded) {
+      expanded.monday = true
+    }
+    
+    return expanded
   })
+
+  // Sincronizar con initialSchedule cuando cambie (por ejemplo, después de cargar desde el backend)
+  useEffect(() => {
+    if (initialSchedule && Object.keys(initialSchedule).length > 0) {
+      const defaultDay = {
+        enabled: false,
+        shifts: []
+      }
+      
+      setWeekSchedule({
+        monday: initialSchedule?.monday || defaultDay,
+        tuesday: initialSchedule?.tuesday || defaultDay,
+        wednesday: initialSchedule?.wednesday || defaultDay,
+        thursday: initialSchedule?.thursday || defaultDay,
+        friday: initialSchedule?.friday || defaultDay,
+        saturday: initialSchedule?.saturday || defaultDay,
+        sunday: initialSchedule?.sunday || defaultDay
+      })
+    }
+  }, [initialSchedule])
 
   const daysOfWeek = [
     { key: 'monday', label: 'Lunes', short: 'Lun', emoji: '📅' },
