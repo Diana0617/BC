@@ -1332,13 +1332,20 @@ const CreateAppointmentModal = ({
                     <p className="text-sm text-gray-600">Cargando horarios disponibles...</p>
                   </div>
                 ) : availableSlots.length === 0 ? (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                    <p className="text-sm text-red-800 font-medium mb-2">
-                      😞 No hay horarios disponibles para esta fecha
-                    </p>
-                    <p className="text-xs text-red-700">
-                      El especialista no tiene disponibilidad o todos los horarios están ocupados. Prueba con otra fecha.
-                    </p>
+                  <div className="bg-orange-50 border border-orange-300 rounded-lg p-4">
+                    <div className="flex items-start">
+                      <svg className="h-5 w-5 text-orange-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-semibold text-orange-800 mb-1">
+                          No hay horarios disponibles
+                        </p>
+                        <p className="text-sm text-orange-700">
+                          El especialista no trabaja este día en esta sucursal. Por favor, selecciona otra fecha.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -1451,8 +1458,9 @@ const CreateAppointmentModal = ({
             </button>
             <button
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !selectedSlot}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!selectedSlot ? 'Debes seleccionar un horario disponible' : ''}
             >
               {isSubmitting ? 'Creando...' : 'Crear Cita'}
             </button>
