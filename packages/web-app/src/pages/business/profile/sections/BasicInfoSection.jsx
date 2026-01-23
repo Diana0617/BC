@@ -86,7 +86,9 @@ const BasicInfoSection = ({ isSetupMode, onComplete, isCompleted }) => {
     { value: 'SPA', label: 'Spa' },
     { value: 'NAIL_SALON', label: 'Salón de Uñas' },
     { value: 'AESTHETIC_CENTER', label: 'Centro Estético' },
-    { value: 'PET_CENTER', label: 'Centro de Cuidado de Mascotas' }
+    { value: 'PET_CENTER', label: 'Centro de Cuidado de Mascotas' },
+    { value: 'MEDICAL_OFFICE', label: 'Consultorio Médico' },
+    { value: 'DENTAL_OFFICE', label: 'Consultorio Odontológico' }
   ]
 
   const timezones = [

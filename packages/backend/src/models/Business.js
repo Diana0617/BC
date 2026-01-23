@@ -64,6 +64,20 @@ const Business = sequelize.define('Business', {
       isUrl: true
     }
   },
+  type: {
+    type: DataTypes.ENUM(
+      'BEAUTY_SALON',
+      'BARBERSHOP',
+      'SPA',
+      'NAIL_SALON',
+      'AESTHETIC_CENTER',
+      'PET_CENTER',
+      'MEDICAL_OFFICE',
+      'DENTAL_OFFICE'
+    ),
+    allowNull: true,
+    comment: 'Tipo de negocio/establecimiento'
+  },
   subdomain: {
     type: DataTypes.STRING,
     allowNull: true, // Opcional por ahora, se activará en producción
