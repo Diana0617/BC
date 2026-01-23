@@ -66,6 +66,12 @@ class AvailabilityService {
       }
 
       // 4. Obtener horario del especialista para ese día/sucursal
+      console.log('🔍 Buscando horario del especialista:', {
+        specialistId,
+        branchId,
+        dayOfWeek
+      });
+
       const specialistSchedule = await SpecialistBranchSchedule.findOne({
         where: {
           specialistId,
@@ -87,11 +93,35 @@ class AvailabilityService {
         ]
       });
 
-      if (!specialistSchedule) {
+      console.log('📋 Horario del especialista encontrado:', specialistSchedule ? {
+        id: specialistSchedule.id,
+        startTime: specialistSchedule.startTime,
+        endTime: specialistSchedule.endTime,
+        dayOfWeek: specialistSchedule.dayOfWeek
+      } : null);
+
+      // Si no hay horario específico del especialista, usar horarios de la sucursal
+      // Esto permite que los especialistas trabajen en los horarios de la sucursal por defecto
+      let workingHours = {
+        startTime: branchHours.open,
+        endTime: branchHours.close
+      };
+
+      // Si el especialista tiene horarios configurados, usarlos
+      if (specialistSchedule && specialistSchedule.startTime && specialistSchedule.endTime) {
+        workingHours.startTime = specialistSchedule.startTime;
+        workingHours.endTime = specialistSchedule.endTime;
+      }
+
+      console.log('⏰ Horarios de trabajo a usar:', workingHours);
+
+      // Validar que los horarios estén definidos
+      if (!workingHours.startTime || !workingHours.endTime) {
+        console.warn('⚠️ Horarios no configurados correctamente');
         return {
           date,
           dayOfWeek,
-          message: 'El especialista no trabaja este día en esta sucursal',
+          message: 'Horarios no configurados correctamente',
           slots: []
         };
       }
@@ -112,8 +142,8 @@ class AvailabilityService {
 
       // 6. Calcular intersección de horarios (lo más restrictivo)
       // El especialista solo puede trabajar cuando AMBOS están disponibles
-      const workStartTime = this.maxTime(branchHours.open, specialistSchedule.startTime);
-      const workEndTime = this.minTime(branchHours.close, specialistSchedule.endTime);
+      const workStartTime = this.maxTime(branchHours.open, workingHours.startTime);
+      const workEndTime = this.minTime(branchHours.close, workingHours.endTime);
 
       // Validar que hay horario disponible
       if (this.parseTime(workStartTime) >= this.parseTime(workEndTime)) {
@@ -164,6 +194,15 @@ class AvailabilityService {
       // 10. Filtrar solo slots disponibles
       const availableSlots = slotsWithAvailability.filter(slot => slot.available);
 
+      // Obtener información del especialista para la respuesta
+      const specialistInfo = await SpecialistProfile.findByPk(specialistId, {
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName']
+        }]
+      });
+
       return {
         date,
         dayOfWeek,
@@ -173,11 +212,12 @@ class AvailabilityService {
           hours: branchHours
         },
         specialist: {
-          id: specialistSchedule.specialist.id,
-          name: `${specialistSchedule.specialist.firstName} ${specialistSchedule.specialist.lastName}`,
+          id: specialistInfo.id,
+          name: `${specialistInfo.user.firstName} ${specialistInfo.user.lastName}`,
           schedule: {
-            startTime: specialistSchedule.startTime,
-            endTime: specialistSchedule.endTime
+            startTime: workingHours.startTime,
+            endTime: workingHours.endTime,
+            source: specialistSchedule ? 'specialist_custom' : 'branch_default'
           }
         },
         service: {
