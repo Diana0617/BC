@@ -229,18 +229,33 @@ const CreateAppointmentModal = ({
       
       // Manejar diferentes formatos de respuesta
       let slots = []
+      
+      console.log('🔍 Verificando formato de respuesta:', {
+        'response.data.data existe': !!response.data.data,
+        'response.data.data.slots existe': !!response.data.data?.slots,
+        'response.data.data.slots es array': Array.isArray(response.data.data?.slots),
+        'tipo de response.data.data': typeof response.data.data,
+        'tipo de response.data.data.slots': typeof response.data.data?.slots
+      })
+      
       if (response.data.data?.slots && Array.isArray(response.data.data.slots)) {
         // Formato: { success, data: { slots: [...] } }
+        console.log('✅ Usando formato: data.slots')
         slots = response.data.data.slots
       } else if (response.data.data && Array.isArray(response.data.data)) {
         // Formato: { success, data: [...] }
+        console.log('✅ Usando formato: data como array')
         slots = response.data.data
       } else if (response.data.slots && Array.isArray(response.data.slots)) {
         // Formato: { slots: [...] }
+        console.log('✅ Usando formato: slots directo')
         slots = response.data.slots
       } else if (Array.isArray(response.data)) {
         // Formato: [...]
+        console.log('✅ Usando formato: data es array')
         slots = response.data
+      } else {
+        console.warn('⚠️ Formato de respuesta no reconocido')
       }
       
       console.log('✅ Slots disponibles procesados:', slots)
