@@ -1125,6 +1125,7 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
             specialistId={editingSpecialist.id}
             businessId={activeBusiness.id}
             businessHours={activeBusiness.businessHours}
+            allBranches={specialistBranches}
           />
         ))}
       </div>
@@ -1497,7 +1498,7 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
 };
 
 // Componente para editar horarios de un especialista en una sucursal específica
-const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, businessHours }) => {
+const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, businessHours, allBranches = [] }) => {
   const [schedules, setSchedules] = useState({});
   const [allBranchesSchedules, setAllBranchesSchedules] = useState([]); // Horarios de todas las sucursales
   const [loading, setLoading] = useState(false);
@@ -1596,15 +1597,10 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
   // Cargar horarios del especialista de TODAS las sucursales
   const loadAllBranchesSchedules = async () => {
     try {
-      // Obtener las sucursales del especialista a través del editingSpecialist
-      // que debería tener la información de branches
-      const specialistBranches = await businessSpecialistsApi.getSpecialist(businessId, specialistId);
-      const branches = specialistBranches.data?.branches || [];
-      
-      // Cargar horarios de cada sucursal
+      // Usar las sucursales pasadas como prop
       const schedulesByBranch = [];
       
-      for (const branchData of branches) {
+      for (const branchData of allBranches) {
         try {
           const response = await businessBranchesApi.getBranchSchedules(businessId, branchData.id, {
             specialistId: specialistId
