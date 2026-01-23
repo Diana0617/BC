@@ -530,6 +530,7 @@ class AppointmentController {
             lastName,
             email: clientEmail,
             phone: clientPhone || null,
+            businessId: businessId, // CRÍTICO: Asignar businessId al cliente
             status: 'ACTIVE'
           });
 
