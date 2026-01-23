@@ -29,6 +29,7 @@ import appointmentApi from '@shared/api/appointmentApi'
 import FullCalendarView from '../../../../components/calendar/FullCalendarView'
 import AppointmentDetailsModal from '../../../../components/specialist/appointments/AppointmentDetailsModal'
 import CreateAppointmentModal from '../../../../components/calendar/CreateAppointmentModal'
+import ScheduleEditor from '../../../../components/schedule/ScheduleEditor'
 import { localToUTC } from '../../../../utils/timezone'
 
 const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
@@ -78,16 +79,16 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   // Estado para código QR
   const [qrCodeUrl, setQrCodeUrl] = useState('')
 
-  // Estado para edición de horarios
+  // Estado para edición de horarios (estructura backend)
   const [editingSchedule, setEditingSchedule] = useState(null)
   const [weekSchedule, setWeekSchedule] = useState({
-    monday: { isOpen: true, startTime: '09:00', endTime: '18:00' },
-    tuesday: { isOpen: true, startTime: '09:00', endTime: '18:00' },
-    wednesday: { isOpen: true, startTime: '09:00', endTime: '18:00' },
-    thursday: { isOpen: true, startTime: '09:00', endTime: '18:00' },
-    friday: { isOpen: true, startTime: '09:00', endTime: '18:00' },
-    saturday: { isOpen: true, startTime: '09:00', endTime: '14:00' },
-    sunday: { isOpen: false, startTime: '09:00', endTime: '18:00' }
+    monday: { enabled: true, shifts: [{ start: '09:00', end: '18:00' }] },
+    tuesday: { enabled: true, shifts: [{ start: '09:00', end: '18:00' }] },
+    wednesday: { enabled: true, shifts: [{ start: '09:00', end: '18:00' }] },
+    thursday: { enabled: true, shifts: [{ start: '09:00', end: '18:00' }] },
+    friday: { enabled: true, shifts: [{ start: '09:00', end: '18:00' }] },
+    saturday: { enabled: true, shifts: [{ start: '09:00', end: '14:00' }] },
+    sunday: { enabled: false, shifts: [] }
   })
 
   const daysOfWeek = useMemo(() => [
@@ -214,18 +215,26 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
         
         daysOfWeek.forEach(({ key }) => {
           const dayData = hours[key]
-          if (dayData) {
+          if (dayData && dayData.shifts && Array.isArray(dayData.shifts)) {
+            // Nueva estructura con shifts array
             newSchedule[key] = {
-              isOpen: !dayData.closed && dayData.open && dayData.close,
-              startTime: dayData.open || '09:00',
-              endTime: dayData.close || '18:00'
+              enabled: dayData.enabled ?? true,
+              shifts: dayData.shifts
+            }
+          } else if (dayData && (dayData.open || dayData.startTime)) {
+            // Migrar estructura antigua a nueva (backward compatibility)
+            newSchedule[key] = {
+              enabled: dayData.isOpen ?? (!dayData.closed),
+              shifts: [{
+                start: dayData.open || dayData.startTime || '09:00',
+                end: dayData.close || dayData.endTime || '18:00'
+              }]
             }
           } else {
             // Valores por defecto si no hay datos
             newSchedule[key] = {
-              isOpen: key !== 'sunday',
-              startTime: '09:00',
-              endTime: '18:00'
+              enabled: key !== 'sunday',
+              shifts: key !== 'sunday' ? [{ start: '09:00', end: '18:00' }] : []
             }
           }
         })
@@ -238,9 +247,8 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
         const defaultSchedule = {}
         daysOfWeek.forEach(({ key }) => {
           defaultSchedule[key] = {
-            isOpen: key !== 'sunday',
-            startTime: '09:00',
-            endTime: '18:00'
+            enabled: key !== 'sunday',
+            shifts: key !== 'sunday' ? [{ start: '09:00', end: '18:00' }] : []
           }
         })
         setWeekSchedule(defaultSchedule)
@@ -416,42 +424,18 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   }
 
   // Handlers de edición de horarios
-  const handleToggleDay = (dayKey) => {
-    setWeekSchedule(prev => ({
-      ...prev,
-      [dayKey]: {
-        ...prev[dayKey],
-        isOpen: !prev[dayKey].isOpen
-      }
-    }))
-  }
-
-  const handleTimeChange = (dayKey, field, value) => {
-    setWeekSchedule(prev => ({
-      ...prev,
-      [dayKey]: {
-        ...prev[dayKey],
-        [field]: value
-      }
-    }))
-  }
-
+  // Guardar horarios con nueva estructura (shifts con breaks)
   const handleSaveSchedule = async () => {
     if (!selectedBranch || !currentBusiness?.id) return
 
     try {
       setIsLoading(true)
       
-      // Convertir weekSchedule al formato de businessHours
-      const businessHours = {}
-      Object.entries(weekSchedule).forEach(([day, data]) => {
-        businessHours[day] = {
-          isOpen: data.isOpen,
-          open: data.startTime,
-          close: data.endTime,
-          closed: !data.isOpen
-        }
-      })
+      // weekSchedule ya tiene la estructura correcta del backend
+      // { monday: { enabled: true, shifts: [{ start, end, breakStart?, breakEnd? }] }, ... }
+      const businessHours = { ...weekSchedule }
+
+      console.log('📤 Guardando horarios:', businessHours)
 
       // Llamar a la API real para actualizar la sucursal
       await businessBranchesApi.updateBranch(
@@ -484,20 +468,6 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const handleCancelEdit = () => {
     setEditingSchedule(null)
     loadBranchSchedule()
-  }
-
-  // Copiar horarios a otros días
-  const handleCopyToAllDays = (sourceDayKey) => {
-    const sourceDay = weekSchedule[sourceDayKey]
-    const newSchedule = {}
-    
-    daysOfWeek.forEach(({ key }) => {
-      newSchedule[key] = {
-        ...sourceDay
-      }
-    })
-    
-    setWeekSchedule(newSchedule)
   }
 
   // Copiar enlace al portapapeles
@@ -666,7 +636,7 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
     )
   }
 
-  // Renderizado de tab de horarios
+  // Renderizado de tab de horarios (con nuevo ScheduleEditor)
   const renderHorariosTab = () => (
     <div className="space-y-6">
       {renderBranchSelector()}
@@ -708,75 +678,14 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
             )}
           </div>
 
-          {/* Grid de horarios */}
-          <div className="space-y-3 sm:space-y-4">
-            {daysOfWeek.map(({ key, label, short }) => (
-              <div 
-                key={key}
-                className={`border rounded-lg p-3 sm:p-4 transition-all ${
-                  weekSchedule[key].isOpen 
-                    ? 'border-gray-300 bg-white' 
-                    : 'border-gray-200 bg-gray-50'
-                }`}
-              >
-                <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
-                  {/* Día y toggle */}
-                  <div className="flex items-center space-x-4">
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={weekSchedule[key].isOpen}
-                        onChange={() => editingSchedule && handleToggleDay(key)}
-                        disabled={!editingSchedule}
-                        className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500 disabled:opacity-50 cursor-pointer"
-                      />
-                      <span className={`ml-3 font-medium ${
-                        weekSchedule[key].isOpen ? 'text-gray-900' : 'text-gray-500'
-                      }`}>
-                        <span className="hidden sm:inline">{label}</span>
-                        <span className="sm:hidden">{short}</span>
-                      </span>
-                    </label>
-                  </div>
-
-                  {/* Horarios */}
-                  {weekSchedule[key].isOpen ? (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="time"
-                          value={weekSchedule[key].startTime}
-                          onChange={(e) => editingSchedule && handleTimeChange(key, 'startTime', e.target.value)}
-                          disabled={!editingSchedule}
-                          className="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed w-full sm:w-auto"
-                        />
-                        <span className="text-gray-500">-</span>
-                        <input
-                          type="time"
-                          value={weekSchedule[key].endTime}
-                          onChange={(e) => editingSchedule && handleTimeChange(key, 'endTime', e.target.value)}
-                          disabled={!editingSchedule}
-                          className="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed w-full sm:w-auto"
-                        />
-                      </div>
-
-                      {editingSchedule && (
-                        <button
-                          onClick={() => handleCopyToAllDays(key)}
-                          className="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap"
-                          title="Copiar a todos los días"
-                        >
-                          Copiar a todos
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-sm text-gray-500 italic">Cerrado</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* Nuevo ScheduleEditor con soporte para breaks, múltiples turnos y plantillas */}
+          <ScheduleEditor
+            initialSchedule={weekSchedule}
+            onChange={setWeekSchedule}
+            readOnly={!editingSchedule}
+            showTemplates={true}
+            compactMode={false}
+          />
 
           {/* Información adicional */}
           <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -784,13 +693,14 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
               <InformationCircleIcon className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
               <div>
                 <h5 className="text-sm font-medium text-blue-800 mb-1">
-                  Información sobre horarios
+                  💡 Nuevas funcionalidades de horarios
                 </h5>
                 <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• Los horarios se aplicarán a todas las citas de esta sucursal</li>
-                  <li>• Los especialistas solo podrán agendar dentro de estos horarios</li>
-                  <li>• Puedes cerrar días específicos desmarcando la casilla</li>
-                  <li>• Usa "Copiar a todos" para aplicar el mismo horario a toda la semana</li>
+                  <li>• <strong>Múltiples turnos:</strong> Agrega horarios de mañana y tarde por separado</li>
+                  <li>• <strong>Breaks configurables:</strong> Añade descansos/almuerzos dentro de cada turno</li>
+                  <li>• <strong>Plantillas rápidas:</strong> Aplica horarios predefinidos con un click</li>
+                  <li>• <strong>Copiar horarios:</strong> Replica configuraciones a otros días fácilmente</li>
+                  <li>• Los horarios se aplican a todas las citas de esta sucursal automáticamente</li>
                 </ul>
               </div>
             </div>
