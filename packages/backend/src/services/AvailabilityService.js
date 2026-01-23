@@ -54,14 +54,43 @@ class AvailabilityService {
       // 2. Obtener el día de la semana
       const dayOfWeek = this.getDayOfWeekName(date);
 
-      // 3. Verificar si la sucursal está abierta ese día
-      const branchHours = branch.businessHours[dayOfWeek];
+      // 3. Verificar si la sucursal está abierta ese día y normalizar formato
+      let branchDayConfig = branch.businessHours[dayOfWeek];
       
-      if (!branchHours || branchHours.closed) {
+      if (!branchDayConfig || branchDayConfig.closed || !branchDayConfig.enabled) {
         return {
           date,
           dayOfWeek,
           message: 'La sucursal está cerrada este día',
+          slots: []
+        };
+      }
+
+      // Normalizar formato de horarios de sucursal (soportar formato viejo y nuevo)
+      let branchHours = {};
+      if (branchDayConfig.shifts && branchDayConfig.shifts.length > 0) {
+        // Formato nuevo con shifts array - usar el primer turno
+        const firstShift = branchDayConfig.shifts[0];
+        branchHours = {
+          open: firstShift.start,
+          close: firstShift.end,
+          breakStart: firstShift.breakStart,
+          breakEnd: firstShift.breakEnd
+        };
+        console.log('📋 Horarios de sucursal (formato nuevo):', branchHours);
+      } else if (branchDayConfig.open && branchDayConfig.close) {
+        // Formato viejo con open/close
+        branchHours = {
+          open: branchDayConfig.open,
+          close: branchDayConfig.close
+        };
+        console.log('📋 Horarios de sucursal (formato viejo):', branchHours);
+      } else {
+        console.error('❌ Formato de horarios de sucursal no válido:', branchDayConfig);
+        return {
+          date,
+          dayOfWeek,
+          message: 'Horarios de sucursal no configurados correctamente',
           slots: []
         };
       }
