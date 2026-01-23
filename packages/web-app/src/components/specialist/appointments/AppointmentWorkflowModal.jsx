@@ -39,6 +39,8 @@ export default function AppointmentWorkflowModal({
   }, [isOpen, appointment, action]);
 
   const initializeWorkflow = async () => {
+    console.log('📋 Datos completos del appointment:', JSON.stringify(appointment, null, 2));
+    
     // Si es solo para subir fotos, no inicializar el flujo completo
     if (action === 'before-photo' || action === 'after-photo') {
       // Ir directo al paso de foto correspondiente
