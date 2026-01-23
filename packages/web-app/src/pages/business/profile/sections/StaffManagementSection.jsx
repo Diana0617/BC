@@ -1539,27 +1539,36 @@ const SpecialistBranchScheduleEditor = ({ branch, specialistId, businessId, busi
       const schedulesByDay = {};
       
       // Inicializar con estructura por defecto basada en horarios de la sucursal
+      // El especialista hereda los horarios de la sucursal como punto de partida
       const branchSchedule = branch.weeklySchedule || branch.businessHours;
       daysOfWeek.forEach(({ key }) => {
         const branchDay = branchSchedule?.[key];
         
         if (branchDay?.enabled && branchDay?.shifts?.length > 0) {
-          // Si la sucursal tiene horarios con shifts, usar esa estructura como base
+          // Si la sucursal tiene horarios con shifts, copiar esa estructura como base
+          // El especialista hereda los mismos horarios y turnos que la sucursal
           schedulesByDay[key] = {
-            enabled: false, // Por defecto deshabilitado para el especialista
-            shifts: []
+            enabled: branchDay.enabled, // Heredar estado habilitado de la sucursal
+            shifts: branchDay.shifts.map(shift => ({
+              start: shift.start,
+              end: shift.end,
+              ...(shift.breakStart && shift.breakEnd ? {
+                breakStart: shift.breakStart,
+                breakEnd: shift.breakEnd
+              } : {})
+            }))
           };
         } else if (branchDay && !branchDay.closed && branchDay.open) {
-          // Backward compatibility: convertir estructura antigua
+          // Backward compatibility: convertir estructura antigua y heredar horarios
           schedulesByDay[key] = {
-            enabled: false,
+            enabled: true, // Si tiene horarios, habilitar por defecto
             shifts: [{
               start: branchDay.open,
               end: branchDay.close
             }]
           };
         } else {
-          // Sin horarios de la sucursal, usar valores por defecto
+          // Sin horarios de la sucursal, dejar deshabilitado
           schedulesByDay[key] = {
             enabled: false,
             shifts: []
