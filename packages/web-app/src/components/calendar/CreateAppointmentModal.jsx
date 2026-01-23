@@ -225,10 +225,23 @@ const CreateAppointmentModal = ({
         }
       })
       
-      console.log('✅ Slots disponibles:', response.data.data)
-      setAvailableSlots(response.data.data || [])
+      console.log('✅ Respuesta completa slots:', response.data)
+      
+      // Manejar diferentes formatos de respuesta
+      let slots = []
+      if (response.data.data && Array.isArray(response.data.data)) {
+        slots = response.data.data
+      } else if (response.data.slots && Array.isArray(response.data.slots)) {
+        slots = response.data.slots
+      } else if (Array.isArray(response.data)) {
+        slots = response.data
+      }
+      
+      console.log('✅ Slots disponibles procesados:', slots)
+      setAvailableSlots(slots)
     } catch (error) {
       console.error('❌ Error cargando slots:', error)
+      console.error('❌ Error response:', error.response?.data)
       setAvailableSlots([])
     } finally {
       setLoadingSlots(false)
