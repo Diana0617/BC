@@ -892,7 +892,15 @@ const ConsentsTab = ({ client }) => {
       </div>
 
       <div className="space-y-3">
-        {consents.map((consent) => (
+        {consents.map((consent) => {
+          console.log('🔍 Frontend - Consent individual:', {
+            id: consent.id,
+            pdfUrl: consent.pdfUrl,
+            hasPdfUrl: !!consent.pdfUrl,
+            pdfGeneratedAt: consent.pdfGeneratedAt
+          });
+          
+          return (
           <div 
             key={consent.id} 
             className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -993,7 +1001,8 @@ const ConsentsTab = ({ client }) => {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
