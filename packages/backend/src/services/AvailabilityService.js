@@ -550,8 +550,12 @@ class AvailabilityService {
    */
   static getDayOfWeekName(date) {
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const dateObj = new Date(date + 'T00:00:00'); // Evitar problemas de zona horaria
-    return days[dateObj.getDay()];
+    // Usar UTC para evitar problemas de zona horaria
+    const [year, month, day] = date.split('-').map(Number);
+    const dateObj = new Date(Date.UTC(year, month - 1, day));
+    const dayName = days[dateObj.getUTCDay()];
+    console.log(`📅 getDayOfWeekName: ${date} → ${dayName} (UTC day: ${dateObj.getUTCDay()})`);
+    return dayName;
   }
 
   /**
