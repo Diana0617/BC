@@ -513,7 +513,13 @@ class AvailabilityService {
   }
 
   // ==================== HELPER METHODS ====================
-param {String} breakStart - "12:00" (opcional)
+
+  /**
+   * Generar slots de tiempo en un rango
+   * @param {String} startTime - "09:00"
+   * @param {String} endTime - "18:00"
+   * @param {Number} duration - Minutos
+   * @param {String} breakStart - "12:00" (opcional)
    * @param {String} breakEnd - "13:00" (opcional)
    * @returns {Array} slots
    */
@@ -535,13 +541,7 @@ param {String} breakStart - "12:00" (opcional)
         (current < breakStartTime && slotEnd > breakEndTime)
       );
       
-      if (slotEnd <= end && !isDuringBreakarseTime(startTime);
-    const end = this.parseTime(endTime);
-
-    while (current < end) {
-      const slotEnd = this.addMinutes(current, duration);
-      
-      if (slotEnd <= end) {
+      if (slotEnd <= end && !isDuringBreak) {
         slots.push({
           startTime: this.formatTime(current),
           endTime: this.formatTime(slotEnd)
