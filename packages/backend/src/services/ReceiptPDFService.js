@@ -42,34 +42,64 @@ class ReceiptPDFService {
         });
 
         const pageWidth = 226.77; // 80mm
+        let yPosition = 15; // Posición vertical inicial
 
-        // ============= LOGO / NOMBRE DEL NEGOCIO =============
+        // ============= LOGO DEL NEGOCIO (si existe) =============
+        if (business.logo) {
+          try {
+            const logoWidth = 60;
+            const logoHeight = 60;
+            const logoX = (pageWidth - logoWidth) / 2; // Centrar
+
+            doc.image(business.logo, logoX, yPosition, {
+              width: logoWidth,
+              height: logoHeight,
+              fit: [logoWidth, logoHeight],
+              align: 'center'
+            });
+            
+            yPosition += logoHeight + 8; // Espacio después del logo
+          } catch (error) {
+            console.error('❌ Error cargando logo del negocio:', error.message);
+            // Continuar sin logo si falla
+          }
+        }
+
+        // ============= NOMBRE DEL NEGOCIO =============
         doc
           .fontSize(12)
           .font('Helvetica-Bold')
-          .text(business.name || 'Beauty Control', 10, 15, { 
+          .text(business.name || 'Beauty Control', 10, yPosition, { 
             width: pageWidth - 20, 
             align: 'center' 
           });
+        
+        yPosition = doc.y + 2; // Actualizar posición después del nombre
 
         // Info del negocio
         doc
           .fontSize(7)
           .font('Helvetica')
-          .text(business.address || '', { 
-            width: pageWidth - 20, 
-            align: 'center' 
-          })
-          .text(`Tel: ${business.phone || 'N/A'}`, { 
+          .text(business.address || '', 10, yPosition, { 
             width: pageWidth - 20, 
             align: 'center' 
           });
+        
+        yPosition = doc.y + 2;
+        
+        doc.text(`Tel: ${business.phone || 'N/A'}`, 10, yPosition, { 
+          width: pageWidth - 20, 
+          align: 'center' 
+        });
+
+        yPosition = doc.y + 2;
 
         if (business.email) {
-          doc.text(business.email, { 
+          doc.text(business.email, 10, yPosition, { 
             width: pageWidth - 20, 
             align: 'center' 
           });
+          yPosition = doc.y + 2;
         }
 
         doc.moveDown(0.5);
