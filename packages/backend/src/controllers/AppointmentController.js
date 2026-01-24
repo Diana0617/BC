@@ -99,10 +99,6 @@ class AppointmentController {
           [Op.gte]: new Date(startDate),
           [Op.lte]: new Date(endDate)
         };
-        console.log('📅 Buscando citas entre:', {
-          startDate: new Date(startDate),
-          endDate: new Date(endDate)
-        });
       }
 
       const { count, rows: appointments } = await Appointment.findAndCountAll({
@@ -146,13 +142,7 @@ class AppointmentController {
         offset
       });
 
-      console.log(`✅ Encontradas ${count} citas`);
       if (appointments.length > 0) {
-        console.log('Primera cita:', {
-          id: appointments[0].id,
-          startTime: appointments[0].startTime,
-          client: appointments[0].client?.firstName
-        });
       }
 
       res.json({
@@ -288,12 +278,6 @@ class AppointmentController {
         }
       };
 
-      console.log('📅 Buscando citas por rango:', {
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        branchId,
-        businessId
-      });
 
       // Filtros opcionales
       if (branchId) {
@@ -354,14 +338,7 @@ class AppointmentController {
         order: [['startTime', 'ASC']]
       });
 
-      console.log(`✅ Encontradas ${appointments.length} citas en el rango`);
       if (appointments.length > 0) {
-        console.log('Primera cita:', {
-          id: appointments[0].id,
-          startTime: appointments[0].startTime,
-          clientName: `${appointments[0].client?.firstName} ${appointments[0].client?.lastName}`,
-          serviceName: appointments[0].service?.name
-        });
       }
 
       res.json({
@@ -386,7 +363,6 @@ class AppointmentController {
    */
   static async createAppointment(req, res) {
     try {
-      console.log('📥 [createAppointment] req.body completo:', JSON.stringify(req.body, null, 2));
       
       // Verificar que el usuario NO sea OWNER de la plataforma
       if (req.user?.role === 'OWNER') {
@@ -414,24 +390,11 @@ class AppointmentController {
         branchId
       } = req.body;
       
-      console.log('📥 [createAppointment] serviceId recibido:', serviceId);
-      console.log('📥 [createAppointment] serviceIds recibido:', serviceIds);
-      console.log('📥 [createAppointment] req.body completo:', JSON.stringify(req.body, null, 2));
       
       // Determinar qué servicios usar: array o single
       const servicesToValidate = serviceIds && serviceIds.length > 0 ? serviceIds : (serviceId ? [serviceId] : []);
       
-      console.log('📋 [createAppointment] servicesToValidate:', servicesToValidate);
-      console.log('📋 [createAppointment] servicesToValidate.length:', servicesToValidate.length);
       
-      console.log('📋 [createAppointment] Valores extraídos:', {
-        businessId,
-        specialistId,
-        serviceId,
-        serviceIds,
-        clientId,
-        branchId
-      });
 
       // Validar servicios primero para obtener duración total
       if (!servicesToValidate || servicesToValidate.length === 0) {
@@ -442,7 +405,6 @@ class AppointmentController {
       }
       
       // Validar todos los servicios y calcular totales
-      console.log('🔍 Validando servicios:', { servicesToValidate, businessId });
       const services = [];
       let totalDuration = 0;
       let totalAmount = 0;
@@ -457,7 +419,6 @@ class AppointmentController {
         });
 
         if (!service) {
-          console.log('❌ Servicio no encontrado o no activo:', sId);
           return res.status(400).json({
             success: false,
             error: `Servicio ${sId} no válido para este negocio`
@@ -467,12 +428,10 @@ class AppointmentController {
         services.push(service);
         totalDuration += service.duration;
         totalAmount += parseFloat(service.price);
-        console.log('✅ Servicio válido:', service.id, service.name);
       }
       
       // Usar el primer servicio como referencia para cálculos de sesión (si aplica)
       const service = services[0];
-      console.log('📊 Total duración:', totalDuration, 'minutos, Total monto:', totalAmount);
 
       // Validar que la fecha/hora no sea en el pasado
       const now = new Date();
@@ -491,7 +450,6 @@ class AppointmentController {
       if (!calculatedEndTime && effectiveDuration && startTime) {
         const start = new Date(startTime);
         calculatedEndTime = new Date(start.getTime() + effectiveDuration * 60000); // duration en minutos
-        console.log('⏱️ Duración calculada:', effectiveDuration, 'minutos');
       }
 
       // Buscar o crear cliente
@@ -518,7 +476,6 @@ class AppointmentController {
 
         if (!client) {
           // Crear nuevo cliente
-          console.log('📝 Creando nuevo cliente:', clientName, clientEmail);
           
           // Parsear nombre y apellido
           const nameParts = (clientName || '').trim().split(' ');
@@ -534,9 +491,7 @@ class AppointmentController {
             status: 'ACTIVE'
           });
 
-          console.log('✅ Cliente creado con ID:', client.id);
         } else {
-          console.log('✅ Cliente existente encontrado:', client.id);
         }
 
         // Verificar si existe la relación BusinessClient, si no, crearla
@@ -548,14 +503,12 @@ class AppointmentController {
         });
 
         if (!businessClientRelation) {
-          console.log('📝 Creando relación Business-Client');
           await BusinessClient.create({
             businessId,
             clientId: client.id,
             status: 'ACTIVE',
             firstVisit: new Date()
           });
-          console.log('✅ Relación Business-Client creada');
         }
       } else {
         return res.status(400).json({
@@ -565,7 +518,6 @@ class AppointmentController {
       }
 
       // Validar que el especialista pertenezca al negocio
-      console.log('🔍 Buscando especialista:', { specialistId, businessId });
       
       const User = require('../models/User');
       const SpecialistProfile = require('../models/SpecialistProfile');
@@ -592,12 +544,6 @@ class AppointmentController {
 
       if (specialistProfile && specialistProfile.user) {
         specialist = specialistProfile.user;
-        console.log('✅ Especialista válido (SpecialistProfile):', {
-          specialistProfileId: specialistProfile.id,
-          userId: specialist.id,
-          role: specialist.role,
-          name: `${specialist.firstName} ${specialist.lastName}`
-        });
       } else {
         // Si no es un SpecialistProfile, intentar buscar directamente como User
         // (para casos donde se envíe el userId directamente)
@@ -612,13 +558,7 @@ class AppointmentController {
 
         if (userDirectly) {
           specialist = userDirectly;
-          console.log('✅ Especialista válido (User directo):', {
-            userId: specialist.id,
-            role: specialist.role,
-            name: `${specialist.firstName} ${specialist.lastName}`
-          });
         } else {
-          console.log('❌ Especialista no encontrado o no válido');
           return res.status(400).json({
             success: false,
             error: 'Especialista no válido para este negocio'
@@ -631,7 +571,6 @@ class AppointmentController {
 
       // Validar sucursal si se proporciona
       if (branchId) {
-        console.log('🔍 Validando sucursal:', { branchId, businessId });
         const Branch = require('../models/Branch');
         const branch = await Branch.findOne({
           where: {
@@ -642,18 +581,15 @@ class AppointmentController {
         });
 
         if (!branch) {
-          console.log('❌ Sucursal no encontrada o no activa');
           return res.status(400).json({
             success: false,
             error: 'Sucursal no válida para este negocio'
           });
         }
 
-        console.log('🔍 Verificando acceso del especialista a la sucursal');
         
         // BUSINESS y BUSINESS_SPECIALIST (propietarios del negocio) tienen acceso a todas las sucursales
         if (['BUSINESS', 'BUSINESS_SPECIALIST'].includes(specialist.role)) {
-          console.log('✅ BUSINESS/BUSINESS_SPECIALIST tiene acceso automático a todas las sucursales');
         } else {
           // Verificar que el especialista regular tenga acceso a esa sucursal
           const specialistBranchAccess = await UserBranch.findOne({
@@ -664,13 +600,11 @@ class AppointmentController {
           });
 
           if (!specialistBranchAccess) {
-            console.log('❌ Especialista sin acceso a la sucursal');
             return res.status(400).json({
               success: false,
               error: 'El especialista no tiene acceso a la sucursal seleccionada'
             });
           }
-          console.log('✅ Especialista tiene acceso a la sucursal');
         }
       }
 
@@ -685,14 +619,6 @@ class AppointmentController {
       // Usar el specialistProfile.id si existe, de lo contrario null
       const specialistIdForSchedule = specialistProfile ? specialistProfile.id : null;
       
-      console.log('🔍 Verificando horario del especialista:', {
-        specialistId: specialistIdForSchedule,
-        hasSpecialistProfile: !!specialistProfile,
-        branchId,
-        dayOfWeek,
-        appointmentTime,
-        appointmentDate: appointmentDate.toISOString()
-      });
 
       // 1. Intentar obtener horarios del especialista (solo si tiene SpecialistProfile)
       let schedules = [];
@@ -707,12 +633,10 @@ class AppointmentController {
         });
       }
 
-      console.log(`📅 Horarios del especialista encontrados: ${schedules.length}`);
 
       // 2. Si no hay horarios del especialista, usar horarios del negocio (Branch)
       let targetBranch = null;
       if (schedules.length === 0) {
-        console.log('⚠️ No hay horarios del especialista, buscando horarios de la sucursal');
         
         // Si no se especificó branchId, buscar la sucursal principal o única del negocio
         if (!branchId) {
@@ -724,7 +648,6 @@ class AppointmentController {
           
           if (branches.length > 0) {
             targetBranch = branches[0]; // Tomar la principal o la primera
-            console.log('🏢 Usando sucursal:', targetBranch.name, '(id:', targetBranch.id + ')');
           }
         } else {
           const Branch = require('../models/Branch');
@@ -734,7 +657,6 @@ class AppointmentController {
         if (targetBranch && targetBranch.businessHours && targetBranch.businessHours[dayOfWeek]) {
           const branchHours = targetBranch.businessHours[dayOfWeek];
           
-          console.log('🏢 Horarios de la sucursal:', branchHours);
           
           // Si la sucursal NO está cerrada ese día
           if (!branchHours.closed && branchHours.open && branchHours.close) {
@@ -744,9 +666,7 @@ class AppointmentController {
               endTime: branchHours.close + ':00',   // Convertir "18:00" a "18:00:00"
               _isBranchHours: true // Flag para indicar que son horarios del negocio
             }];
-            console.log('✅ Usando horarios de la sucursal como fallback');
           } else {
-            console.log('❌ La sucursal está cerrada ese día');
             
             // Retornar error específico para sucursal cerrada
             const dayNames = {
@@ -819,7 +739,6 @@ class AppointmentController {
         const scheduleStart = schedule.startTime; // "09:00:00"
         const scheduleEnd = schedule.endTime;     // "18:00:00"
         
-        console.log(`⏰ Comparando: ${appointmentTime} entre ${scheduleStart} y ${scheduleEnd}`);
         
         return appointmentTime >= scheduleStart && appointmentTime < scheduleEnd;
       });
@@ -844,7 +763,6 @@ class AppointmentController {
         });
       }
 
-      console.log('✅ Horario válido según configuración', schedules[0]._isBranchHours ? '(usando horarios del negocio)' : '(usando horarios del especialista)');
 
       // Verificar disponibilidad del especialista (conflictos con otras citas)
       const conflictingAppointment = await Appointment.findOne({
@@ -887,7 +805,6 @@ class AppointmentController {
       let sessionInfo = null;
       
       if (service.isPackage) {
-        console.log('🎁 Servicio es un paquete:', service.packageType);
         
         // Contar todas las sesiones del cliente para este servicio (excepto canceladas)
         const previousSessions = await Appointment.count({
@@ -902,7 +819,6 @@ class AppointmentController {
         });
         
         sessionNumber = previousSessions + 1;
-        console.log(`📊 Cliente tiene ${previousSessions} sesiones previas, esta será la sesión #${sessionNumber}`);
         
         const packageConfig = service.packageConfig || {};
         
@@ -931,7 +847,6 @@ class AppointmentController {
             remainingSessions: totalSessions - sessionNumber
           };
           
-          console.log(`✅ Sesión ${sessionNumber}/${totalSessions} - Quedan ${sessionInfo.remainingSessions} sesiones`);
           
         } else if (service.packageType === 'WITH_MAINTENANCE') {
           const maintenanceSessions = packageConfig.maintenanceSessions || 0;
@@ -965,7 +880,6 @@ class AppointmentController {
             remainingSessions: totalSessions - sessionNumber
           };
           
-          console.log(`✅ Sesión ${sessionNumber}/${totalSessions} - ${isMainSession ? 'PRINCIPAL' : `MANTENIMIENTO #${sessionInfo.maintenanceNumber}`}`);
         }
       }
 
@@ -997,22 +911,18 @@ class AppointmentController {
           } else if (pricing.perSession) {
             finalPrice = parseFloat(pricing.perSession);
           }
-          console.log(`💰 Precio por sesión (MULTI_SESSION): ${finalPrice}`);
           
         } else if (service.packageType === 'WITH_MAINTENANCE') {
           // Para WITH_MAINTENANCE, distinguir entre principal y mantenimiento
           if (sessionInfo.isMainSession) {
             finalPrice = pricing.mainSession ? parseFloat(pricing.mainSession) : service.price;
-            console.log(`💰 Precio sesión principal: ${finalPrice}`);
           } else {
             finalPrice = pricing.maintenancePrice ? parseFloat(pricing.maintenancePrice) : service.price;
-            console.log(`💰 Precio mantenimiento: ${finalPrice}`);
           }
         }
       } else if (specialistService && specialistService.customPrice !== null) {
         // Usar precio personalizado del especialista si no es paquete
         finalPrice = specialistService.customPrice;
-        console.log(`💰 Precio personalizado especialista: ${finalPrice}`);
       }
 
       // Generar número de cita único
@@ -1049,20 +959,12 @@ class AppointmentController {
       }
       
       const appointment = await Appointment.create(appointmentData);
-      console.log('✅ Cita creada:', appointment.id);
 
       // 🔗 CREAR REGISTROS EN APPOINTMENTSERVICE PARA CADA SERVICIO
-      console.log('📋 [createAppointment] Creando AppointmentServices para', services.length, 'servicios');
       const AppointmentService = require('../models/AppointmentService');
       for (let i = 0; i < services.length; i++) {
         const svc = services[i];
         
-        console.log(`📝 [createAppointment] Servicio ${i + 1}/${services.length}:`, {
-          id: svc.id,
-          name: svc.name,
-          price: svc.price,
-          duration: svc.duration
-        });
         
         // Determinar el precio individual
         let servicePrice = parseFloat(svc.price);
@@ -1080,16 +982,12 @@ class AppointmentController {
           order: i
         };
         
-        console.log(`💾 [createAppointment] Guardando AppointmentService:`, appointmentServiceData);
         
         const createdAS = await AppointmentService.create(appointmentServiceData);
-        console.log(`✅ AppointmentService creado con ID:`, createdAS.id, `- ${svc.name}, precio: ${servicePrice}, duración: ${svc.duration}min, order: ${i}`);
       }
       
-      console.log('✅ [createAppointment] Todos los AppointmentServices creados exitosamente');
 
       // Obtener la cita creada con relaciones incluyendo los servicios
-      console.log('🔍 [createAppointment] Obteniendo cita con relaciones...');
       const createdAppointment = await Appointment.findByPk(appointment.id, {
         include: [
           {
@@ -1124,10 +1022,8 @@ class AppointmentController {
         ]
       });
       
-      console.log('📊 [createAppointment] Servicios en la cita:', createdAppointment.services?.length || 0);
       if (createdAppointment.services) {
         createdAppointment.services.forEach((svc, idx) => {
-          console.log(`  ${idx + 1}. ${svc.name} (ID: ${svc.id}) - Order: ${svc.appointmentService?.order}`);
         });
       }
       
@@ -1146,7 +1042,6 @@ class AppointmentController {
       // 🛒 PROCESAR PRODUCTOS VENDIDOS DURANTE LA CITA (si existen)
       const { productsSold } = req.body;
       if (productsSold && Array.isArray(productsSold) && productsSold.length > 0) {
-        console.log('🛒 Procesando productos vendidos durante la cita:', productsSold.length, 'items');
         
         try {
           const SaleController = require('./SaleController');
@@ -1197,7 +1092,6 @@ class AppointmentController {
           await SaleController.createSale(mockReq, mockRes);
 
           if (mockRes.statusCode === 201 && mockRes.responseData?.success) {
-            console.log('✅ Venta de productos creada exitosamente:', mockRes.responseData.data.sale?.id);
             response.data.productSale = {
               id: mockRes.responseData.data.sale?.id,
               total: productsTotal,
@@ -1911,7 +1805,6 @@ class AppointmentController {
               proofUrl = uploadResult.secure_url;
               proofPublicId = uploadResult.public_id;
               
-              console.log('✅ Payment proof uploaded:', proofUrl);
             } catch (uploadError) {
               console.error('Error uploading payment proof:', uploadError);
               // Si requiere comprobante y falla la subida, retornar error
@@ -1956,12 +1849,6 @@ class AppointmentController {
             updateData.paymentStatus = 'PARTIAL';
           }
           
-          console.log('💰 Payment processed:', {
-            methodId: payment.methodId,
-            amount: payment.amount,
-            paidAmount: newPaidAmount,
-            totalAmount: appointment.totalAmount
-          });
           
         } catch (paymentError) {
           console.error('Error procesando pago:', paymentError);
@@ -2378,9 +2265,6 @@ class AppointmentController {
    * Incluye toda la información necesaria para la app móvil
    */
   static async getSpecialistDashboardAppointments(req, res) {
-    console.log('🎯 getSpecialistDashboardAppointments CALLED');
-    console.log('🎯 req.user:', req.user);
-    console.log('🎯 req.query:', req.query);
     
     try {
       const userId = req.user.id;
@@ -2394,7 +2278,6 @@ class AppointmentController {
         limit = 50
       } = req.query;
 
-      console.log('📱 Cargando agenda del especialista:', { userId, date, startDate, endDate, branchId, status });
 
       // Buscar el perfil del especialista
       const specialistProfile = await SpecialistProfile.findOne({
@@ -2408,7 +2291,6 @@ class AppointmentController {
         });
       }
 
-      console.log('✅ SpecialistProfile encontrado:', specialistProfile.id);
 
       const businessId = specialistProfile.businessId;
 
@@ -2419,7 +2301,6 @@ class AppointmentController {
         specialistId: specialistProfile.userId  // Usar userId, no profile.id
       };
 
-      console.log('🔍 Filtrando citas con:', where);
 
       // Filtro por rango de fechas (prioridad: startDate/endDate > date > hoy)
       if (startDate && endDate) {
@@ -2428,7 +2309,6 @@ class AppointmentController {
           [Op.gte]: new Date(startDate),
           [Op.lte]: new Date(endDate)
         };
-        console.log('📅 Usando rango:', { startDate, endDate });
       } else if (date) {
         // Un solo día específico (compatibilidad con código antiguo)
         const targetDate = new Date(date);
@@ -2439,7 +2319,6 @@ class AppointmentController {
           [Op.gte]: targetDate,
           [Op.lt]: nextDay
         };
-        console.log('📅 Usando día único:', date);
       } else {
         // Por defecto, mostrar turnos de hoy
         const today = new Date();
@@ -2451,7 +2330,6 @@ class AppointmentController {
           [Op.gte]: today,
           [Op.lt]: tomorrow
         };
-        console.log('📅 Usando hoy por defecto');
       }
 
       // Filtro por sucursal
