@@ -748,11 +748,6 @@ exports.getSignaturePDF = async (req, res) => {
     });
   }
 };
-      message: 'Error al obtener PDF',
-      error: error.message
-    });
-  }
-};
 
 /**
  * Función helper para generar PDF del consentimiento
