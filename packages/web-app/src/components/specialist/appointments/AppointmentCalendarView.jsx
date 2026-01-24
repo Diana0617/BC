@@ -40,12 +40,13 @@ export default function AppointmentCalendarView({ appointments, currentDate, per
 
   // Función para generar el tooltip con información completa (usando timezone)
   const getTooltipText = (apt) => {
-    const clientName = apt.Client ? `${apt.Client.firstName} ${apt.Client.lastName}` : apt.clientName;
-    const clientPhone = apt.Client?.phone || apt.clientPhone || 'N/A';
-    const serviceName = apt.Service?.name || apt.serviceName;
+    console.log('🔍 Appointment data:', JSON.stringify(apt, null, 2)); // DEBUG
+    const clientName = apt.client ? `${apt.client.firstName} ${apt.client.lastName}` : apt.clientName;
+    const clientPhone = apt.client?.phone || apt.clientPhone || 'N/A';
+    const serviceName = apt.service?.name || apt.serviceName;
     const branchName = apt.branch?.name || apt.branchName || '';
-    const duration = apt.Service?.duration || '';
-    const price = apt.totalAmount || apt.Service?.price || '';
+    const duration = apt.service?.duration || '';
+    const price = apt.totalAmount || apt.service?.price || '';
     
     // Formatear horas en timezone del negocio
     const startTimeFormatted = formatInTimezone(apt.startTime, timezone, {
@@ -126,8 +127,8 @@ Estado: ${getStatusText(apt.status)}${branchName ? `\nSucursal: ${branchName}` :
               {appointmentsByHour[hour]?.map(apt => {
                 const startDate = new Date(apt.startTime);
                 const endDate = new Date(apt.endTime);
-                const clientName = apt.Client ? `${apt.Client.firstName} ${apt.Client.lastName}` : apt.clientName;
-                const serviceName = apt.Service?.name || apt.serviceName;
+                const clientName = apt.client ? `${apt.client.firstName} ${apt.client.lastName}` : apt.clientName;
+                const serviceName = apt.service?.name || apt.serviceName;
                 
                 return (
                   <div
@@ -180,8 +181,8 @@ Estado: ${getStatusText(apt.status)}${branchName ? `\nSucursal: ${branchName}` :
               <div className="space-y-1 p-1 bg-gray-50 rounded-b-lg min-h-[260px]">
                 {dayAppointments.map(apt => {
                   const startDate = new Date(apt.startTime);
-                  const clientName = apt.Client 
-                    ? `${apt.Client.firstName} ${apt.Client.lastName}` 
+                  const clientName = apt.client 
+                    ? `${apt.client.firstName} ${apt.client.lastName}` 
                     : apt.clientName;
                   
                   return (
