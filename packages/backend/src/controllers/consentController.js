@@ -702,7 +702,12 @@ exports.getSignaturePDF = async (req, res) => {
 
     // Si ya existe el PDF y fue generado recientemente (menos de 24h), devolverlo
     const dayInMs = 24 * 60 * 60 * 1000;
+    
+    // VERIFICAR SI ES UNA RUTA LOCAL (antes de Cloudinary)
+    const isLocalPath = signature.pdfUrl && signature.pdfUrl.startsWith('/uploads/');
+    
     const needsRegenerate = !signature.pdfUrl || 
+                           isLocalPath || // Regenerar PDFs antiguos con rutas locales
                            !signature.pdfGeneratedAt || 
                            (Date.now() - new Date(signature.pdfGeneratedAt).getTime() > dayInMs);
 
