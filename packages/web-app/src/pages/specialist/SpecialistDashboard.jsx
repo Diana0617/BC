@@ -605,7 +605,7 @@ export default function SpecialistDashboard() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Caja Registradora - Solo si puede cobrar/procesar pagos */}
-            {paymentsPerms.create && (
+            {(paymentsPerms.create || paymentsPerms.process) && (
               <CashRegisterCard businessId={user?.businessId} />
             )}
 
@@ -668,7 +668,7 @@ export default function SpecialistDashboard() {
           </button>
           
           {/* Caja - Solo si puede cobrar/procesar pagos */}
-          {paymentsPerms.create && (
+          {(paymentsPerms.create || paymentsPerms.process) && (
             <button
               onClick={() => navigate('/specialist/cash-register')}
               className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all text-left"
@@ -705,7 +705,7 @@ export default function SpecialistDashboard() {
         </div>
 
         {/* Mensaje informativo para especialistas con permisos básicos */}
-        {!permissionsLoading && !appointmentsPerms.create && !paymentsPerms.create && (
+        {!permissionsLoading && !appointmentsPerms.create && !paymentsPerms.create && !paymentsPerms.process && (
           <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
