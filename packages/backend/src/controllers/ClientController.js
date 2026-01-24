@@ -875,7 +875,8 @@ class ClientController {
             consentSignature: apt.consentSignature ? {
               id: apt.consentSignature.id,
               signedAt: apt.consentSignature.signedAt,
-              pdfUrl: apt.consentSignature.signedPdfUrl,
+              pdfUrl: apt.consentSignature.pdfUrl,
+              pdfGeneratedAt: apt.consentSignature.pdfGeneratedAt,
               template: apt.consentSignature.template
             } : null,
             totalAmount: apt.totalAmount,
@@ -922,7 +923,8 @@ class ClientController {
           const formatted = {
             id: consent.id,
             signedAt: consent.signedAt,
-            pdfUrl: consent.signedPdfUrl,
+            pdfUrl: consent.pdfUrl,
+            pdfGeneratedAt: consent.pdfGeneratedAt,
             template: consent.template ? {
               id: consent.template.id,
               name: consent.template.name,
