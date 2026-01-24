@@ -129,9 +129,6 @@ class BusinessConfigService {
   // Service methods - these might still work without BusinessRules
   async getSpecialists(businessId, filters = {}) {
     try {
-      console.log('🔍 getSpecialists - businessId:', businessId);
-      console.log('🔍 getSpecialists - filters:', filters);
-      
       // Buscar en Users en lugar de SpecialistProfile para incluir recepcionistas, business y business_specialist
       const userWhereClause = { 
         businessId,
@@ -158,7 +155,6 @@ class BusinessConfigService {
         profileWhereClause.specialization = filters.specialization;
       }
 
-      console.log('🔍 getSpecialists - userWhereClause:', userWhereClause);
 
       // Buscar usuarios del equipo (LEFT JOIN con SpecialistProfile)
       const users = await User.findAll({
@@ -197,7 +193,6 @@ class BusinessConfigService {
         order: [['createdAt', 'DESC']]
       });
 
-      console.log('🔍 getSpecialists - found:', users.length, 'team members');
 
       // Transformar la respuesta
       return users.map(user => {
@@ -209,7 +204,6 @@ class BusinessConfigService {
         // Si es un especialista con perfil, usar las branches del SpecialistProfile
         if (profile && profile.branches && profile.branches.length > 0) {
           branches = profile.branches;
-          console.log(`🔍 Usuario ${user.firstName} ${user.lastName} tiene ${branches.length} sucursales desde SpecialistProfile`);
         }
         
         const defaultBranch = branches.find(b => b.UserBranch?.isDefault);
@@ -429,7 +423,6 @@ class BusinessConfigService {
             isActive: true
           }, { transaction });
           
-          console.log(`✅ Sucursal principal creada automáticamente: ${mainBranch.id} (código: ${branchCode})`);
         }
         
         mainBranchId = mainBranch.id;
@@ -511,7 +504,6 @@ class BusinessConfigService {
         
         if (allBranches.length > 0) {
           await profile.setBranches(allBranches, { transaction });
-          console.log(`✅ ${allBranches.length} sucursales asignadas automáticamente a usuario BUSINESS`);
         }
       }
 
@@ -529,7 +521,6 @@ class BusinessConfigService {
         }));
         
         await SpecialistService.bulkCreate(serviceAssignments, { transaction });
-        console.log(`✅ ${serviceAssignments.length} servicios asignados al especialista ${profile.userId}`);
       }
 
       await transaction.commit();
@@ -677,7 +668,6 @@ class BusinessConfigService {
           
           if (branches.length > 0) {
             await profile.setBranches(branches, { transaction });
-            console.log(`✅ SpecialistProfile creado y ${branches.length} sucursales asignadas a usuario BUSINESS`);
           }
           
           // Recargar con el user
@@ -752,7 +742,6 @@ class BusinessConfigService {
           console.log(`📍 Sucursales encontradas: ${allBranches.length}`, allBranches.map(b => ({ id: b.id, name: b.name })));
           
           if (allBranches.length > 0) {
-            console.log('🔧 Creando horarios por defecto para todas las sucursales...');
             const throughData = [];
             const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
             
@@ -781,7 +770,6 @@ class BusinessConfigService {
               ignoreDuplicates: true 
             });
             
-            console.log(`✅ Asignadas ${allBranches.length} sucursales con ${throughData.length} horarios automáticamente a usuario BUSINESS`);
           }
         } else if (profileData.branchId || (profileData.additionalBranches && profileData.additionalBranches.length > 0)) {
           // Construir lista de todas las sucursales a asignar
@@ -799,23 +787,19 @@ class BusinessConfigService {
           
           // Eliminar duplicados
           const uniqueBranchIds = [...new Set(branchIds)];
-          console.log('📍 IDs de sucursales a asignar:', uniqueBranchIds);
           
           if (uniqueBranchIds.length > 0) {
-            console.log(`🔄 Asignando ${uniqueBranchIds.length} sucursales al especialista...`);
             
             // Obtener instancias de Branch
             const branches = await Branch.findAll({
               where: { id: uniqueBranchIds },
               transaction
             });
-            console.log(`📍 Sucursales encontradas en BD: ${branches.length}`, branches.map(b => ({ id: b.id, name: b.name })));
             
             if (branches.length !== uniqueBranchIds.length) {
               console.warn('⚠️ No todas las sucursales fueron encontradas');
             }
             
-            console.log('🔧 Creando horarios por defecto para sucursales seleccionadas...');
             const throughData = [];
             const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
             
@@ -858,12 +842,9 @@ class BusinessConfigService {
         throw new Error(`Error al asignar sucursales: ${branchError.message}`);
       }
       
-      console.log('✅ Actualizaciones completadas, haciendo commit...');
       await transaction.commit();
-      console.log('✅ Transaction commit exitoso');
       
       // Recargar con relaciones
-      console.log('🔄 Recargando perfil con relaciones...');
       await profile.reload({ 
         include: [{ 
           model: User, 
@@ -871,7 +852,6 @@ class BusinessConfigService {
           attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'role']
         }] 
       });
-      console.log('✅ Perfil actualizado completamente');
       
       return profile;
     } catch (error) {
