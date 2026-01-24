@@ -154,17 +154,7 @@ class AuthController {
    */
   static async login(req, res) {
     try {
-      console.log('🔑 Login attempt - Full body:', req.body);
       const { email, password, subdomain } = req.body;
-
-      console.log('🔑 Extracted credentials:', { 
-        email, 
-        subdomain, 
-        hasPassword: !!password,
-        passwordLength: password?.length,
-        passwordFirstChar: password?.charCodeAt(0),
-        passwordLastChar: password?.charCodeAt(password?.length - 1)
-      });
 
       // Validaciones básicas
       if (!email || !password) {
@@ -177,23 +167,17 @@ class AuthController {
       // Si se proporciona subdomain, buscar el negocio primero
       let targetBusiness = null;
       if (subdomain) {
-        console.log('🏢 Buscando negocio con subdomain:', subdomain);
         targetBusiness = await Business.findOne({
           where: { subdomain: subdomain.toLowerCase() }
         });
 
         if (!targetBusiness) {
-          console.log('❌ Negocio no encontrado para subdomain:', subdomain);
           return res.status(401).json({
             success: false,
             error: 'Credenciales inválidas'
           });
         }
-        console.log('✅ Negocio encontrado:', { 
-          id: targetBusiness.id, 
-          name: targetBusiness.name,
-          subdomain: targetBusiness.subdomain 
-        });
+        
       }
 
       // Buscar usuario por email
@@ -233,32 +217,24 @@ class AuthController {
       });
 
       if (!user) {
-        console.log('❌ Usuario no encontrado:', email);
         return res.status(401).json({
           success: false,
           error: 'Credenciales inválidas'
         });
       }
 
-      console.log('👤 Usuario encontrado:', { 
-        id: user.id, 
-        email: user.email, 
-        role: user.role,
-        businessId: user.businessId 
-      });
 
       // Verificar contraseña
       const isPasswordValid = await bcrypt.compare(password, user.password);
       
       if (!isPasswordValid) {
-        console.log('❌ Contraseña inválida para:', email);
         return res.status(401).json({
           success: false,
           error: 'Credenciales inválidas'
         });
       }
 
-      console.log('✅ Contraseña válida');
+      
 
       // Determinar el negocio asociado al usuario
       let associatedBusiness = null;
@@ -275,25 +251,16 @@ class AuthController {
         effectiveBusinessId = user.specialistProfile.businessId;
       }
 
-      console.log('🏢 Negocio asociado al usuario:', { 
-        businessId: effectiveBusinessId,
-        businessName: associatedBusiness?.name,
-        businessSubdomain: associatedBusiness?.subdomain
-      });
+    
 
       // Si se proporcionó subdomain, validar que coincida con el negocio del usuario
       if (subdomain && targetBusiness) {
         if (effectiveBusinessId !== targetBusiness.id) {
-          console.log('❌ El usuario no pertenece al negocio del subdomain:', {
-            userBusinessId: effectiveBusinessId,
-            subdomainBusinessId: targetBusiness.id
-          });
           return res.status(401).json({
             success: false,
             error: 'Credenciales inválidas'
           });
         }
-        console.log('✅ Usuario pertenece al negocio del subdomain');
       }
 
       // Verificar si el negocio está activo o en período de prueba válido
@@ -628,7 +595,6 @@ class AuthController {
       const oldRole = user.role;
       await user.update({ role: newRole });
 
-      console.log(`✅ Usuario ${user.email} cambió de rol: ${oldRole} → ${newRole}`);
 
       // Retornar usuario actualizado
       const updatedUser = await User.findByPk(userId, {
@@ -861,9 +827,6 @@ class AuthController {
         
         // En desarrollo, permitir continuar aunque falle el email
         if (process.env.NODE_ENV === 'development') {
-          console.log('⚠️ MODO DESARROLLO - Token generado pero email no enviado');
-          console.log('🔑 Token de recuperación:', resetToken);
-          console.log('🔗 URL de reset:', resetUrl);
           
           return res.json({
             success: true,
