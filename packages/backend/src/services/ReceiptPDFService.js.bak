@@ -1,12 +1,12 @@
 const PDFDocument = require('pdfkit');
 
 /**
- * Servicio para generar PDFs de recibos en formato ticket térmico 80mm
+ * Servicio para generar PDFs de recibos
  */
 class ReceiptPDFService {
 
   /**
-   * Generar PDF de recibo estilo ticket de supermercado
+   * Generar PDF de recibo para cliente
    * @param {Object} receipt - Recibo del modelo Receipt
    * @param {Object} business - Negocio
    * @param {Array} items - Items/productos de la venta (opcional)
@@ -15,14 +15,12 @@ class ReceiptPDFService {
   static async generateReceiptPDF(receipt, business, items = []) {
     return new Promise((resolve, reject) => {
       try {
-        console.log('📄 [ReceiptPDFService] Iniciando generación de PDF formato ticket...');
-        
+        console.log('📄 [ReceiptPDFService] Iniciando generación de PDF...');
         // Formato ticket térmico: 80mm width (226.77 points), altura automática
         const doc = new PDFDocument({ 
           margin: 10,
           size: [226.77, 841.89] // 80mm x ~297mm (se ajusta automáticamente)
         });
-        
         const chunks = [];
 
         // Capturar el PDF en memoria
@@ -42,15 +40,39 @@ class ReceiptPDFService {
         });
 
         const pageWidth = 226.77; // 80mm
+        const centerX = pageWidth / 2;
 
-        // ============= LOGO / NOMBRE DEL NEGOCIO =============
-        doc
-          .fontSize(12)
-          .font('Helvetica-Bold')
-          .text(business.name || 'Beauty Control', 10, 15, { 
-            width: pageWidth - 20, 
-            align: 'center' 
-          });
+        // ============= LOGO (si existe) =============
+        if (business.logo) {
+          try {
+            // Intentar cargar el logo (debe ser URL o buffer)
+            // Por ahora mostramos el nombre
+            doc
+              .fontSize(12)
+              .font('Helvetica-Bold')
+              .text(business.name || 'Beauty Control', 10, 15, { 
+                width: pageWidth - 20, 
+                align: 'center' 
+              });
+          } catch (err) {
+            // Si falla, mostrar nombre
+            doc
+              .fontSize(12)
+              .font('Helvetica-Bold')
+              .text(business.name || 'Beauty Control', 10, 15, { 
+                width: pageWidth - 20, 
+                align: 'center' 
+              });
+          }
+        } else {
+          doc
+            .fontSize(12)
+            .font('Helvetica-Bold')
+            .text(business.name || 'Beauty Control', 10, 15, { 
+              width: pageWidth - 20, 
+              align: 'center' 
+            });
+        }
 
         // Info del negocio
         doc
@@ -268,7 +290,7 @@ class ReceiptPDFService {
           .stroke()
           .moveDown(0.5);
 
-        // ============= METODO DE PAGO Y USUARIO =============
+        // ============= METODO DE PAGO =============
         doc
           .fontSize(7)
           .font('Helvetica')
@@ -278,11 +300,13 @@ class ReceiptPDFService {
           });
 
         // Usuario que registró el pago
-        if (receipt.user) {
-          const userName = `${receipt.user.firstName || ''} ${receipt.user.lastName || ''}`.trim();
+        if (receipt.registeredBy || receipt.user) {
+          const userName = receipt.user 
+            ? `${receipt.user.firstName} ${receipt.user.lastName}`.trim()
+            : 'N/A';
           
           doc
-            .text(`Recibido por: ${userName}`, { 
+            .text(`Atendido por: ${userName}`, { 
               width: pageWidth - 20, 
               align: 'center' 
             });
@@ -321,6 +345,118 @@ class ReceiptPDFService {
         // Finalizar documento
         doc.end();
 
+        // Impuestos (si aplica)
+        if (tax > 0) {
+          doc
+            .text('Impuestos:', leftCol, doc.y)
+            .text(`$${this._formatMoney(tax)}`, rightCol, doc.y, { align: 'right' })
+            .moveDown(0.3);
+        }
+
+        // Propina (si aplica)
+        if (tip > 0) {
+          doc
+            .fillColor('blue')
+            .text('Propina:', leftCol, doc.y)
+            .text(`$${this._formatMoney(tip)}`, rightCol, doc.y, { align: 'right' })
+            .fillColor('black')
+            .moveDown(0.3);
+        }
+
+        // Línea antes del total
+        doc
+          .moveDown(0.2)
+          .moveTo(100, doc.y)
+          .lineTo(500, doc.y)
+          .stroke()
+          .moveDown(0.5);
+
+        // Total (destacado)
+        doc
+          .fontSize(14)
+          .font('Helvetica-Bold')
+          .text('TOTAL:', leftCol, doc.y)
+          .text(`$${this._formatMoney(total)}`, rightCol, doc.y, { align: 'right' })
+          .moveDown(1);
+
+        // ============= INFORMACIÓN DEL PAGO =============
+        doc
+          .fontSize(12)
+          .font('Helvetica-Bold')
+          .text('INFORMACIÓN DEL PAGO', { underline: true })
+          .moveDown(0.5);
+
+        const paymentMethodNames = {
+          CASH: 'Efectivo',
+          CARD: 'Tarjeta',
+          TRANSFER: 'Transferencia',
+          WOMPI: 'Pago en línea (Wompi)',
+          OTHER: 'Otro'
+        };
+
+        const paymentStatusNames = {
+          PENDING: 'Pendiente',
+          PAID: 'Pagado',
+          CANCELLED: 'Cancelado',
+          REFUNDED: 'Reembolsado'
+        };
+
+        doc
+          .font('Helvetica')
+          .fontSize(10)
+          .text(`Método de Pago: ${paymentMethodNames[receipt.paymentMethod] || receipt.paymentMethod}`, 100, doc.y)
+          .text(`Estado: ${paymentStatusNames[receipt.paymentStatus]}`, 100, doc.y);
+
+        if (receipt.paymentReference) {
+          doc.text(`Referencia: ${receipt.paymentReference}`, 100, doc.y);
+        }
+
+        doc
+          .text(`Fecha de Emisión: ${this._formatDateTime(receipt.issueDate)}`, 100, doc.y)
+          .moveDown(1.5);
+
+        // ============= CÓDIGO QR (Opcional) =============
+        // Aquí podrías agregar un código QR con la URL de verificación del recibo
+        // doc.image(qrCodeBuffer, { width: 100, align: 'center' });
+
+        // ============= NOTAS (Si existen) =============
+        if (receipt.notes) {
+          doc
+            .fontSize(10)
+            .font('Helvetica-Bold')
+            .text('NOTAS:', 100, doc.y)
+            .font('Helvetica')
+            .fontSize(9)
+            .text(receipt.notes, 100, doc.y, { width: 450 })
+            .moveDown(1);
+        }
+
+        // ============= PIE DE PÁGINA =============
+        doc
+          .moveDown(2)
+          .fontSize(8)
+          .fillColor('gray')
+          .text('¡Gracias por tu preferencia!', { align: 'center' })
+          .moveDown(0.3)
+          .text(
+            `Este recibo fue generado electrónicamente el ${this._formatDateTime(new Date())}`,
+            { align: 'center' }
+          )
+          .text(' Control de Negocios - Sistema de Gestión', { align: 'center' });
+
+        // Validación de autenticidad
+        doc
+          .moveDown(0.5)
+          .fontSize(7)
+          .text(
+            `Código de verificación: ${receipt.id.substring(0, 8)}`,
+            { align: 'center' }
+          );
+
+        // Finalizar el documento
+        console.log('🏁 [ReceiptPDFService] Finalizando documento PDF...');
+        doc.end();
+
       } catch (error) {
         console.error('❌ [ReceiptPDFService] Error durante generación:', error);
         reject(error);
@@ -335,19 +471,22 @@ class ReceiptPDFService {
     if (!date) return 'N/A';
     const d = new Date(date);
     return d.toLocaleDateString('es-CO', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   }
 
   /**
-   * Formatear hora
+   * Formatear fecha y hora completa
    */
-  static _formatTime(date) {
+  static _formatDateTime(date) {
     if (!date) return 'N/A';
     const d = new Date(date);
-    return d.toLocaleTimeString('es-CO', {
+    return d.toLocaleString('es-CO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
