@@ -468,7 +468,10 @@ exports.signConsent = async (req, res) => {
     });
 
     // Generar PDF automáticamente (en background, no esperar)
-    generateConsentPDF(signature).catch(error => {
+    generateConsentPDFBuffer(signature).then(buffer => {
+      // PDF generado exitosamente en background
+      console.log('✅ PDF generado en background para firma:', signature.id);
+    }).catch(error => {
       console.error('Error generando PDF en background:', error);
     });
 
@@ -999,15 +1002,16 @@ exports.migratePDFsToCloudinary = async (req, res) => {
       try {
         console.log(`🔄 Regenerando PDF para firma ${signature.id}`);
         
-        const pdfUrl = await generateConsentPDF(signature);
+        const pdfBuffer = await generateConsentPDFBuffer(signature);
+        const pdfBase64 = `data:application/pdf;base64,${pdfBuffer.toString('base64')}`;
         
         await signature.update({
-          pdfUrl,
+          pdfUrl: pdfBase64,
           pdfGeneratedAt: new Date()
         });
         
         results.success++;
-        console.log(`✅ PDF migrado: ${signature.id} → ${pdfUrl}`);
+        console.log(`✅ PDF migrado: ${signature.id} → [base64 data]`);
         
       } catch (error) {
         results.failed++;
@@ -1039,5 +1043,5 @@ exports.migratePDFsToCloudinary = async (req, res) => {
 
 module.exports = {
   ...exports,
-  generateConsentPDF
+  generateConsentPDFBuffer
 };
