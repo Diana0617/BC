@@ -938,6 +938,8 @@ async function generateConsentPDF(signature) {
           // Subir a Cloudinary
           const uploadResult = await uploadConsentDocument(tempFilePath, signature.businessId, signature.id);
           
+          console.log('📤 Upload result:', uploadResult);
+          
           // Eliminar archivo temporal (solo si existe)
           try {
             if (fs.existsSync(tempFilePath)) {
@@ -947,14 +949,17 @@ async function generateConsentPDF(signature) {
             console.warn('⚠️ No se pudo eliminar archivo temporal:', unlinkError.message);
           }
           
+          // uploadConsentDocument retorna { url, public_id, ... } NO { secure_url }
+          const pdfUrl = uploadResult.url;
+          
           // Actualizar signature con la URL del PDF
           await signature.update({
-            pdfUrl: uploadResult.secure_url,
+            pdfUrl: pdfUrl,
             pdfGeneratedAt: new Date()
           });
 
-          console.log('✅ PDF generado y subido:', uploadResult.secure_url);
-          resolve(uploadResult.secure_url);
+          console.log('✅ PDF generado y subido:', pdfUrl);
+          resolve(pdfUrl);
         } catch (uploadError) {
           console.error('Error subiendo PDF:', uploadError);
           reject(uploadError);
