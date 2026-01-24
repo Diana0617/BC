@@ -610,9 +610,7 @@ export default function SpecialistDashboard() {
             )}
 
             {/* Resumen de Comisiones - Siempre visible */}
-            {commissionsPerms.view && (
-              <CommissionSummary specialistId={user?.id} businessId={user?.businessId} />
-            )}
+            <CommissionSummary specialistId={user?.id} businessId={user?.businessId} />
           </div>
         </div>
 
@@ -660,16 +658,14 @@ export default function SpecialistDashboard() {
         {/* Quick Actions - Debajo de Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
           {/* Comisiones - Siempre visible para especialistas */}
-          {commissionsPerms.view && (
-            <button
-              onClick={() => navigate('/specialist/commissions')}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all text-left"
-            >
-              <ChartBarIcon className="w-6 h-6 text-blue-600 mb-2" />
-              <p className="text-sm font-semibold text-gray-900">Comisiones</p>
-              <p className="text-xs text-gray-500">Gestionar pagos</p>
-            </button>
-          )}
+          <button
+            onClick={() => navigate('/specialist/commissions')}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all text-left"
+          >
+            <ChartBarIcon className="w-6 h-6 text-blue-600 mb-2" />
+            <p className="text-sm font-semibold text-gray-900">Comisiones</p>
+            <p className="text-xs text-gray-500">Gestionar pagos</p>
+          </button>
           
           {/* Caja - Solo si puede cobrar/procesar pagos */}
           {paymentsPerms.create && (
@@ -722,8 +718,8 @@ export default function SpecialistDashboard() {
                   Permisos Básicos Activos
                 </h3>
                 <p className="text-xs text-blue-700">
-                  Puedes ver tus turnos, iniciarlos, cerrarlos y gestionar tus comisiones. 
-                  Si necesitas permisos adicionales (crear citas, cobrar tus turnos, abrir caja, etc.), contacta al administrador del negocio.
+                  Actualmente puedes: ver tus turnos, iniciarlos/cerrarlos, gestionar tus comisiones y ver clientes. 
+                  Si necesitas permisos adicionales (crear citas, cobrar tus turnos, etc.), contacta al administrador del negocio.
                 </p>
               </div>
             </div>
