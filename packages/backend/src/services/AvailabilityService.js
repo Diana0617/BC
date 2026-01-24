@@ -53,6 +53,7 @@ class AvailabilityService {
 
       // 2. Obtener el día de la semana
       const dayOfWeek = this.getDayOfWeekName(date);
+      console.log(`📅 Fecha: ${date}, Día de la semana: ${dayOfWeek}`);
 
       // 3. Verificar si la sucursal está abierta ese día y normalizar formato
       let branchDayConfig = branch.businessHours[dayOfWeek];
@@ -126,8 +127,9 @@ class AvailabilityService {
         id: specialistSchedule.id,
         startTime: specialistSchedule.startTime,
         endTime: specialistSchedule.endTime,
-        dayOfWeek: specialistSchedule.dayOfWeek
-      } : null);
+        dayOfWeek: specialistSchedule.dayOfWeek,
+        branchId: specialistSchedule.branchId
+      } : 'NULL - No encontrado');
 
       // Si no hay horario específico del especialista, usar horarios de la sucursal
       // Esto permite que los especialistas trabajen en los horarios de la sucursal por defecto
@@ -140,9 +142,12 @@ class AvailabilityService {
       if (specialistSchedule && specialistSchedule.startTime && specialistSchedule.endTime) {
         workingHours.startTime = specialistSchedule.startTime;
         workingHours.endTime = specialistSchedule.endTime;
+        console.log('✅ Usando horarios del especialista:', workingHours);
+      } else {
+        console.log('⚠️ No se encontraron horarios del especialista, usando horarios de sucursal');
       }
 
-      console.log('⏰ Horarios de trabajo a usar:', workingHours);
+      console.log('⏰ Horarios de trabajo finales a usar:', workingHours);
 
       // Validar que los horarios estén definidos
       if (!workingHours.startTime || !workingHours.endTime) {
