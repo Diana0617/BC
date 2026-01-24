@@ -733,23 +733,25 @@ exports.getSignaturePDF = async (req, res) => {
       });
     }
 
-    // Generar nuevo PDF
+    // Generar nuevo PDF como base64 (para evitar problemas de permisos en Cloudinary)
     console.log('📄 Generando PDF de consentimiento para:', signatureId);
-    const pdfUrl = await generateConsentPDF(signature);
-
-    // Actualizar registro con URL del PDF
+    const pdfBuffer = await generateConsentPDFBuffer(signature);
+    
+    // Convertir buffer a base64 data URL
+    const pdfBase64 = `data:application/pdf;base64,${pdfBuffer.toString('base64')}`;
+    
+    // Actualizar registro indicando que el PDF fue generado
     await signature.update({
-      pdfUrl,
       pdfGeneratedAt: new Date()
     });
 
-    console.log('✅ PDF generado exitosamente:', pdfUrl);
+    console.log('✅ PDF generado exitosamente como base64');
 
     return res.json({
       success: true,
       message: 'PDF generado exitosamente',
       data: {
-        pdfUrl,
+        pdfUrl: pdfBase64,
         pdfGeneratedAt: new Date()
       }
     });
@@ -765,15 +767,17 @@ exports.getSignaturePDF = async (req, res) => {
 };
 
 /**
- * Función helper para generar PDF del consentimiento
+ * Función helper para generar PDF del consentimiento como Buffer
  * @param {Object} signature - Objeto ConsentSignature con todos los datos
- * @returns {Promise<String>} - URL del PDF en Cloudinary
+ * @returns {Promise<Buffer>} - Buffer del PDF generado
  */
-async function generateConsentPDF(signature) {
+async function generateConsentPDFBuffer(signature) {
   return new Promise(async (resolve, reject) => {
     try {
       // Agregar axios si no está importado
       const axios = require('axios');
+      
+      const chunks = [];
       
       // Crear documento PDF
       const doc = new PDFDocument({
@@ -781,16 +785,21 @@ async function generateConsentPDF(signature) {
         margins: { top: 50, bottom: 50, left: 50, right: 50 }
       });
 
-      // Crear archivo temporal
-      const tempDir = path.join(process.cwd(), 'temp');
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
+      // Capturar PDF en memoria (no crear archivo temporal)
+      doc.on('data', chunk => {
+        chunks.push(chunk);
+      });
       
-      const tempFilePath = path.join(tempDir, `consent_${signature.id}.pdf`);
-      const writeStream = fs.createWriteStream(tempFilePath);
-
-      doc.pipe(writeStream);
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(chunks);
+        console.log('✅ PDF generado en memoria, tamaño:', pdfBuffer.length, 'bytes');
+        resolve(pdfBuffer);
+      });
+      
+      doc.on('error', (error) => {
+        console.error('❌ Error generando PDF:', error);
+        reject(error);
+      });
 
       // ============= LOGO DEL NEGOCIO (si existe) =============
       let currentY = 50;
@@ -929,47 +938,8 @@ async function generateConsentPDF(signature) {
           align: 'center'
         });
 
-      // Finalizar documento
+      // Finalizar documento (el evento 'end' manejará la resolución)
       doc.end();
-
-      // Esperar a que termine de escribirse el archivo
-      writeStream.on('finish', async () => {
-        try {
-          // Subir a Cloudinary
-          const uploadResult = await uploadConsentDocument(tempFilePath, signature.businessId, signature.id);
-          
-          console.log('📤 Upload result:', uploadResult);
-          
-          // Eliminar archivo temporal (solo si existe)
-          try {
-            if (fs.existsSync(tempFilePath)) {
-              fs.unlinkSync(tempFilePath);
-            }
-          } catch (unlinkError) {
-            console.warn('⚠️ No se pudo eliminar archivo temporal:', unlinkError.message);
-          }
-          
-          // uploadConsentDocument retorna { url, public_id, ... } NO { secure_url }
-          const pdfUrl = uploadResult.url;
-          
-          // Actualizar signature con la URL del PDF
-          await signature.update({
-            pdfUrl: pdfUrl,
-            pdfGeneratedAt: new Date()
-          });
-
-          console.log('✅ PDF generado y subido:', pdfUrl);
-          resolve(pdfUrl);
-        } catch (uploadError) {
-          console.error('Error subiendo PDF:', uploadError);
-          reject(uploadError);
-        }
-      });
-
-      writeStream.on('error', (error) => {
-        console.error('Error escribiendo PDF:', error);
-        reject(error);
-      });
 
     } catch (error) {
       console.error('Error generando PDF:', error);
