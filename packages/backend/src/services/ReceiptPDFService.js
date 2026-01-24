@@ -32,9 +32,8 @@ class ReceiptPDFService {
    * @returns {Promise<Buffer>} - Buffer del PDF generado
    */
   static async generateReceiptPDF(receipt, business, items = []) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        console.log('📄 [ReceiptPDFService] Iniciando generación de PDF formato ticket...');
         
         // Formato ticket térmico: 80mm width (226.77 points), altura automática
         const doc = new PDFDocument({ 
@@ -51,12 +50,10 @@ class ReceiptPDFService {
         
         doc.on('end', () => {
           const pdfBuffer = Buffer.concat(chunks);
-          console.log('✅ [ReceiptPDFService] PDF generado, tamaño:', pdfBuffer.length, 'bytes');
           resolve(pdfBuffer);
         });
         
         doc.on('error', (error) => {
-          console.error('❌ [ReceiptPDFService] Error en generación de PDF:', error);
           reject(error);
         });
 
@@ -66,7 +63,6 @@ class ReceiptPDFService {
         // ============= LOGO DEL NEGOCIO (si existe) =============
         if (business.logo) {
           try {
-            console.log('📷 Descargando logo desde:', business.logo);
             const logoBuffer = await this._downloadImage(business.logo);
             
             if (logoBuffer) {
