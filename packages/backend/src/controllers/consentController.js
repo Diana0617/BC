@@ -772,7 +772,7 @@ async function generateConsentPDF(signature) {
       });
 
       // Crear archivo temporal
-      const tempDir = path.join(__dirname, '../../temp');
+      const tempDir = path.join(process.cwd(), 'temp');
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }
@@ -928,8 +928,14 @@ async function generateConsentPDF(signature) {
           // Subir a Cloudinary
           const uploadResult = await uploadConsentDocument(tempFilePath, signature.businessId, signature.id);
           
-          // Eliminar archivo temporal
-          fs.unlinkSync(tempFilePath);
+          // Eliminar archivo temporal (solo si existe)
+          try {
+            if (fs.existsSync(tempFilePath)) {
+              fs.unlinkSync(tempFilePath);
+            }
+          } catch (unlinkError) {
+            console.warn('⚠️ No se pudo eliminar archivo temporal:', unlinkError.message);
+          }
           
           // Actualizar signature con la URL del PDF
           await signature.update({
