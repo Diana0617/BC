@@ -905,17 +905,28 @@ const ConsentsTab = ({ client }) => {
           
           // Handler para regenerar PDF si es ruta local
           const handleViewPDF = async (e) => {
+            console.log('🔵 handleViewPDF llamado');
+            console.log('🔍 isLocalPath:', isLocalPath);
+            console.log('🔍 consent.pdfUrl:', consent.pdfUrl);
+            console.log('🔍 consent.id:', consent.id);
+            console.log('🔍 currentBusiness.id:', currentBusiness?.id);
+            
             if (isLocalPath) {
               e.preventDefault();
+              console.log('⚠️ Es ruta local, regenerando PDF...');
               
               try {
                 toast.loading('Generando PDF actualizado...', { id: 'pdf-gen' });
                 
-                const response = await apiClient.get(
-                  `/api/business/${currentBusiness.id}/consent-signatures/${consent.id}/pdf`
-                );
+                const url = `/api/business/${currentBusiness.id}/consent-signatures/${consent.id}/pdf`;
+                console.log('📡 Llamando endpoint:', url);
+                
+                const response = await apiClient.get(url);
+                
+                console.log('📥 Respuesta recibida:', response.data);
                 
                 if (response.data?.success && response.data?.data?.pdfUrl) {
+                  console.log('✅ PDF generado, URL:', response.data.data.pdfUrl);
                   toast.success('PDF generado exitosamente', { id: 'pdf-gen' });
                   
                   // Abrir el nuevo PDF
@@ -927,12 +938,16 @@ const ConsentsTab = ({ client }) => {
                   );
                   setConsents(historyResponse.data?.data?.consents || []);
                 } else {
+                  console.error('❌ Response sin éxito o sin pdfUrl:', response.data);
                   toast.error('Error generando PDF', { id: 'pdf-gen' });
                 }
               } catch (error) {
-                console.error('Error generating PDF:', error);
+                console.error('❌ Error generating PDF:', error);
+                console.error('❌ Error completo:', error.response?.data || error.message);
                 toast.error('Error generando PDF', { id: 'pdf-gen' });
               }
+            } else {
+              console.log('✅ No es ruta local, abriendo PDF directamente');
             }
           };
           

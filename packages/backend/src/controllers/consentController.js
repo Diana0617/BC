@@ -673,6 +673,7 @@ exports.revokeSignature = async (req, res) => {
 exports.getSignaturePDF = async (req, res) => {
   try {
     const { businessId, signatureId } = req.params;
+    console.log('📄 getSignaturePDF llamado - businessId:', businessId, 'signatureId:', signatureId);
 
     const signature = await ConsentSignature.findOne({
       where: { id: signatureId, businessId },
@@ -694,24 +695,33 @@ exports.getSignaturePDF = async (req, res) => {
     });
 
     if (!signature) {
+      console.error('❌ Firma no encontrada');
       return res.status(404).json({
         success: false,
         message: 'Firma no encontrada'
       });
     }
 
+    console.log('✅ Firma encontrada');
+    console.log('🔍 pdfUrl actual:', signature.pdfUrl);
+    console.log('🔍 pdfGeneratedAt:', signature.pdfGeneratedAt);
+
     // Si ya existe el PDF y fue generado recientemente (menos de 24h), devolverlo
     const dayInMs = 24 * 60 * 60 * 1000;
     
     // VERIFICAR SI ES UNA RUTA LOCAL (antes de Cloudinary)
     const isLocalPath = signature.pdfUrl && signature.pdfUrl.startsWith('/uploads/');
+    console.log('🔍 isLocalPath:', isLocalPath);
     
     const needsRegenerate = !signature.pdfUrl || 
                            isLocalPath || // Regenerar PDFs antiguos con rutas locales
                            !signature.pdfGeneratedAt || 
                            (Date.now() - new Date(signature.pdfGeneratedAt).getTime() > dayInMs);
+    
+    console.log('🔍 needsRegenerate:', needsRegenerate);
 
     if (!needsRegenerate) {
+      console.log('ℹ️ PDF ya existe y es válido, devolviendo URL existente');
       // @TODO: Implementar descarga directa del archivo desde Cloudinary
       return res.json({
         success: true,
