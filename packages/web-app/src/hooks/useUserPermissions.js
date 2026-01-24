@@ -58,11 +58,17 @@ export const useUserPermissions = () => {
   const activePermissions = useMemo(() => {
     if (!permissionsData?.permissions) return new Set();
     
-    return new Set(
-      permissionsData.permissions
-        .filter(p => p.isGranted)
-        .map(p => p.permission?.key)
-    );
+    const granted = permissionsData.permissions.filter(p => p.isGranted);
+    const keys = granted.map(p => p.key || p.permission?.key);
+    
+    console.log('🔍 [useUserPermissions] Permisos activos:', {
+      total: granted.length,
+      keys: keys,
+      hasPaymentsCreate: keys.includes('payments.create'),
+      raw: granted
+    });
+    
+    return new Set(keys.filter(k => k)); // Filtrar nulls/undefined
   }, [permissionsData]);
 
   // Función para verificar un permiso específico
@@ -113,6 +119,24 @@ export const useUserPermissions = () => {
   // Permisos de consentimientos (si existen en el sistema)
   const canViewConsents = hasPermission('consents.view') || hasPermission('appointments.manage_consents');
   const canCreateConsents = hasPermission('consents.create');
+
+  // Log de depuración
+  console.log('📊 [useUserPermissions] Estructura final:', {
+    loading,
+    activePermissionsCount: activePermissions.size,
+    activePermissionsList: Array.from(activePermissions),
+    paymentsObject: {
+      view: canViewPayments,
+      create: canCreatePayments,
+      process: canProcessPayments
+    },
+    appointmentsObject: {
+      viewAll: canViewAllAppointments,
+      create: canCreateAppointments,
+      edit: canEditAppointments,
+      cancel: canCancelAppointments
+    }
+  });
 
   return {
     // Estado
