@@ -687,7 +687,8 @@ exports.getSignaturePDF = async (req, res) => {
         },
         {
           model: Business,
-          as: 'business'
+          as: 'business',
+          attributes: ['id', 'name', 'address', 'phone', 'email', 'logo']
         }
       ]
     });
@@ -699,9 +700,14 @@ exports.getSignaturePDF = async (req, res) => {
       });
     }
 
-    // Si ya existe el PDF, devolverlo
-    if (signature.pdfUrl) {
-      // @TODO: Implementar descarga del archivo desde storage
+    // Si ya existe el PDF y fue generado recientemente (menos de 24h), devolverlo
+    const dayInMs = 24 * 60 * 60 * 1000;
+    const needsRegenerate = !signature.pdfUrl || 
+                           !signature.pdfGeneratedAt || 
+                           (Date.now() - new Date(signature.pdfGeneratedAt).getTime() > dayInMs);
+
+    if (!needsRegenerate) {
+      // @TODO: Implementar descarga directa del archivo desde Cloudinary
       return res.json({
         success: true,
         message: 'PDF ya generado',
@@ -712,15 +718,24 @@ exports.getSignaturePDF = async (req, res) => {
       });
     }
 
-    // @TODO: Implementar generación de PDF
-    // Por ahora, responder con placeholder
-    return res.status(501).json({
-      success: false,
-      message: 'Generación de PDF pendiente de implementación',
+    // Generar nuevo PDF
+    console.log('📄 Generando PDF de consentimiento para:', signatureId);
+    const pdfUrl = await generateConsentPDF(signature);
+
+    // Actualizar registro con URL del PDF
+    await signature.update({
+      pdfUrl,
+      pdfGeneratedAt: new Date()
+    });
+
+    console.log('✅ PDF generado exitosamente:', pdfUrl);
+
+    return res.json({
+      success: true,
+      message: 'PDF generado exitosamente',
       data: {
-        templateContent: signature.templateContent,
-        editableFieldsData: signature.editableFieldsData,
-        signatureData: signature.signatureData
+        pdfUrl,
+        pdfGeneratedAt: new Date()
       }
     });
 
@@ -728,6 +743,11 @@ exports.getSignaturePDF = async (req, res) => {
     console.error('Error al obtener PDF:', error);
     return res.status(500).json({
       success: false,
+      message: 'Error al obtener PDF',
+      error: error.message
+    });
+  }
+};
       message: 'Error al obtener PDF',
       error: error.message
     });
@@ -742,6 +762,9 @@ exports.getSignaturePDF = async (req, res) => {
 async function generateConsentPDF(signature) {
   return new Promise(async (resolve, reject) => {
     try {
+      // Agregar axios si no está importado
+      const axios = require('axios');
+      
       // Crear documento PDF
       const doc = new PDFDocument({
         size: 'A4',
@@ -759,7 +782,39 @@ async function generateConsentPDF(signature) {
 
       doc.pipe(writeStream);
 
+      // ============= LOGO DEL NEGOCIO (si existe) =============
+      let currentY = 50;
+      
+      if (signature.business && signature.business.logo) {
+        try {
+          console.log('🖼️ Descargando logo del negocio para consentimiento:', signature.business.logo);
+          const logoResponse = await axios.get(signature.business.logo, {
+            responseType: 'arraybuffer',
+            timeout: 5000
+          });
+          const logoBuffer = Buffer.from(logoResponse.data, 'binary');
+          
+          if (logoBuffer) {
+            const logoSize = 80;
+            const logoX = (595 - logoSize) / 2; // Centrar en A4
+            
+            doc.image(logoBuffer, logoX, currentY, {
+              width: logoSize,
+              height: logoSize,
+              fit: [logoSize, logoSize],
+              align: 'center'
+            });
+            
+            currentY += logoSize + 15;
+            console.log('✅ Logo agregado al consentimiento');
+          }
+        } catch (logoError) {
+          console.error('❌ Error cargando logo para consentimiento:', logoError.message);
+        }
+      }
+
       // Encabezado con información del negocio
+      doc.y = currentY;
       if (signature.business) {
         doc.fontSize(18).font('Helvetica-Bold').text(signature.business.name || 'Beauty Control', { align: 'center' });
         doc.moveDown(0.5);

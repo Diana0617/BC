@@ -794,7 +794,7 @@ class SaleController {
 
       // Obtener información del negocio
       const business = await Business.findByPk(businessId, {
-        attributes: ['id', 'name', 'address', 'phone', 'email']
+        attributes: ['id', 'name', 'address', 'phone', 'email', 'logo']
       });
 
       // Obtener los productos de la venta

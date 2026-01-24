@@ -19,9 +19,48 @@ class CatalogPDFGenerator {
 
         doc.pipe(stream);
 
-        // Header
+        // ============= HEADER: LOGO DEL NEGOCIO =============
+        let currentY = 50;
+        
+        if (business.logo) {
+          try {
+            console.log('🖼️ Descargando logo del negocio para catálogo:', business.logo);
+            const logoBuffer = await this.downloadImage(business.logo);
+            
+            if (logoBuffer) {
+              const logoSize = 80;
+              const logoX = (595 - logoSize) / 2; // Centrar en página A4
+              
+              doc.image(logoBuffer, logoX, currentY, {
+                width: logoSize,
+                height: logoSize,
+                fit: [logoSize, logoSize],
+                align: 'center'
+              });
+              
+              currentY += logoSize + 15;
+              console.log('✅ Logo agregado al catálogo');
+            }
+          } catch (error) {
+            console.error('❌ Error cargando logo para catálogo:', error.message);
+          }
+        }
+
+        // Header: Títulos
+        doc.y = currentY;
         doc.fontSize(20).text('Catálogo de Productos', { align: 'center' });
         doc.fontSize(12).text(business.name || 'Mi Negocio', { align: 'center' });
+        
+        // Información de contacto del negocio
+        doc.fontSize(9).fillColor('#6B7280');
+        if (business.address) {
+          doc.text(business.address, { align: 'center' });
+        }
+        if (business.phone) {
+          doc.text(`Tel: ${business.phone}`, { align: 'center' });
+        }
+        
+        doc.fillColor('#000000'); // Restaurar color negro
         doc.moveDown();
 
         // Filtros aplicados

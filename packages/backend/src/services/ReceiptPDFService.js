@@ -1,9 +1,28 @@
 const PDFDocument = require('pdfkit');
+const axios = require('axios');
 
 /**
  * Servicio para generar PDFs de recibos en formato ticket térmico 80mm
  */
 class ReceiptPDFService {
+
+  /**
+   * Descargar imagen desde URL y retornar buffer
+   * @param {string} imageUrl - URL de la imagen
+   * @returns {Promise<Buffer|null>} - Buffer de la imagen o null si falla
+   */
+  static async _downloadImage(imageUrl) {
+    try {
+      const response = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        timeout: 5000 // 5 segundos timeout
+      });
+      return Buffer.from(response.data, 'binary');
+    } catch (error) {
+      console.error('❌ Error descargando imagen:', error.message);
+      return null;
+    }
+  }
 
   /**
    * Generar PDF de recibo estilo ticket de supermercado
@@ -47,18 +66,26 @@ class ReceiptPDFService {
         // ============= LOGO DEL NEGOCIO (si existe) =============
         if (business.logo) {
           try {
-            const logoWidth = 60;
-            const logoHeight = 60;
-            const logoX = (pageWidth - logoWidth) / 2; // Centrar
-
-            doc.image(business.logo, logoX, yPosition, {
-              width: logoWidth,
-              height: logoHeight,
-              fit: [logoWidth, logoHeight],
-              align: 'center'
-            });
+            console.log('📷 Descargando logo desde:', business.logo);
+            const logoBuffer = await this._downloadImage(business.logo);
             
-            yPosition += logoHeight + 8; // Espacio después del logo
+            if (logoBuffer) {
+              const logoWidth = 60;
+              const logoHeight = 60;
+              const logoX = (pageWidth - logoWidth) / 2; // Centrar
+
+              doc.image(logoBuffer, logoX, yPosition, {
+                width: logoWidth,
+                height: logoHeight,
+                fit: [logoWidth, logoHeight],
+                align: 'center'
+              });
+              
+              yPosition += logoHeight + 8; // Espacio después del logo
+              console.log('✅ Logo agregado al recibo');
+            } else {
+              console.warn('⚠️ No se pudo descargar el logo, continuando sin él');
+            }
           } catch (error) {
             console.error('❌ Error cargando logo del negocio:', error.message);
             // Continuar sin logo si falla

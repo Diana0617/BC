@@ -172,7 +172,9 @@ class SupplierCatalogController {
 
       // Obtener información del negocio
       const Business = require('../models/Business');
-      const business = await Business.findByPk(businessId);
+      const business = await Business.findByPk(businessId, {
+        attributes: ['id', 'name', 'address', 'phone', 'email', 'logo']
+      });
 
       // Generar PDF
       const pdfBuffer = await CatalogPDFGenerator.generate(
