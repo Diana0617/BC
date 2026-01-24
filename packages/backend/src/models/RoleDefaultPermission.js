@@ -31,6 +31,7 @@ const RoleDefaultPermission = sequelize.define('RoleDefaultPermission', {
 }, {
   tableName: 'role_default_permissions',
   timestamps: true,
+  underscored: true,
   indexes: [
     {
       fields: ['role', 'permissionId'],

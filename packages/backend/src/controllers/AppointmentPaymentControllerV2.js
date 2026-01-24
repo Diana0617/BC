@@ -127,6 +127,25 @@ class AppointmentPaymentControllerV2 {
         });
       }
 
+      // Validar turno de caja abierto si es pago en efectivo
+      if (paymentMethod.type === 'CASH') {
+        const CashRegisterShift = require('../models/CashRegisterShift');
+        const openShift = await CashRegisterShift.findOne({
+          where: {
+            userId: req.user.id,
+            businessId: appointment.businessId,
+            status: 'OPEN'
+          }
+        });
+
+        if (!openShift) {
+          return res.status(400).json({
+            success: false,
+            error: 'Debes abrir un turno de caja antes de cobrar en efectivo'
+          });
+        }
+      }
+
       // Calcular saldo pendiente
       const totalAmount = parseFloat(appointment.totalAmount || 0);
       const paidAmount = parseFloat(appointment.paidAmount || 0);

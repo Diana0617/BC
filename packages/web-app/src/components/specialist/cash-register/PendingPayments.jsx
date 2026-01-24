@@ -44,6 +44,11 @@ export default function PendingPayments({ shiftId, branchId }) {
         ...(filters.searchTerm && { search: filters.searchTerm })
       });
 
+      // Si el usuario es SPECIALIST, filtrar solo sus turnos
+      if (user.role === 'SPECIALIST') {
+        params.append('specialistId', user.id);
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/appointments?${params}`,
         {
