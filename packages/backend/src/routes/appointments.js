@@ -655,23 +655,33 @@ router.post('/:id/consent', async (req, res) => {
       // Generar el PDF
       const pdfBuffer = await generateConsentPDF(signatureWithIncludes);
 
-      // Guardar PDF en filesystem (temporal - TODO: mover a Cloudinary en producción)
-      const uploadsDir = path.join(__dirname, '../../uploads/consents');
+      // Guardar PDF temporalmente para subir a Cloudinary
+      const uploadsDir = path.join(__dirname, '../../uploads/temp');
       await fs.mkdir(uploadsDir, { recursive: true });
       
       const pdfFilename = `consent_${consentSignature.id}_${Date.now()}.pdf`;
-      const pdfPath = path.join(uploadsDir, pdfFilename);
+      const tempPdfPath = path.join(uploadsDir, pdfFilename);
       
-      await fs.writeFile(pdfPath, pdfBuffer);
+      await fs.writeFile(tempPdfPath, pdfBuffer);
+
+      // Subir a Cloudinary
+      const { uploadConsentDocument } = require('../config/cloudinary');
+      const uploadResult = await uploadConsentDocument(
+        tempPdfPath,
+        businessId,
+        consentSignature.id
+      );
+
+      // Eliminar archivo temporal
+      await fs.unlink(tempPdfPath);
 
       // Actualizar consentSignature con la URL del PDF
-      const pdfUrl = `/uploads/consents/${pdfFilename}`;
       await consentSignature.update({
-        pdfUrl,
+        pdfUrl: uploadResult.secure_url,
         pdfGeneratedAt: new Date()
       });
 
-      console.log('✅ PDF generado exitosamente:', pdfUrl);
+      console.log('✅ PDF generado exitosamente:', uploadResult.secure_url);
 
     } catch (pdfError) {
       console.error('⚠️ Error generando PDF (continuando sin PDF):', pdfError);

@@ -325,8 +325,8 @@ const uploadAppointmentEvidence = async (filePath, appointmentId, type = 'before
 };
 
 // Función específica para consentimientos
-const uploadConsentDocument = async (filePath, appointmentId) => {
-  return uploadDocument(filePath, 'beauty-control', `appointments/${appointmentId}/consent`);
+const uploadConsentDocument = async (filePath, businessId, signatureId) => {
+  return uploadDocument(filePath, 'beauty-control', `businesses/${businessId}/consents/${signatureId}`);
 };
 
 // Función específica para imágenes de servicios
