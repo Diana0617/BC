@@ -38,6 +38,16 @@ const SpecialistBranchSchedule = sequelize.define('SpecialistBranchSchedule', {
     allowNull: false,
     comment: 'Hora de fin del turno'
   },
+  breakStart: {
+    type: DataTypes.TIME,
+    allowNull: true,
+    comment: 'Hora de inicio del descanso/almuerzo'
+  },
+  breakEnd: {
+    type: DataTypes.TIME,
+    allowNull: true,
+    comment: 'Hora de fin del descanso/almuerzo'
+  },
   isActive: {
     type: DataTypes.BOOLEAN,
     allowNull: false,

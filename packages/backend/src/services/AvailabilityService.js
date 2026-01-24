@@ -127,6 +127,8 @@ class AvailabilityService {
         id: specialistSchedule.id,
         startTime: specialistSchedule.startTime,
         endTime: specialistSchedule.endTime,
+        breakStart: specialistSchedule.breakStart,
+        breakEnd: specialistSchedule.breakEnd,
         dayOfWeek: specialistSchedule.dayOfWeek,
         branchId: specialistSchedule.branchId
       } : 'NULL - No encontrado');
@@ -135,14 +137,25 @@ class AvailabilityService {
       // Esto permite que los especialistas trabajen en los horarios de la sucursal por defecto
       let workingHours = {
         startTime: branchHours.open,
-        endTime: branchHours.close
+        endTime: branchHours.close,
+        breakStart: branchHours.breakStart,
+        breakEnd: branchHours.breakEnd
       };
 
       // Si el especialista tiene horarios configurados, usarlos
       if (specialistSchedule && specialistSchedule.startTime && specialistSchedule.endTime) {
         workingHours.startTime = specialistSchedule.startTime;
         workingHours.endTime = specialistSchedule.endTime;
-        console.log('✅ Usando horarios del especialista:', workingHours);
+        // Si el especialista tiene breaks configurados, usar esos; sino, usar los de la sucursal
+        if (specialistSchedule.breakStart && specialistSchedule.breakEnd) {
+          workingHours.breakStart = specialistSchedule.breakStart;
+          workingHours.breakEnd = specialistSchedule.breakEnd;
+          console.log('✅ Usando horarios y breaks del especialista');
+        } else {
+          console.log('✅ Usando horarios del especialista con breaks de sucursal');
+        }
+        console.log('   Horarios:', { start: workingHours.startTime, end: workingHours.endTime });
+        console.log('   Breaks:', { start: workingHours.breakStart, end: workingHours.breakEnd });
       } else {
         console.log('⚠️ No se encontraron horarios del especialista, usando horarios de sucursal');
       }
@@ -189,8 +202,14 @@ class AvailabilityService {
         };
       }
 
-      // 7. Generar todos los slots posibles en ese rango
-      const allSlots = this.generateTimeSlots(workStartTime, workEndTime, slotDuration);
+      // 7. Generar todos los slots posibles en ese rango, excluyendo breaks
+      const allSlots = this.generateTimeSlots(
+        workStartTime, 
+        workEndTime, 
+        slotDuration,
+        workingHours.breakStart,
+        workingHours.breakEnd
+      );
 
       // 8. Obtener citas existentes del especialista ese día
       // Buscar por userId (appointments usan userId como specialistId)
@@ -494,17 +513,29 @@ class AvailabilityService {
   }
 
   // ==================== HELPER METHODS ====================
-
-  /**
-   * Generar slots de tiempo en un rango
-   * @param {String} startTime - "09:00"
-   * @param {String} endTime - "18:00"
-   * @param {Number} duration - Minutos
+param {String} breakStart - "12:00" (opcional)
+   * @param {String} breakEnd - "13:00" (opcional)
    * @returns {Array} slots
    */
-  static generateTimeSlots(startTime, endTime, duration) {
+  static generateTimeSlots(startTime, endTime, duration, breakStart = null, breakEnd = null) {
     const slots = [];
     let current = this.parseTime(startTime);
+    const end = this.parseTime(endTime);
+    
+    const breakStartTime = breakStart ? this.parseTime(breakStart) : null;
+    const breakEndTime = breakEnd ? this.parseTime(breakEnd) : null;
+
+    while (current < end) {
+      const slotEnd = this.addMinutes(current, duration);
+      
+      // Verificar si el slot cae durante el break
+      const isDuringBreak = breakStartTime && breakEndTime && (
+        (current >= breakStartTime && current < breakEndTime) ||
+        (slotEnd > breakStartTime && slotEnd <= breakEndTime) ||
+        (current < breakStartTime && slotEnd > breakEndTime)
+      );
+      
+      if (slotEnd <= end && !isDuringBreakarseTime(startTime);
     const end = this.parseTime(endTime);
 
     while (current < end) {
