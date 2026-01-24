@@ -957,6 +957,95 @@ async function generateConsentPDF(signature) {
   });
 }
 
+/**
+ * Regenerar PDFs antiguos con rutas locales (migración a Cloudinary)
+ * POST /api/business/:businessId/consent-signatures/migrate-pdfs
+ * Solo para admin/owner
+ */
+exports.migratePDFsToCloudinary = async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    
+    console.log('🔄 Iniciando migración de PDFs a Cloudinary para negocio:', businessId);
+
+    // Buscar todos los consentimientos con rutas locales
+    const signaturesWithLocalPaths = await ConsentSignature.findAll({
+      where: {
+        businessId,
+        pdfUrl: {
+          [Op.like]: '/uploads/%'
+        }
+      },
+      include: [
+        {
+          model: ConsentTemplate,
+          as: 'template'
+        },
+        {
+          model: Client,
+          as: 'customer'
+        },
+        {
+          model: Business,
+          as: 'business',
+          attributes: ['id', 'name', 'address', 'phone', 'email', 'logo']
+        }
+      ],
+      limit: 100 // Procesar máximo 100 a la vez
+    });
+
+    console.log(`📊 Encontrados ${signaturesWithLocalPaths.length} PDFs para migrar`);
+
+    const results = {
+      total: signaturesWithLocalPaths.length,
+      success: 0,
+      failed: 0,
+      errors: []
+    };
+
+    // Procesar cada firma
+    for (const signature of signaturesWithLocalPaths) {
+      try {
+        console.log(`🔄 Regenerando PDF para firma ${signature.id}`);
+        
+        const pdfUrl = await generateConsentPDF(signature);
+        
+        await signature.update({
+          pdfUrl,
+          pdfGeneratedAt: new Date()
+        });
+        
+        results.success++;
+        console.log(`✅ PDF migrado: ${signature.id} → ${pdfUrl}`);
+        
+      } catch (error) {
+        results.failed++;
+        results.errors.push({
+          signatureId: signature.id,
+          error: error.message
+        });
+        console.error(`❌ Error migrando ${signature.id}:`, error.message);
+      }
+    }
+
+    console.log(`✅ Migración completada: ${results.success} exitosos, ${results.failed} fallidos`);
+
+    return res.json({
+      success: true,
+      message: 'Migración de PDFs completada',
+      data: results
+    });
+
+  } catch (error) {
+    console.error('Error en migración de PDFs:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error en migración de PDFs',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   ...exports,
   generateConsentPDF

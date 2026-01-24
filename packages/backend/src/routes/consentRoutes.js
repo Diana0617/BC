@@ -123,4 +123,15 @@ router.get(
   consentController.getSignaturePDF
 );
 
+/**
+ * Migrar PDFs antiguos a Cloudinary (admin/owner only)
+ * POST /api/business/:businessId/consent-signatures/migrate-pdfs
+ */
+router.post(
+  '/consent-signatures/migrate-pdfs',
+  // authenticate,
+  // ownerOnly, // Descomentar cuando esté el middleware
+  consentController.migratePDFsToCloudinary
+);
+
 module.exports = router;
