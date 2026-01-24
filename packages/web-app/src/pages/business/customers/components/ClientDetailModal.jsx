@@ -900,6 +900,42 @@ const ConsentsTab = ({ client }) => {
             pdfGeneratedAt: consent.pdfGeneratedAt
           });
           
+          // Detectar si es una ruta local antigua
+          const isLocalPath = consent.pdfUrl && consent.pdfUrl.startsWith('/uploads/');
+          
+          // Handler para regenerar PDF si es ruta local
+          const handleViewPDF = async (e) => {
+            if (isLocalPath) {
+              e.preventDefault();
+              
+              try {
+                toast.loading('Generando PDF actualizado...', { id: 'pdf-gen' });
+                
+                const response = await apiClient.get(
+                  `/api/business/${currentBusiness.id}/consent-signatures/${consent.id}/pdf`
+                );
+                
+                if (response.data?.success && response.data?.data?.pdfUrl) {
+                  toast.success('PDF generado exitosamente', { id: 'pdf-gen' });
+                  
+                  // Abrir el nuevo PDF
+                  window.open(response.data.data.pdfUrl, '_blank');
+                  
+                  // Recargar consentimientos para actualizar la URL
+                  const historyResponse = await apiClient.get(
+                    `/api/business/${currentBusiness.id}/clients/${client.id}/history`
+                  );
+                  setConsents(historyResponse.data?.data?.consents || []);
+                } else {
+                  toast.error('Error generando PDF', { id: 'pdf-gen' });
+                }
+              } catch (error) {
+                console.error('Error generating PDF:', error);
+                toast.error('Error generando PDF', { id: 'pdf-gen' });
+              }
+            }
+          };
+          
           return (
           <div 
             key={consent.id} 
@@ -956,17 +992,33 @@ const ConsentsTab = ({ client }) => {
               <div className="ml-4 flex flex-col space-y-2">
                 {consent.pdfUrl ? (
                   <>
-                    <a
-                      href={consent.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors"
-                    >
-                      <DocumentTextIcon className="h-4 w-4 mr-1" />
-                      Ver PDF
-                    </a>
+                    {isLocalPath ? (
+                      <button
+                        onClick={handleViewPDF}
+                        className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors"
+                      >
+                        <DocumentTextIcon className="h-4 w-4 mr-1" />
+                        Ver PDF (Regenerar)
+                      </button>
+                    ) : (
+                      <a
+                        href={consent.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors"
+                      >
+                        <DocumentTextIcon className="h-4 w-4 mr-1" />
+                        Ver PDF
+                      </a>
+                    )}
                     <button
-                      onClick={() => window.open(consent.pdfUrl, '_blank')}
+                      onClick={(e) => {
+                        if (isLocalPath) {
+                          handleViewPDF(e);
+                        } else {
+                          window.open(consent.pdfUrl, '_blank');
+                        }
+                      }}
                       className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
                     >
                       <PrinterIcon className="h-4 w-4 mr-1" />
