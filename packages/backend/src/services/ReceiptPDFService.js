@@ -325,7 +325,7 @@ class ReceiptPDFService {
         doc
           .fontSize(7)
           .font('Helvetica')
-          .text(`Método de pago: ${receipt.paymentMethod || 'Efectivo'}`, { 
+          .text(`Método de pago: ${receipt.paymentMethod || 'Efectivo'}`, 10, doc.y, { 
             width: pageWidth - 20, 
             align: 'center' 
           });
@@ -335,13 +335,13 @@ class ReceiptPDFService {
           const userName = `${receipt.user.firstName || ''} ${receipt.user.lastName || ''}`.trim();
           
           doc
-            .text(`Recibido por: ${userName}`, { 
+            .text(`Recibido por: ${userName}`, 10, doc.y, { 
               width: pageWidth - 20, 
               align: 'center' 
             });
         }
 
-        doc.moveDown(0.5);
+        doc.moveDown(0.8);
 
         // Línea separadora
         doc
@@ -355,21 +355,21 @@ class ReceiptPDFService {
         doc
           .fontSize(7)
           .font('Helvetica-Bold')
-          .text('¡Gracias por tu preferencia!', { 
+          .text('¡Gracias por tu preferencia!', 10, doc.y, { 
             width: pageWidth - 20, 
             align: 'center' 
           })
-          .moveDown(0.3);
+          .moveDown(0.4);
 
         doc
           .fontSize(6)
           .font('Helvetica')
-          .text('Conserve este recibo como comprobante de pago', { 
+          .text('Conserve este recibo como comprobante de pago', 10, doc.y, { 
             width: pageWidth - 20, 
             align: 'center' 
           });
 
-        doc.moveDown(1);
+        doc.moveDown(0.5);
 
         // Finalizar documento
         doc.end();
