@@ -145,7 +145,9 @@ const ConsentTemplateEditor = ({
       console.log('🔍 Insertando placeholder:', placeholderValue, 'con datos:', data);
       
       if (isImage && placeholderValue === '{{negocio_logo}}') {
+        console.log('🖼️ Intentando insertar logo. logoUrl:', data.logoUrl);
         if (data.logoUrl) {
+          console.log('✅ Logo disponible, insertando imagen');
           // Insertar logo como imagen editable sin wrapper que restrinja movimiento
           const imageHtml = `<img 
             src="${data.logoUrl}" 
@@ -161,6 +163,7 @@ const ConsentTemplateEditor = ({
           /> `;
           editorRef.current.insertContent(imageHtml);
         } else {
+          console.log('⚠️ No hay logo disponible. branding?.logo:', branding?.logo);
           // Si no hay logo, insertar el placeholder como texto
           editorRef.current.insertContent(` ${placeholderValue} `);
         }
@@ -554,14 +557,14 @@ const ConsentTemplateEditor = ({
                 </div>
 
                 {/* Example Template */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
-                  <h3 className="text-xs sm:text-sm font-semibold text-green-900 mb-2 flex items-center gap-2">
-                    <DocumentTextIcon className="h-3 w-3 sm:h-4 sm:w-4" />
-                    Ejemplo de Template
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-3 sm:p-4 shadow-sm">
+                  <h3 className="text-xs sm:text-sm font-bold text-green-900 mb-2 flex items-center gap-2">
+                    <DocumentTextIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-700" />
+                    💡 Ejemplo de Template
                   </h3>
                   <div className="text-[10px] sm:text-xs text-green-800 space-y-2">
-                    <p className="font-medium">Consentimiento Informado:</p>
-                    <div className="bg-white p-2 rounded border border-green-200 font-mono text-[9px] overflow-x-auto">
+                    <p className="font-bold text-green-900">📋 Copia este ejemplo:</p>
+                    <div className="bg-white p-3 rounded border-2 border-green-300 font-mono text-[10px] sm:text-xs overflow-x-auto shadow-inner">
                       <p>Yo, <strong>{'{{cliente_nombre_completo}}'}</strong>, identificado(a) con <strong>{'{{cliente_documento_completo}}'}</strong>, de <strong>{'{{cliente_edad}}'}</strong>,</p>
                       <br />
                       <p>DECLARO que:</p>
