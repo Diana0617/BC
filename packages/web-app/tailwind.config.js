@@ -7,6 +7,12 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Color principal - Dinámico desde BrandingContext usando variables CSS
+        branded: {
+          primary: 'var(--color-primary)',
+          secondary: 'var(--color-secondary)',
+          accent: 'var(--color-accent)',
+        },
         // Color principal - Pink/Fucsia (para CTAs y elementos destacados)
         primary: {
           50: '#fdf2f8',

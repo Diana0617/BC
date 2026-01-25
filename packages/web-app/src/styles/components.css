@@ -4,7 +4,145 @@
  */
 
 /* ========================================
-   COMPONENTES BASE
+   COMPONENTES BRANDED (Usan variables CSS dinámicas)
+   ======================================== */
+
+/* Botones Branded - Usan colores personalizables del BrandingContext */
+.btn-branded-primary {
+  background-color: var(--color-primary);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: all 200ms;
+}
+
+.btn-branded-primary:hover {
+  opacity: 0.9;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-branded-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-branded-secondary {
+  background-color: var(--color-secondary);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: all 200ms;
+}
+
+.btn-branded-secondary:hover {
+  opacity: 0.9;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-branded-outline {
+  background-color: transparent;
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  transition: all 200ms;
+}
+
+.btn-branded-outline:hover {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+/* Gradiente Branded */
+.bg-branded-gradient {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+}
+
+/* Texto Branded */
+.text-branded-primary {
+  color: var(--color-primary);
+}
+
+.text-branded-secondary {
+  color: var(--color-secondary);
+}
+
+/* Bordes Branded */
+.border-branded-primary {
+  border-color: var(--color-primary);
+}
+
+.border-branded-secondary {
+  border-color: var(--color-secondary);
+}
+
+/* Cards Branded */
+.card-branded {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  transition: box-shadow 200ms;
+}
+
+.card-branded:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card-branded-accent {
+  border-top: 4px solid var(--color-primary);
+}
+
+/* Inputs con foco branded */
+.input-branded {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.75rem;
+  color: #1e293b;
+  transition: all 200ms;
+}
+
+.input-branded:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+}
+
+/* Badges Branded */
+.badge-branded-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.badge-branded-secondary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--color-secondary);
+  color: white;
+}
+
+/* ========================================
+   COMPONENTES BASE (Fallback estático)
    ======================================== */
 
 /* Botones */

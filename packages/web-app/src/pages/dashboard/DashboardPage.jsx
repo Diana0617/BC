@@ -1,17 +1,21 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
+
 import { logout, clearSubscriptionWarning } from '@shared/store/slices/authSlice.js'
 import SubscriptionWarningBanner from '../../components/SubscriptionWarningBanner.jsx'
 import BusinessSpecialistDashboard from './BusinessSpecialistDashboard.jsx'
 import BusinessOwnerDashboard from './BusinessOwnerDashboard.jsx'
 import ReceptionistDashboard from './ReceptionistDashboard.jsx'
 import SpecialistDashboard from '../specialist/SpecialistDashboard.jsx'
+import BrandingDemo from '../../components/BrandingDemo.jsx'
+import { useBranding } from '../../contexts/BrandingContext'
 
 const DashboardPage = () => {
   const dispatch = useDispatch()
-  const navigate = useNavigate()
+  
   const { user, subscriptionWarning } = useSelector(state => state.auth)
+  const { branding } = useBranding()
+  const [showBrandingDemo, setShowBrandingDemo] = useState(false)
 
   const handleLogout = () => {
     dispatch(logout())
@@ -53,14 +57,33 @@ const DashboardPage = () => {
     // Dashboard por defecto para otros roles
     return (
       <>
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Bienvenido a tu panel de control
-          </h2>
-          <p className="text-gray-600">
-            Gestiona tu salón de belleza desde aquí
-          </p>
+        {/* Botón para mostrar/ocultar demo de branding */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Bienvenido a tu panel de control
+            </h2>
+            <p className="text-gray-600">
+              Gestiona tu salón de belleza desde aquí
+            </p>
+          </div>
+          <button 
+            onClick={() => setShowBrandingDemo(!showBrandingDemo)}
+            className="btn-branded-outline flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+            </svg>
+            {showBrandingDemo ? 'Ocultar' : 'Probar'} Sistema Branding
+          </button>
         </div>
+
+        {/* Demo de Branding */}
+        {showBrandingDemo && (
+          <div className="mb-8">
+            <BrandingDemo />
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -123,16 +146,16 @@ const DashboardPage = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
-            <div className="space-y-3">
-              <button className="w-full text-left px-4 py-3 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors duration-200">
+          <div className="card-branded card-branded-accent">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 p-6 pb-2">Acciones Rápidas</h3>
+            <div className="space-y-3 p-6 pt-0">
+              <button className="btn-branded-primary w-full">
                 + Nueva Cita
               </button>
-              <button className="w-full text-left px-4 py-3 rounded-lg bg-pink-50 text-pink-700 hover:bg-pink-100 transition-colors duration-200">
+              <button className="btn-branded-secondary w-full">
                 + Nuevo Cliente
               </button>
-              <button className="w-full text-left px-4 py-3 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors duration-200">
+              <button className="btn-branded-outline w-full">
                 + Registrar Venta
               </button>
             </div>
@@ -214,6 +237,9 @@ const DashboardPage = () => {
               >
                 Cerrar Sesión
               </button>
+              {branding?.logo && (
+                <img src={branding.logo} alt="Logo" className="h-10 object-contain" />
+              )}
             </div>
           </div>
         </div>

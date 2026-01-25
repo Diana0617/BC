@@ -6,9 +6,23 @@
 @tailwind utilities;
 
 @layer base {
+  /* Variables CSS globales para branding dinámico */
+  :root {
+    --color-primary: #ec4899;      /* Fucsia por defecto */
+    --color-secondary: #8b5cf6;    /* Purple por defecto */
+    --color-accent: #3b82f6;       /* Blue por defecto */
+    --font-family: 'Nunito', 'Poppins', 'Inter', sans-serif;
+    
+    /* Variables RGB para compatibilidad con Tailwind (opacity variants) */
+    --color-primary-rgb: 236, 72, 153;
+    --color-secondary-rgb: 139, 92, 246;
+    --color-accent-rgb: 59, 130, 246;
+  }
+
   /* Configuración base del body */
   body {
     @apply bg-white text-slate-800 antialiased;
+    font-family: var(--font-family);
   }
   
   /* Títulos */
