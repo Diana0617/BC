@@ -28,6 +28,8 @@ const CreateClientModal = ({ onClose, onSuccess }) => {
     phone: '',
     phoneSecondary: '',
     dateOfBirth: '',
+    documentType: '',
+    documentNumber: '',
     gender: '',
     address: '',
     city: '',
@@ -341,6 +343,44 @@ const CreateClientModal = ({ onClose, onSuccess }) => {
                     value={formData.dateOfBirth}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Tipo de Documento */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo de Documento
+                  </label>
+                  <select
+                    name="documentType"
+                    value={formData.documentType}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="">Seleccionar...</option>
+                    <option value="CC">Cédula de Ciudadanía (CC)</option>
+                    <option value="CE">Cédula de Extranjería (CE)</option>
+                    <option value="TI">Tarjeta de Identidad (TI)</option>
+                    <option value="DNI">DNI</option>
+                    <option value="PASSPORT">Pasaporte</option>
+                    <option value="RUT">RUT</option>
+                    <option value="RUC">RUC</option>
+                    <option value="OTHER">Otro</option>
+                  </select>
+                </div>
+
+                {/* Número de Documento */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Número de Documento
+                  </label>
+                  <input
+                    type="text"
+                    name="documentNumber"
+                    value={formData.documentNumber}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="1234567890"
                   />
                 </div>
               </div>

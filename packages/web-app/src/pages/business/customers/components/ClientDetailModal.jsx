@@ -273,6 +273,47 @@ const ClientDetailModal = ({ client, onClose, onCreateVoucher, onClientUpdated }
 const InfoTab = ({ client, onLiftBlock }) => {
   return (
     <div className="space-y-6">
+      {/* Información Personal */}
+      <div>
+        <h4 className="text-sm font-medium text-gray-900 mb-4">Información Personal</h4>
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {client.dateOfBirth && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <dt className="text-xs text-gray-500 mb-1">Fecha de Nacimiento</dt>
+              <dd className="text-sm font-medium text-gray-900">
+                {new Date(client.dateOfBirth).toLocaleDateString('es-ES', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </dd>
+            </div>
+          )}
+          {client.documentType && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <dt className="text-xs text-gray-500 mb-1">Tipo de Documento</dt>
+              <dd className="text-sm font-medium text-gray-900">{client.documentType}</dd>
+            </div>
+          )}
+          {client.documentNumber && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <dt className="text-xs text-gray-500 mb-1">Número de Documento</dt>
+              <dd className="text-sm font-medium text-gray-900">{client.documentNumber}</dd>
+            </div>
+          )}
+          {client.gender && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <dt className="text-xs text-gray-500 mb-1">Género</dt>
+              <dd className="text-sm font-medium text-gray-900">
+                {client.gender === 'MALE' ? 'Masculino' : 
+                 client.gender === 'FEMALE' ? 'Femenino' : 
+                 client.gender === 'OTHER' ? 'Otro' : 'Prefiere no decir'}
+              </dd>
+            </div>
+          )}
+        </dl>
+      </div>
+
       {/* Información de contacto */}
       <div>
         <h4 className="text-sm font-medium text-gray-900 mb-4">Información de Contacto</h4>
