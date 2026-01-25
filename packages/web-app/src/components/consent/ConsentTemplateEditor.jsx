@@ -270,18 +270,71 @@ const ConsentTemplateEditor = ({
         isBranch: true,
         branchData: branch
       })) : []),
+      // Datos del Cliente
       { 
-        label: 'Nombre del Servicio', 
+        label: '👤 Nombre Completo del Cliente', 
+        value: '{{cliente_nombre_completo}}',
+        description: 'Nombre y apellido completo del cliente'
+      },
+      { 
+        label: 'Nombre del Cliente', 
+        value: '{{cliente_nombre}}',
+        description: 'Solo el nombre del cliente'
+      },
+      { 
+        label: 'Apellido del Cliente', 
+        value: '{{cliente_apellido}}',
+        description: 'Solo el apellido del cliente'
+      },
+      { 
+        label: '📧 Email del Cliente', 
+        value: '{{cliente_email}}',
+        description: 'Correo electrónico del cliente'
+      },
+      { 
+        label: '📱 Teléfono del Cliente', 
+        value: '{{cliente_telefono}}',
+        description: 'Número de contacto del cliente'
+      },
+      { 
+        label: '🆔 Tipo de Documento', 
+        value: '{{cliente_tipo_documento}}',
+        description: 'Tipo de documento (CC, DNI, Pasaporte, etc.)'
+      },
+      { 
+        label: '🆔 Número de Documento', 
+        value: '{{cliente_numero_documento}}',
+        description: 'Número de identificación del cliente'
+      },
+      { 
+        label: '🆔 Documento Completo', 
+        value: '{{cliente_documento_completo}}',
+        description: 'Tipo y número de documento (ej: CC: 1234567890)'
+      },
+      { 
+        label: '🎂 Fecha de Nacimiento', 
+        value: '{{cliente_fecha_nacimiento}}',
+        description: 'Fecha de nacimiento del cliente (DD/MM/AAAA)'
+      },
+      { 
+        label: '🎂 Edad del Cliente', 
+        value: '{{cliente_edad}}',
+        description: 'Edad calculada automáticamente (ej: 25 años)'
+      },
+      // Datos del Servicio
+      { 
+        label: '💆 Nombre del Servicio', 
         value: '{{servicio_nombre}}',
         description: 'Nombre del procedimiento/servicio'
       },
+      // Fechas
       { 
-        label: 'Fecha de Firma', 
+        label: '📅 Fecha de Firma', 
         value: '{{fecha_firma}}',
         description: 'Fecha actual de firma'
       },
       { 
-        label: 'Fecha de Cita', 
+        label: '📅 Fecha de Cita', 
         value: '{{fecha_cita}}',
         description: 'Fecha de la cita programada'
       }
@@ -495,9 +548,30 @@ const ConsentTemplateEditor = ({
                     <li>• La versión se incrementa al editar el contenido</li>
                     <li>• Puedes usar formato HTML rico con el editor</li>
                     {branding?.logo && (
-                      <li>• El logo se insertará como imagen en el documento</li>
+                      <li>• El logo se puede insertar desde las variables</li>
                     )}
                   </ul>
+                </div>
+
+                {/* Example Template */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="text-xs sm:text-sm font-semibold text-green-900 mb-2 flex items-center gap-2">
+                    <DocumentTextIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                    Ejemplo de Template
+                  </h3>
+                  <div className="text-[10px] sm:text-xs text-green-800 space-y-2">
+                    <p className="font-medium">Consentimiento Informado:</p>
+                    <div className="bg-white p-2 rounded border border-green-200 font-mono text-[9px] overflow-x-auto">
+                      <p>Yo, <strong>{'{{cliente_nombre_completo}}'}</strong>, identificado(a) con <strong>{'{{cliente_documento_completo}}'}</strong>, de <strong>{'{{cliente_edad}}'}</strong>,</p>
+                      <br />
+                      <p>DECLARO que:</p>
+                      <p>✓ He sido informado(a) sobre el procedimiento <strong>{'{{servicio_nombre}}'}</strong></p>
+                      <p>✓ No tengo contraindicaciones médicas</p>
+                      <p>✓ Autorizo la realización del tratamiento</p>
+                      <br />
+                      <p>Firmado el <strong>{'{{fecha_firma}}'}</strong></p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -398,12 +398,27 @@ exports.signConsent = async (req, res) => {
     }
 
     // Placeholders del cliente
+    const clientFullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+    const clientAge = customer.dateOfBirth ? Math.floor((Date.now() - new Date(customer.dateOfBirth)) / (1000 * 60 * 60 * 24 * 365.25)) : '';
+    const clientDocumentType = customer.documentType ? customer.documentType : '';
+    const clientDocumentFull = customer.documentType && customer.documentNumber 
+      ? `${customer.documentType}: ${customer.documentNumber}` 
+      : customer.documentNumber || '';
+    const clientDateOfBirth = customer.dateOfBirth 
+      ? new Date(customer.dateOfBirth).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : '';
+
     processedContent = processedContent
-      .replace(/\{\{cliente_nombre\}\}/g, customer.name || '')
+      .replace(/\{\{cliente_nombre_completo\}\}/g, clientFullName)
+      .replace(/\{\{cliente_nombre\}\}/g, customer.firstName || '')
+      .replace(/\{\{cliente_apellido\}\}/g, customer.lastName || '')
       .replace(/\{\{cliente_email\}\}/g, customer.email || '')
       .replace(/\{\{cliente_telefono\}\}/g, customer.phone || '')
-      .replace(/\{\{cliente_documento\}\}/g, customer.documentNumber || '')
-      .replace(/\{\{cliente_fecha_nacimiento\}\}/g, customer.birthDate || '');
+      .replace(/\{\{cliente_tipo_documento\}\}/g, clientDocumentType)
+      .replace(/\{\{cliente_numero_documento\}\}/g, customer.documentNumber || '')
+      .replace(/\{\{cliente_documento_completo\}\}/g, clientDocumentFull)
+      .replace(/\{\{cliente_fecha_nacimiento\}\}/g, clientDateOfBirth)
+      .replace(/\{\{cliente_edad\}\}/g, clientAge ? `${clientAge} años` : '');
 
     // Placeholders del servicio
     if (serviceId) {
@@ -834,10 +849,31 @@ async function generateConsentPDFBuffer(signature) {
       doc.fontSize(12).font('Helvetica-Bold').text('DATOS DEL PACIENTE');
       doc.fontSize(10).font('Helvetica');
       if (signature.customer) {
-        doc.text(`Nombre: ${signature.customer.name || 'N/A'}`);
+        const fullName = `${signature.customer.firstName || ''} ${signature.customer.lastName || ''}`.trim();
+        doc.text(`Nombre Completo: ${fullName || 'N/A'}`);
+        
         if (signature.customer.email) doc.text(`Email: ${signature.customer.email}`);
         if (signature.customer.phone) doc.text(`Teléfono: ${signature.customer.phone}`);
-        if (signature.customer.documentNumber) doc.text(`Documento: ${signature.customer.documentNumber}`);
+        
+        // Documento con tipo y número
+        if (signature.customer.documentType || signature.customer.documentNumber) {
+          const docText = signature.customer.documentType 
+            ? `${signature.customer.documentType}: ${signature.customer.documentNumber || 'N/A'}`
+            : signature.customer.documentNumber;
+          doc.text(`Documento de Identidad: ${docText}`);
+        }
+        
+        // Fecha de nacimiento y edad
+        if (signature.customer.dateOfBirth) {
+          const birthDate = new Date(signature.customer.dateOfBirth);
+          const formattedDate = birthDate.toLocaleDateString('es-CO', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric' 
+          });
+          const age = Math.floor((Date.now() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+          doc.text(`Fecha de Nacimiento: ${formattedDate} (${age} años)`);
+        }
       }
       doc.moveDown(1);
 
