@@ -3,7 +3,6 @@
 const getApiBaseUrl = () => {
   // 1. Prioridad: Variable de entorno explícita
   if (import.meta.env.VITE_API_URL) {
-    console.log('[API_CONFIG] Usando VITE_API_URL:', import.meta.env.VITE_API_URL);
     return import.meta.env.VITE_API_URL;
   }
 
@@ -15,7 +14,6 @@ const getApiBaseUrl = () => {
 
   if (isProduction) {
     const productionUrl = 'https://beautycontrol-api.azurewebsites.net';
-    console.log('[API_CONFIG] Modo producción:', productionUrl);
     return productionUrl;
   }
 
@@ -26,7 +24,6 @@ const getApiBaseUrl = () => {
   
   if (isLocalhost || isLanIp) {
     const apiUrl = `${protocol}//${hostname}:3001`;
-    console.log('[API_CONFIG] Modo desarrollo local:', apiUrl);
     return apiUrl;
   }
   
