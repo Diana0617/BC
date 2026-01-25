@@ -30,9 +30,11 @@ import CreateAppointmentModal from '../../components/calendar/CreateAppointmentM
 import AppointmentDetailsModal from '../../components/specialist/appointments/AppointmentDetailsModal';
 import CommissionSummary from '../../components/specialist/commissions/CommissionSummary';
 import CashRegisterCard from '../../components/specialist/cash-register/CashRegisterCard';
+import BrandingDemo from '../../components/BrandingDemo';
 
 // Hooks
 import useUserPermissions from '../../hooks/useUserPermissions';
+import { useBranding } from '../../contexts/BrandingContext';
 
 /**
  * Dashboard principal para especialistas
@@ -78,6 +80,10 @@ export default function SpecialistDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showBrandingDemo, setShowBrandingDemo] = useState(false);
+  
+  // Branding
+  const { branding } = useBranding();
 
   // Cargar citas
   const loadAppointments = useCallback(async () => {
@@ -437,6 +443,17 @@ export default function SpecialistDashboard() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {/* Botón Probar Branding */}
+              <button
+                onClick={() => setShowBrandingDemo(!showBrandingDemo)}
+                className="bg-white/10 backdrop-blur-sm text-white px-3 py-2 rounded-lg font-medium hover:bg-white/20 transition-colors flex items-center gap-2 border border-white/20"
+                title="Probar sistema de branding"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+                {showBrandingDemo ? 'Ocultar' : 'Branding'}
+              </button>
               {/* Botón Nueva Cita - Solo si tiene permisos */}
               {appointmentsPerms.create && (
                 <button
@@ -462,6 +479,13 @@ export default function SpecialistDashboard() {
 
         </div>
       </div>
+
+      {/* Demo de Branding */}
+      {showBrandingDemo && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
+          <BrandingDemo />
+        </div>
+      )}
 
       {/* Main Content - CALENDARIO PRIMERO */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

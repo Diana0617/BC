@@ -12,8 +12,9 @@ import { useBranding } from '../../contexts/BrandingContext'
 
 const DashboardPage = () => {
   const dispatch = useDispatch()
-  
+  const navigate = useNavigate()
   const { user, subscriptionWarning } = useSelector(state => state.auth)
+  const business = useSelector(state => state.business?.currentBusiness)
   const { branding } = useBranding()
   const [showBrandingDemo, setShowBrandingDemo] = useState(false)
 
@@ -224,8 +225,13 @@ const DashboardPage = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">Control de Negocios</h1>
+            <div className="flex items-center gap-3">
+              {branding?.logo && (
+                <img src={branding.logo} alt="Logo" className="h-10 object-contain" />
+              )}
+              <h1 className="text-xl font-semibold text-gray-900">
+                {business?.name || 'Control de Negocios'}
+              </h1>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">
@@ -237,9 +243,6 @@ const DashboardPage = () => {
               >
                 Cerrar Sesión
               </button>
-              {branding?.logo && (
-                <img src={branding.logo} alt="Logo" className="h-10 object-contain" />
-              )}
             </div>
           </div>
         </div>
