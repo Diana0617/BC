@@ -73,12 +73,12 @@ const Receipt = sequelize.define('Receipt', {
   
   userId: {
     type: DataTypes.UUID,
-    allowNull: false,
+    allowNull: true, // Nullable porque el cliente no es un user, solo guardamos datos desnormalizados
     references: {
       model: 'users',
       key: 'id'
     },
-    comment: 'Cliente que recibe el servicio'
+    comment: 'Usuario que registró el pago (opcional, distinto del cliente)'
   },
   
   // Información del especialista (desnormalizada para histórico)
@@ -381,7 +381,7 @@ Receipt.createFromAppointment = async function(appointmentData, paymentData, opt
       businessId: appointmentData.businessId,
       appointmentId: appointmentData.id,
       specialistId: appointmentData.specialistId,
-      userId: appointmentData.clientId, // Appointment has clientId, Receipt expects userId
+      userId: options.createdBy || null, // Usuario que crea el recibo (quien registra el pago)
       
       // Información del especialista
       specialistName: appointmentData.specialist ? 
