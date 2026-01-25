@@ -917,38 +917,52 @@ const ConsentsTab = ({ client }) => {
               console.log('⚠️ Es ruta local, regenerando PDF...');
               
               try {
-                toast.loading('Generando PDF actualizado...', { id: 'pdf-gen' });
+                toast.loading('Generando PDF...', { id: 'pdf-gen' });
                 
                 const url = `/api/business/${currentBusiness.id}/consent-signatures/${consent.id}/pdf`;
                 console.log('📡 Llamando endpoint:', url);
                 
-                const response = await apiClient.get(url);
+                // Recibir como blob (igual que los recibos)
+                const response = await apiClient.get(url, { responseType: 'blob' });
                 
-                console.log('📥 Respuesta recibida:', response.data);
+                console.log('📥 PDF recibido como blob');
                 
-                if (response.data?.success && response.data?.data?.pdfUrl) {
-                  console.log('✅ PDF generado, URL:', response.data.data.pdfUrl);
-                  toast.success('PDF generado exitosamente', { id: 'pdf-gen' });
-                  
-                  // Abrir el nuevo PDF
-                  window.open(response.data.data.pdfUrl, '_blank');
-                  
-                  // Recargar consentimientos para actualizar la URL
-                  const historyResponse = await apiClient.get(
-                    `/api/business/${currentBusiness.id}/clients/${client.id}/history`
-                  );
-                  setConsents(historyResponse.data?.data?.consents || []);
-                } else {
-                  console.error('❌ Response sin éxito o sin pdfUrl:', response.data);
-                  toast.error('Error generando PDF', { id: 'pdf-gen' });
-                }
+                // Crear Blob y URL temporal (patrón de los recibos)
+                const blob = new Blob([response.data], { type: 'application/pdf' });
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                console.log('✅ PDF generado y URL temporal creada');
+                toast.success('PDF generado exitosamente', { id: 'pdf-gen' });
+                
+                // Abrir en nueva ventana
+                window.open(blobUrl, '_blank');
+                
+                // Limpiar URL temporal después de un momento
+                setTimeout(() => {
+                  window.URL.revokeObjectURL(blobUrl);
+                  console.log('🧹 URL temporal limpiada');
+                }, 100);
+                
               } catch (error) {
                 console.error('❌ Error generating PDF:', error);
                 console.error('❌ Error completo:', error.response?.data || error.message);
                 toast.error('Error generando PDF', { id: 'pdf-gen' });
               }
-            } else {
-              console.log('✅ No es ruta local, abriendo PDF directamente');
+            } else if (consent.pdfUrl) {
+              // Si ya existe el PDF, descargarlo como blob también
+              try {
+                const response = await apiClient.get(
+                  `/api/business/${currentBusiness.id}/consent-signatures/${consent.id}/pdf`,
+                  { responseType: 'blob' }
+                );
+                const blob = new Blob([response.data], { type: 'application/pdf' });
+                const blobUrl = window.URL.createObjectURL(blob);
+                window.open(blobUrl, '_blank');
+                setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+              } catch (error) {
+                console.error('❌ Error abriendo PDF:', error);
+                toast.error('Error abriendo PDF');
+              }
             }
           };
           
@@ -1008,33 +1022,15 @@ const ConsentsTab = ({ client }) => {
               <div className="ml-4 flex flex-col space-y-2">
                 {consent.pdfUrl ? (
                   <>
-                    {needsRegeneration ? (
-                      <button
-                        onClick={handleViewPDF}
-                        className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors"
-                      >
-                        <DocumentTextIcon className="h-4 w-4 mr-1" />
-                        Ver PDF (Regenerar)
-                      </button>
-                    ) : (
-                      <a
-                        href={consent.pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors"
-                      >
-                        <DocumentTextIcon className="h-4 w-4 mr-1" />
-                        Ver PDF
-                      </a>
-                    )}
                     <button
-                      onClick={(e) => {
-                        if (needsRegeneration) {
-                          handleViewPDF(e);
-                        } else {
-                          window.open(consent.pdfUrl, '_blank');
-                        }
-                      }}
+                      onClick={handleViewPDF}
+                      className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors"
+                    >
+                      <DocumentTextIcon className="h-4 w-4 mr-1" />
+                      Ver PDF
+                    </button>
+                    <button
+                      onClick={handleViewPDF}
                       className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
                     >
                       <PrinterIcon className="h-4 w-4 mr-1" />

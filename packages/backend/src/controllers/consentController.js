@@ -706,55 +706,23 @@ exports.getSignaturePDF = async (req, res) => {
     }
 
     console.log('✅ Firma encontrada');
-    console.log('🔍 pdfUrl actual:', signature.pdfUrl);
-    console.log('🔍 pdfGeneratedAt:', signature.pdfGeneratedAt);
 
-    // Detectar si el PDF es legacy (no base64)
-    const isBase64PDF = signature.pdfUrl && signature.pdfUrl.startsWith('data:application/pdf;base64');
-    const isLegacyPDF = signature.pdfUrl && !isBase64PDF;
-    
-    console.log('🔍 isBase64PDF:', isBase64PDF);
-    console.log('🔍 isLegacyPDF:', isLegacyPDF);
-    
-    const needsRegenerate = !signature.pdfUrl || isLegacyPDF; // Siempre regenerar si no es base64
-    
-    console.log('🔍 needsRegenerate:', needsRegenerate);
-
-    if (!needsRegenerate) {
-      console.log('ℹ️ PDF ya existe y es válido, devolviendo URL existente');
-      // @TODO: Implementar descarga directa del archivo desde Cloudinary
-      return res.json({
-        success: true,
-        message: 'PDF ya generado',
-        data: {
-          pdfUrl: signature.pdfUrl,
-          pdfGeneratedAt: signature.pdfGeneratedAt
-        }
-      });
-    }
-
-    // Generar nuevo PDF como base64 (para evitar problemas de permisos en Cloudinary)
+    // Generar PDF como buffer (igual que los recibos - siempre se genera en tiempo real)
     console.log('📄 Generando PDF de consentimiento para:', signatureId);
     const pdfBuffer = await generateConsentPDFBuffer(signature);
-    
-    // Convertir buffer a base64 data URL
-    const pdfBase64 = `data:application/pdf;base64,${pdfBuffer.toString('base64')}`;
     
     // Actualizar registro indicando que el PDF fue generado
     await signature.update({
       pdfGeneratedAt: new Date()
     });
 
-    console.log('✅ PDF generado exitosamente como base64');
+    console.log('✅ PDF generado exitosamente');
 
-    return res.json({
-      success: true,
-      message: 'PDF generado exitosamente',
-      data: {
-        pdfUrl: pdfBase64,
-        pdfGeneratedAt: new Date()
-      }
-    });
+    // Establecer headers y enviar buffer directamente (igual que los recibos)
+    const filename = `consentimiento-${signature.customer?.name || 'cliente'}-${signatureId}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send(pdfBuffer);
 
   } catch (error) {
     console.error('Error al obtener PDF:', error);
