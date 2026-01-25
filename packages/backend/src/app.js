@@ -111,25 +111,31 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Rate limiting
+// Rate limiting - Multi-tenant aware
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // límite de requests por IP
+  max: process.env.NODE_ENV === 'production' ? 5000 : 10000, // límite aumentado para multi-tenant
   message: {
     success: false,
     error: 'Demasiadas solicitudes, intenta nuevamente en 15 minutos'
   },
   standardHeaders: true,
   legacyHeaders: false,
-  // Skip rate limiting in development or configure proper IP extraction
+  // Skip rate limiting in development
   skip: (req) => process.env.NODE_ENV === 'development',
-  // En producción, confiar en el proxy para obtener la IP real
+  // Multi-tenant: usar businessId del usuario + IP para evitar que un tenant consuma todo el límite
   keyGenerator: (req) => {
     // En desarrollo, usar una IP fija
     if (process.env.NODE_ENV === 'development') {
       return 'dev-local';
     }
-    // En producción, usar X-Forwarded-For si existe
+    // Si hay un usuario autenticado, usar businessId + IP
+    // Esto permite que cada negocio tenga su propio límite
+    if (req.user && req.user.businessId) {
+      const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+      return `${req.user.businessId}-${ip}`;
+    }
+    // Para rutas públicas (login, etc), usar solo IP
     return req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
   }
 });
@@ -161,13 +167,13 @@ app.get('/api-docs.json', ...swaggerMiddleware, (req, res) => {
 // Rate limiting más estricto para autenticación
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 50, // Aumentado temporalmente para testing
+  max: 100, // Aumentado para multi-tenant (antes era 50)
   message: {
     success: false,
     error: 'Demasiados intentos de inicio de sesión, intenta nuevamente en 15 minutos'
   },
   skipSuccessfulRequests: true,
-  // Skip rate limiting in development or configure proper IP extraction
+  // Skip rate limiting in development
   skip: (req) => process.env.NODE_ENV === 'development',
   keyGenerator: (req) => {
     if (process.env.NODE_ENV === 'development') {
