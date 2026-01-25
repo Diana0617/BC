@@ -34,7 +34,11 @@ export function BrandingProvider({ children }) {
   useEffect(() => {
     // Cargar branding cuando tengamos el business ID
     if (business?.id) {
+      console.log('🔵 BrandingContext: Cargando branding para business:', business.id)
+      console.log('🏢 Business completo:', business)
       dispatch(loadBranding(business.id))
+    } else {
+      console.warn('⚠️ BrandingContext: No hay business.id disponible')
     }
   }, [business?.id, dispatch])
 
@@ -51,6 +55,12 @@ export function BrandingProvider({ children }) {
     // Usar branding personalizado o valores por defecto
     const colors = branding || defaultBranding
     
+    console.log('🎨 BrandingContext: Aplicando branding:', {
+      brandingCargado: branding,
+      coloresAplicados: colors,
+      usandoDefaults: !branding
+    })
+    
     // Establecer variables CSS para colores
     root.style.setProperty('--color-primary', colors.primaryColor)
     root.style.setProperty('--color-secondary', colors.secondaryColor)
@@ -62,7 +72,7 @@ export function BrandingProvider({ children }) {
     root.style.setProperty('--color-secondary-rgb', hexToRgb(colors.secondaryColor))
     root.style.setProperty('--color-accent-rgb', hexToRgb(colors.accentColor))
     
-    console.log('🎨 Branding aplicado:', colors)
+    console.log('✅ Variables CSS establecidas en :root')
   }, [branding])
 
   const value = {

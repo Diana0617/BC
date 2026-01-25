@@ -172,9 +172,13 @@ export const loadBranding = createAsyncThunk(
   'businessConfiguration/loadBranding',
   async (businessId, { rejectWithValue }) => {
     try {
+      console.log('📡 loadBranding: Llamando API con businessId:', businessId)
       const response = await businessBrandingApi.getBranding(businessId)
+      console.log('📥 loadBranding: Respuesta de API:', response)
       // businessBrandingApi.getBranding ya devuelve response.data que es { success, data }
-      return response.data // Extraer el objeto branding de la respuesta
+      const brandingData = response.data
+      console.log('🎨 loadBranding: Datos de branding extraídos:', brandingData)
+      return brandingData // Extraer el objeto branding de la respuesta
     } catch (error) {
       console.error('❌ Error loading branding:', error);
       return rejectWithValue(error.message || 'Error al cargar branding')
@@ -558,13 +562,16 @@ export const businessConfigurationSlice = createSlice({
       .addCase(loadBranding.pending, (state) => {
         state.loading = true
         state.error = null
+        console.log('⏳ loadBranding.pending - Iniciando carga de branding...')
       })
       .addCase(loadBranding.fulfilled, (state, action) => {
+        console.log('✅ loadBranding.fulfilled - Datos recibidos:', action.payload)
         state.loading = false
         state.branding = action.payload
+        console.log('📦 State.branding actualizado a:', state.branding)
       })
       .addCase(loadBranding.rejected, (state, action) => {
-        console.error('❌ Error loading branding:', action.payload);
+        console.error('❌ loadBranding.rejected - Error:', action.payload);
         state.loading = false
         state.error = action.payload || 'Error al cargar branding'
       })
