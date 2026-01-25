@@ -560,20 +560,47 @@ const ConsentTemplateEditor = ({
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-3 sm:p-4 shadow-sm">
                   <h3 className="text-xs sm:text-sm font-bold text-green-900 mb-2 flex items-center gap-2">
                     <DocumentTextIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-700" />
-                    💡 Ejemplo de Template
+                    💡 Ejemplo: Consentimiento Botox
                   </h3>
                   <div className="text-[10px] sm:text-xs text-green-800 space-y-2">
-                    <p className="font-bold text-green-900">📋 Copia este ejemplo:</p>
-                    <div className="bg-white p-3 rounded border-2 border-green-300 font-mono text-[10px] sm:text-xs overflow-x-auto shadow-inner">
-                      <p>Yo, <strong>{'{{cliente_nombre_completo}}'}</strong>, identificado(a) con <strong>{'{{cliente_documento_completo}}'}</strong>, de <strong>{'{{cliente_edad}}'}</strong>,</p>
-                      <br />
-                      <p>DECLARO que:</p>
-                      <p>✓ He sido informado(a) sobre el procedimiento <strong>{'{{servicio_nombre}}'}</strong></p>
-                      <p>✓ No tengo contraindicaciones médicas</p>
-                      <p>✓ Autorizo la realización del tratamiento</p>
-                      <br />
-                      <p>Firmado el <strong>{'{{fecha_firma}}'}</strong></p>
+                    <p className="font-bold text-green-900">📋 Copia y pega este ejemplo en el editor:</p>
+                    <div className="bg-white p-3 rounded border-2 border-green-300 text-[9px] sm:text-[10px] overflow-x-auto shadow-inner max-h-64 overflow-y-auto">
+                      <pre style={{fontFamily: 'inherit', whiteSpace: 'pre-wrap', margin: 0}}>
+{`<h2 style="text-align: center;">CONSENTIMIENTO INFORMADO</h2>
+<h3 style="text-align: center;">APLICACIÓN DE TOXINA BOTULÍNICA</h3>
+
+<p><strong>DATOS DEL PACIENTE:</strong></p>
+<ul>
+  <li>Nombre: <strong>{{cliente_nombre_completo}}</strong></li>
+  <li>Documento: <strong>{{cliente_documento_completo}}</strong></li>
+  <li>Edad: <strong>{{cliente_edad}}</strong></li>
+  <li>Email: <strong>{{cliente_email}}</strong></li>
+</ul>
+
+<p><strong>CENTRO:</strong> {{negocio_nombre}}</p>
+<p><strong>FECHA:</strong> {{fecha_firma}}</p>
+
+<h4>1. INFORMACIÓN DEL PROCEDIMIENTO</h4>
+<p>Yo, <strong>{{cliente_nombre_completo}}</strong>, he sido informado(a) que la toxina botulínica es un tratamiento médico-estético que reduce temporalmente las arrugas de expresión mediante la relajación muscular.</p>
+
+<h4>2. DECLARACIÓN DE SALUD</h4>
+<p><strong>CERTIFICO QUE:</strong></p>
+<ul>
+  <li>✓ No estoy embarazada ni amamantando</li>
+  <li>✓ No padezco enfermedades neuromusculares</li>
+  <li>✓ No tengo alergias a la toxina botulínica</li>
+  <li>✓ He informado todos mis antecedentes médicos</li>
+</ul>
+
+<h4>3. AUTORIZACIÓN</h4>
+<p>Autorizo a <strong>{{negocio_nombre}}</strong> para realizar el procedimiento de aplicación de toxina botulínica.</p>
+
+<p style="margin-top: 30px;"><strong>Firmado el {{fecha_firma}}</strong></p>`}
+                      </pre>
                     </div>
+                    <p className="text-[9px] sm:text-[10px] text-green-700 italic mt-2">
+                      💡 Tip: Selecciona todo el texto del ejemplo, cópialo (Ctrl+C) y pégalo en el editor arriba
+                    </p>
                   </div>
                 </div>
               </div>
