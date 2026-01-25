@@ -76,6 +76,28 @@ export const cloudinaryApi = {
   },
 
   /**
+   * Subir imagen de código QR para métodos de pago
+   * @param {string} businessId - ID del negocio
+   * @param {File} file - Imagen del código QR
+   * @param {string} methodName - Nombre del método de pago (opcional, para nombrar el archivo)
+   */
+  uploadQRImage: async (businessId, file, methodName = null) => {
+    console.log('📤 Subiendo imagen QR:', { file, methodName, type: file?.type, size: file?.size });
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    if (methodName) {
+      formData.append('methodName', methodName);
+    }
+
+    const response = await apiClient.post(
+      `/api/business/${businessId}/upload/qr-image`,
+      formData
+    );
+    return response.data;
+  },
+
+  /**
    * Eliminar archivo de Cloudinary
    * @param {string} businessId - ID del negocio
    * @param {string} publicId - Public ID del archivo en Cloudinary

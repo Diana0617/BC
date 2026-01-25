@@ -271,6 +271,69 @@ class CloudinaryController {
       });
     }
   }
+
+  /**
+   * Subir imagen de código QR para métodos de pago
+   * POST /api/business/:businessId/upload/qr-image
+   */
+  static async uploadQRImage(req, res) {
+    try {
+      const { businessId } = req.params;
+      const { businessId: userBusinessId } = req.user;
+
+      if (businessId !== userBusinessId) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para subir archivos a este negocio'
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No se proporcionó ningún archivo'
+        });
+      }
+
+      const { methodName } = req.body;
+      
+      // Subir imagen del QR
+      const uploadPromise = () => new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: `beauty-control/payment-qr/${businessId}`,
+            transformation: [
+              { width: 600, height: 600, crop: 'limit', quality: 'auto:best', fetch_format: 'auto' }
+            ]
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+
+      const result = await uploadPromise();
+
+      res.json({
+        success: true,
+        data: {
+          url: result.secure_url,
+          width: result.width,
+          height: result.height,
+          publicId: result.public_id
+        }
+      });
+    } catch (error) {
+      console.error('Error uploading QR image:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al subir la imagen del código QR',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = CloudinaryController;

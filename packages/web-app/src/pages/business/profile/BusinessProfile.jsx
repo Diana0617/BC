@@ -51,6 +51,7 @@ import PaymentMethodsSection from './sections/PaymentMethodsSection'
 import CalendarAccessSection from './sections/CalendarAccessSection'
 import CustomerHistorySection from './sections/CustomerHistorySection'
 import WhatsAppConfigSection from './sections/WhatsAppConfigSection'
+import WompiConfigSection from './sections/WompiConfigSection'
 import MovementsSection from './sections/MovementsSection'
 import LoyaltyConfigSection from './sections/LoyaltyConfigSection'
 import RoleConfigSection from './sections/RoleConfigSection'
@@ -299,6 +300,14 @@ const BusinessProfile = () => {
       component: WhatsAppConfigSection,
       moduleRequired: 'appointment-reminders',
       setupStep: 'whatsapp-config'
+    },
+    {
+      id: 'wompi-integration',
+      name: 'Pagos en Línea (Wompi)',
+      icon: CreditCardIcon,
+      component: WompiConfigSection,
+      moduleRequired: 'wompi_integration',
+      setupStep: 'wompi-config'
     },
     {
       id: 'taxxa',

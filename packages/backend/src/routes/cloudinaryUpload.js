@@ -105,6 +105,16 @@ router.post(
 );
 
 /**
+ * POST /api/business/:businessId/upload/qr-image
+ * Subir imagen de código QR para métodos de pago
+ */
+router.post(
+  '/qr-image',
+  uploadProductImageMiddleware.single('file'),
+  CloudinaryController.uploadQRImage
+);
+
+/**
  * DELETE /api/business/:businessId/upload/file
  * Eliminar archivo de Cloudinary
  */

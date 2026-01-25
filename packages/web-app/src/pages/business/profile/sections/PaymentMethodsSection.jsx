@@ -20,10 +20,12 @@ import {
   DevicePhoneMobileIcon,
   ArrowsRightLeftIcon,
   QrCodeIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  PhotoIcon
 } from '@heroicons/react/24/outline'
 import { usePermissions } from '@shared/hooks'
 import UpgradePlanModal from '../../../../components/common/UpgradePlanModal'
+import cloudinaryApi from '../../../../api/cloudinaryApi'
 import toast from 'react-hot-toast'
 
 // Mapeo de tipos de pago a iconos y colores
@@ -102,6 +104,8 @@ const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
       holderName: '',
       phoneNumber: ''
     },
+    qrImageUrl: '',
+    qrImageFile: null,
     description: ''
   })
 
@@ -128,6 +132,8 @@ const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
         holderName: '',
         phoneNumber: ''
       },
+      qrImageUrl: '',
+      qrImageFile: null,
       description: ''
     })
     setShowModal(true)
@@ -145,8 +151,10 @@ const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
         accountType: '',
         cci: '',
         holderName: '',
-        phoneNumber: ''
+        phoneNumber: method.qrInfo?.phoneNumber || ''
       },
+      qrImageUrl: method.qrInfo?.qrImage || '',
+      qrImageFile: null,
       description: method.metadata?.description || ''
     })
     setShowModal(true)
@@ -165,9 +173,33 @@ const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
         return
       }
 
-      if (formData.type === 'QR' && !formData.bankInfo.phoneNumber) {
-        toast.error('El teléfono es requerido para métodos QR')
+      if (formData.type === 'QR' && !formData.qrImageUrl && !formData.qrImageFile) {
+        toast.error('La imagen del código QR es requerida')
         return
+      }
+
+      // Si hay una imagen QR para subir, subirla a Cloudinary primero
+      let qrImageUrl = formData.qrImageUrl
+      if (formData.qrImageFile) {
+        try {
+          toast.loading('Subiendo imagen QR...')
+          const uploadResponse = await cloudinaryApi.uploadQRImage(
+            currentBusiness.id,
+            formData.qrImageFile,
+            formData.name
+          )
+          
+          if (uploadResponse.success) {
+            qrImageUrl = uploadResponse.data.url
+            toast.dismiss()
+            toast.success('Imagen QR subida correctamente')
+          }
+        } catch (uploadError) {
+          toast.dismiss()
+          console.error('Error uploading QR image:', uploadError)
+          toast.error('Error al subir la imagen QR')
+          return
+        }
       }
 
       const payload = {
@@ -175,6 +207,10 @@ const PaymentMethodsSection = ({ isSetupMode, onComplete }) => {
         type: formData.type,
         requiresProof: formData.requiresProof,
         bankInfo: formData.bankInfo,
+        qrInfo: formData.type === 'QR' ? {
+          phoneNumber: formData.bankInfo.phoneNumber,
+          qrImage: qrImageUrl
+        } : null,
         metadata: {
           description: formData.description
         }
@@ -591,14 +627,17 @@ const PaymentMethodModal = ({ formData, setFormData, onSave, onCancel, isEditing
             </div>
           )}
 
-          {/* Phone - QR */}
+          {/* QR Image Upload */}
           {showPhoneField && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-4">
-              <h4 className="font-medium text-gray-900">Información de Pago QR</h4>
+              <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                <QrCodeIcon className="w-5 h-5" />
+                Información de Pago QR
+              </h4>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Número de Teléfono *
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Número de Teléfono (opcional)
                 </label>
                 <input
                   type="text"
@@ -607,6 +646,64 @@ const PaymentMethodModal = ({ formData, setFormData, onSave, onCancel, isEditing
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   placeholder="+51987654321"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Solo visible para tu negocio
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Imagen del Código QR *
+                </label>
+                <p className="text-xs text-amber-700 mb-3">
+                  Sube una imagen clara y de buena calidad del código QR. Tus clientes verán esta imagen al seleccionar este método de pago.
+                </p>
+                
+                {formData.qrImageUrl && (
+                  <div className="mb-3">
+                    <img 
+                      src={formData.qrImageUrl} 
+                      alt="QR Code" 
+                      className="w-48 h-48 object-contain border-2 border-amber-300 rounded-lg bg-white"
+                    />
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0]
+                    if (file) {
+                      // Validar tipo de archivo
+                      if (!file.type.startsWith('image/')) {
+                        toast.error('Solo se permiten imágenes')
+                        return
+                      }
+                      
+                      // Validar tamaño (5MB max)
+                      if (file.size > 5 * 1024 * 1024) {
+                        toast.error('La imagen no debe superar los 5MB')
+                        return
+                      }
+
+                      // Preview local
+                      const reader = new FileReader()
+                      reader.onloadend = () => {
+                        setFormData(prev => ({
+                          ...prev,
+                          qrImageUrl: reader.result,
+                          qrImageFile: file
+                        }))
+                      }
+                      reader.readAsDataURL(file)
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Formatos: JPG, PNG. Máximo 5MB
+                </p>
               </div>
 
               <div>

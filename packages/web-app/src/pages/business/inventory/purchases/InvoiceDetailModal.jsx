@@ -21,6 +21,7 @@ const InvoiceDetailModal = ({ invoice, onClose, onApprove, onRefresh }) => {
   const [selectedBranch, setSelectedBranch] = useState('');
   const [approving, setApproving] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [payImmediately, setPayImmediately] = useState(false);
 
   useEffect(() => {
     loadBranches();
@@ -46,13 +47,22 @@ const InvoiceDetailModal = ({ invoice, onClose, onApprove, onRefresh }) => {
       return;
     }
 
-    if (!confirm('¿Estás seguro de aprobar esta factura? Se actualizará el inventario.')) {
+    const message = payImmediately 
+      ? '¿Estás seguro de aprobar esta factura? Se actualizará el inventario y podrás registrar el pago inmediatamente.'
+      : '¿Estás seguro de aprobar esta factura? Se actualizará el inventario y quedará pendiente de pago.';
+
+    if (!confirm(message)) {
       return;
     }
 
     setApproving(true);
     await onApprove(invoice.id, selectedBranch);
     setApproving(false);
+    
+    // Si eligió pagar inmediatamente, abrir modal de pago
+    if (payImmediately) {
+      setShowPayModal(true);
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -269,22 +279,47 @@ const InvoiceDetailModal = ({ invoice, onClose, onApprove, onRefresh }) => {
                     </p>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-blue-900 mb-2">
-                    Sucursal donde se recibirán los productos:
-                  </label>
-                  <select
-                    value={selectedBranch}
-                    onChange={(e) => setSelectedBranch(e.target.value)}
-                    className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    <option value="">Seleccionar sucursal...</option>
-                    {branches.map(branch => (
-                      <option key={branch.id} value={branch.id}>
-                        {branch.name} {branch.isMain && '(Principal)'}
-                      </option>
-                    ))}
-                  </select>
+                <div className="space-y-4">
+                  {/* Sucursal Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-blue-900 mb-2">
+                      Sucursal donde se recibirán los productos:
+                    </label>
+                    <select
+                      value={selectedBranch}
+                      onChange={(e) => setSelectedBranch(e.target.value)}
+                      className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="">Seleccionar sucursal...</option>
+                      {branches.map(branch => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name} {branch.isMain && '(Principal)'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Payment Option */}
+                  <div className="bg-white border border-blue-200 rounded-lg p-3">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={payImmediately}
+                        onChange={(e) => setPayImmediately(e.target.checked)}
+                        className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <DollarSignIcon className="w-4 h-4 text-green-600" />
+                          <span className="font-medium text-gray-900">Pagar factura inmediatamente</span>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Después de aprobar, se abrirá el formulario para registrar el pago. 
+                          Si no marcas esta opción, la factura quedará pendiente de pago.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
