@@ -29,18 +29,26 @@ export const useBranding = () => {
 export function BrandingProvider({ children }) {
   const dispatch = useDispatch()
   const business = useSelector(state => state.business?.currentBusiness)
+  const user = useSelector(state => state.auth?.user)
   const { branding, loading } = useSelector(state => state.businessConfiguration)
+
+  // Obtener businessId desde business o user (para especialistas)
+  const businessId = business?.id || user?.businessId
 
   useEffect(() => {
     // Cargar branding cuando tengamos el business ID
-    if (business?.id) {
-      console.log('🔵 BrandingContext: Cargando branding para business:', business.id)
-      console.log('🏢 Business completo:', business)
-      dispatch(loadBranding(business.id))
+    if (businessId) {
+      console.log('🔵 BrandingContext: Cargando branding para businessId:', businessId)
+      console.log('📍 Fuente:', business?.id ? 'business.currentBusiness' : 'user.businessId')
+      console.log('🏢 Business:', business)
+      console.log('👤 User:', user)
+      dispatch(loadBranding(businessId))
     } else {
-      console.warn('⚠️ BrandingContext: No hay business.id disponible')
+      console.warn('⚠️ BrandingContext: No hay businessId disponible')
+      console.warn('   - business.id:', business?.id)
+      console.warn('   - user.businessId:', user?.businessId)
     }
-  }, [business?.id, dispatch])
+  }, [businessId, dispatch, business?.id, user?.businessId])
 
   // Aplicar CSS variables globales para que estén disponibles en toda la app
   useEffect(() => {
