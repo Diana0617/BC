@@ -1,5 +1,7 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
+import toast from 'react-hot-toast'
 import { 
   ClipboardDocumentListIcon,
   PlusIcon,
@@ -150,10 +152,26 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
     setShowConsentModal(true)
   }
 
-  const handleConsentSaved = async () => {
-    setShowConsentModal(false)
-    setSelectedService(null)
-    await loadServices()
+  const handleConsentSaved = async (templateId) => {
+    try {
+      // Actualizar el servicio con el nuevo templateId
+      if (selectedService && activeBusiness?.id) {
+        await businessServicesApi.updateService(
+          activeBusiness.id,
+          selectedService.id,
+          { consentTemplateId: templateId }
+        )
+        
+        toast.success(templateId ? 'Plantilla asignada exitosamente' : 'Plantilla removida exitosamente')
+      }
+    } catch (error) {
+      console.error('Error updating consent template:', error)
+      toast.error('Error al actualizar la plantilla')
+    } finally {
+      setShowConsentModal(false)
+      setSelectedService(null)
+      await loadServices()
+    }
   }
 
   const toggleServiceExpand = (serviceId) => {
@@ -417,10 +435,11 @@ const ServicesSection = ({ isSetupMode, onComplete, isCompleted }) => {
             setShowConsentModal(false)
             setSelectedService(null)
           }}
-          onSave={handleConsentSaved}
-          service={selectedService}
+          onSelect={(templateId) => {
+            handleConsentSaved(templateId)
+          }}
           businessId={activeBusiness?.id}
-          availableTemplates={consentTemplates}
+          currentTemplateId={selectedService?.consentTemplateId}
         />
       )}
       {/* Modal de Upgrade */}
