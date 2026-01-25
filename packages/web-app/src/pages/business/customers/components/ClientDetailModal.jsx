@@ -900,18 +900,19 @@ const ConsentsTab = ({ client }) => {
             pdfGeneratedAt: consent.pdfGeneratedAt
           });
           
-          // Detectar si es una ruta local antigua
-          const isLocalPath = consent.pdfUrl && consent.pdfUrl.startsWith('/uploads/');
+          // Detectar si es un PDF legacy (cualquier cosa que NO sea base64)
+          const isBase64PDF = consent.pdfUrl && consent.pdfUrl.startsWith('data:application/pdf;base64');
+          const needsRegeneration = consent.pdfUrl && !isBase64PDF;
           
-          // Handler para regenerar PDF si es ruta local
+          // Handler para regenerar PDF si no es base64
           const handleViewPDF = async (e) => {
             console.log('🔵 handleViewPDF llamado');
-            console.log('🔍 isLocalPath:', isLocalPath);
+            console.log('🔍 needsRegeneration:', needsRegeneration);
             console.log('🔍 consent.pdfUrl:', consent.pdfUrl);
             console.log('🔍 consent.id:', consent.id);
             console.log('🔍 currentBusiness.id:', currentBusiness?.id);
             
-            if (isLocalPath) {
+            if (needsRegeneration) {
               e.preventDefault();
               console.log('⚠️ Es ruta local, regenerando PDF...');
               
@@ -1007,7 +1008,7 @@ const ConsentsTab = ({ client }) => {
               <div className="ml-4 flex flex-col space-y-2">
                 {consent.pdfUrl ? (
                   <>
-                    {isLocalPath ? (
+                    {needsRegeneration ? (
                       <button
                         onClick={handleViewPDF}
                         className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors"
@@ -1028,7 +1029,7 @@ const ConsentsTab = ({ client }) => {
                     )}
                     <button
                       onClick={(e) => {
-                        if (isLocalPath) {
+                        if (needsRegeneration) {
                           handleViewPDF(e);
                         } else {
                           window.open(consent.pdfUrl, '_blank');

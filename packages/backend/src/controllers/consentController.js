@@ -709,17 +709,14 @@ exports.getSignaturePDF = async (req, res) => {
     console.log('🔍 pdfUrl actual:', signature.pdfUrl);
     console.log('🔍 pdfGeneratedAt:', signature.pdfGeneratedAt);
 
-    // Si ya existe el PDF y fue generado recientemente (menos de 24h), devolverlo
-    const dayInMs = 24 * 60 * 60 * 1000;
+    // Detectar si el PDF es legacy (no base64)
+    const isBase64PDF = signature.pdfUrl && signature.pdfUrl.startsWith('data:application/pdf;base64');
+    const isLegacyPDF = signature.pdfUrl && !isBase64PDF;
     
-    // VERIFICAR SI ES UNA RUTA LOCAL (antes de Cloudinary)
-    const isLocalPath = signature.pdfUrl && signature.pdfUrl.startsWith('/uploads/');
-    console.log('🔍 isLocalPath:', isLocalPath);
+    console.log('🔍 isBase64PDF:', isBase64PDF);
+    console.log('🔍 isLegacyPDF:', isLegacyPDF);
     
-    const needsRegenerate = !signature.pdfUrl || 
-                           isLocalPath || // Regenerar PDFs antiguos con rutas locales
-                           !signature.pdfGeneratedAt || 
-                           (Date.now() - new Date(signature.pdfGeneratedAt).getTime() > dayInMs);
+    const needsRegenerate = !signature.pdfUrl || isLegacyPDF; // Siempre regenerar si no es base64
     
     console.log('🔍 needsRegenerate:', needsRegenerate);
 
@@ -960,14 +957,15 @@ exports.migratePDFsToCloudinary = async (req, res) => {
   try {
     const { businessId } = req.params;
     
-    console.log('🔄 Iniciando migración de PDFs a Cloudinary para negocio:', businessId);
+    console.log('🔄 Iniciando migración de PDFs a base64 para negocio:', businessId);
 
-    // Buscar todos los consentimientos con rutas locales
-    const signaturesWithLocalPaths = await ConsentSignature.findAll({
+    // Buscar todos los consentimientos con PDFs legacy (no base64)
+    const signaturesWithLegacyPDFs = await ConsentSignature.findAll({
       where: {
         businessId,
         pdfUrl: {
-          [Op.like]: '/uploads/%'
+          [Op.not]: null,
+          [Op.notLike]: 'data:application/pdf;base64%' // Cualquier cosa que NO sea base64
         }
       },
       include: [
@@ -988,17 +986,17 @@ exports.migratePDFsToCloudinary = async (req, res) => {
       limit: 100 // Procesar máximo 100 a la vez
     });
 
-    console.log(`📊 Encontrados ${signaturesWithLocalPaths.length} PDFs para migrar`);
+    console.log(`📊 Encontrados ${signaturesWithLegacyPDFs.length} PDFs para migrar`);
 
     const results = {
-      total: signaturesWithLocalPaths.length,
+      total: signaturesWithLegacyPDFs.length,
       success: 0,
       failed: 0,
       errors: []
     };
 
     // Procesar cada firma
-    for (const signature of signaturesWithLocalPaths) {
+    for (const signature of signaturesWithLegacyPDFs) {
       try {
         console.log(`🔄 Regenerando PDF para firma ${signature.id}`);
         
