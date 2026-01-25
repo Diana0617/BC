@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-
+import { useNavigate } from 'react-router-dom'
 import { logout, clearSubscriptionWarning } from '@shared/store/slices/authSlice.js'
 import SubscriptionWarningBanner from '../../components/SubscriptionWarningBanner.jsx'
 import BusinessSpecialistDashboard from './BusinessSpecialistDashboard.jsx'
@@ -12,6 +12,7 @@ import { useBranding } from '../../contexts/BrandingContext'
 
 const DashboardPage = () => {
   const dispatch = useDispatch()
+  // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate()
   const { user, subscriptionWarning } = useSelector(state => state.auth)
   const business = useSelector(state => state.business?.currentBusiness)
