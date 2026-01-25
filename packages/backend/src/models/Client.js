@@ -53,6 +53,16 @@ const Client = sequelize.define('Client', {
     type: DataTypes.DATEONLY,
     allowNull: true
   },
+  documentType: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: 'Tipo de documento: DNI, Pasaporte, Cédula, RUT, etc. (flexible para multi-país)'
+  },
+  documentNumber: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: 'Número de documento (sin validación de formato específico)'
+  },
   gender: {
     type: DataTypes.ENUM('MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'),
     allowNull: true
