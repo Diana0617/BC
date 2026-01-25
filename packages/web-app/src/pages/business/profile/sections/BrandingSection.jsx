@@ -206,7 +206,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
         {!isSetupMode && !isEditing && (
           <button
             onClick={() => setIsEditing(true)}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 animate-pulse"
+            className="btn-branded-primary px-6 py-3 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 animate-pulse"
           >
             ✏️ Editar Branding
           </button>
@@ -215,23 +215,23 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
       {/* Banner de ayuda interactivo cuando NO está editando */}
       {!isSetupMode && !isEditing && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4 shadow-md">
+        <div className="bg-gradient-to-r from-branded-primary/10 to-branded-secondary/10 border-2 border-branded-primary/50 rounded-lg p-4 shadow-md">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
-              <div className="bg-blue-600 text-white rounded-full p-2 animate-bounce">
+              <div className="bg-branded-primary text-white rounded-full p-2 animate-bounce">
                 <PaintBrushIcon className="h-6 w-6" />
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-blue-900 mb-1">
+              <h3 className="text-lg font-bold text-branded-primary mb-1">
                 👋 ¿Quieres personalizar tu branding?
               </h3>
-              <p className="text-blue-800 mb-3">
+              <p className="text-branded-secondary mb-3">
                 Haz clic en el botón <strong>"✏️ Editar Branding"</strong> arriba para empezar a personalizar tu logo y colores corporativos.
               </p>
               <button
                 onClick={() => setIsEditing(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold shadow-md hover:shadow-lg transition-all duration-200 inline-flex items-center gap-2"
+                className="btn-branded-primary px-4 py-2 font-semibold shadow-md hover:shadow-lg transition-all duration-200 inline-flex items-center gap-2"
               >
                 <PaintBrushIcon className="h-5 w-5" />
                 Comenzar a editar
@@ -243,7 +243,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
       {/* Logo Upload Section */}
       <div className={`rounded-lg p-6 transition-all duration-300 ${
-        isEditing ? 'bg-blue-50 border-2 border-blue-400 shadow-lg' : 'bg-gray-50 border-2 border-gray-200'
+        isEditing ? 'bg-blue-50 border-2 border-branded-primary shadow-lg' : 'bg-gray-50 border-2 border-gray-200'
       }`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
@@ -261,7 +261,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
           {/* Preview */}
           <div className="flex-shrink-0">
             <div className={`w-32 h-32 bg-white border-2 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 ${
-              isEditing ? 'border-blue-500 shadow-lg ring-2 ring-blue-200' : 'border-gray-300'
+              isEditing ? 'border-branded-primary shadow-lg ring-2 ring-branded-secondary/30' : 'border-gray-300'
             }`}>
               {logoPreview ? (
                 <img src={logoPreview} alt="Logo" className="max-w-full max-h-full object-contain" />
@@ -322,7 +322,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
       {/* Colors Section */}
       <div className={`rounded-lg p-6 transition-all duration-300 ${
-        isEditing ? 'bg-blue-50 border-2 border-blue-400 shadow-lg' : 'bg-gray-50 border-2 border-gray-200'
+        isEditing ? 'bg-blue-50 border-2 border-branded-primary shadow-lg' : 'bg-gray-50 border-2 border-gray-200'
       }`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
@@ -351,7 +351,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 title={!isEditing ? "Haz clic en 'Editar Branding' para cambiar este color" : "Selecciona el color principal"}
                 className={`h-12 w-12 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                   isEditing 
-                    ? 'border-blue-500 hover:border-blue-600 hover:scale-110' 
+                    ? 'border-branded-primary hover:border-branded-secondary hover:scale-110' 
                     : 'border-gray-300 opacity-50 cursor-not-allowed'
                 }`}
               />
@@ -364,7 +364,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 title={!isEditing ? "Haz clic en 'Editar Branding' para cambiar este color" : "Código hexadecimal del color"}
                 className={`flex-1 px-3 py-2 border rounded-lg font-mono text-sm transition-all duration-200 ${
                   isEditing
-                    ? 'border-blue-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white'
+                    ? 'border-branded-secondary focus:ring-2 focus:ring-branded-primary focus:border-branded-primary bg-white'
                     : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               />
@@ -390,7 +390,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 title={!isEditing ? "Haz clic en 'Editar Branding' para cambiar este color" : "Selecciona el color secundario"}
                 className={`h-12 w-12 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                   isEditing 
-                    ? 'border-blue-500 hover:border-blue-600 hover:scale-110' 
+                    ? 'border-branded-primary hover:border-branded-secondary hover:scale-110' 
                     : 'border-gray-300 opacity-50 cursor-not-allowed'
                 }`}
               />
@@ -403,7 +403,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 title={!isEditing ? "Haz clic en 'Editar Branding' para cambiar este color" : "Código hexadecimal del color"}
                 className={`flex-1 px-3 py-2 border rounded-lg font-mono text-sm transition-all duration-200 ${
                   isEditing
-                    ? 'border-blue-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white'
+                    ? 'border-branded-secondary focus:ring-2 focus:ring-branded-primary focus:border-branded-primary bg-white'
                     : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               />
@@ -429,7 +429,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 title={!isEditing ? "Haz clic en 'Editar Branding' para cambiar este color" : "Selecciona el color de acento"}
                 className={`h-12 w-12 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                   isEditing 
-                    ? 'border-blue-500 hover:border-blue-600 hover:scale-110' 
+                    ? 'border-branded-primary hover:border-branded-secondary hover:scale-110' 
                     : 'border-gray-300 opacity-50 cursor-not-allowed'
                 }`}
               />
@@ -442,7 +442,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 title={!isEditing ? "Haz clic en 'Editar Branding' para cambiar este color" : "Código hexadecimal del color"}
                 className={`flex-1 px-3 py-2 border rounded-lg font-mono text-sm transition-all duration-200 ${
                   isEditing
-                    ? 'border-blue-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white'
+                    ? 'border-branded-secondary focus:ring-2 focus:ring-branded-primary focus:border-branded-primary bg-white'
                     : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               />
@@ -489,7 +489,7 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
           <button
             onClick={handleSave}
             disabled={!isFormValid || saving || uploadingLogo}
-            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 btn-branded-primary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {(saving || uploadingLogo) ? (
               <div className="flex items-center justify-center">
@@ -536,8 +536,8 @@ const BrandingSection = ({ isSetupMode, onComplete, isCompleted }) => {
 
       {/* Mensaje de ayuda en modo setup */}
       {isSetupMode && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
+        <div className="bg-branded-primary/10 border border-branded-primary/30 rounded-lg p-4">
+          <p className="text-sm text-branded-primary">
             <strong>Personaliza tu marca:</strong> Sube tu logo y elige los colores que representan tu negocio. 
             Estos se aplicarán en toda la aplicación para crear una experiencia única para tus clientes.
           </p>

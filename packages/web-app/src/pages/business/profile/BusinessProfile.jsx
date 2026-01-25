@@ -747,7 +747,7 @@ const BusinessProfile = () => {
                   className="text-xl font-semibold text-gray-900"
                   style={{ color: branding?.primaryColor || '#111827' }}
                 >
-                  {business?.name || 'Mi Negocio'}
+                  {business?.name || 'Control de Negocios'}
                 </h1>
                 {isSetupMode && (
                   <p className="text-sm text-gray-500">
