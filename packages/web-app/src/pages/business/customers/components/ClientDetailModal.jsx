@@ -21,7 +21,8 @@ import {
   DocumentArrowDownIcon,
   CurrencyDollarIcon,
   UserCircleIcon,
-  PrinterIcon
+  PrinterIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import {
   fetchCustomerStats,
@@ -39,6 +40,7 @@ import EditClientModal from './EditClientModal';
 import CreateVoucherModal from './CreateVoucherModal';
 import VouchersList from './VouchersList';
 import BlockClientModal from './BlockClientModal';
+import SendWhatsAppMessageModal from './SendWhatsAppMessageModal';
 
 const ClientDetailModal = ({ client, onClose, onCreateVoucher, onClientUpdated }) => {
   const dispatch = useDispatch();
@@ -46,6 +48,7 @@ const ClientDetailModal = ({ client, onClose, onCreateVoucher, onClientUpdated }
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateVoucherModal, setShowCreateVoucherModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   
   const customerStats = useSelector(selectCustomerStats);
   const cancellationHistory = useSelector(selectCancellationHistory);
@@ -131,6 +134,15 @@ const ClientDetailModal = ({ client, onClose, onCreateVoucher, onClientUpdated }
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setShowWhatsAppModal(true)}
+                disabled={!client.phone}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!client.phone ? 'Cliente sin teléfono registrado' : 'Enviar mensaje por WhatsApp'}
+              >
+                <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
+                WhatsApp
+              </button>
               <button
                 onClick={() => setShowEditModal(true)}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
@@ -263,6 +275,13 @@ const ClientDetailModal = ({ client, onClose, onCreateVoucher, onClientUpdated }
           }}
         />
       )}
+
+      {/* Send WhatsApp Message Modal */}
+      <SendWhatsAppMessageModal
+        isOpen={showWhatsAppModal}
+        onClose={() => setShowWhatsAppModal(false)}
+        client={client}
+      />
     </div>
   );
 };
@@ -1113,4 +1132,4 @@ const ConsentsTab = ({ client }) => {
   );
 };
 
-export default ClientDetailModal;
+const InfoTab = ({ client, onLiftBlock }) => {

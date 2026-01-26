@@ -223,6 +223,74 @@ const whatsappApi = {
     const response = await api.post(`/api/admin/whatsapp/businesses/${businessId}/webhook-events/${eventId}/replay`);
     return response.data;
   },
+
+  // ==================== SENDING MESSAGES ====================
+
+  /**
+   * Enviar mensaje usando una plantilla aprobada
+   * @param {string} businessId - ID del negocio
+   * @param {Object} messageData - { recipientPhone, templateName, variables?, clientId?, appointmentId? }
+   * @returns {Promise} { success, message, data: { messageId, status, to, template } }
+   */
+  sendTemplateMessage: async (businessId, messageData) => {
+    const response = await api.post(`/api/business/${businessId}/whatsapp/send-template-message`, messageData);
+    return response.data;
+  },
+
+  /**
+   * Enviar mensaje de texto simple (no plantilla)
+   * @param {string} businessId - ID del negocio
+   * @param {Object} messageData - { recipientPhone, message, clientId? }
+   * @returns {Promise} { success, message, data: { messageId, status, to } }
+   */
+  sendTextMessage: async (businessId, messageData) => {
+    const response = await api.post(`/api/business/${businessId}/whatsapp/send-text-message`, messageData);
+    return response.data;
+  },
+
+  /**
+   * Obtener estado de un mensaje enviado
+   * @param {string} businessId - ID del negocio
+   * @param {string} messageId - ID del mensaje
+   * @returns {Promise} { success, data: { id, to, status, sentAt, messageType, errorMessage } }
+   */
+  getMessageStatus: async (businessId, messageId) => {
+    const response = await api.get(`/api/business/${businessId}/whatsapp/message-status/${messageId}`);
+    return response.data;
+  },
+
+  /**
+   * Enviar recordatorio de cita
+   * @param {string} businessId - ID del negocio
+   * @param {Object} data - { appointmentId }
+   * @returns {Promise} { success, message, data }
+   */
+  sendAppointmentReminder: async (businessId, data) => {
+    const response = await api.post(`/api/business/${businessId}/whatsapp/send-appointment-reminder`, data);
+    return response.data;
+  },
+
+  /**
+   * Enviar confirmación de cita
+   * @param {string} businessId - ID del negocio
+   * @param {Object} data - { appointmentId }
+   * @returns {Promise} { success, message, data }
+   */
+  sendAppointmentConfirmation: async (businessId, data) => {
+    const response = await api.post(`/api/business/${businessId}/whatsapp/send-appointment-confirmation`, data);
+    return response.data;
+  },
+
+  /**
+   * Enviar recibo de pago
+   * @param {string} businessId - ID del negocio
+   * @param {Object} data - { receiptId }
+   * @returns {Promise} { success, message, data }
+   */
+  sendPaymentReceipt: async (businessId, data) => {
+    const response = await api.post(`/api/business/${businessId}/whatsapp/send-payment-receipt`, data);
+    return response.data;
+  },
 };
 
 export default whatsappApi;

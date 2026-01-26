@@ -255,6 +255,7 @@ const ownerRoutes = require('./routes/owner');
 const wompiPaymentRoutes = require('./routes/wompiPayments');
 const whatsappWebhookRoutes = require('./routes/whatsappWebhookRoutes'); // WhatsApp webhooks
 const whatsappAdminRoutes = require('./routes/whatsappAdminRoutes'); // WhatsApp admin (business self-service)
+const whatsappMessagingRoutes = require('./routes/whatsappMessaging'); // WhatsApp messaging (send messages)
 const businessWompiPaymentConfigRoutes = require('./routes/businessWompiPaymentConfigRoutes'); // Business Wompi payment config
 const businessWompiPaymentWebhookRoutes = require('./routes/businessWompiPaymentWebhookRoutes'); // Business Wompi payment webhooks
 const autoRenewalTestRoutes = require('./routes/autoRenewalTest');
@@ -349,6 +350,7 @@ app.use('/api/wompi', wompiPaymentRoutes);
 app.use('/api/webhooks/whatsapp', whatsappWebhookRoutes); // WhatsApp Business Platform webhooks
 app.use('/api/webhooks/wompi', businessWompiPaymentWebhookRoutes); // Business Wompi payment webhooks (turnos online)
 app.use('/api/admin/whatsapp', whatsappAdminRoutes); // WhatsApp admin endpoints (business self-service)
+app.use('/api/business', whatsappMessagingRoutes); // WhatsApp messaging endpoints (send messages)
 app.use('/api/payments/3ds', payment3DSRoutes); // Rutas de pagos 3D Secure
 app.use('/api/test/auto-renewal', autoRenewalTestRoutes);
 app.use('/api/testing', testingRoutes); // Rutas de testing (solo desarrollo)
