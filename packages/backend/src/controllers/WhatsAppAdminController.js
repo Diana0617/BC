@@ -902,30 +902,75 @@ class WhatsAppAdminController {
       }
 
       // Get token
-      const token = await whatsappTokenManager.getToken(businessId);
-      if (!token) {
+      const tokenData = await whatsappTokenManager.getToken(businessId);
+      if (!tokenData) {
         return res.status(400).json({
           success: false,
           error: 'No hay token de WhatsApp configurado'
         });
       }
 
-      // Submit to Meta (placeholder - needs actual implementation)
-      logger.warn('Template submission to Meta not fully implemented');
-      
-      // Update template status
+      // Build template payload for Meta API
+      const templatePayload = {
+        name: template.name,
+        language: template.language,
+        category: template.category,
+        components: template.components || []
+      };
+
+      logger.info(`📤 Enviando plantilla "${template.name}" a Meta para aprobación...`);
+
+      // Submit to Meta Graph API
+      const axios = require('axios');
+      const metaResponse = await axios.post(
+        `https://graph.facebook.com/v18.0/${wabaId}/message_templates`,
+        templatePayload,
+        {
+          headers: {
+            'Authorization': `Bearer ${tokenData.token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      logger.info('✅ Plantilla enviada a Meta:', metaResponse.data);
+
+      // Update template with Meta's template ID and status
       await template.update({
         status: 'PENDING',
+        metaTemplateId: metaResponse.data.id,
+        metaStatus: metaResponse.data.status,
         submitted_at: new Date()
       });
 
       res.status(200).json({
         success: true,
         message: 'Plantilla enviada para aprobación',
-        data: template
+        data: {
+          id: template.id,
+          name: template.name,
+          status: 'PENDING',
+          metaTemplateId: metaResponse.data.id,
+          submittedAt: template.submitted_at
+        }
       });
     } catch (error) {
-      logger.error('Error submitting template:', error);
+      logger.error('❌ Error submitting template:', error.response?.data || error);
+      
+      // Si Meta rechazó la plantilla, devolver detalles específicos
+      if (error.response?.data?.error) {
+        return res.status(400).json({
+          success: false,
+          error: error.response.data.error.message || 'Error al enviar plantilla',
+          errorDetails: {
+            code: error.response.data.error.code,
+            type: error.response.data.error.type,
+            message: error.response.data.error.message,
+            fbtrace_id: error.response.data.error.fbtrace_id
+          }
+        });
+      }
+      
       res.status(500).json({
         success: false,
         error: 'Error al enviar plantilla para aprobación',
