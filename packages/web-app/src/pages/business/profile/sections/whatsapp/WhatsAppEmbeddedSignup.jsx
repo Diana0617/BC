@@ -169,6 +169,66 @@ const WhatsAppEmbeddedSignup = () => {
         </ul>
       </div>
 
+      {/* Pre-Configuration Guide */}
+      <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-lg p-5 mb-4">
+        <div className="flex items-start space-x-3 mb-3">
+          <div className="p-2 bg-green-100 rounded-lg">
+            <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h4 className="text-base font-bold text-gray-900 mb-1">
+              📋 Configuración Previa (Primera Vez)
+            </h4>
+            <p className="text-sm text-gray-700 mb-3">
+              Si es tu primera vez, completa estos pasos en Meta Business primero:
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3 mb-4">
+          <div className="flex items-start space-x-3 bg-white rounded-lg p-3 border border-green-200">
+            <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">Crear cuenta de WhatsApp Business</p>
+              <p className="text-xs text-gray-600 mt-1">Configura tu número de WhatsApp para el negocio</p>
+              <a
+                href="https://business.facebook.com/wa/manage/home/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center mt-2 text-xs font-medium text-green-600 hover:text-green-700"
+              >
+                <ArrowTopRightOnSquareIcon className="h-4 w-4 mr-1" />
+                Ir a WhatsApp Business en Meta
+              </a>
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-3 bg-white rounded-lg p-3 border border-green-200">
+            <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">Agregar y verificar tu número</p>
+              <p className="text-xs text-gray-600 mt-1">Click en "+ Agregar" y sigue el proceso de verificación (5-10 min)</p>
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-3 bg-white rounded-lg p-3 border border-green-200">
+            <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">Volver aquí y conectar</p>
+              <p className="text-xs text-gray-600 mt-1">Usa el botón azul abajo o el método manual</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+          <p className="text-xs text-yellow-800">
+            <strong>💡 Nota:</strong> El número de WhatsApp Business debe ser diferente al que usas personalmente.
+          </p>
+        </div>
+      </div>
+
       {/* Requirements */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
         <h4 className="text-sm font-semibold text-gray-900 mb-2">Requisitos:</h4>
