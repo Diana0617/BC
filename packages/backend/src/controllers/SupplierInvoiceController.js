@@ -930,21 +930,23 @@ class SupplierInvoiceController {
         });
       }
 
-      // Validar que la factura esté aprobada
-      if (invoice.status === 'PENDING') {
+      // Validar que la factura esté aprobada o parcialmente pagada
+      if (invoice.status !== 'APPROVED' && invoice.status !== 'PARTIALLY_PAID') {
         await transaction.rollback();
+        
+        let errorMessage = 'La factura debe estar aprobada antes de registrar pagos';
+        if (invoice.status === 'PENDING') {
+          errorMessage = 'Debe aprobar la factura antes de registrar pagos';
+        } else if (invoice.status === 'PAID') {
+          errorMessage = 'La factura ya está completamente pagada';
+        } else if (invoice.status === 'CANCELLED') {
+          errorMessage = 'No se pueden registrar pagos en una factura cancelada';
+        }
+        
         return res.status(400).json({
           success: false,
-          message: 'La factura debe estar aprobada antes de registrar pagos'
-        });
-      }
-
-      // Validar que la factura no esté completamente pagada
-      if (invoice.status === 'PAID') {
-        await transaction.rollback();
-        return res.status(400).json({
-          success: false,
-          message: 'La factura ya está completamente pagada'
+          message: errorMessage,
+          currentStatus: invoice.status
         });
       }
 
@@ -997,10 +999,20 @@ class SupplierInvoiceController {
       const newPaidAmount = parseFloat(invoice.paidAmount) + amountFloat;
       const newRemainingAmount = parseFloat(invoice.total) - newPaidAmount;
 
+      // Determinar nuevo estado basado en el saldo
+      let newStatus;
+      if (newRemainingAmount <= 0) {
+        newStatus = 'PAID'; // Totalmente pagado
+      } else if (newPaidAmount > 0) {
+        newStatus = 'PARTIALLY_PAID'; // Pago parcial
+      } else {
+        newStatus = invoice.status; // Mantener estado actual
+      }
+
       await invoice.update({
         paidAmount: newPaidAmount,
         remainingAmount: newRemainingAmount,
-        status: newRemainingAmount <= 0 ? 'PAID' : invoice.status
+        status: newStatus
       }, { transaction });
 
       await transaction.commit();
