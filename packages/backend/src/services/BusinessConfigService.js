@@ -687,6 +687,7 @@ class BusinessConfigService {
       if (profileData.email !== undefined) userData.email = profileData.email.toLowerCase(); // Normalizar email a minúsculas
       if (profileData.phone !== undefined) userData.phone = profileData.phone;
       if (profileData.role !== undefined) userData.role = profileData.role;
+      if (profileData.branchId !== undefined) userData.branchId = profileData.branchId; // Actualizar sucursal principal
       if (profileData.password !== undefined) {
         const bcrypt = require('bcryptjs');
         userData.password = await bcrypt.hash(profileData.password, 10);
