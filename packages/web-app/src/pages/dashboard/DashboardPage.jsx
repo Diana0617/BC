@@ -1,13 +1,13 @@
-import React, { useState } from 'react'
+import React, {  useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { logout, clearSubscriptionWarning } from '@shared/store/slices/authSlice.js'
+import { fetchCurrentBusiness } from '@shared/store/slices/businessSlice'
 import SubscriptionWarningBanner from '../../components/SubscriptionWarningBanner.jsx'
 import BusinessSpecialistDashboard from './BusinessSpecialistDashboard.jsx'
 import BusinessOwnerDashboard from './BusinessOwnerDashboard.jsx'
 import ReceptionistDashboard from './ReceptionistDashboard.jsx'
 import SpecialistDashboard from '../specialist/SpecialistDashboard.jsx'
-import BrandingDemo from '../../components/BrandingDemo.jsx'
 import { useBranding } from '../../contexts/BrandingContext'
 
 const DashboardPage = () => {
@@ -17,7 +17,20 @@ const DashboardPage = () => {
   const { user, subscriptionWarning } = useSelector(state => state.auth)
   const business = useSelector(state => state.business?.currentBusiness)
   const { branding } = useBranding()
-  const [showBrandingDemo, setShowBrandingDemo] = useState(false)
+  
+  // Ref para evitar loops infinitos al sincronizar el business
+  const businessSyncedRef = useRef(false)
+
+  // FIX: SIEMPRE sincronizar el negocio actual desde el backend cuando hay usuario autenticado
+  // Esto carga el nombre del negocio y otros datos
+  useEffect(() => {
+    const businessRoles = ['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST'];
+    if (user?.id && user?.businessId && businessRoles.includes(user?.role) && !businessSyncedRef.current) {
+      console.log('🔄 DashboardPage: Cargando business desde el backend para user:', user.id, 'role:', user.role);
+      businessSyncedRef.current = true
+      dispatch(fetchCurrentBusiness())
+    }
+  }, [user?.id, user?.role, user?.businessId, dispatch])
 
   const handleLogout = () => {
     dispatch(logout())
@@ -59,35 +72,16 @@ const DashboardPage = () => {
     // Dashboard por defecto para otros roles
     return (
       <>
-        {/* Botón para mostrar/ocultar demo de branding */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Bienvenido a tu panel de control
-            </h2>
-            <p className="text-gray-600">
-              Gestiona tu salón de belleza desde aquí
-            </p>
-          </div>
-          <button 
-            onClick={() => setShowBrandingDemo(!showBrandingDemo)}
-            className="btn-branded-outline flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-            </svg>
-            {showBrandingDemo ? 'Ocultar' : 'Probar'} Sistema Branding
-          </button>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Bienvenido a tu panel de control
+          </h2>
+          <p className="text-gray-600">
+            Gestiona tu salón de belleza desde aquí
+          </p>
         </div>
 
-        {/* Demo de Branding */}
-        {showBrandingDemo && (
-          <div className="mb-8">
-            <BrandingDemo />
-          </div>
-        )}
-
-        {/* Stats Grid */}
+        {/* Stats Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg p-6 shadow-sm border">
             <div className="flex items-center">
@@ -145,8 +139,7 @@ const DashboardPage = () => {
             </div>
           </div>
         </div>
-
-        {/* Quick Actions */}
+        }
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="card-branded card-branded-accent">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 p-6 pb-2">Acciones Rápidas</h3>
