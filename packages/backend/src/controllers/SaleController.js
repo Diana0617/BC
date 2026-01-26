@@ -303,8 +303,8 @@ class SaleController {
         clientId: clientId || null
       }, { transaction });
 
-      // Crear recibo para la venta
-      const { receiptNumber, sequenceNumber } = await Receipt.generateReceiptNumber(businessId);
+      // Crear recibo para la venta (con transacción para evitar duplicados)
+      const { receiptNumber, sequenceNumber } = await Receipt.generateReceiptNumber(businessId, transaction);
       
       // Obtener información del usuario que registra la venta
       const userInfo = await User.findByPk(userId, { 

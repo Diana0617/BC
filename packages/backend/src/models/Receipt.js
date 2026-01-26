@@ -291,11 +291,15 @@ const Receipt = sequelize.define('Receipt', {
 /**
  * Método estático para generar el siguiente número de recibo
  */
-Receipt.generateReceiptNumber = async function(businessId) {
+Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
   const { Business } = require('./index');
   
-  // Obtener configuraciones del negocio
-  const business = await Business.findByPk(businessId);
+  // Obtener configuraciones del negocio con lock para evitar condiciones de carrera
+  const business = await Business.findByPk(businessId, {
+    transaction,
+    lock: transaction ? transaction.LOCK.UPDATE : undefined
+  });
+  
   if (!business) {
     throw new Error('Negocio no encontrado');
   }
@@ -321,10 +325,12 @@ Receipt.generateReceiptNumber = async function(businessId) {
     };
   }
   
-  // Buscar el último número de secuencia
+  // Buscar el último número de secuencia con lock
   const lastReceipt = await Receipt.findOne({
     where: baseCondition,
-    order: [['sequenceNumber', 'DESC']]
+    order: [['sequenceNumber', 'DESC']],
+    transaction,
+    lock: transaction ? transaction.LOCK.UPDATE : undefined
   });
   
   // Calcular siguiente número
@@ -354,7 +360,7 @@ Receipt.generateReceiptNumber = async function(businessId) {
     }
   };
   
-  await business.update({ settings: updatedSettings });
+  await business.update({ settings: updatedSettings }, { transaction });
   
   return {
     receiptNumber,
@@ -369,9 +375,10 @@ Receipt.createFromAppointment = async function(appointmentData, paymentData, opt
   const transaction = options.transaction;
   
   try {
-    // Generar número de recibo
+    // Generar número de recibo (con transacción para evitar duplicados)
     const { receiptNumber, sequenceNumber } = await Receipt.generateReceiptNumber(
-      appointmentData.businessId
+      appointmentData.businessId,
+      transaction
     );
     
     // Preparar datos del recibo
