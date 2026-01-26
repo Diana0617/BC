@@ -657,17 +657,32 @@ class AppointmentController {
         if (targetBranch && targetBranch.businessHours && targetBranch.businessHours[dayOfWeek]) {
           const branchHours = targetBranch.businessHours[dayOfWeek];
           
+          // Verificar si la sucursal está abierta ese día (soportar formato viejo y nuevo)
+          // Formato nuevo: enabled=true y shifts array
+          // Formato viejo: closed=false y open/close
+          const isOpen = branchHours.enabled !== false && 
+                        !branchHours.closed && 
+                        (branchHours.shifts?.length > 0 || (branchHours.open && branchHours.close));
           
-          // Si la sucursal NO está cerrada ese día
-          if (!branchHours.closed && branchHours.open && branchHours.close) {
-            // Crear un schedule virtual con los horarios del negocio
-            schedules = [{
-              startTime: branchHours.open + ':00',  // Convertir "09:00" a "09:00:00"
-              endTime: branchHours.close + ':00',   // Convertir "18:00" a "18:00:00"
-              _isBranchHours: true // Flag para indicar que son horarios del negocio
-            }];
+          if (isOpen) {
+            // Crear schedule virtual con los horarios
+            if (branchHours.shifts && branchHours.shifts.length > 0) {
+              // Formato nuevo con shifts - usar el primer turno
+              const firstShift = branchHours.shifts[0];
+              schedules = [{
+                startTime: firstShift.start + ':00',
+                endTime: firstShift.end + ':00',
+                _isBranchHours: true
+              }];
+            } else if (branchHours.open && branchHours.close) {
+              // Formato viejo
+              schedules = [{
+                startTime: branchHours.open + ':00',
+                endTime: branchHours.close + ':00',
+                _isBranchHours: true
+              }];
+            }
           } else {
-            
             // Retornar error específico para sucursal cerrada
             const dayNames = {
               monday: 'lunes',
@@ -686,7 +701,8 @@ class AppointmentController {
                 reason: 'BRANCH_CLOSED',
                 dayOfWeek,
                 branchId: targetBranch.id,
-                branchName: targetBranch.name
+                branchName: targetBranch.name,
+                branchHours: branchHours // Incluir los horarios para debugging
               }
             });
           }
@@ -1391,12 +1407,28 @@ class AppointmentController {
             if (targetBranch && targetBranch.businessHours && targetBranch.businessHours[dayOfWeek]) {
               const branchHours = targetBranch.businessHours[dayOfWeek];
               
-              if (!branchHours.closed && branchHours.open && branchHours.close) {
-                schedules = [{
-                  startTime: branchHours.open + ':00',
-                  endTime: branchHours.close + ':00',
-                  _isBranchHours: true
-                }];
+              // Verificar si la sucursal está abierta (soportar formato viejo y nuevo)
+              const isOpen = branchHours.enabled !== false && 
+                            !branchHours.closed && 
+                            (branchHours.shifts?.length > 0 || (branchHours.open && branchHours.close));
+              
+              if (isOpen) {
+                if (branchHours.shifts && branchHours.shifts.length > 0) {
+                  // Formato nuevo con shifts - usar el primer turno
+                  const firstShift = branchHours.shifts[0];
+                  schedules = [{
+                    startTime: firstShift.start + ':00',
+                    endTime: firstShift.end + ':00',
+                    _isBranchHours: true
+                  }];
+                } else if (branchHours.open && branchHours.close) {
+                  // Formato viejo
+                  schedules = [{
+                    startTime: branchHours.open + ':00',
+                    endTime: branchHours.close + ':00',
+                    _isBranchHours: true
+                  }];
+                }
               }
             }
           }
@@ -2024,12 +2056,28 @@ class AppointmentController {
           if (targetBranch && targetBranch.businessHours && targetBranch.businessHours[dayOfWeek]) {
             const branchHours = targetBranch.businessHours[dayOfWeek];
             
-            if (!branchHours.closed && branchHours.open && branchHours.close) {
-              schedules = [{
-                startTime: branchHours.open + ':00',
-                endTime: branchHours.close + ':00',
-                _isBranchHours: true
-              }];
+            // Verificar si la sucursal está abierta (soportar formato viejo y nuevo)
+            const isOpen = branchHours.enabled !== false && 
+                          !branchHours.closed && 
+                          (branchHours.shifts?.length > 0 || (branchHours.open && branchHours.close));
+            
+            if (isOpen) {
+              if (branchHours.shifts && branchHours.shifts.length > 0) {
+                // Formato nuevo con shifts - usar el primer turno
+                const firstShift = branchHours.shifts[0];
+                schedules = [{
+                  startTime: firstShift.start + ':00',
+                  endTime: firstShift.end + ':00',
+                  _isBranchHours: true
+                }];
+              } else if (branchHours.open && branchHours.close) {
+                // Formato viejo
+                schedules = [{
+                  startTime: branchHours.open + ':00',
+                  endTime: branchHours.close + ':00',
+                  _isBranchHours: true
+                }];
+              }
             }
           }
         }
