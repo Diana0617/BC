@@ -5,7 +5,12 @@
  * - Horarios de sucursal (Branch.businessHours)
  * - Disponibilidad de especialista (SpecialistBranchSchedule)
  * - Duración del servicio (Service.duration)
+ * - Tiempo de preparación y limpieza (Service.preparationTime, Service.cleanupTime)
  * - Citas existentes (Appointment)
+ * 
+ * MEJORAS:
+ * 1. Granularidad de 15 minutos para slots (en lugar de duración completa del servicio)
+ * 2. Considera tiempo de preparación/limpieza entre citas
  */
 
 const { Op } = require('sequelize');
@@ -18,6 +23,9 @@ const {
   User
 } = require('../models');
 const SpecialistIdNormalizer = require('../utils/specialistIdNormalizer');
+
+// Constantes de configuración
+const SLOT_INTERVAL = 15; // Intervalo entre slots en minutos
 
 class AvailabilityService {
   /**
@@ -173,7 +181,7 @@ class AvailabilityService {
         };
       }
 
-      // 5. Obtener duración del servicio
+      // 6. Obtener información del servicio (duración + tiempos de prep/cleanup)
       const service = await Service.findOne({
         where: {
           id: serviceId,
@@ -185,14 +193,22 @@ class AvailabilityService {
         throw new Error('Servicio no encontrado');
       }
 
-      const slotDuration = service.duration; // En minutos
+      const serviceDuration = service.duration; // Duración del servicio
+      const preparationTime = service.preparationTime || 0; // Tiempo de preparación
+      const cleanupTime = service.cleanupTime || 0; // Tiempo de limpieza
+      const totalTimeNeeded = serviceDuration + preparationTime + cleanupTime;
 
-      // 6. Calcular intersección de horarios (lo más restrictivo)
-      // El especialista solo puede trabajar cuando AMBOS están disponibles
+      console.log(`🕐 Tiempos del servicio "${service.name}":`, {
+        duration: serviceDuration,
+        preparation: preparationTime,
+        cleanup: cleanupTime,
+        total: totalTimeNeeded
+      });
+
+      // 7. Calcular intersección de horarios
       const workStartTime = this.maxTime(branchHours.open, workingHours.startTime);
       const workEndTime = this.minTime(branchHours.close, workingHours.endTime);
 
-      // Validar que hay horario disponible
       if (this.parseTime(workStartTime) >= this.parseTime(workEndTime)) {
         return {
           date,
@@ -202,17 +218,21 @@ class AvailabilityService {
         };
       }
 
-      // 7. Generar todos los slots posibles en ese rango, excluyendo breaks
-      const allSlots = this.generateTimeSlots(
+      // 8. Generar slots con granularidad de 15 minutos
+      const allSlots = this.generateTimeSlotsWithInterval(
         workStartTime, 
         workEndTime, 
-        slotDuration,
+        serviceDuration,
+        preparationTime,
+        cleanupTime,
         workingHours.breakStart,
-        workingHours.breakEnd
+        workingHours.breakEnd,
+        SLOT_INTERVAL
       );
 
-      // 8. Obtener citas existentes del especialista ese día
-      // Buscar por userId (appointments usan userId como specialistId)
+      console.log(`✨ Generados ${allSlots.length} slots potenciales con intervalo de ${SLOT_INTERVAL} minutos`);
+
+      // 9. Obtener citas existentes del especialista ese día
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
       
@@ -222,7 +242,7 @@ class AvailabilityService {
       const existingAppointments = await Appointment.findAll({
         where: {
           businessId,
-          specialistId: userId, // Appointments usan userId
+          specialistId: userId,
           branchId,
           startTime: {
             [Op.gte]: startOfDay,
@@ -232,21 +252,30 @@ class AvailabilityService {
             [Op.notIn]: ['CANCELED', 'NO_SHOW']
           }
         },
+        include: [{
+          model: Service,
+          as: 'service',
+          attributes: ['duration', 'preparationTime', 'cleanupTime']
+        }],
         attributes: ['id', 'startTime', 'endTime', 'status'],
         order: [['startTime', 'ASC']]
       });
 
-      // 9. Marcar slots ocupados
+      console.log(`📋 ${existingAppointments.length} citas existentes encontradas`);
+
+      // 10. Marcar slots ocupados considerando tiempos de prep/cleanup de citas existentes
       const slotsWithAvailability = allSlots.map(slot => {
-        const isOccupied = this.isSlotOccupied(slot, existingAppointments, date);
+        const isOccupied = this.isSlotOccupiedWithBuffer(slot, existingAppointments, date, totalTimeNeeded);
         return {
           ...slot,
           available: !isOccupied
         };
       });
 
-      // 10. Filtrar solo slots disponibles
+      // 11. Filtrar solo slots disponibles
       const availableSlots = slotsWithAvailability.filter(slot => slot.available);
+
+      console.log(`✅ ${availableSlots.length} slots disponibles de ${allSlots.length} generados`);
 
       return {
         date,
@@ -270,12 +299,16 @@ class AvailabilityService {
           id: service.id,
           name: service.name,
           duration: service.duration,
+          preparationTime: preparationTime,
+          cleanupTime: cleanupTime,
+          totalTime: totalTimeNeeded,
           price: service.price
         },
         workingHours: {
           start: workStartTime,
           end: workEndTime
         },
+        slotInterval: SLOT_INTERVAL,
         totalSlots: allSlots.length,
         availableSlots: availableSlots.length,
         occupiedSlots: existingAppointments.length,
@@ -365,15 +398,15 @@ class AvailabilityService {
         ]
       });
 
-      // Obtener servicio para saber la duración
       const service = await Service.findByPk(serviceId);
       if (!service) {
         throw new Error('Servicio no encontrado');
       }
 
-      // Calcular endTime basado en duración
+      // Calcular endTime basado en duración total (incluye prep/cleanup)
       const startTime = this.parseTime(time);
-      const endTime = this.addMinutes(startTime, service.duration);
+      const totalTimeNeeded = service.duration + (service.preparationTime || 0) + (service.cleanupTime || 0);
+      const endTime = this.addMinutes(startTime, totalTimeNeeded);
       const endTimeStr = this.formatTime(endTime);
 
       // Verificar disponibilidad de cada especialista
@@ -515,15 +548,27 @@ class AvailabilityService {
   // ==================== HELPER METHODS ====================
 
   /**
-   * Generar slots de tiempo en un rango
+   * 🔑 NUEVO: Generar slots con intervalo fijo (15 min) considerando prep/cleanup
    * @param {String} startTime - "09:00"
    * @param {String} endTime - "18:00"
-   * @param {Number} duration - Minutos
+   * @param {Number} serviceDuration - Duración del servicio en minutos
+   * @param {Number} preparationTime - Tiempo de preparación en minutos
+   * @param {Number} cleanupTime - Tiempo de limpieza en minutos
    * @param {String} breakStart - "12:00" (opcional)
    * @param {String} breakEnd - "13:00" (opcional)
+   * @param {Number} slotInterval - Intervalo entre slots (default: 15)
    * @returns {Array} slots
    */
-  static generateTimeSlots(startTime, endTime, duration, breakStart = null, breakEnd = null) {
+  static generateTimeSlotsWithInterval(
+    startTime, 
+    endTime, 
+    serviceDuration,
+    preparationTime = 0,
+    cleanupTime = 0,
+    breakStart = null, 
+    breakEnd = null, 
+    slotInterval = 15
+  ) {
     const slots = [];
     let current = this.parseTime(startTime);
     const end = this.parseTime(endTime);
@@ -531,45 +576,107 @@ class AvailabilityService {
     const breakStartTime = breakStart ? this.parseTime(breakStart) : null;
     const breakEndTime = breakEnd ? this.parseTime(breakEnd) : null;
 
+    // Tiempo total que necesita el servicio (prep + servicio + cleanup)
+    const totalTimeNeeded = serviceDuration + preparationTime + cleanupTime;
+
     while (current < end) {
-      const slotEnd = this.addMinutes(current, duration);
+      // Calcular cuándo terminaría este slot (inicio + tiempo total)
+      const slotEnd = this.addMinutes(current, totalTimeNeeded);
       
-      // Verificar si el slot cae durante el break
-      const isDuringBreak = breakStartTime && breakEndTime && (
-        (current >= breakStartTime && current < breakEndTime) ||
-        (slotEnd > breakStartTime && slotEnd <= breakEndTime) ||
-        (current < breakStartTime && slotEnd > breakEndTime)
+      // Verificar que el slot completo quepa antes del cierre
+      if (slotEnd > end) {
+        break; // No hay tiempo suficiente
+      }
+      
+      // Verificar si el slot cruza el break
+      const crossesBreak = breakStartTime && breakEndTime && (
+        (current >= breakStartTime && current < breakEndTime) || // Inicia durante break
+        (slotEnd > breakStartTime && slotEnd <= breakEndTime) || // Termina durante break
+        (current < breakStartTime && slotEnd > breakEndTime)     // Cruza completamente el break
       );
       
-      if (slotEnd <= end && !isDuringBreak) {
+      if (!crossesBreak) {
         slots.push({
           startTime: this.formatTime(current),
-          endTime: this.formatTime(slotEnd)
+          endTime: this.formatTime(this.addMinutes(current, serviceDuration)), // Solo mostrar servicio, no prep/cleanup
+          totalDuration: totalTimeNeeded, // Pero reservar el tiempo total
+          serviceDuration: serviceDuration,
+          preparationTime: preparationTime,
+          cleanupTime: cleanupTime
         });
       }
       
-      current = slotEnd;
+      // 🔑 CAMBIO CLAVE: Incrementar por intervalo fijo (15 min) NO por duración total
+      current = this.addMinutes(current, slotInterval);
     }
 
     return slots;
   }
 
   /**
-   * Verificar si un slot está ocupado
-   * @param {Object} slot - { startTime, endTime }
-   * @param {Array} appointments - Citas existentes
+   * 🔑 NUEVO: Verificar si un slot está ocupado considerando buffers de prep/cleanup
+   * @param {Object} slot - { startTime, endTime, totalDuration }
+   * @param {Array} appointments - Citas existentes con sus servicios
    * @param {String} date - YYYY-MM-DD
+   * @param {Number} totalTimeNeeded - Duración total incluyendo prep/cleanup
    * @returns {Boolean}
    */
+  static isSlotOccupiedWithBuffer(slot, appointments, date, totalTimeNeeded) {
+    // Calcular el rango REAL que ocuparía el slot (incluyendo prep/cleanup)
+    const slotStart = new Date(`${date}T${slot.startTime}:00`);
+    const slotEnd = this.addMinutes(slotStart, totalTimeNeeded);
+
+    return appointments.some(appointment => {
+      const aptStart = new Date(appointment.startTime);
+      
+      // Calcular cuánto tiempo REALMENTE ocupa la cita existente
+      let aptTotalTime = 0;
+      if (appointment.service) {
+        aptTotalTime = (appointment.service.duration || 0) + 
+                       (appointment.service.preparationTime || 0) + 
+                       (appointment.service.cleanupTime || 0);
+      } else {
+        // Fallback: usar endTime - startTime de la cita
+        aptTotalTime = (new Date(appointment.endTime) - aptStart) / 60000;
+      }
+      
+      const aptEnd = this.addMinutes(aptStart, aptTotalTime);
+
+      // Hay conflicto si hay solapamiento
+      const hasConflict = (slotStart < aptEnd && slotEnd > aptStart);
+      
+      if (hasConflict) {
+        console.log(`❌ Conflicto detectado:`, {
+          slotStart: this.formatTime(slotStart),
+          slotEnd: this.formatTime(slotEnd),
+          aptStart: this.formatTime(aptStart),
+          aptEnd: this.formatTime(aptEnd)
+        });
+      }
+      
+      return hasConflict;
+    });
+  }
+
+  /**
+   * DEPRECADO: Usar generateTimeSlotsWithInterval en su lugar
+   */
+  static generateTimeSlots(startTime, endTime, duration, breakStart = null, breakEnd = null) {
+    console.warn('⚠️ generateTimeSlots está deprecado. Use generateTimeSlotsWithInterval');
+    return this.generateTimeSlotsWithInterval(startTime, endTime, duration, 0, 0, breakStart, breakEnd, duration);
+  }
+
+  /**
+   * DEPRECADO: Usar isSlotOccupiedWithBuffer en su lugar
+   */
   static isSlotOccupied(slot, appointments, date) {
+    console.warn('⚠️ isSlotOccupied está deprecado. Use isSlotOccupiedWithBuffer');
     const slotStart = new Date(`${date}T${slot.startTime}:00`);
     const slotEnd = new Date(`${date}T${slot.endTime}:00`);
 
     return appointments.some(appointment => {
       const aptStart = new Date(appointment.startTime);
       const aptEnd = new Date(appointment.endTime);
-
-      // Hay conflicto si hay solapamiento
       return (slotStart < aptEnd && slotEnd > aptStart);
     });
   }
