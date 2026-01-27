@@ -220,7 +220,7 @@ const OwnerBusinessesPage = () => {
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <PlusIcon className="w-4 h-4" />
-            Crear Suscripción Manual
+            🚀 Crear Suscripción Manual
           </button>
         </div>
       </div>
