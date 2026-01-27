@@ -292,9 +292,21 @@ const Receipt = sequelize.define('Receipt', {
  * Método estático para generar el siguiente número de recibo
  */
 Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
-  const { Business } = require('./index');
+  const { Business, sequelize } = require('./index');
   
-  // Obtener configuraciones del negocio con lock para evitar condiciones de carrera
+  // Usar advisory lock de PostgreSQL para prevenir race conditions
+  // Convertir businessId UUID a número para pg_advisory_xact_lock
+  const lockKey = parseInt(businessId.replace(/-/g, '').substring(0, 8), 16);
+  
+  if (transaction) {
+    // Advisory lock a nivel de transacción - se libera automáticamente al commit/rollback
+    await sequelize.query('SELECT pg_advisory_xact_lock(:lockKey)', {
+      replacements: { lockKey },
+      transaction
+    });
+  }
+  
+  // Obtener configuraciones del negocio
   const business = await Business.findByPk(businessId, {
     transaction,
     lock: transaction ? transaction.LOCK.UPDATE : undefined
@@ -325,18 +337,52 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
     };
   }
   
-  // Buscar el último número de secuencia con lock
+  // Buscar el último recibo tanto por sequenceNumber como por receiptNumber
+  // para asegurar consistencia
   const lastReceipt = await Receipt.findOne({
     where: baseCondition,
-    order: [['sequenceNumber', 'DESC']],
-    transaction,
-    lock: transaction ? transaction.LOCK.UPDATE : undefined
+    order: [
+      ['sequenceNumber', 'DESC'],
+      ['createdAt', 'DESC']
+    ],
+    transaction
   });
   
-  // Calcular siguiente número
+  // También verificar el último receiptNumber con el patrón actual
+  const receiptPattern = receiptSettings.format
+    .replace('{YEAR}', currentYear.toString())
+    .replace('{PREFIX}', receiptSettings.prefix || 'REC')
+    .replace('{NUMBER}', '%');
+  
+  const lastByNumber = await Receipt.findOne({
+    where: {
+      businessId,
+      receiptNumber: {
+        [Op.like]: receiptPattern
+      }
+    },
+    order: [['receiptNumber', 'DESC']],
+    transaction
+  });
+  
+  // Calcular siguiente número usando el máximo entre ambos
   let nextSequence;
+  let maxSequence = 0;
+  
   if (lastReceipt) {
-    nextSequence = lastReceipt.sequenceNumber + 1;
+    maxSequence = Math.max(maxSequence, lastReceipt.sequenceNumber);
+  }
+  
+  if (lastByNumber) {
+    // Extraer número del receiptNumber (último grupo de dígitos)
+    const match = lastByNumber.receiptNumber.match(/(\d+)$/);
+    if (match) {
+      maxSequence = Math.max(maxSequence, parseInt(match[1]));
+    }
+  }
+  
+  if (maxSequence > 0) {
+    nextSequence = maxSequence + 1;
   } else {
     // Si es el primer recibo, usar el número inicial configurado
     nextSequence = receiptSettings.initialNumber || 1;

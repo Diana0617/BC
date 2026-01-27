@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useOwnerBusinesses } from '@shared/hooks/useOwnerBusinesses';
 import CreateManualSubscriptionModal from '../../../components/owner/CreateManualSubscriptionModal';
+import EditSubscriptionModal from '../../../components/owner/EditSubscriptionModal';
 import SubscriptionStatusBadge from '../../../components/subscription/SubscriptionStatusBadge';
 import {
   BuildingOfficeIcon,
@@ -39,6 +40,8 @@ const OwnerBusinessesPage = () => {
  
  const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditSubscriptionModal, setShowEditSubscriptionModal] = useState(false);
+  const [subscriptionToEdit, setSubscriptionToEdit] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState('createdAt');
@@ -110,6 +113,26 @@ const OwnerBusinessesPage = () => {
 
   const handleSubscriptionCreated = () => {
     setShowCreateModal(false);
+    // Recargar la lista de negocios
+    if (actions?.fetchBusinesses) {
+      actions.fetchBusinesses();
+    }
+  };
+
+  const handleEditSubscription = (business, subscription) => {
+    setSubscriptionToEdit({ business, subscription });
+    setShowEditSubscriptionModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditSubscriptionModal(false);
+    setSubscriptionToEdit(null);
+  };
+
+  const handleSubscriptionUpdated = () => {
+    setShowEditSubscriptionModal(false);
+    setSubscriptionToEdit(null);
+    setSelectedBusiness(null);
     // Recargar la lista de negocios
     if (actions?.fetchBusinesses) {
       actions.fetchBusinesses();
@@ -460,6 +483,20 @@ const OwnerBusinessesPage = () => {
                         >
                           <EyeIcon className="w-4 h-4" />
                         </button>
+
+                        {(() => {
+                          const activeSub = business.subscriptions?.find(sub => sub.status === 'ACTIVE');
+                          const currentSub = activeSub || business.subscriptions?.[0];
+                          return currentSub ? (
+                            <button
+                              onClick={() => handleEditSubscription(business, currentSub)}
+                              className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded"
+                              title="Editar suscripción"
+                            >
+                              <PencilIcon className="w-4 h-4" />
+                            </button>
+                          ) : null;
+                        })()}
      
                         <button
                           onClick={() => helpers?.changeBusinessStatusModal(business)}
@@ -582,6 +619,7 @@ const OwnerBusinessesPage = () => {
                       <th className="px-4 py-2 text-center font-semibold text-gray-700">Estado</th>
                       <th className="px-4 py-2 text-center font-semibold text-gray-700">Inicio</th>
                       <th className="px-4 py-2 text-center font-semibold text-gray-700">Fin</th>
+                      <th className="px-4 py-2 text-center font-semibold text-gray-700">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -606,6 +644,16 @@ const OwnerBusinessesPage = () => {
                         </td>
                         <td className="px-4 py-2 text-gray-900 text-center">{sub.startDate ? helpers?.formatDate(sub.startDate) : <span className="text-gray-400">N/A</span>}</td>
                         <td className="px-4 py-2 text-gray-900 text-center">{sub.endDate ? helpers?.formatDate(sub.endDate) : <span className="text-gray-400">N/A</span>}</td>
+                        <td className="px-4 py-2 text-center">
+                          <button
+                            onClick={() => handleEditSubscription(selectedBusiness, sub)}
+                            className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded inline-flex items-center gap-1"
+                            title="Editar suscripción"
+                          >
+                            <PencilIcon className="w-4 h-4" />
+                            <span className="text-xs">Editar</span>
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -750,11 +798,32 @@ const OwnerBusinessesPage = () => {
                       }`}
                       disabled={loading?.changingStatus || ui.selectedBusinessForStatus.status === statusOption}
                       onClick={async () => {
-                        if (statusOption === 'ACTIVE') await helpers.activateBusiness(ui.selectedBusinessForStatus.id, statusChangeReason);
-                        else if (statusOption === 'INACTIVE') await helpers.deactivateBusiness(ui.selectedBusinessForStatus.id, statusChangeReason);
-                        else if (statusOption === 'SUSPENDED') await helpers.suspendBusiness(ui.selectedBusinessForStatus.id, statusChangeReason);
-                        setStatusChangeReason('');
-                        
+                        try {
+                          if (statusOption === 'ACTIVE') {
+                            await helpers.activateBusiness(ui.selectedBusinessForStatus.id, statusChangeReason);
+                          } else if (statusOption === 'INACTIVE') {
+                            await helpers.deactivateBusiness(ui.selectedBusinessForStatus.id, statusChangeReason);
+                          } else if (statusOption === 'SUSPENDED') {
+                            await helpers.suspendBusiness(ui.selectedBusinessForStatus.id, statusChangeReason);
+                          }
+                          
+                          // Limpiar y cerrar modal
+                          setStatusChangeReason('');
+                          
+                          // Cerrar modal
+                          if (helpers.closeStatusChangeModal) {
+                            helpers.closeStatusChangeModal();
+                          } else if (actions.closeStatusChangeModal) {
+                            actions.closeStatusChangeModal();
+                          }
+                          
+                          // Recargar lista de negocios
+                          if (actions?.fetchBusinesses) {
+                            await actions.fetchBusinesses();
+                          }
+                        } catch (error) {
+                          console.error('Error al cambiar estado:', error);
+                        }
                       }}
                     >{helpers.formatBusinessStatus(statusOption).label}</button>
                   ))}
@@ -775,6 +844,14 @@ const OwnerBusinessesPage = () => {
         isOpen={showCreateModal}
         onClose={handleCloseModal}
         onSuccess={handleSubscriptionCreated}
+      />
+
+      {/* Modal para editar suscripción */}
+      <EditSubscriptionModal
+        isOpen={showEditSubscriptionModal}
+        onClose={handleCloseEditModal}
+        subscriptionData={subscriptionToEdit}
+        onSuccess={handleSubscriptionUpdated}
       />
     </>
   );

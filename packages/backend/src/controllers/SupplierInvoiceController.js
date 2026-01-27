@@ -1073,6 +1073,14 @@ class SupplierInvoiceController {
         createdBy: userId
       }, { transaction});
 
+      // Mapear paymentMethod al enum de FinancialMovement
+      let financialPaymentMethod = paymentMethod;
+      if (paymentMethod === 'TRANSFER') {
+        financialPaymentMethod = 'BANK_TRANSFER';
+      } else if (paymentMethod === 'CARD') {
+        financialPaymentMethod = 'CREDIT_CARD';
+      }
+
       // Crear movimiento financiero (GASTO)
       await FinancialMovement.create({
         businessId,
@@ -1081,7 +1089,7 @@ class SupplierInvoiceController {
         category: 'Compra de Inventario',
         description: `Pago factura ${invoice.invoiceNumber} - ${invoice.supplier?.name || 'Proveedor'}`,
         amount: amountFloat,
-        paymentMethod,
+        paymentMethod: financialPaymentMethod,
         status: 'COMPLETED',
         transactionDate: paymentDate ? new Date(paymentDate) : new Date(),
         reference,
