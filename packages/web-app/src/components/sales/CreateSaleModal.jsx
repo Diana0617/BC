@@ -199,7 +199,8 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
       handleClose();
       dispatch(clearCreateSuccess());
     }
-  }, [createSuccess, currentSale, dispatch, handleClose]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createSuccess, currentSale, dispatch]);
 
   // Función para descargar el recibo PDF
   const downloadReceipt = async (saleId) => {
