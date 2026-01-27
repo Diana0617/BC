@@ -13,7 +13,16 @@ class SaleController {
    * POST /api/sales
    */
   static async createSale(req, res) {
+    console.log('\n🛒 ===== INICIO CREATESAL E =====');
+    console.log('📥 req.body:', JSON.stringify(req.body, null, 2));
+    console.log('👤 req.user:', {
+      id: req.user?.id,
+      businessId: req.user?.businessId,
+      role: req.user?.role
+    });
+    
     const transaction = await sequelize.transaction();
+    console.log('✅ Transacción creada');
     
     try {
       const {
@@ -33,6 +42,15 @@ class SaleController {
         notes,
         shiftId // Opcional: si está en turno activo
       } = req.body;
+
+      console.log('📦 Datos extraídos:', {
+        branchId,
+        clientId,
+        itemsCount: items?.length,
+        paymentMethod,
+        paidAmount,
+        shiftId
+      });
 
       const userId = req.user.id;
       const businessId = req.user.businessId;
@@ -419,11 +437,18 @@ class SaleController {
 
     } catch (error) {
       await transaction.rollback();
-      console.error('Error creando venta:', error);
+      console.error('\n❌ ===== ERROR EN CREATESAL E =====');
+      console.error('❌ Error type:', error.name);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
+      console.error('❌ Error completo:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      console.error('===== FIN ERROR =====\n');
+      
       res.status(500).json({
         success: false,
         error: 'Error al registrar la venta',
-        details: error.message
+        details: error.message,
+        errorType: error.name
       });
     }
   }
