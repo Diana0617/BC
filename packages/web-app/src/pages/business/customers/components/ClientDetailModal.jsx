@@ -1131,5 +1131,3 @@ const ConsentsTab = ({ client }) => {
     </div>
   );
 };
-
-const InfoTab = ({ client, onLiftBlock }) => {
