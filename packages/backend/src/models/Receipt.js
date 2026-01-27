@@ -295,8 +295,9 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
   const { Business, sequelize } = require('./index');
   
   // Usar advisory lock de PostgreSQL para prevenir race conditions
-  // Convertir businessId UUID a número para pg_advisory_xact_lock
-  const lockKey = parseInt(businessId.replace(/-/g, '').substring(0, 8), 16);
+  // Convertir businessId UUID a número hash consistente para pg_advisory_xact_lock
+  // Usamos los primeros 10 caracteres para mayor unicidad
+  const lockKey = parseInt(businessId.replace(/-/g, '').substring(0, 10), 16) % 2147483647;
   
   if (transaction) {
     // Advisory lock a nivel de transacción - se libera automáticamente al commit/rollback
@@ -304,12 +305,21 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
       replacements: { lockKey },
       transaction
     });
+  } else {
+    // Si no hay transacción, crear una para garantizar atomicidad
+    return await sequelize.transaction(async (t) => {
+      await sequelize.query('SELECT pg_advisory_xact_lock(:lockKey)', {
+        replacements: { lockKey },
+        transaction: t
+      });
+      return await Receipt.generateReceiptNumber(businessId, t);
+    });
   }
   
-  // Obtener configuraciones del negocio
+  // Obtener configuraciones del negocio con LOCK UPDATE
   const business = await Business.findByPk(businessId, {
     transaction,
-    lock: transaction ? transaction.LOCK.UPDATE : undefined
+    lock: true // Siempre usar lock
   });
   
   if (!business) {
@@ -370,7 +380,7 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
   let maxSequence = 0;
   
   if (lastReceipt) {
-    maxSequence = Math.max(maxSequence, lastReceipt.sequenceNumber);
+    maxSequence = Math.max(maxSequence, lastReceipt.sequenceNumber || 0);
   }
   
   if (lastByNumber) {
@@ -388,11 +398,39 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
     nextSequence = receiptSettings.initialNumber || 1;
   }
   
-  // Generar número de recibo según formato configurado
-  const receiptNumber = receiptSettings.format
-    .replace('{YEAR}', currentYear.toString())
-    .replace('{PREFIX}', receiptSettings.prefix || 'REC')
-    .replace('{NUMBER}', nextSequence.toString().padStart(receiptSettings.padLength || 5, '0'));
+  // VERIFICACIÓN CRÍTICA: Asegurarse de que el número no exista ya
+  // Esto maneja el caso de race conditions no resueltas por el advisory lock
+  let receiptNumber;
+  let attempts = 0;
+  const maxAttempts = 10;
+  
+  while (attempts < maxAttempts) {
+    receiptNumber = receiptSettings.format
+      .replace('{YEAR}', currentYear.toString())
+      .replace('{PREFIX}', receiptSettings.prefix || 'REC')
+      .replace('{NUMBER}', nextSequence.toString().padStart(receiptSettings.padLength || 5, '0'));
+    
+    // Verificar si ya existe un recibo con este número
+    const existing = await Receipt.findOne({
+      where: { businessId, receiptNumber },
+      attributes: ['id', 'receiptNumber'],
+      transaction
+    });
+    
+    if (!existing) {
+      // Número disponible, salir del loop
+      break;
+    }
+    
+    // Si existe, incrementar y reintentar
+    console.warn(`⚠️ Receipt number ${receiptNumber} already exists, incrementing to ${nextSequence + 1}`);
+    nextSequence++;
+    attempts++;
+  }
+  
+  if (attempts >= maxAttempts) {
+    throw new Error(`No se pudo generar un número de recibo único después de ${maxAttempts} intentos`);
+  }
   
   // Actualizar currentNumber en configuraciones del negocio
   const updatedSettings = {
