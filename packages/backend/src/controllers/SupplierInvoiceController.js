@@ -653,13 +653,111 @@ class SupplierInvoiceController {
         });
       }
 
-      // Validar que el stock haya sido distribuido
+      // Validar que el stock haya sido distribuido O distribuir automáticamente a sucursal principal
       if (!invoice.metadata?.stockDistributed) {
-        await transaction.rollback();
-        return res.status(400).json({
-          success: false,
-          message: 'Debe distribuir el stock antes de aprobar la factura'
+        console.log('⚠️ Stock no distribuido manualmente, distribuyendo a sucursal principal...');
+        
+        // Obtener sucursal principal del negocio
+        const Business = require('../models').Business;
+        const business = await Business.findByPk(businessId, {
+          include: [{
+            model: Branch,
+            as: 'branches',
+            where: { status: 'ACTIVE' },
+            required: false
+          }],
+          transaction
         });
+
+        if (!business || !business.branches || business.branches.length === 0) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: 'No hay sucursales activas para distribuir el stock'
+          });
+        }
+
+        // Usar la primera sucursal activa como principal
+        const mainBranch = business.branches[0];
+        
+        // Crear distribución automática con todos los items a la sucursal principal
+        const autoDistribution = [{
+          branchId: mainBranch.id,
+          items: invoice.items.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity
+          }))
+        }];
+
+        // Aplicar la distribución automática
+        const userId = req.user.id;
+        const Product = require('../models').Product;
+        const BranchStock = require('../models').BranchStock;
+        const InventoryMovement = require('../models').InventoryMovement;
+
+        for (const item of invoice.items) {
+          const product = await Product.findByPk(item.productId, { transaction });
+          if (!product) continue;
+
+          // Obtener o crear stock de sucursal
+          const [branchStock, created] = await BranchStock.findOrCreate({
+            where: { branchId: mainBranch.id, productId: item.productId },
+            defaults: {
+              businessId,
+              branchId: mainBranch.id,
+              productId: item.productId,
+              currentStock: 0,
+              minStock: 0,
+              maxStock: null,
+              lastCountDate: new Date()
+            },
+            transaction
+          });
+
+          const previousBranchStock = branchStock.currentStock;
+          const newBranchStock = previousBranchStock + item.quantity;
+
+          // Crear movimiento de inventario
+          await InventoryMovement.create({
+            businessId,
+            productId: item.productId,
+            branchId: mainBranch.id,
+            userId,
+            movementType: 'PURCHASE',
+            quantity: item.quantity,
+            unitCost: item.unitCost,
+            totalCost: item.total,
+            previousStock: previousBranchStock,
+            newStock: newBranchStock,
+            notes: `Compra automática desde factura ${invoice.invoiceNumber}`,
+            reference: invoice.invoiceNumber,
+            metadata: {
+              source: 'supplier_invoice',
+              invoiceId: invoice.id,
+              autoDistributed: true
+            }
+          }, { transaction });
+
+          // Actualizar stock de sucursal
+          await branchStock.update({
+            currentStock: newBranchStock
+          }, { transaction });
+
+          console.log(`✅ Stock actualizado: ${product.name} en ${mainBranch.name}: ${previousBranchStock} → ${newBranchStock}`);
+        }
+
+        // Marcar como distribuido
+        await invoice.update({
+          metadata: {
+            ...invoice.metadata,
+            stockDistributed: true,
+            autoDistributed: true,
+            distributionDate: new Date(),
+            mainBranchId: mainBranch.id
+          }
+        }, { transaction });
+
+        console.log(`✅ Distribución automática completada a sucursal ${mainBranch.name}`);
       }
 
       // Aprobar factura
