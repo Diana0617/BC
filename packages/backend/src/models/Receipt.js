@@ -408,6 +408,14 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
   }
   
   console.log('🔍 maxSequence final:', maxSequence);
+  
+  // IMPORTANTE: También considerar el currentNumber de la configuración
+  // para evitar crear recibos con números ya usados manualmente
+  const configuredNumber = receiptSettings.currentNumber || 0;
+  console.log('🔍 currentNumber en configuración:', configuredNumber);
+  maxSequence = Math.max(maxSequence, configuredNumber);
+  console.log('🔍 maxSequence después de comparar con config:', maxSequence);
+  
   if (maxSequence > 0) {
     nextSequence = maxSequence + 1;
   } else {
