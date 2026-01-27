@@ -20,6 +20,7 @@ import { apiClient } from '@shared/api/client';
 const CreateClientModal = ({ onClose, onSuccess }) => {
   const { currentBusiness } = useSelector(state => state.business);
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -88,11 +89,18 @@ const CreateClientModal = ({ onClose, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Protección inmediata contra doble submit
+    if (isSubmitting) {
+      console.log('⚠️ Submit bloqueado - Ya se está creando un cliente');
+      return;
+    }
+
     if (!validate()) {
       toast.error('Por favor corrige los errores del formulario');
       return;
     }
 
+    setIsSubmitting(true);
     setLoading(true);
 
     try {
@@ -146,6 +154,7 @@ const CreateClientModal = ({ onClose, onSuccess }) => {
       }
     } finally {
       setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -494,17 +503,17 @@ const CreateClientModal = ({ onClose, onSuccess }) => {
               <button
                 type="button"
                 onClick={onClose}
-                disabled={loading}
+                disabled={loading || isSubmitting}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isSubmitting}
                 className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
               >
-                {loading ? (
+                {(loading || isSubmitting) ? (
                   <>
                     <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

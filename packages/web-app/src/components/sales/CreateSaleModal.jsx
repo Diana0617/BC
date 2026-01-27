@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -36,6 +37,9 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [loadingBranches, setLoadingBranches] = useState(false);
+
+  // Protección contra doble submit
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -154,7 +158,7 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
             const vouchersResponse = await getClientVouchers(businessId, selectedClient.id);
             const activeVouchers = (vouchersResponse.data?.vouchers || []).filter(v => v.status === 'ACTIVE');
             setClientVouchers(activeVouchers);
-          } catch (vouchersError) {
+          } catch {
             console.log('Vouchers no disponibles para este cliente');
             setClientVouchers([]);
           }
@@ -195,7 +199,7 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
       handleClose();
       dispatch(clearCreateSuccess());
     }
-  }, [createSuccess, currentSale, dispatch]);
+  }, [createSuccess, currentSale, dispatch, handleClose]);
 
   // Función para descargar el recibo PDF
   const downloadReceipt = async (saleId) => {
@@ -244,6 +248,7 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
     setPointsToUse(0);
     setSelectedVoucher(null);
     setMixedPayments([{ method: 'CASH', amount: '' }]);
+    setIsSubmitting(false); // Resetear protección de doble submit
     setFormData({
       discountType: 'NONE',
       discountValue: 0,
@@ -419,6 +424,13 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Protección inmediata contra doble submit
+    if (isSubmitting) {
+      console.log('⚠️ Submit bloqueado - Ya se está procesando una venta');
+      return;
+    }
+    setIsSubmitting(true);
+
     console.log('🛒 === INICIO PROCESO DE VENTA ===');
     console.log('📋 Items en carrito:', items.length);
     console.log('🏢 Sucursal seleccionada:', selectedBranch);
@@ -428,6 +440,7 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
     if (items.length === 0) {
       console.error('❌ Error: No hay items en el carrito');
       toast.error('Debe agregar al menos un producto');
+      setIsSubmitting(false);
       return;
     }
 
@@ -440,6 +453,7 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
     if (paid < total) {
       console.error('❌ Error: Monto insuficiente', { total, paid });
       toast.error(`Monto insuficiente. Total: $${total.toLocaleString()}`);
+      setIsSubmitting(false);
       return;
     }
 
@@ -447,6 +461,7 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
     if (pointsToUse > maxPointsToUse) {
       console.error('❌ Error: Puntos insuficientes', { pointsToUse, maxPointsToUse });
       toast.error(`Puntos insuficientes. Disponibles: ${maxPointsToUse}`);
+      setIsSubmitting(false);
       return;
     }
 
@@ -479,11 +494,14 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
       
       if (result.error) {
         console.error('❌ Error en createSale:', result.error);
+        setIsSubmitting(false); // Permitir retry en caso de error
       } else {
         console.log('✅ Venta creada exitosamente:', result.payload);
+        // isSubmitting se reseteará cuando se cierre el modal
       }
     } catch (error) {
       console.error('❌ Error catch en handleSubmit:', error);
+      setIsSubmitting(false); // Permitir retry en caso de error
     }
   };
 
@@ -1004,10 +1022,10 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
             <div className="space-y-2">
               <button
                 type="submit"
-                disabled={loading || items.length === 0}
+                disabled={loading || items.length === 0 || isSubmitting}
                 className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Procesando...' : 'Registrar Venta'}
+                {(loading || isSubmitting) ? 'Procesando...' : 'Registrar Venta'}
               </button>
               
               <button
