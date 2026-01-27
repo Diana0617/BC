@@ -349,6 +349,7 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
   
   // Buscar el último recibo tanto por sequenceNumber como por receiptNumber
   // para asegurar consistencia
+  console.log('🔍 Buscando último recibo con baseCondition:', JSON.stringify(baseCondition));
   const lastReceipt = await Receipt.findOne({
     where: baseCondition,
     order: [
@@ -357,6 +358,12 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
     ],
     transaction
   });
+  console.log('🔍 lastReceipt encontrado:', lastReceipt ? {
+    id: lastReceipt.id,
+    receiptNumber: lastReceipt.receiptNumber,
+    sequenceNumber: lastReceipt.sequenceNumber,
+    createdAt: lastReceipt.createdAt
+  } : null);
   
   // También verificar el último receiptNumber con el patrón actual
   const receiptPattern = receiptSettings.format
@@ -364,6 +371,7 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
     .replace('{PREFIX}', receiptSettings.prefix || 'REC')
     .replace('{NUMBER}', '%');
   
+  console.log('🔍 Buscando recibo con patrón:', receiptPattern);
   const lastByNumber = await Receipt.findOne({
     where: {
       businessId,
@@ -374,6 +382,11 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
     order: [['receiptNumber', 'DESC']],
     transaction
   });
+  console.log('🔍 lastByNumber encontrado:', lastByNumber ? {
+    id: lastByNumber.id,
+    receiptNumber: lastByNumber.receiptNumber,
+    sequenceNumber: lastByNumber.sequenceNumber
+  } : null);
   
   // Calcular siguiente número usando el máximo entre ambos
   let nextSequence;
@@ -381,22 +394,27 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
   
   if (lastReceipt) {
     maxSequence = Math.max(maxSequence, lastReceipt.sequenceNumber || 0);
+    console.log('🔍 maxSequence desde lastReceipt:', maxSequence);
   }
   
   if (lastByNumber) {
     // Extraer número del receiptNumber (último grupo de dígitos)
     const match = lastByNumber.receiptNumber.match(/(\d+)$/);
     if (match) {
-      maxSequence = Math.max(maxSequence, parseInt(match[1]));
+      const numberFromReceipt = parseInt(match[1]);
+      console.log('🔍 Número extraído de receiptNumber:', numberFromReceipt);
+      maxSequence = Math.max(maxSequence, numberFromReceipt);
     }
   }
   
+  console.log('🔍 maxSequence final:', maxSequence);
   if (maxSequence > 0) {
     nextSequence = maxSequence + 1;
   } else {
     // Si es el primer recibo, usar el número inicial configurado
     nextSequence = receiptSettings.initialNumber || 1;
   }
+  console.log('🔍 nextSequence calculado:', nextSequence);
   
   // VERIFICACIÓN CRÍTICA: Asegurarse de que el número no exista ya
   // Esto maneja el caso de race conditions no resueltas por el advisory lock
@@ -404,12 +422,14 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
   let attempts = 0;
   const maxAttempts = 10;
   
+  console.log('🔍 Iniciando verificación de disponibilidad de número...');
   while (attempts < maxAttempts) {
     receiptNumber = receiptSettings.format
       .replace('{YEAR}', currentYear.toString())
       .replace('{PREFIX}', receiptSettings.prefix || 'REC')
       .replace('{NUMBER}', nextSequence.toString().padStart(receiptSettings.padLength || 5, '0'));
     
+    console.log(`🔍 Intento ${attempts + 1}: Verificando disponibilidad de ${receiptNumber}`);
     // Verificar si ya existe un recibo con este número
     const existing = await Receipt.findOne({
       where: { businessId, receiptNumber },
@@ -417,6 +437,7 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
       transaction
     });
     
+    console.log(`🔍 ¿Existe ${receiptNumber}?`, existing ? 'SÍ' : 'NO');
     if (!existing) {
       // Número disponible, salir del loop
       break;
