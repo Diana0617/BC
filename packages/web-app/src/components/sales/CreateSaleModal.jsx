@@ -102,7 +102,8 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
   // Cargar productos cuando se selecciona una sucursal
   useEffect(() => {
     if (selectedBranch && businessId) {
-      console.log('🏪 Loading products for branch:', selectedBranch.name, 'ID:', selectedBranch.id);
+      console.log('🏪 Cargando productos para sucursal:', selectedBranch.name, 'ID:', selectedBranch.id);
+      console.log('🏢 BusinessId:', businessId);
       
       dispatch(fetchProducts({ 
         businessId,
@@ -175,13 +176,20 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
 
   // Manejar éxito
   useEffect(() => {
+    console.log('🔍 useEffect - createSuccess:', createSuccess);
+    console.log('🔍 useEffect - currentSale:', currentSale);
+    
     if (createSuccess) {
+      console.log('✅ VENTA CREADA EXITOSAMENTE');
       toast.success('Venta registrada exitosamente');
       
       // currentSale contiene la venta recién creada con el recibo
       if (currentSale && currentSale.sale && currentSale.sale.id) {
+        console.log('📄 Descargando recibo para venta ID:', currentSale.sale.id);
         // Descargar el recibo automáticamente
         downloadReceipt(currentSale.sale.id);
+      } else {
+        console.warn('⚠️ No se pudo obtener el ID de la venta para descargar recibo');
       }
       
       handleClose();
@@ -215,7 +223,10 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
 
   // Manejar errores
   useEffect(() => {
+    console.log('🔍 useEffect - error:', error);
+    
     if (error) {
+      console.error('❌ ERROR EN VENTA:', error);
       toast.error(error.error || 'Error al registrar la venta');
       dispatch(clearSalesError());
     }
@@ -408,7 +419,14 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    console.log('🛒 === INICIO PROCESO DE VENTA ===');
+    console.log('📋 Items en carrito:', items.length);
+    console.log('🏢 Sucursal seleccionada:', selectedBranch);
+    console.log('👤 Cliente seleccionado:', selectedClient);
+    console.log('💳 Método de pago:', formData.paymentMethod);
+
     if (items.length === 0) {
+      console.error('❌ Error: No hay items en el carrito');
       toast.error('Debe agregar al menos un producto');
       return;
     }
@@ -416,13 +434,18 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
     const total = calculateTotal();
     const paid = calculateTotalPaid();
 
+    console.log('💰 Total calculado:', total);
+    console.log('💵 Pagado:', paid);
+
     if (paid < total) {
+      console.error('❌ Error: Monto insuficiente', { total, paid });
       toast.error(`Monto insuficiente. Total: $${total.toLocaleString()}`);
       return;
     }
 
     // Validar puntos
     if (pointsToUse > maxPointsToUse) {
+      console.error('❌ Error: Puntos insuficientes', { pointsToUse, maxPointsToUse });
       toast.error(`Puntos insuficientes. Disponibles: ${maxPointsToUse}`);
       return;
     }
@@ -447,7 +470,21 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
       notes: formData.notes
     };
 
-    await dispatch(createSale(saleData));
+    console.log('📤 Datos de venta a enviar:', JSON.stringify(saleData, null, 2));
+    console.log('🚀 Despachando acción createSale...');
+
+    try {
+      const result = await dispatch(createSale(saleData));
+      console.log('✅ Resultado de dispatch:', result);
+      
+      if (result.error) {
+        console.error('❌ Error en createSale:', result.error);
+      } else {
+        console.log('✅ Venta creada exitosamente:', result.payload);
+      }
+    } catch (error) {
+      console.error('❌ Error catch en handleSubmit:', error);
+    }
   };
 
   if (!isOpen) return null;
