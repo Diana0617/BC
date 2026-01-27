@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useOwnerBusinesses } from '@shared/hooks/useOwnerBusinesses';
 import CreateManualSubscriptionModal from '../../../components/owner/CreateManualSubscriptionModal';
 import EditSubscriptionModal from '../../../components/owner/EditSubscriptionModal';
+import EditBusinessModal from '../../../components/owner/EditBusinessModal';
 import SubscriptionStatusBadge from '../../../components/subscription/SubscriptionStatusBadge';
 import {
   BuildingOfficeIcon,
@@ -42,6 +43,8 @@ const OwnerBusinessesPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditSubscriptionModal, setShowEditSubscriptionModal] = useState(false);
   const [subscriptionToEdit, setSubscriptionToEdit] = useState(null);
+  const [showEditBusinessModal, setShowEditBusinessModal] = useState(false);
+  const [businessToEdit, setBusinessToEdit] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState('createdAt');
@@ -132,6 +135,26 @@ const OwnerBusinessesPage = () => {
   const handleSubscriptionUpdated = () => {
     setShowEditSubscriptionModal(false);
     setSubscriptionToEdit(null);
+    setSelectedBusiness(null);
+    // Recargar la lista de negocios
+    if (actions?.fetchBusinesses) {
+      actions.fetchBusinesses();
+    }
+  };
+
+  const handleEditBusiness = (business) => {
+    setBusinessToEdit(business);
+    setShowEditBusinessModal(true);
+  };
+
+  const handleCloseEditBusinessModal = () => {
+    setShowEditBusinessModal(false);
+    setBusinessToEdit(null);
+  };
+
+  const handleBusinessUpdated = () => {
+    setShowEditBusinessModal(false);
+    setBusinessToEdit(null);
     setSelectedBusiness(null);
     // Recargar la lista de negocios
     if (actions?.fetchBusinesses) {
@@ -476,6 +499,14 @@ const OwnerBusinessesPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEditBusiness(business)}
+                          className="text-purple-600 hover:text-purple-900 p-1 hover:bg-purple-50 rounded"
+                          title="Editar negocio"
+                        >
+                          <PencilIcon className="w-4 h-4" />
+                        </button>
+
                         <button
                           onClick={() => setSelectedBusiness(business)}
                           className="text-indigo-600 hover:text-indigo-900 p-1 hover:bg-indigo-50 rounded"
@@ -852,6 +883,14 @@ const OwnerBusinessesPage = () => {
         onClose={handleCloseEditModal}
         subscriptionData={subscriptionToEdit}
         onSuccess={handleSubscriptionUpdated}
+      />
+
+      {/* Modal para editar negocio */}
+      <EditBusinessModal
+        isOpen={showEditBusinessModal}
+        onClose={handleCloseEditBusinessModal}
+        businessData={businessToEdit}
+        onSuccess={handleBusinessUpdated}
       />
     </>
   );

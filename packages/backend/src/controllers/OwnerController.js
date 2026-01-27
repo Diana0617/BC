@@ -1156,6 +1156,201 @@ class OwnerController {
       });
     }
   }
+
+  /**
+   * 📝 Actualizar suscripción existente
+   */
+  static async updateSubscription(req, res) {
+    try {
+      const { subscriptionId } = req.params;
+      const { planId, billingCycle, status, startDate, endDate } = req.body;
+
+      // Buscar la suscripción
+      const subscription = await BusinessSubscription.findByPk(subscriptionId, {
+        include: [
+          {
+            model: Business,
+            as: 'business',
+            attributes: ['id', 'name', 'status']
+          },
+          {
+            model: SubscriptionPlan,
+            as: 'plan',
+            attributes: ['id', 'name', 'monthlyPrice', 'annualPrice']
+          }
+        ]
+      });
+
+      if (!subscription) {
+        return res.status(404).json({
+          success: false,
+          error: 'Suscripción no encontrada'
+        });
+      }
+
+      // Preparar datos de actualización
+      const updateData = {};
+      
+      if (planId && planId !== subscription.planId) {
+        // Verificar que el plan existe
+        const newPlan = await SubscriptionPlan.findByPk(planId);
+        if (!newPlan) {
+          return res.status(404).json({
+            success: false,
+            error: 'Plan no encontrado'
+          });
+        }
+        updateData.planId = planId;
+      }
+
+      if (billingCycle && ['MONTHLY', 'ANNUAL', 'LIFETIME'].includes(billingCycle)) {
+        updateData.billingCycle = billingCycle;
+      }
+
+      if (status && ['ACTIVE', 'SUSPENDED', 'CANCELLED', 'EXPIRED'].includes(status)) {
+        updateData.status = status;
+      }
+
+      if (startDate) {
+        updateData.startDate = new Date(startDate);
+      }
+
+      if (endDate) {
+        updateData.endDate = new Date(endDate);
+      }
+
+      // Actualizar suscripción
+      await subscription.update(updateData);
+
+      // Recargar con relaciones
+      await subscription.reload({
+        include: [
+          {
+            model: Business,
+            as: 'business',
+            attributes: ['id', 'name', 'status']
+          },
+          {
+            model: SubscriptionPlan,
+            as: 'plan',
+            attributes: ['id', 'name', 'description', 'monthlyPrice', 'annualPrice']
+          }
+        ]
+      });
+
+      console.log(`✏️ Suscripción ${subscriptionId} actualizada por Owner`, {
+        businessId: subscription.businessId,
+        businessName: subscription.business.name,
+        changes: updateData
+      });
+
+      res.json({
+        success: true,
+        message: 'Suscripción actualizada exitosamente',
+        data: subscription
+      });
+
+    } catch (error) {
+      console.error('Error actualizando suscripción:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * 📝 Actualizar información de un negocio
+   */
+  static async updateBusiness(req, res) {
+    try {
+      const { businessId } = req.params;
+      const { name, email, phone, address, city, country, businessType, status } = req.body;
+
+      // Buscar el negocio
+      const business = await Business.findByPk(businessId, {
+        include: [
+          {
+            model: User,
+            as: 'users',
+            where: { role: 'BUSINESS' },
+            required: false,
+            attributes: ['id', 'firstName', 'lastName', 'email']
+          }
+        ]
+      });
+
+      if (!business) {
+        return res.status(404).json({
+          success: false,
+          error: 'Negocio no encontrado'
+        });
+      }
+
+      // Preparar datos de actualización
+      const updateData = {};
+      
+      if (name) updateData.name = name;
+      if (email) updateData.email = email;
+      if (phone) updateData.phone = phone;
+      if (address) updateData.address = address;
+      if (city) updateData.city = city;
+      if (country) updateData.country = country;
+      if (businessType) updateData.businessType = businessType;
+      if (status && ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'TRIAL'].includes(status)) {
+        updateData.status = status;
+      }
+
+      // Actualizar negocio
+      await business.update(updateData);
+
+      // Recargar con relaciones
+      await business.reload({
+        include: [
+          {
+            model: User,
+            as: 'users',
+            where: { role: 'BUSINESS' },
+            required: false,
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
+          },
+          {
+            model: BusinessSubscription,
+            as: 'subscriptions',
+            include: [
+              {
+                model: SubscriptionPlan,
+                as: 'plan',
+                attributes: ['id', 'name', 'description']
+              }
+            ],
+            order: [['createdAt', 'DESC']],
+            limit: 1
+          }
+        ]
+      });
+
+      console.log(`✏️ Negocio ${businessId} actualizado por Owner`, {
+        businessName: business.name,
+        changes: updateData
+      });
+
+      res.json({
+        success: true,
+        message: 'Negocio actualizado exitosamente',
+        data: business
+      });
+
+    } catch (error) {
+      console.error('Error actualizando negocio:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 }
 
 module.exports = OwnerController;

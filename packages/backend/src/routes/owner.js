@@ -4436,6 +4436,106 @@ router.post('/subscriptions', OwnerController.createSubscription);
 
 /**
  * @swagger
+ * /api/owner/subscriptions/{subscriptionId}:
+ *   patch:
+ *     tags:
+ *       - Owner Subscription Management
+ *     summary: Actualizar suscripción existente
+ *     description: Permite al Owner modificar una suscripción (plan, ciclo, fechas, estado)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: subscriptionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la suscripción
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               planId:
+ *                 type: string
+ *                 description: ID del nuevo plan
+ *               billingCycle:
+ *                 type: string
+ *                 enum: [MONTHLY, ANNUAL, LIFETIME]
+ *               status:
+ *                 type: string
+ *                 enum: [ACTIVE, SUSPENDED, CANCELLED, EXPIRED]
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *               endDate:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       200:
+ *         description: Suscripción actualizada
+ *       404:
+ *         description: Suscripción no encontrada
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch('/subscriptions/:subscriptionId', OwnerController.updateSubscription);
+
+/**
+ * @swagger
+ * /api/owner/businesses/{businessId}:
+ *   patch:
+ *     tags:
+ *       - Owner Business Management
+ *     summary: Actualizar información de un negocio
+ *     description: Permite al Owner modificar datos de un negocio
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del negocio
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               city:
+ *                 type: string
+ *               country:
+ *                 type: string
+ *               businessType:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [ACTIVE, INACTIVE, SUSPENDED, TRIAL]
+ *     responses:
+ *       200:
+ *         description: Negocio actualizado
+ *       404:
+ *         description: Negocio no encontrado
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch('/businesses/:businessId', OwnerController.updateBusiness);
+
+/**
+ * @swagger
  * /api/owner/subscriptions/cash:
  *   post:
  *     tags:
