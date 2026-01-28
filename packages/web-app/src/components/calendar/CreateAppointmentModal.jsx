@@ -1267,7 +1267,7 @@ const CreateAppointmentModal = ({
                       .filter(s => !selectedServices.some(sel => sel.id === s.id))
                       .map(service => (
                         <option key={service.id} value={service.id}>
-                          {service.name} - ${service.price?.toLocaleString('es-CO')} ({service.duration} min)
+                          {service.name}
                         </option>
                       ))}
                   </select>
