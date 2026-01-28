@@ -819,7 +819,7 @@ const CreateAppointmentModal = ({
       setErrors({ submit: errorMessage })
       
       // Scroll al inicio del modal para que el usuario vea el error
-      const modalContent = document.querySelector('.max-h-\\[90vh\\]')
+      const modalContent = document.querySelector('.overflow-y-auto')
       if (modalContent) {
         modalContent.scrollTop = 0
       }
@@ -831,24 +831,24 @@ const CreateAppointmentModal = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full flex flex-col max-h-[95vh] sm:max-h-[90vh]">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center">
-            <CalendarIcon className="h-6 w-6 text-blue-600 mr-3" />
-            <h2 className="text-xl font-bold text-gray-900">Nueva Cita</h2>
+            <CalendarIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 mr-2 sm:mr-3" />
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Nueva Cita</h2>
           </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <XMarkIcon className="h-6 w-6" />
+            <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-6">
+        {/* Form - Scrollable content */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 sm:space-y-6 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
           {/* Error general del servidor */}
           {errors.submit && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
@@ -863,9 +863,9 @@ const CreateAppointmentModal = ({
           )}
           
           {/* Datos del Cliente */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <UserIcon className="h-5 w-5 mr-2 text-blue-600" />
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+              <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-600" />
               Datos del Cliente
             </h3>
 
@@ -1068,9 +1068,9 @@ const CreateAppointmentModal = ({
           </div>
 
           {/* Datos de la Cita */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <CalendarIcon className="h-5 w-5 mr-2 text-green-600" />
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+              <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600" />
               Datos de la Cita
             </h3>
 
@@ -1171,26 +1171,26 @@ const CreateAppointmentModal = ({
                 
                 {/* Lista de servicios seleccionados */}
                 {selectedServices.length > 0 && (
-                  <div className="mb-3 space-y-2">
+                  <div className="mb-3 space-y-2 max-h-[200px] sm:max-h-[300px] overflow-y-auto pr-1 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                     {selectedServices.map((service, index) => (
                       <div
                         key={service.id}
-                        className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3"
+                        className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3"
                       >
-                        <div className="flex items-center gap-3 flex-1">
-                          <span className="text-sm font-semibold text-blue-600">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <span className="text-xs sm:text-sm font-semibold text-blue-600 flex-shrink-0">
                             #{index + 1}
                           </span>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{service.name}</p>
                             <p className="text-xs text-gray-600">
                               ${service.price?.toLocaleString('es-CO')} • {service.duration} min
                             </p>
                           </div>
                         </div>
                         
-                        {/* Botones de orden */}
-                        <div className="flex items-center gap-1 mr-2">
+                        {/* Botones de orden y eliminar */}
+                        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0 ml-2">
                           <button
                             type="button"
                             onClick={() => handleMoveServiceUp(index)}
@@ -1200,7 +1200,7 @@ const CreateAppointmentModal = ({
                             }`}
                             title="Mover arriba"
                           >
-                            <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                             </svg>
                           </button>
@@ -1213,30 +1213,28 @@ const CreateAppointmentModal = ({
                             }`}
                             title="Mover abajo"
                           >
-                            <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveService(service.id)}
+                            className="p-1 rounded hover:bg-red-100"
+                            title="Eliminar servicio"
+                          >
+                            <XMarkIcon className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+                          </button>
                         </div>
-                        
-                        {/* Botón eliminar */}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveService(service.id)}
-                          className="p-1 rounded hover:bg-red-100"
-                          title="Eliminar servicio"
-                        >
-                          <XMarkIcon className="h-5 w-5 text-red-600" />
-                        </button>
                       </div>
                     ))}
                     
                     {/* Resumen totales */}
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3 sticky bottom-0">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-gray-700">Total:</span>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-green-700">
+                          <p className="text-base sm:text-lg font-bold text-green-700">
                             ${calculateTotalPrice().toLocaleString('es-CO')}
                           </p>
                           <p className="text-xs text-gray-600">
@@ -1277,14 +1275,15 @@ const CreateAppointmentModal = ({
                     type="button"
                     onClick={handleAddService}
                     disabled={!currentServiceId || loadingSpecialistServices}
-                    className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 ${
+                    className={`px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base flex-shrink-0 ${
                       !currentServiceId || loadingSpecialistServices ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
-                    Agregar
+                    <span className="hidden sm:inline">Agregar</span>
+                    <span className="sm:hidden">+</span>
                   </button>
                 </div>
                 
@@ -1371,19 +1370,19 @@ const CreateAppointmentModal = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
                     <p className="text-xs text-gray-600 mb-3">
                       ✓ {availableSlots.length} horario{availableSlots.length > 1 ? 's' : ''} disponible{availableSlots.length > 1 ? 's' : ''} • Selecciona uno
                     </p>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-60 overflow-y-auto">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-48 sm:max-h-60 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                       {availableSlots.map((slot, index) => (
                         <button
                           key={index}
                           type="button"
                           onClick={() => handleSelectSlot(slot)}
-                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                          className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                             selectedSlot?.startTime === slot.startTime
-                              ? 'bg-green-600 text-white ring-2 ring-green-500 ring-offset-2'
+                              ? 'bg-green-600 text-white ring-2 ring-green-500 ring-offset-1'
                               : 'bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700 border border-gray-300'
                           }`}
                         >
@@ -1392,9 +1391,9 @@ const CreateAppointmentModal = ({
                       ))}
                     </div>
                     {selectedSlot && (
-                      <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
-                        <p className="text-sm text-green-800">
-                          ✓ Horario seleccionado: <strong>{selectedSlot.startTime} - {selectedSlot.endTime}</strong>
+                      <div className="mt-3 sm:mt-4 bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3">
+                        <p className="text-xs sm:text-sm text-green-800">
+                          ✓ Horario: <strong>{selectedSlot.startTime} - {selectedSlot.endTime}</strong>
                         </p>
                         <p className="text-xs text-green-700 mt-1">
                           Duración: {selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0)} minutos
@@ -1417,31 +1416,31 @@ const CreateAppointmentModal = ({
                   name="notes"
                   value={formData.notes}
                   onChange={handleChange}
-                  rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={2}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none"
                   placeholder="Agregar notas adicionales sobre la cita..."
                 />
               </div>
 
               {/* Sección de Productos/Ventas */}
               <div className="sm:col-span-2">
-                <div className="border-t border-gray-200 pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                <div className="border-t border-gray-200 pt-4 sm:pt-6">
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                       Productos/Ventas
                     </h3>
                     <button
                       type="button"
                       onClick={() => setShowProductsSection(!showProductsSection)}
-                      className="text-sm text-pink-600 hover:text-pink-700 font-medium"
+                      className="text-xs sm:text-sm text-pink-600 hover:text-pink-700 font-medium"
                     >
                       {showProductsSection ? 'Ocultar' : 'Agregar Productos'}
                     </button>
                   </div>
                   
                   {showProductsSection && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-sm text-gray-600 mb-4">
+                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                      <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
                         Registra los productos vendidos durante esta cita
                       </p>
                       <ProductSelector
@@ -1457,8 +1456,8 @@ const CreateAppointmentModal = ({
                   )}
                   
                   {!showProductsSection && selectedProducts.length > 0 && (
-                    <div className="bg-pink-50 border border-pink-200 rounded-lg p-3">
-                      <p className="text-sm text-pink-800">
+                    <div className="bg-pink-50 border border-pink-200 rounded-lg p-2 sm:p-3">
+                      <p className="text-xs sm:text-sm text-pink-800">
                         ✓ {selectedProducts.length} producto(s) agregado(s) - Total: ${selectedProducts.reduce((sum, item) => sum + item.total, 0).toLocaleString('es-CO')}
                       </p>
                     </div>
@@ -1469,20 +1468,20 @@ const CreateAppointmentModal = ({
           </div>
         </form>
 
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4">
-          <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end">
+        {/* Footer - Fixed at bottom */}
+        <div className="flex-shrink-0 bg-gray-50 border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 rounded-b-lg">
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              className="bg-gray-200 text-gray-700 px-4 sm:px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm sm:text-base"
             >
               Cancelar
             </button>
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || !selectedSlot}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               title={!selectedSlot ? 'Debes seleccionar un horario disponible' : ''}
             >
               {isSubmitting ? 'Creando...' : 'Crear Cita'}

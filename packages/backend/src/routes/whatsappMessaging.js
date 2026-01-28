@@ -4,16 +4,7 @@ const WhatsAppMessagingController = require('../controllers/WhatsAppMessagingCon
 const { authenticateToken, authorizeRole } = require('../middleware/auth');
 const { Business } = require('../models');
 
-/**
- * WhatsApp Messaging Routes
- * 
- * Routes for sending messages to clients
- * All routes require:
- * - Authentication (authenticateToken)
- * - BUSINESS or SPECIALIST role
- * 
- * Routes are scoped to /api/business/:businessId/whatsapp
- */
+
 
 // Middleware para validar que el usuario tiene acceso al negocio
 const validateBusinessAccess = async (req, res, next) => {
