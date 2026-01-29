@@ -378,18 +378,29 @@ ${props.notes ? 'Notas: ' + props.notes : ''}
         
         .fc-event {
           border-radius: 0.25rem;
-          border-left-width: 4px;
           cursor: pointer;
-          background-color: rgba(255, 255, 255, 0.95) !important;
-          border: 2px solid currentColor !important;
         }
         
         .fc-event:hover {
           opacity: 0.85;
         }
         
+        /* Vista mensual: fondo blanco con borde de color */
         .fc-daygrid-event {
           padding: 2px 4px;
+          background-color: rgba(255, 255, 255, 0.95) !important;
+          border: 2px solid currentColor !important;
+          border-left-width: 4px;
+        }
+        
+        /* Vista semanal/diaria: fondo de color (del backgroundColor del evento) */
+        .fc-timegrid-event {
+          border: none !important;
+          /* El background-color viene del evento */
+        }
+        
+        .fc-timegrid-event .fc-event-custom {
+          color: white !important;
         }
         
         .fc-event-custom {
