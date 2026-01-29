@@ -292,7 +292,7 @@ const FullCalendarView = ({
                 }}
               >
                 {props.showBranchIndicator && props.branchName && (
-                  <span className="mr-1">●</span>
+                  <span className="mr-1 font-bold">●</span>
                 )}
                 {props.clientName} - {props.serviceName}
               </div>
@@ -377,17 +377,18 @@ ${props.notes ? 'Notas: ' + props.notes : ''}
         
         .fc-event {
           border-radius: 0.25rem;
-          border-left-width: 4px;
           cursor: pointer;
           border: none !important;
+          overflow: hidden;
         }
         
         .fc-event:hover {
-          opacity: 0.85;
+          opacity: 0.9;
         }
         
         .fc-daygrid-event {
           padding: 2px 4px;
+          margin-bottom: 1px;
         }
         
         .fc-event-custom {
