@@ -5,12 +5,12 @@
  * - Horarios de sucursal (Branch.businessHours)
  * - Disponibilidad de especialista (SpecialistBranchSchedule)
  * - Duración del servicio (Service.duration)
- * - Tiempo de preparación y limpieza (Service.preparationTime, Service.cleanupTime)
  * - Citas existentes (Appointment)
  * 
- * MEJORAS:
- * 1. Granularidad de 15 minutos para slots (en lugar de duración completa del servicio)
- * 2. Considera tiempo de preparación/limpieza entre citas
+ * CARACTERÍSTICAS:
+ * 1. Granularidad de 15 minutos para slots
+ * 2. NO considera preparationTime/cleanupTime para permitir citas consecutivas sin tiempos muertos
+ * 3. Los campos preparationTime/cleanupTime en Service se mantienen por compatibilidad pero no afectan disponibilidad
  */
 
 const { Op } = require('sequelize');
@@ -194,9 +194,10 @@ class AvailabilityService {
       }
 
       const serviceDuration = service.duration; // Duración del servicio
-      const preparationTime = service.preparationTime || 0; // Tiempo de preparación
-      const cleanupTime = service.cleanupTime || 0; // Tiempo de limpieza
-      const totalTimeNeeded = serviceDuration + preparationTime + cleanupTime;
+      // NOTA: No consideramos preparationTime y cleanupTime para permitir citas consecutivas
+      const preparationTime = 0; // service.preparationTime || 0;
+      const cleanupTime = 0; // service.cleanupTime || 0;
+      const totalTimeNeeded = serviceDuration; // Sin buffers adicionales
 
       console.log(`🕐 Tiempos del servicio "${service.name}":`, {
         duration: serviceDuration,
@@ -403,9 +404,9 @@ class AvailabilityService {
         throw new Error('Servicio no encontrado');
       }
 
-      // Calcular endTime basado en duración total (incluye prep/cleanup)
+      // Calcular endTime basado en duración (SIN prep/cleanup para permitir citas consecutivas)
       const startTime = this.parseTime(time);
-      const totalTimeNeeded = service.duration + (service.preparationTime || 0) + (service.cleanupTime || 0);
+      const totalTimeNeeded = service.duration; // Sin buffers adicionales
       const endTime = this.addMinutes(startTime, totalTimeNeeded);
       const endTimeStr = this.formatTime(endTime);
 
@@ -548,12 +549,13 @@ class AvailabilityService {
   // ==================== HELPER METHODS ====================
 
   /**
-   * 🔑 NUEVO: Generar slots con intervalo fijo (15 min) considerando prep/cleanup
+   * 🔑 Generar slots con intervalo fijo (15 min)
+   * NOTA: Ya no considera preparationTime/cleanupTime para permitir citas consecutivas
    * @param {String} startTime - "09:00"
    * @param {String} endTime - "18:00"
    * @param {Number} serviceDuration - Duración del servicio en minutos
-   * @param {Number} preparationTime - Tiempo de preparación en minutos
-   * @param {Number} cleanupTime - Tiempo de limpieza en minutos
+   * @param {Number} preparationTime - DEPRECADO: Ya no se usa (mantener por compatibilidad)
+   * @param {Number} cleanupTime - DEPRECADO: Ya no se usa (mantener por compatibilidad)
    * @param {String} breakStart - "12:00" (opcional)
    * @param {String} breakEnd - "13:00" (opcional)
    * @param {Number} slotInterval - Intervalo entre slots (default: 15)
@@ -576,8 +578,8 @@ class AvailabilityService {
     const breakStartTime = breakStart ? this.parseTime(breakStart) : null;
     const breakEndTime = breakEnd ? this.parseTime(breakEnd) : null;
 
-    // Tiempo total que necesita el servicio (prep + servicio + cleanup)
-    const totalTimeNeeded = serviceDuration + preparationTime + cleanupTime;
+    // NOTA: Ya no sumamos prep/cleanup, solo la duración del servicio
+    const totalTimeNeeded = serviceDuration; // Sin buffers adicionales
 
     while (current < end) {
       // Calcular cuándo terminaría este slot (inicio + tiempo total)
@@ -598,11 +600,11 @@ class AvailabilityService {
       if (!crossesBreak) {
         slots.push({
           startTime: this.formatTime(current),
-          endTime: this.formatTime(this.addMinutes(current, serviceDuration)), // Solo mostrar servicio, no prep/cleanup
-          totalDuration: totalTimeNeeded, // Pero reservar el tiempo total
+          endTime: this.formatTime(this.addMinutes(current, serviceDuration)),
+          totalDuration: totalTimeNeeded, // Igual a serviceDuration (sin buffers)
           serviceDuration: serviceDuration,
-          preparationTime: preparationTime,
-          cleanupTime: cleanupTime
+          preparationTime: 0, // Ya no se usa
+          cleanupTime: 0 // Ya no se usa
         });
       }
       
@@ -630,11 +632,11 @@ class AvailabilityService {
       const aptStart = new Date(appointment.startTime);
       
       // Calcular cuánto tiempo REALMENTE ocupa la cita existente
+      // NOTA: Solo usamos la duración del servicio, sin prep/cleanup para permitir citas consecutivas
       let aptTotalTime = 0;
       if (appointment.service) {
-        aptTotalTime = (appointment.service.duration || 0) + 
-                       (appointment.service.preparationTime || 0) + 
-                       (appointment.service.cleanupTime || 0);
+        aptTotalTime = (appointment.service.duration || 0);
+        // NO sumamos: + (appointment.service.preparationTime || 0) + (appointment.service.cleanupTime || 0)
       } else {
         // Fallback: usar endTime - startTime de la cita
         aptTotalTime = (new Date(appointment.endTime) - aptStart) / 60000;

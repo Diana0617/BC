@@ -258,7 +258,7 @@ const FullCalendarView = ({
           // Vista de día/semana - detalles completos
           if (isDayView || isWeekView) {
             return (
-              <div className="fc-event-custom px-2 py-1 cursor-pointer hover:opacity-90 transition-opacity">
+              <div className="fc-event-custom px-2 py-1 cursor-pointer hover:opacity-90 transition-opacity text-white">
                 <div className="text-xs font-semibold truncate">
                   {eventInfo.timeText && (
                     <span className="mr-1">{eventInfo.timeText}</span>
@@ -286,10 +286,9 @@ const FullCalendarView = ({
           return (
             <div className="fc-event-custom px-1 py-0.5 cursor-pointer hover:opacity-90 transition-opacity">
               <div 
-                className="text-xs font-semibold truncate"
+                className="text-xs font-semibold truncate text-white"
                 style={{ 
-                  color: props.showBranchIndicator && props.branchColor ? props.branchColor : 'white',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                  textShadow: '0 1px 2px rgba(0,0,0,0.5)'
                 }}
               >
                 {props.showBranchIndicator && props.branchName && (
@@ -380,8 +379,7 @@ ${props.notes ? 'Notas: ' + props.notes : ''}
           border-radius: 0.25rem;
           border-left-width: 4px;
           cursor: pointer;
-          background-color: rgba(255, 255, 255, 0.95) !important;
-          border: 2px solid currentColor !important;
+          border: none !important;
         }
         
         .fc-event:hover {
@@ -394,6 +392,7 @@ ${props.notes ? 'Notas: ' + props.notes : ''}
         
         .fc-event-custom {
           overflow: hidden;
+          color: white !important;
         }
         
         .fc-daygrid-day.fc-day-today {
