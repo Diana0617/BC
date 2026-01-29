@@ -286,13 +286,14 @@ const FullCalendarView = ({
           return (
             <div className="fc-event-custom px-1 py-0.5 cursor-pointer hover:opacity-90 transition-opacity">
               <div 
-                className="text-xs font-semibold truncate text-white"
+                className="text-xs font-semibold truncate"
                 style={{ 
-                  textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                  color: props.showBranchIndicator && props.branchColor ? props.branchColor : 'inherit',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.3)'
                 }}
               >
                 {props.showBranchIndicator && props.branchName && (
-                  <span className="mr-1 font-bold">●</span>
+                  <span className="mr-1">●</span>
                 )}
                 {props.clientName} - {props.serviceName}
               </div>
@@ -377,23 +378,22 @@ ${props.notes ? 'Notas: ' + props.notes : ''}
         
         .fc-event {
           border-radius: 0.25rem;
+          border-left-width: 4px;
           cursor: pointer;
-          border: none !important;
-          overflow: hidden;
+          background-color: rgba(255, 255, 255, 0.95) !important;
+          border: 2px solid currentColor !important;
         }
         
         .fc-event:hover {
-          opacity: 0.9;
+          opacity: 0.85;
         }
         
         .fc-daygrid-event {
           padding: 2px 4px;
-          margin-bottom: 1px;
         }
         
         .fc-event-custom {
           overflow: hidden;
-          color: white !important;
         }
         
         .fc-daygrid-day.fc-day-today {
