@@ -8,6 +8,7 @@ import { api } from './client';
 const SUBSCRIPTIONS_ENDPOINTS = {
   GET_ALL: '/api/owner/subscriptions',
   CREATE: '/api/owner/subscriptions',
+  UPDATE: (id) => `/api/owner/subscriptions/${id}`,
   CANCEL: (id) => `/api/owner/subscriptions/${id}/cancel`,
   UPDATE_STATUS: (id) => `/api/owner/subscriptions/${id}/status`,
   EXTEND: (id) => `/api/owner/subscriptions/${id}/extend`,
@@ -118,6 +119,22 @@ export const ownerSubscriptionsApi = {
       return response.data.subscription;
     } catch (error) {
       console.error('Error updating subscription status:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Actualizar suscripción (plan, ciclo de facturación, fechas, estado)
+   * @param {string} subscriptionId - ID de la suscripción
+   * @param {Object} updateData - Datos a actualizar
+   */
+  async updateSubscription(subscriptionId, updateData) {
+    try {
+      const response = await api.patch(SUBSCRIPTIONS_ENDPOINTS.UPDATE(subscriptionId), updateData);
+      
+      return response.data.subscription || response.data.data;
+    } catch (error) {
+      console.error('Error updating subscription:', error);
       throw error;
     }
   },

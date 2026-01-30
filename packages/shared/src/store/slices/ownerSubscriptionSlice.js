@@ -52,6 +52,17 @@ export const updateSubscriptionStatus = createAsyncThunk(
   }
 );
 
+export const updateSubscription = createAsyncThunk(
+  'ownerSubscriptions/updateSubscription',
+  async ({ subscriptionId, updateData }, { rejectWithValue }) => {
+    try {
+      return await ownerSubscriptionsApi.updateSubscription(subscriptionId, updateData);
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Error al actualizar suscripción');
+    }
+  }
+);
+
 export const extendSubscription = createAsyncThunk(
   'ownerSubscriptions/extendSubscription',
   async ({ subscriptionId, duration, durationType }, { rejectWithValue }) => {
@@ -444,6 +455,31 @@ const ownerSubscriptionSlice = createSlice({
         }
       })
       .addCase(updateSubscriptionStatus.rejected, (state, action) => {
+        state.loading.updating = false;
+        state.errors.update = action.payload;
+      })
+      
+    // ====== UPDATE SUBSCRIPTION (General - plan, cycle, dates, status) ======
+      .addCase(updateSubscription.pending, (state) => {
+        state.loading.updating = true;
+        state.errors.update = null;
+      })
+      .addCase(updateSubscription.fulfilled, (state, action) => {
+        state.loading.updating = false;
+        const updatedSubscription = action.payload;
+        
+        // Update subscription in list
+        const index = state.subscriptions.findIndex(s => s.id === updatedSubscription.id);
+        if (index !== -1) {
+          state.subscriptions[index] = { ...state.subscriptions[index], ...updatedSubscription };
+        }
+        
+        // Update selected subscription if it's the same
+        if (state.selectedSubscription?.id === updatedSubscription.id) {
+          state.selectedSubscription = { ...state.selectedSubscription, ...updatedSubscription };
+        }
+      })
+      .addCase(updateSubscription.rejected, (state, action) => {
         state.loading.updating = false;
         state.errors.update = action.payload;
       })

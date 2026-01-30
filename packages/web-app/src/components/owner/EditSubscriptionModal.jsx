@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchOwnerPlans } from '@shared/store/slices/ownerPlansSlice';
+import { updateSubscription } from '@shared/store/slices/ownerSubscriptionSlice';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 const EditSubscriptionModal = ({ isOpen, onClose, subscriptionData, onSuccess }) => {
   const dispatch = useDispatch();
   const { plans, loading: plansLoading } = useSelector(state => state.ownerPlans);
+  const { loading } = useSelector(state => state.ownerSubscription);
   
   const [formData, setFormData] = useState({
     planId: '',
@@ -16,8 +18,6 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscriptionData, onSuccess })
     endDate: '',
     isLifetime: false
   });
-  
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -27,7 +27,7 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscriptionData, onSuccess })
       if (subscriptionData?.subscription) {
         const sub = subscriptionData.subscription;
         setFormData({
-          planId: sub.planId || '',
+          planId: sub.planId || sub.subscriptionPlanId || '',
           billingCycle: sub.billingCycle || 'MONTHLY',
           status: sub.status || 'ACTIVE',
           startDate: sub.startDate ? new Date(sub.startDate).toISOString().split('T')[0] : '',
@@ -46,43 +46,30 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscriptionData, onSuccess })
       return;
     }
 
-    setLoading(true);
-    
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://beautycontrol-api.azurewebsites.net';
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(
-        `${API_BASE_URL}/api/owner/subscriptions/${subscriptionData.subscription.id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            planId: formData.planId,
-            billingCycle: formData.isLifetime ? 'LIFETIME' : formData.billingCycle,
-            status: formData.status,
-            startDate: formData.startDate,
-            endDate: formData.endDate
-          })
-        }
-      );
+      const updateData = {
+        planId: formData.planId,
+        billingCycle: formData.isLifetime ? 'LIFETIME' : formData.billingCycle,
+        status: formData.status,
+        startDate: formData.startDate,
+        endDate: formData.endDate
+      };
 
-      const data = await response.json();
+      const result = await dispatch(updateSubscription({
+        subscriptionId: subscriptionData.subscription.id,
+        updateData
+      }));
 
-      if (data.success) {
+      if (updateSubscription.fulfilled.match(result)) {
         toast.success('Suscripción actualizada correctamente');
         onSuccess();
+        onClose();
       } else {
-        toast.error(data.error || 'Error al actualizar la suscripción');
+        toast.error(result.payload || 'Error al actualizar la suscripción');
       }
     } catch (error) {
       console.error('Error al actualizar suscripción:', error);
       toast.error('Error al actualizar la suscripción');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -213,16 +200,16 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscriptionData, onSuccess })
               type="button"
               onClick={onClose}
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-              disabled={loading}
+              disabled={loading.updating}
             >
               Cancelar
             </button>
             <button
               type="submit"
               className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:bg-gray-400"
-              disabled={loading}
+              disabled={loading.updating}
             >
-              {loading ? 'Guardando...' : 'Guardar Cambios'}
+              {loading.updating ? 'Guardando...' : 'Guardar Cambios'}
             </button>
           </div>
         </form>
