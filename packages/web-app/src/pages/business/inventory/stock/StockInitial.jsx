@@ -240,6 +240,17 @@ const StockInitial = () => {
         const items = [];
         const errors = [];
 
+        const parseNumber = (value) => {
+          if (value === undefined || value === null) return 0;
+          const cleaned = String(value)
+            .replace(/\s+/g, "") // quitar espacios
+            .replace(/\./g, "") // quitar separador de miles con punto
+            .replace(/,/g, ".") // convertir coma decimal a punto
+            .replace(/[^0-9.-]/g, ""); // quitar cualquier otro caracter
+          const num = parseFloat(cleaned);
+          return Number.isNaN(num) ? 0 : num;
+        };
+
         dataLines.forEach((line, index) => {
           const parts = line.split(",").map((s) => s.trim());
 
@@ -330,8 +341,8 @@ const StockInitial = () => {
 
           // Si el producto no existe, preparar datos para crearlo
           if (!product) {
-            const price = parseFloat(priceStr) || 0;
-            const cost = parseFloat(costStr) || 0;
+            const price = parseNumber(priceStr);
+            const cost = parseNumber(costStr);
 
             if (price <= 0) {
               errors.push(
@@ -367,8 +378,8 @@ const StockInitial = () => {
             return;
           }
 
-          const quantity = parseInt(quantityStr) || 0;
-          const unitCost = parseFloat(costStr) || product.cost || 0;
+          const quantity = parseInt(quantityStr, 10) || 0;
+          const unitCost = parseNumber(costStr) || product.cost || 0;
 
           console.log('📝 Procesando línea CSV:', {
             lineNumber: index + 2,
