@@ -254,7 +254,7 @@ const StockInitial = () => {
             costStr,
             quantityStr,
             unit,
-            branchIdentifier, // Puede ser ID o nombre de sucursal
+            branchIdentifierRaw, // Puede ser ID o nombre de sucursal
           ] = parts;
 
           if (!sku || !name) {
@@ -262,36 +262,68 @@ const StockInitial = () => {
             return;
           }
 
-          // Validar y buscar la sucursal
-          if (!branchIdentifier) {
-            errors.push(`Línea ${index + 2}: Sucursal es obligatoria`);
-            return;
-          }
-
           // Normalizar el identificador de sucursal (eliminar espacios múltiples, trim, y minúsculas)
-          const normalizedIdentifier = branchIdentifier.replace(/\s+/g, ' ').trim().toLowerCase();
+          const normalizedIdentifier = branchIdentifierRaw
+            ? branchIdentifierRaw.replace(/\s+/g, " ").trim().toLowerCase()
+            : null;
 
-          // Buscar sucursal por ID o nombre (con normalización robusta)
-          const branch = branches.find(b => {
-            const normalizedBranchId = b.id.toLowerCase();
-            const normalizedBranchName = b.name.replace(/\s+/g, ' ').trim().toLowerCase();
-            
-            console.log('🔍 Comparando:', {
-              csv: normalizedIdentifier,
-              branchName: normalizedBranchName,
-              branchId: normalizedBranchId,
-              matchName: normalizedBranchName === normalizedIdentifier,
-              matchId: normalizedBranchId === normalizedIdentifier
+          // Considerar algunos valores típicos como "vacíos" o errores comunes (ej: "unidad")
+          const isEmptyBranchIdentifier =
+            !branchIdentifierRaw ||
+            normalizedIdentifier === "unidad" ||
+            normalizedIdentifier === "sucursal" ||
+            normalizedIdentifier === "sucursal (id o nombre)" ||
+            normalizedIdentifier === "id_sucursal" ||
+            normalizedIdentifier === "nombre_sucursal";
+
+          // Resolver sucursal con fallback inteligente:
+          // - Si no se especifica (o viene un valor típico erróneo como "unidad") y solo hay una sucursal, usarla
+          // - Si hay una sucursal seleccionada en el selector, usar esa
+          // - Si hay más de una y no hay seleccionada, exigir que venga en el CSV
+          let branch = null;
+
+          if (isEmptyBranchIdentifier) {
+            if (selectedBranch) {
+              branch = branches.find((b) => b.id === selectedBranch) || null;
+            } else if (branches.length === 1) {
+              branch = branches[0];
+            } else {
+              errors.push(
+                `Línea ${index + 2}: Sucursal es obligatoria cuando hay múltiples sucursales. Especifica el ID o nombre de la sucursal.`
+              );
+              return;
+            }
+          } else {
+            branch = branches.find((b) => {
+              const normalizedBranchId = String(b.id).toLowerCase();
+              const normalizedBranchName = b.name
+                .replace(/\s+/g, " ")
+                .trim()
+                .toLowerCase();
+
+              console.log("🔍 Comparando:", {
+                csv: normalizedIdentifier,
+                branchName: normalizedBranchName,
+                branchId: normalizedBranchId,
+                matchName: normalizedBranchName === normalizedIdentifier,
+                matchId: normalizedBranchId === normalizedIdentifier,
+              });
+
+              return (
+                normalizedBranchId === normalizedIdentifier ||
+                normalizedBranchName === normalizedIdentifier
+              );
             });
-            
-            return normalizedBranchId === normalizedIdentifier || 
-                   normalizedBranchName === normalizedIdentifier;
-          });
 
-          if (!branch) {
-            const availableBranches = branches.map(b => `"${b.name}" (ID: ${b.id})`).join(', ');
-            errors.push(`Línea ${index + 2}: Sucursal "${branchIdentifier.trim()}" no encontrada. Verifica que el nombre coincida exactamente. Disponibles: ${availableBranches}`);
-            return;
+            if (!branch) {
+              const availableBranches = branches
+                .map((b) => `"${b.name}" (ID: ${b.id})`)
+                .join(", ");
+              errors.push(
+                `Línea ${index + 2}: Sucursal "${branchIdentifierRaw.trim()}" no encontrada. Verifica que el nombre coincida exactamente. Disponibles: ${availableBranches}`
+              );
+              return;
+            }
           }
 
           let product = productsData.find((p) => p.sku === sku);
@@ -382,6 +414,7 @@ const StockInitial = () => {
         } else {
           setStockItems([...stockItems, ...items]);
           setCsvFile(null);
+          setCsvError(null);
           e.target.value = ""; // Reset input
         }
       } catch (error) {
