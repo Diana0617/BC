@@ -344,14 +344,19 @@ const StockInitial = () => {
             const price = parseNumber(priceStr);
             const cost = parseNumber(costStr);
 
-            if (price <= 0) {
+            // Nueva validación más flexible: al menos uno de los dos debe ser > 0
+            if (price <= 0 && cost <= 0) {
               errors.push(
-                `Línea ${
-                  index + 2
-                }: Precio de venta debe ser mayor a 0 para productos nuevos`
+                `Línea ${index + 2}: Precio de venta o costo unitario debe ser mayor a 0 para productos nuevos (valores leídos: precio="${
+                  priceStr ?? ""
+                }", costo="${costStr ?? ""}")`
               );
               return;
             }
+
+            // Si el precio viene vacío pero el costo es válido, usar el costo como precio inicial
+            const finalPrice = price > 0 ? price : cost;
+            const finalCost = cost > 0 ? cost : price;
 
             // Marcar que este producto debe crearse
             product = {
@@ -359,8 +364,8 @@ const StockInitial = () => {
               name,
               sku,
               category: category || "Sin categoría",
-              price,
-              cost,
+              price: finalPrice,
+              cost: finalCost,
               description: description || null,
               barcode: barcode || null,
               unit: unit || "unidad",
@@ -371,7 +376,11 @@ const StockInitial = () => {
           }
 
           // Verificar duplicados por SKU y sucursal
-          if (stockItems.find((item) => item.productSku === sku && item.branchId === branch.id)) {
+          if (
+            stockItems.find(
+              (item) => item.productSku === sku && item.branchId === branch.id
+            )
+          ) {
             errors.push(
               `Línea ${index + 2}: Producto con SKU "${sku}" ya fue agregado para la sucursal "${branch.name}"`
             );
@@ -381,14 +390,14 @@ const StockInitial = () => {
           const quantity = parseInt(quantityStr, 10) || 0;
           const unitCost = parseNumber(costStr) || product.cost || 0;
 
-          console.log('📝 Procesando línea CSV:', {
+          console.log("📝 Procesando línea CSV:", {
             lineNumber: index + 2,
             sku,
             quantityStr,
             quantity,
             costStr,
             unitCost,
-            branchName: branch.name
+            branchName: branch.name,
           });
 
           if (quantity <= 0) {
