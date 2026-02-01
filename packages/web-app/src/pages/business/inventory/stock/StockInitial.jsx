@@ -499,19 +499,8 @@ const StockInitial = () => {
         
         setSuccess(message);
         
-        // Limpiar solo los items que se cargaron exitosamente
-        if (results && Array.isArray(results) && results.length > 0) {
-          const successfulIds = results
-            .filter(r => r.success)
-            .map(r => r.productId);
-          if (successfulIds.length > 0) {
-            setStockItems(prev => prev.filter(item => !successfulIds.includes(item.productId)));
-          }
-        } else if (summary && summary.successful > 0) {
-          // Si no hay results array pero hubo éxitos, limpiar todos
-          setStockItems([]);
-        }
-        
+        // Limpiar TODOS los items después de una carga exitosa
+        setStockItems([]);
         setConfirmDialog(false);
 
         // Reload products
