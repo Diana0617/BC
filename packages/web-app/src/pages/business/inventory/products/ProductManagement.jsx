@@ -73,8 +73,8 @@ const ProductManagement = () => {
       });
 
       if (response.success) {
-        setProducts(response.data.products || response.data);
-        setTotalPages(response.data.totalPages || 1);
+        setProducts(response.data || []);
+        setTotalPages(response.totalPages || 1);
       }
     } catch (err) {
       console.error('Error loading products:', err);
