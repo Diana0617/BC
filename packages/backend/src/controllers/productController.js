@@ -61,6 +61,14 @@ class ProductController {
         order: [['name', 'ASC']]
       });
 
+      console.log('📊 getProducts debug:', {
+        businessId,
+        where,
+        total: products.count,
+        page: parseInt(page),
+        limit: parseInt(limit)
+      });
+
       // Filtro de stock bajo
       if (lowStock === 'true') {
         products.rows = products.rows.filter(p => 
