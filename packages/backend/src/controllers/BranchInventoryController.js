@@ -396,7 +396,8 @@ class BranchInventoryController {
    * POST /api/branches/:branchId/inventory/initial-stock
    */
   static async loadInitialStock(req, res) {
-    const transaction = await sequelize.transaction();
+    // ⚠️ TESTING: SIN TRANSACCIONES PARA DEBUGGING
+    console.log('🧪 MODO DEBUG: Ejecutando SIN transacción explícita para testing');
     
     try {
       const { branchId } = req.params;
@@ -404,7 +405,6 @@ class BranchInventoryController {
       const { products } = req.body; // Array de { productId, quantity, unitCost, newProduct? }
 
       if (!products || !Array.isArray(products) || products.length === 0) {
-        await transaction.rollback();
         return res.status(400).json({
           success: false,
           error: 'Se requiere un array de productos'
@@ -417,7 +417,6 @@ class BranchInventoryController {
       });
 
       if (!branch) {
-        await transaction.rollback();
         return res.status(404).json({
           success: false,
           error: 'Sucursal no encontrada'
@@ -437,13 +436,12 @@ class BranchInventoryController {
           // Si viene newProduct, verificar primero si ya existe un producto con ese SKU
           if (newProduct && productId.startsWith('temp_')) {
             try {
-              // Buscar si ya existe un producto con ese SKU
+              // Buscar si ya existe un producto con ese SKU (SIN transaction)
               const existingProduct = await Product.findOne({
                 where: { 
                   businessId,
                   sku: newProduct.sku 
-                },
-                transaction
+                }
               });
 
               if (existingProduct) {
@@ -451,7 +449,7 @@ class BranchInventoryController {
                 productId = existingProduct.id;
                 console.log(`♻️ Usando producto existente: ${existingProduct.name} (${existingProduct.sku})`);
               } else {
-                // Si no existe, crear el producto
+                // Si no existe, crear el producto (SIN transaction - AUTOCOMMIT)
                 const createdProduct = await Product.create({
                   businessId,
                   name: newProduct.name,
@@ -466,7 +464,7 @@ class BranchInventoryController {
                   isActive: true,
                   currentStock: 0,
                   minStock: 0
-                }, { transaction });
+                });
 
                 productId = createdProduct.id;
                 results.created.push({
@@ -475,7 +473,11 @@ class BranchInventoryController {
                   sku: createdProduct.sku
                 });
                 
-                console.log(`✅ Producto creado: ${createdProduct.name} (${createdProduct.sku})`);
+                console.log(`✅ Producto creado (AUTOCOMMIT): ${createdProduct.name} (${createdProduct.sku})`);
+                
+                // Verificar inmediatamente que se guardó
+                const verify = await Product.count({ where: { id: createdProduct.id } });
+                console.log(`🔍 Verificación inmediata: producto existe = ${verify > 0}`);
               }
             } catch (createError) {
               results.errors.push({
@@ -487,10 +489,9 @@ class BranchInventoryController {
             }
           }
 
-          // Verificar producto (ahora debería existir)
+          // Verificar producto (ahora debería existir - SIN transaction)
           const product = await Product.findOne({
-            where: { id: productId, businessId },
-            transaction
+            where: { id: productId, businessId }
           });
 
           if (!product) {
@@ -501,10 +502,9 @@ class BranchInventoryController {
             continue;
           }
 
-          // Verificar si ya existe stock
+          // Verificar si ya existe stock (SIN transaction)
           const existingStock = await BranchStock.findOne({
-            where: { branchId, productId },
-            transaction
+            where: { branchId, productId }
           });
 
           if (existingStock) {
@@ -516,7 +516,7 @@ class BranchInventoryController {
             continue;
           }
 
-          // Crear registro de stock
+          // Crear registro de stock (SIN transaction - AUTOCOMMIT)
           const stock = await BranchStock.create({
             businessId,
             branchId,
@@ -525,9 +525,9 @@ class BranchInventoryController {
             minStock: 0,
             maxStock: null,
             lastCountDate: new Date()
-          }, { transaction });
+          });
 
-          // Crear movimiento inicial
+          // Crear movimiento inicial (SIN transaction - AUTOCOMMIT)
           await InventoryMovement.create({
             businessId,
             productId,
@@ -541,7 +541,7 @@ class BranchInventoryController {
             newStock: quantity,
             reason: 'Stock inicial',
             notes: `Carga inicial de inventario - ${branch.name}`
-          }, { transaction });
+          });
 
           results.success.push({
             productId,
@@ -550,14 +550,14 @@ class BranchInventoryController {
             stockId: stock.id
           });
 
-          // Agregar producto al catálogo de proveedores
+          // Agregar producto al catálogo de proveedores (SIN transaction)
           try {
             await SupplierCatalogService.addFromInitialStock(
               businessId,
               productId,
               quantity,
               unitCost || product.cost,
-              transaction
+              null // Sin transaction
             );
             console.log(`📚 Producto agregado al catálogo: ${product.name}`);
           } catch (catalogError) {
@@ -573,36 +573,20 @@ class BranchInventoryController {
         }
       }
 
-      console.log(`🔄 ANTES DE COMMIT: ${results.success.length} productos procesados exitosamente`);
-      console.log(`🔄 ANTES DE COMMIT: ${results.created.length} productos nuevos creados`);
-      console.log(`🔄 ANTES DE COMMIT: businessId = ${businessId}, branchId = ${branchId}`);
-      console.log(`🔄 Transaction ID: ${transaction.id}`);
-      console.log(`🔄 Transaction finished: ${transaction.finished}`);
+      console.log(`🔄 PROCESAMIENTO COMPLETO: ${results.success.length} productos procesados exitosamente`);
+      console.log(`🔄 PRODUCTOS NUEVOS: ${results.created.length} productos nuevos creados`);
+      console.log(`🔄 businessId = ${businessId}, branchId = ${branchId}`);
 
-      try {
-        await transaction.commit();
-        console.log(`✅ COMMIT EXITOSO: Stock inicial guardado en base de datos`);
-        console.log(`✅ COMMIT: ${results.success.length} productos, ${results.created.length} nuevos`);
-        console.log(`✅ Transaction finished after commit: ${transaction.finished}`);
-        
-        // Esperar un momento para que el commit se propague
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // VERIFICAR con una nueva query después del commit
-        const verifyCount = await sequelize.query(
-          'SELECT COUNT(*) as count FROM products WHERE "businessId" = :businessId',
-          {
-            replacements: { businessId },
-            type: sequelize.QueryTypes.SELECT,
-            raw: true
-          }
-        );
-        console.log(`✅ VERIFICACIÓN POST-COMMIT (raw query): ${verifyCount[0].count} productos en BD para businessId ${businessId}`);
-        
-      } catch (commitError) {
-        console.error(`❌ ERROR AL HACER COMMIT:`, commitError);
-        throw commitError;
-      }
+      // Verificar con raw query cuántos productos hay ahora
+      const verifyCount = await sequelize.query(
+        'SELECT COUNT(*) as count FROM products WHERE "businessId" = :businessId',
+        {
+          replacements: { businessId },
+          type: sequelize.QueryTypes.SELECT,
+          raw: true
+        }
+      );
+      console.log(`✅ VERIFICACIÓN FINAL (raw query): ${verifyCount[0].count} productos en BD para businessId ${businessId}`);
 
       return res.json({
         success: true,
@@ -622,8 +606,7 @@ class BranchInventoryController {
       });
 
     } catch (error) {
-      await transaction.rollback();
-      console.error('❌ ERROR en loadInitialStock - ROLLBACK ejecutado:', error);
+      console.error('❌ ERROR en loadInitialStock (SIN TRANSACCIÓN):', error);
       console.error('❌ Error stack:', error.stack);
       console.error('❌ Error name:', error.name);
       console.error('❌ Error message:', error.message);

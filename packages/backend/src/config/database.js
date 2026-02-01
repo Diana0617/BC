@@ -82,7 +82,19 @@ const sequelize = process.env.DATABASE_URL && process.env.NODE_ENV === 'producti
         acquire: 30000,
         idle: 10000
       },
-      logging: false
+      // 🔥 CRÍTICO: Habilitar logging temporalmente para debugging
+      logging: console.log,
+      // 🔥 CRÍTICO: Configurar nivel de aislamiento
+      isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED,
+      // 🔥 CRÍTICO: Configurar opciones de query
+      define: {
+        timestamps: true,
+        freezeTableName: false
+      },
+      // 🔥 CRÍTICO: Retry logic para Azure
+      retry: {
+        max: 3
+      }
     })
   : new Sequelize(
       config[env].database,
