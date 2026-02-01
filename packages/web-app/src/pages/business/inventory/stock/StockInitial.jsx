@@ -478,6 +478,7 @@ const StockInitial = () => {
       console.log('✅ Respuesta del backend:', result);
 
       if (result.success) {
+        // eslint-disable-next-line no-unused-vars
         const { summary, errors: failedItems, results } = result.data || {};
         const branchName =
           branches.find((b) => b.id === selectedBranch)?.name || "Sucursal";
