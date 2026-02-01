@@ -573,7 +573,14 @@ class BranchInventoryController {
         }
       }
 
+      console.log(`🔄 ANTES DE COMMIT: ${results.success.length} productos procesados exitosamente`);
+      console.log(`🔄 ANTES DE COMMIT: ${results.created.length} productos nuevos creados`);
+      console.log(`🔄 ANTES DE COMMIT: businessId = ${businessId}, branchId = ${branchId}`);
+
       await transaction.commit();
+      
+      console.log(`✅ COMMIT EXITOSO: Stock inicial guardado en base de datos`);
+      console.log(`✅ COMMIT: ${results.success.length} productos, ${results.created.length} nuevos`);
 
       return res.json({
         success: true,
@@ -594,7 +601,10 @@ class BranchInventoryController {
 
     } catch (error) {
       await transaction.rollback();
-      console.error('Error loading initial stock:', error);
+      console.error('❌ ERROR en loadInitialStock - ROLLBACK ejecutado:', error);
+      console.error('❌ Error stack:', error.stack);
+      console.error('❌ Error name:', error.name);
+      console.error('❌ Error message:', error.message);
       return res.status(500).json({
         success: false,
         error: 'Error al cargar stock inicial',
