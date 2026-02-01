@@ -585,11 +585,19 @@ class BranchInventoryController {
         console.log(`✅ COMMIT: ${results.success.length} productos, ${results.created.length} nuevos`);
         console.log(`✅ Transaction finished after commit: ${transaction.finished}`);
         
-        // VERIFICAR INMEDIATAMENTE después del commit
-        const verifyCount = await Product.count({ 
-          where: { businessId } 
-        });
-        console.log(`✅ VERIFICACIÓN POST-COMMIT: ${verifyCount} productos en BD para businessId ${businessId}`);
+        // Esperar un momento para que el commit se propague
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // VERIFICAR con una nueva query después del commit
+        const verifyCount = await sequelize.query(
+          'SELECT COUNT(*) as count FROM products WHERE "businessId" = :businessId',
+          {
+            replacements: { businessId },
+            type: sequelize.QueryTypes.SELECT,
+            raw: true
+          }
+        );
+        console.log(`✅ VERIFICACIÓN POST-COMMIT (raw query): ${verifyCount[0].count} productos en BD para businessId ${businessId}`);
         
       } catch (commitError) {
         console.error(`❌ ERROR AL HACER COMMIT:`, commitError);
