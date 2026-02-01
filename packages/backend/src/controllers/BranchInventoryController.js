@@ -576,11 +576,25 @@ class BranchInventoryController {
       console.log(`🔄 ANTES DE COMMIT: ${results.success.length} productos procesados exitosamente`);
       console.log(`🔄 ANTES DE COMMIT: ${results.created.length} productos nuevos creados`);
       console.log(`🔄 ANTES DE COMMIT: businessId = ${businessId}, branchId = ${branchId}`);
+      console.log(`🔄 Transaction ID: ${transaction.id}`);
+      console.log(`🔄 Transaction finished: ${transaction.finished}`);
 
-      await transaction.commit();
-      
-      console.log(`✅ COMMIT EXITOSO: Stock inicial guardado en base de datos`);
-      console.log(`✅ COMMIT: ${results.success.length} productos, ${results.created.length} nuevos`);
+      try {
+        await transaction.commit();
+        console.log(`✅ COMMIT EXITOSO: Stock inicial guardado en base de datos`);
+        console.log(`✅ COMMIT: ${results.success.length} productos, ${results.created.length} nuevos`);
+        console.log(`✅ Transaction finished after commit: ${transaction.finished}`);
+        
+        // VERIFICAR INMEDIATAMENTE después del commit
+        const verifyCount = await Product.count({ 
+          where: { businessId } 
+        });
+        console.log(`✅ VERIFICACIÓN POST-COMMIT: ${verifyCount} productos en BD para businessId ${businessId}`);
+        
+      } catch (commitError) {
+        console.error(`❌ ERROR AL HACER COMMIT:`, commitError);
+        throw commitError;
+      }
 
       return res.json({
         success: true,
