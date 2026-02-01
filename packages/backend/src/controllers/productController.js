@@ -499,7 +499,8 @@ class ProductController {
               businessId,
               product.id,
               quantity,
-              unitCost || product.cost
+              unitCost || product.cost,
+              transaction
             );
           } catch (catalogError) {
             console.error('Error adding to catalog:', catalogError);

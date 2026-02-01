@@ -556,7 +556,8 @@ class BranchInventoryController {
               businessId,
               productId,
               quantity,
-              unitCost || product.cost
+              unitCost || product.cost,
+              transaction
             );
             console.log(`📚 Producto agregado al catálogo: ${product.name}`);
           } catch (catalogError) {

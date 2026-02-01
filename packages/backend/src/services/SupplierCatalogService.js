@@ -74,10 +74,11 @@ class SupplierCatalogService {
    * Agregar producto de stock inicial al catálogo
    * Se ejecuta cuando se carga stock inicial de un producto
    */
-  static async addFromInitialStock(businessId, productId, quantity, unitCost) {
+  static async addFromInitialStock(businessId, productId, quantity, unitCost, transaction = null) {
     try {
       const product = await Product.findOne({
-        where: { id: productId, businessId }
+        where: { id: productId, businessId },
+        transaction
       });
 
       if (!product) {
@@ -89,7 +90,8 @@ class SupplierCatalogService {
         where: {
           businessId,
           supplierSku: product.sku || `STOCK-${productId.substring(0, 8)}`
-        }
+        },
+        transaction
       });
 
       const catalogData = {
@@ -114,7 +116,7 @@ class SupplierCatalogService {
 
       if (existingItem) {
         // Actualizar item existente
-        await existingItem.update(catalogData);
+        await existingItem.update(catalogData, { transaction });
         return {
           success: true,
           item: existingItem,
@@ -122,7 +124,7 @@ class SupplierCatalogService {
         };
       } else {
         // Crear nuevo item en el catálogo
-        const newItem = await SupplierCatalogItem.create(catalogData);
+        const newItem = await SupplierCatalogItem.create(catalogData, { transaction });
         return {
           success: true,
           item: newItem,
