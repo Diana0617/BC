@@ -288,12 +288,26 @@ class CalendarController {
 
       // Construir filtros
       const where = {
-        specialistId,
         startTime: {
           [Op.gte]: new Date(startDate),
           [Op.lte]: new Date(endDate)
         }
       };
+
+      // Obtener el usuario para verificar su rol
+      const user = await User.findByPk(specialistId);
+      
+      // Solo filtrar por specialistId si es SPECIALIST puro
+      // RECEPTIONIST y RECEPTIONIST_SPECIALIST ven TODAS las citas del negocio
+      if (user && user.role === 'SPECIALIST') {
+        where.specialistId = specialistId;
+      } else if (user && ['RECEPTIONIST_SPECIALIST', 'RECEPTIONIST'].includes(user.role)) {
+        // Para estos roles, necesitamos filtrar por businessId en lugar de specialistId
+        where.businessId = user.businessId;
+      } else if (!user) {
+        // Si no encontramos el usuario, filtrar por specialistId por defecto
+        where.specialistId = specialistId;
+      }
 
       // Filtro opcional por sucursal
       if (branchId) {
@@ -322,6 +336,11 @@ class CalendarController {
             model: Client,
             as: 'client',
             attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
+          },
+          {
+            model: User,
+            as: 'specialist',
+            attributes: ['id', 'firstName', 'lastName', 'email']
           }
         ],
         order: [['startTime', 'ASC']]

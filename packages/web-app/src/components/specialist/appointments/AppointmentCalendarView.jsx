@@ -43,6 +43,7 @@ export default function AppointmentCalendarView({ appointments, currentDate, per
     console.log('🔍 Appointment data:', JSON.stringify(apt, null, 2)); // DEBUG
     const clientName = apt.client ? `${apt.client.firstName} ${apt.client.lastName}` : apt.clientName;
     const clientPhone = apt.client?.phone || apt.clientPhone || 'N/A';
+    const specialistName = apt.specialist ? `${apt.specialist.firstName} ${apt.specialist.lastName}` : apt.specialistName || '';
     const serviceName = apt.service?.name || apt.serviceName;
     const branchName = apt.branch?.name || apt.branchName || '';
     const duration = apt.service?.duration || '';
@@ -61,7 +62,7 @@ export default function AppointmentCalendarView({ appointments, currentDate, per
     });
     
     return `Cliente: ${clientName}
-Teléfono: ${clientPhone}
+Teléfono: ${clientPhone}${specialistName ? `\nEspecialista: ${specialistName}` : ''}
 Servicio: ${serviceName}${duration ? `\nDuración: ${duration} min` : ''}${price ? `\nPrecio: $${price.toLocaleString()}` : ''}
 Horario: ${startTimeFormatted} - ${endTimeFormatted}
 Estado: ${getStatusText(apt.status)}${branchName ? `\nSucursal: ${branchName}` : ''}${apt.notes ? `\nNotas: ${apt.notes}` : ''}`;
