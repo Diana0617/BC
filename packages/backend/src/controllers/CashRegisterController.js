@@ -183,7 +183,8 @@ class CashRegisterController {
         businessId,
         userId,
         activeShift.openedAt,
-        activeShift.branchId
+        activeShift.branchId,
+        req.user.role
       );
 
       return res.json({
@@ -419,6 +420,9 @@ class CashRegisterController {
         });
       }
 
+      // Obtener el rol del usuario del turno
+      const shiftUser = await User.findByPk(activeShift.userId, { transaction });
+      
       // Calcular resumen final (usar el userId del turno, no del usuario que cierra)
       const summary = await CashRegisterController._calculateShiftSummary(
         activeShift.id,
@@ -426,6 +430,7 @@ class CashRegisterController {
         activeShift.userId, // Usar el userId del turno
         activeShift.openedAt,
         activeShift.branchId, // Filtrar por sucursal del turno
+        shiftUser?.role, // Usar el rol del usuario del turno
         transaction
       );
 
@@ -540,7 +545,8 @@ class CashRegisterController {
         businessId,
         userId,
         activeShift.openedAt,
-        activeShift.branchId // Filtrar por sucursal del turno
+        activeShift.branchId, // Filtrar por sucursal del turno
+        req.user.role
       );
 
       // Calcular balance esperado (necesario para el PDF)
@@ -628,7 +634,14 @@ class CashRegisterController {
       }
 
       const activeShift = await CashRegisterShift.findOne({
-        where: whereClause
+        where: whereClause,
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'firstName', 'lastName', 'role']
+          }
+        ]
       });
 
       console.log('🔍 getShiftSummary - Turno encontrado:', activeShift ? {
@@ -672,7 +685,8 @@ class CashRegisterController {
         businessId,
         activeShift.userId, // Usar el userId del turno, no del que consulta
         activeShift.openedAt,
-        activeShift.branchId // Filtrar por sucursal del turno
+        activeShift.branchId, // Filtrar por sucursal del turno
+        activeShift.user?.role || req.user.role // Usar el rol del usuario del turno
       );
 
       return res.json({
@@ -831,7 +845,7 @@ class CashRegisterController {
    * Obtiene todas las transacciones desde que se abrió el turno
    * Si branchId está presente, filtra por esa sucursal
    */
-  static async _calculateShiftSummary(shiftId, businessId, userId, openedAt, branchId = null, transaction = null) {
+  static async _calculateShiftSummary(shiftId, businessId, userId, openedAt, branchId = null, userRole = null, transaction = null) {
     const summary = {
       appointments: {
         total: 0,
@@ -852,11 +866,16 @@ class CashRegisterController {
     // Construir filtros de citas
     const appointmentWhere = {
       businessId,
-      specialistId: userId,
       startTime: {
         [Op.gte]: openedAt
       }
     };
+    
+    // Solo filtrar por specialistId si es SPECIALIST puro (no RECEPTIONIST_SPECIALIST)
+    // RECEPTIONIST y RECEPTIONIST_SPECIALIST ven TODAS las citas del negocio
+    if (userRole && userRole === 'SPECIALIST') {
+      appointmentWhere.specialistId = userId;
+    }
     
     // Si hay sucursal, filtrar por ella
     if (branchId) {

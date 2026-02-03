@@ -46,9 +46,14 @@ class SpecialistController {
 
       const offset = (page - 1) * limit;
       const where = {
-        businessId,
-        specialistId,
+        businessId
       };
+      
+      // Solo filtrar por specialistId si es SPECIALIST puro
+      // RECEPTIONIST y RECEPTIONIST_SPECIALIST ven TODAS las citas del negocio
+      if (req.user.role === 'SPECIALIST') {
+        where.specialistId = specialistId;
+      }
       
       console.log('📋 Query WHERE:', where);
 

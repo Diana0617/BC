@@ -2345,10 +2345,14 @@ class AppointmentController {
       // Construir filtros
       // IMPORTANTE: specialistId en appointments es userId, no specialistProfile.id
       const where = {
-        businessId,
-        specialistId: specialistProfile.userId  // Usar userId, no profile.id
+        businessId
       };
 
+      // Solo filtrar por specialistId si es SPECIALIST puro
+      // RECEPTIONIST y RECEPTIONIST_SPECIALIST ven TODAS las citas del negocio
+      if (req.user.role === 'SPECIALIST') {
+        where.specialistId = specialistProfile.userId;  // Usar userId, no profile.id
+      }
 
       // Filtro por rango de fechas (prioridad: startDate/endDate > date > hoy)
       if (startDate && endDate) {
