@@ -85,7 +85,11 @@ const ClientDetailModal = ({ isOpen, onClose, client, onEdit }) => {
     return texts[status] || status
   }
 
-  if (!isOpen) return null
+  if (!isOpen || !client) return null
+  
+  // Extraer nombres - manejar tanto {firstName, lastName} como {name}
+  const firstName = client.firstName || client.name?.split(' ')[0] || 'C'
+  const lastName = client.lastName || client.name?.split(' ')[1] || 'L'
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -101,12 +105,12 @@ const ClientDetailModal = ({ isOpen, onClose, client, onEdit }) => {
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0 h-16 w-16">
                   <div className="h-16 w-16 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white text-xl font-bold">
-                    {client.firstName[0]}{client.lastName[0]}
+                    {firstName?.[0]}{lastName?.[0]}
                   </div>
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">
-                    {client.firstName} {client.lastName}
+                    {firstName} {lastName}
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">{client.email}</p>
                 </div>

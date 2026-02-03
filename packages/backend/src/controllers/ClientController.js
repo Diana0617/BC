@@ -215,6 +215,8 @@ class ClientController {
 
           return {
             id: clientData.id,
+            firstName: clientData.firstName,
+            lastName: clientData.lastName,
             name: `${clientData.firstName} ${clientData.lastName}`,
             email: clientData.email,
             phone: clientData.phone,
