@@ -128,11 +128,23 @@ const financialMovementsSlice = createSlice({
         state.movementsError = null;
       })
       .addCase(fetchFinancialMovements.fulfilled, (state, action) => {
+        console.log('✅ Redux - fetchFinancialMovements.fulfilled:', {
+          movementsReceived: action.payload.data.movements?.length,
+          totals: action.payload.data.totals,
+          sampleMovements: action.payload.data.movements?.slice(0, 3).map(m => ({
+            id: m.id,
+            type: m.type,
+            amount: m.amount,
+            userId: m.userId,
+            description: m.description
+          }))
+        });
         state.movementsLoading = false;
         state.movements = action.payload.data.movements;
         state.movementsTotals = action.payload.data.totals;
       })
       .addCase(fetchFinancialMovements.rejected, (state, action) => {
+        console.error('❌ Redux - fetchFinancialMovements.rejected:', action.payload);
         state.movementsLoading = false;
         state.movementsError = action.payload;
       });

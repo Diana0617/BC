@@ -22,6 +22,18 @@ class FinancialMovementController {
         });
       }
 
+      console.log('📊 [FinancialMovements] Petición recibida:', {
+        businessId,
+        startDate,
+        endDate,
+        type,
+        category,
+        status,
+        paymentMethod,
+        userRole: req.user?.role,
+        userId: req.user?.id
+      });
+
       // Construir filtros
       const where = { businessId };
 
@@ -85,6 +97,12 @@ class FinancialMovementController {
         if (m.category) acc[m.category] = (acc[m.category] || 0) + 1;
         return acc;
       }, {}));
+      console.log(`📊 [FinancialMovements] Usuarios que crearon movimientos:`, 
+        [...new Set(movements.map(m => m.userId))].length
+      );
+      console.log(`📊 [FinancialMovements] Muestra de userId:`, 
+        movements.slice(0, 5).map(m => ({ id: m.id, userId: m.userId, type: m.type, amount: m.amount }))
+      );
 
       // Calcular totales
       const totals = movements.reduce((acc, movement) => {

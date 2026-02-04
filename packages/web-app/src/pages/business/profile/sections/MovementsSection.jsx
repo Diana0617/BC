@@ -114,6 +114,11 @@ const MovementsSection = () => {
     }
 
     if (activeTab === 'financial') {
+      console.log('💰 MovementsSection - Solicitando movimientos financieros:', {
+        businessId: currentBusiness.id,
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      });
       dispatch(fetchFinancialMovements({
         businessId: currentBusiness.id,
         startDate: dateRange.startDate,
@@ -481,6 +486,19 @@ const MovementsSection = () => {
 
 // Pestaña de Movimientos Financieros
 const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, getPaymentMethodLabel, getStatusBadge, currentBusiness, dateRange }) => {
+  console.log('💰 FinancialMovementsTab - Renderizado:', {
+    movementsCount: movements?.length,
+    loading,
+    totals,
+    movementsPreview: movements?.slice(0, 3).map(m => ({ 
+      id: m.id, 
+      type: m.type, 
+      amount: m.amount, 
+      userId: m.userId,
+      userName: m.user ? `${m.user.firstName} ${m.user.lastName}` : 'N/A'
+    }))
+  });
+
   // Paginación
   const {
     data: paginatedMovements,
@@ -488,6 +506,11 @@ const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, get
     goToPage,
     changePageSize
   } = usePagination(movements, PAGINATION.MOVEMENTS);
+
+  console.log('💰 FinancialMovementsTab - Después de paginación:', {
+    paginatedCount: paginatedMovements?.length,
+    pagination
+  });
 
   if (loading) {
     return (
@@ -659,6 +682,9 @@ const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, get
                     Descripción
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Especialista
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Tipo
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -685,6 +711,16 @@ const FinancialMovementsTab = ({ movements, loading, totals, formatCurrency, get
                       <div>{movement.description}</div>
                       {movement.category && (
                         <div className="text-xs text-gray-500 mt-1">{movement.category}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {movement.user ? (
+                        <div>
+                          <div className="font-medium">{movement.user.firstName} {movement.user.lastName}</div>
+                          <div className="text-xs text-gray-500">{movement.user.email}</div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 italic">Sin asignar</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
