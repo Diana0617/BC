@@ -39,28 +39,18 @@ const validateBusinessId = (req, res, next) => {
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.header('Authorization');
-    console.log('🔐 authenticateToken - Authorization header:', authHeader ? 'Presente' : 'AUSENTE');
-    
     const token = authHeader?.replace('Bearer ', '');
     
     if (!token) {
-      console.log('❌ authenticateToken - No token found');
       return res.status(401).json({ 
         success: false,
         error: 'Token de acceso requerido' 
       });
     }
 
-    console.log('🔑 authenticateToken - Token recibido (primeros 20 chars):', token.substring(0, 20) + '...');
-
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log('✅ Token decoded successfully:', { 
-        userId: decoded.userId, 
-        businessId: decoded.businessId,
-        role: decoded.role 
-      });
     } catch (jwtError) {
       console.log('❌ JWT verification failed:', jwtError.message);
       

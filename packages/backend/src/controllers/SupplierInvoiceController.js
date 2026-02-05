@@ -222,13 +222,13 @@ class SupplierInvoiceController {
         const newSupplier = await Supplier.create({
           businessId,
           name: supplierData.name,
-          email: supplierData.email,
-          phone: supplierData.phone,
-          taxId: supplierData.taxId,
-          address: supplierData.address,
-          city: supplierData.city,
-          country: supplierData.country,
-          contactPerson: supplierData.contactPerson,
+          email: supplierData.email || null, // Convertir string vacío a null
+          phone: supplierData.phone || null,
+          taxId: supplierData.taxId || null,
+          address: supplierData.address || null,
+          city: supplierData.city || null,
+          country: supplierData.country || null,
+          contactPerson: supplierData.contactPerson || null,
           paymentTerms: supplierData.paymentTerms || 30,
           status: 'ACTIVE'
         }, { transaction });

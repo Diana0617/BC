@@ -126,8 +126,6 @@ class SubscriptionStatusService {
    */
   static async checkBusinessSubscription(businessId) {
     try {
-      console.log('🔍 Verificando suscripción para businessId:', businessId);
-      
       // Primero intentar encontrar una suscripción ACTIVE
       let subscription = await BusinessSubscription.findOne({
         where: { 
@@ -206,17 +204,8 @@ class SubscriptionStatusService {
       }
 
       if (!subscription) {
-        console.log('❌ No se encontró suscripción para:', businessId);
         return { status: 'NO_SUBSCRIPTION', access: false };
       }
-
-      console.log('📋 Suscripción encontrada:', {
-        id: subscription.id,
-        status: subscription.status,
-        nextPaymentDate: subscription.nextPaymentDate,
-        endDate: subscription.endDate,
-        businessStatus: subscription.business?.status
-      });
 
       // VERIFICAR PRIMERO SI EL NEGOCIO ESTÁ EN TRIAL ACTIVO
       const business = subscription.business;
@@ -226,12 +215,6 @@ class SubscriptionStatusService {
         
         if (now <= trialEnd) {
           // Trial activo - acceso completo
-          console.log('✅ Business en TRIAL activo:', {
-            businessId,
-            trialEndDate: business.trialEndDate,
-            daysRemaining: Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24))
-          });
-          
           return {
             status: 'TRIAL',
             access: true,
@@ -244,12 +227,6 @@ class SubscriptionStatusService {
       }
 
       const currentStatus = await this.calculateSubscriptionStatus(subscription);
-      
-      console.log('📊 Estado calculado:', {
-        currentStatus,
-        previousStatus: subscription.status,
-        willUpdate: currentStatus !== subscription.status
-      });
       
       // Actualizar si ha cambiado
       if (currentStatus !== subscription.status) {
