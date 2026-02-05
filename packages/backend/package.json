@@ -8,6 +8,8 @@
     "dev": "nodemon server.js",
     "test": "jest",
     "db:migrate": "npx sequelize-cli db:migrate",
+    "db:migrate:azure": "cross-env DATABASE_URL=postgresql://dbadmin:BeautyControl2024!@beautycontrol-db.postgres.database.azure.com:5432/beautycontrol?sslmode=require npx sequelize-cli db:migrate --env production",
+    "db:migrate:status:azure": "cross-env DATABASE_URL=postgresql://dbadmin:BeautyControl2024!@beautycontrol-db.postgres.database.azure.com:5432/beautycontrol?sslmode=require npx sequelize-cli db:migrate:status --env production",
     "db:seed": "npx sequelize-cli db:seed:all",
     "db:init": "node scripts/init-db.js",
     "db:init-production": "NODE_ENV=production DATABASE_URL=postgresql://neondb_owner:npg_aoi02FPudzqj@ep-curly-union-aek8wz8r-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require node scripts/init-db.js",

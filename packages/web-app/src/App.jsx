@@ -38,6 +38,10 @@ import OwnerBusinessesPage from './pages/owner/business/OwnerBusinessesPage.jsx'
 import OwnerExpensesPage from './pages/owner/Expenses/OwnerExpensesPage.jsx'
 import OwnerReports from './pages/owner/reports/OwnerReports'
 
+// Developer Pages
+import DeveloperPanel from './pages/developer/DeveloperPanel'
+import MaintenancePage from './pages/MaintenancePage'
+
 // Business Pages
 import BusinessProfile from './pages/business/profile/BusinessProfile.jsx'
 import BusinessOwnerDashboard from './pages/dashboard/BusinessOwnerDashboard.jsx'
@@ -426,6 +430,16 @@ function AppLayout() {
           
           {/* Test routes (Temporal) */}
           <Route path="/test-payment-1000" element={<TestPayment1000 />} />
+          
+          {/* Developer routes - Protected (OWNER only) */}
+          <Route path="/developer" element={
+            <OwnerOnlyRoute>
+              <DeveloperPanel />
+            </OwnerOnlyRoute>
+          } />
+          
+          {/* Maintenance page */}
+          <Route path="/maintenance" element={<MaintenancePage />} />
           
           {/* Owner routes - Protected */}
           <Route path="/owner" element={

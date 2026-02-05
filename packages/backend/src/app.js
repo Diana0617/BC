@@ -294,14 +294,23 @@ const cashRegisterRoutes = require('./routes/cashRegister'); // Rutas de gestió
 const loyaltyRoutes = require('./routes/loyalty'); // Rutas de programa de fidelización
 const saleRoutes = require('./routes/saleRoutes'); // Rutas de ventas
 const procedureSupplyRoutes = require('./routes/procedureSupplyRoutes'); // Rutas de consumo de productos en procedimientos
+const developerRoutes = require('./routes/developer'); // Rutas de panel de desarrollador
 // const specialistServicesRoutes = require('./routes/specialistServices'); // DEPRECATED: Ahora usando rutas RESTful en businessConfig.js
 
 // Rutas de sesiones móviles
 const mobileRoutes = require('./routes/mobile.routes.js');
 
+// Middleware de modo mantenimiento (después de autenticación)
+const maintenanceModeMiddleware = require('./middleware/maintenanceMode');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/mobile', mobileRoutes); // Rutas de auto-login desde móvil
+
+// ⚠️ IMPORTANTE: Aplicar middleware de mantenimiento DESPUÉS de auth pero ANTES de las rutas protegidas
+// Esto permite que los OWNER sigan teniendo acceso durante el mantenimiento
+app.use(maintenanceModeMiddleware);
+
+app.use('/api/developer', developerRoutes); // Rutas de panel de desarrollador (solo OWNER)
 app.use('/api/admin', adminRoutes); // Rutas de administración (seed, etc.)
 app.use('/api/seed', require('./routes/seed')); // Rutas de seeding protegidas
 app.use('/api/business', businessRoutes);
