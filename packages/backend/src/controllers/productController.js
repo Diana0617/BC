@@ -21,16 +21,39 @@ class ProductController {
         trackInventory,
         lowStock,
         branchId, // Filtro de sucursal
+        productType, // Nuevo filtro
         page = 1, 
         limit = 50 
       } = req.query;
 
+      console.log('\n📦 ===== GET PRODUCTS =====');
+      console.log('📥 Query params:', req.query);
+      console.log('🏢 BusinessId:', businessId);
+
       const where = { businessId };
 
       // Filtros opcionales
-      if (category) where.category = category;
-      if (isActive !== undefined) where.isActive = isActive === 'true';
-      if (trackInventory !== undefined) where.trackInventory = trackInventory === 'true';
+      if (category) {
+        where.category = category;
+        console.log('🏷️  Filtro category:', category);
+      }
+      
+      if (isActive !== undefined) {
+        where.isActive = isActive === 'true';
+        console.log('✅ Filtro isActive:', isActive === 'true');
+      }
+      
+      if (trackInventory !== undefined) {
+        where.trackInventory = trackInventory === 'true';
+        console.log('📊 Filtro trackInventory:', trackInventory === 'true');
+      }
+      
+      // Filtro de productType (FOR_SALE, BOTH, FOR_USE)
+      if (productType) {
+        const types = productType.split(',').map(t => t.trim());
+        where.productType = { [Op.in]: types };
+        console.log('🏪 Filtro productType:', types);
+      }
       
       // Búsqueda por nombre, SKU o barcode
       if (search) {
@@ -39,7 +62,10 @@ class ProductController {
           { sku: { [Op.like]: `%${search}%` } },
           { barcode: { [Op.like]: `%${search}%` } }
         ];
+        console.log('🔍 Búsqueda:', search);
       }
+
+      console.log('📋 WHERE clause final:', JSON.stringify(where, null, 2));
 
       const offset = (page - 1) * limit;
 
@@ -61,13 +87,21 @@ class ProductController {
         order: [['name', 'ASC']]
       });
 
-      console.log('📊 getProducts debug:', {
-        businessId,
-        where,
-        total: products.count,
-        page: parseInt(page),
-        limit: parseInt(limit)
-      });
+      console.log(`✅ Query ejecutado - Total encontrados: ${products.count}`);
+      console.log(`📦 Productos retornados en esta página: ${products.rows.length}`);
+      
+      if (products.rows.length > 0) {
+        console.log('📋 Lista de productos:', products.rows.map(p => ({
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          productType: p.productType,
+          isActive: p.isActive,
+          currentStock: p.currentStock,
+          trackInventory: p.trackInventory,
+          branchStocksCount: p.branchStocks?.length || 0
+        })));
+      }
 
       // Filtro de stock bajo
       if (lowStock === 'true') {

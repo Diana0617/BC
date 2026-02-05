@@ -77,7 +77,14 @@ class SaleController {
       const processedItems = [];
       let subtotal = 0;
 
+      console.log(`\n📦 ===== PROCESANDO ${items.length} ITEMS =====`);
+
       for (const item of items) {
+        console.log(`\n🔍 Validando item:`, {
+          productId: item.productId,
+          quantity: item.quantity
+        });
+
         // Obtener producto
         const product = await Product.findOne({
           where: {
@@ -88,7 +95,25 @@ class SaleController {
           }
         });
 
+        console.log(`📝 Resultado búsqueda producto:`, product ? {
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          isActive: product.isActive,
+          productType: product.productType,
+          trackInventory: product.trackInventory,
+          currentStock: product.currentStock,
+          price: product.price
+        } : '❌ NO ENCONTRADO');
+
         if (!product) {
+          console.log(`\n❌ PRODUCTO NO VÁLIDO - productId: ${item.productId}`);
+          console.log('   Posibles razones:');
+          console.log('   1. No existe en la DB');
+          console.log('   2. businessId no coincide');
+          console.log('   3. isActive = false');
+          console.log('   4. productType no es FOR_SALE ni BOTH');
+          
           await transaction.rollback();
           return res.status(400).json({
             success: false,
@@ -109,20 +134,42 @@ class SaleController {
             // Si no hay registro de stock por sucursal, usar el stock global del producto
             availableStock = branchStock ? branchStock.currentStock : product.currentStock;
             
-            console.log(`📦 [Stock Check] Producto: ${product.name}, BranchId: ${branchId}, Stock Sucursal: ${branchStock?.currentStock || 'N/A'}, Stock Global: ${product.currentStock}, Stock Usado: ${availableStock}`);
+            console.log(`📊 [Stock Sucursal] ${product.name}:`, {
+              branchId,
+              stockSucursal: branchStock?.currentStock || 'Sin registro',
+              stockGlobal: product.currentStock,
+              stockUsado: availableStock,
+              solicitado: item.quantity,
+              suficiente: availableStock >= item.quantity
+            });
           } else {
             // Stock global
             availableStock = product.currentStock;
-            console.log(`📦 [Stock Check] Producto: ${product.name}, Stock Global: ${availableStock}`);
+            console.log(`📊 [Stock Global] ${product.name}:`, {
+              disponible: availableStock,
+              solicitado: item.quantity,
+              suficiente: availableStock >= item.quantity
+            });
           }
 
           if (availableStock < item.quantity) {
+            console.log(`\n❌ STOCK INSUFICIENTE:`, {
+              producto: product.name,
+              disponible: availableStock,
+              solicitado: item.quantity,
+              faltante: item.quantity - availableStock
+            });
+            
             await transaction.rollback();
             return res.status(400).json({
               success: false,
               error: `Stock insuficiente para ${product.name}. Disponible: ${availableStock}, Solicitado: ${item.quantity}`
             });
           }
+          
+          console.log(`✅ Stock OK para ${product.name}`);
+        } else {
+          console.log(`⏭️  ${product.name} - Sin control inventario (permitido)`);
         }
 
         // Calcular subtotal del item

@@ -106,8 +106,15 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
   // Cargar productos cuando se selecciona una sucursal
   useEffect(() => {
     if (selectedBranch && businessId) {
-      console.log('🏪 Cargando productos para sucursal:', selectedBranch.name, 'ID:', selectedBranch.id);
+      console.log('🏪 ===== CARGANDO PRODUCTOS PARA VENTA =====');
+      console.log('🏪 Sucursal:', selectedBranch.name, '| ID:', selectedBranch.id);
       console.log('🏢 BusinessId:', businessId);
+      console.log('📦 Filtros aplicados:', {
+        businessId,
+        productType: 'FOR_SALE,BOTH',
+        isActive: true,
+        branchId: selectedBranch.id
+      });
       
       dispatch(fetchProducts({ 
         businessId,
@@ -117,6 +124,27 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
       }));
     }
   }, [selectedBranch, businessId, dispatch]);
+
+  // Log cuando cambien los productos
+  useEffect(() => {
+    if (products && products.length > 0) {
+      console.log('📦 ===== PRODUCTOS CARGADOS EN MODAL =====');
+      console.log(`📦 Total productos: ${products.length}`);
+      console.log('📦 Lista de productos:', products.map(p => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        productType: p.productType,
+        isActive: p.isActive,
+        trackInventory: p.trackInventory,
+        currentStock: p.currentStock,
+        price: p.price
+      })));
+      console.log('====================================\n');
+    } else {
+      console.log('📦 No hay productos cargados aún o array vacío');
+    }
+  }, [products]);
 
   // Buscar clientes
   useEffect(() => {
