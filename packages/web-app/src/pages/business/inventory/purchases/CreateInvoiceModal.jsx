@@ -76,17 +76,54 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
       unit: 'unidad'
     },
     images: [], // Array de URLs de imágenes para productos nuevos
-    uploadingImage: false
+    uploadingImage: false,
+    searchTerm: '', // Término de búsqueda para este item
+    showDropdown: false // Mostrar dropdown de resultados
   }]);
+
+  // Búsqueda de productos
+  const [searchResults, setSearchResults] = useState({});
 
   // File upload
   const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadingFile, setUploadingFile] = useState(false);
 
+  // Búsqueda dinámica de productos por item
   useEffect(() => {
-    // Load products for selection
-    dispatch(fetchProducts({ isActive: true, limit: 1000 }));
-  }, [dispatch]);
+    items.forEach((item, index) => {
+      if (!item.createProduct && item.searchTerm && item.searchTerm.length >= 2) {
+        // Debounce: esperar 300ms después de que dejen de escribir
+        const timer = setTimeout(() => {
+          searchProducts(index, item.searchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    });
+  }, [items.map(i => i.searchTerm).join(',')]);
+
+  const searchProducts = async (itemIndex, searchTerm) => {
+    if (!user?.businessId || !searchTerm || searchTerm.length < 2) {
+      setSearchResults(prev => ({ ...prev, [itemIndex]: [] }));
+      return;
+    }
+
+    try {
+      const response = await dispatch(fetchProducts({
+        businessId: user.businessId,
+        search: searchTerm,
+        isActive: true,
+        limit: 20
+      })).unwrap();
+
+      setSearchResults(prev => ({
+        ...prev,
+        [itemIndex]: response.products || []
+      }));
+    } catch (error) {
+      console.error('Error searching products:', error);
+      setSearchResults(prev => ({ ...prev, [itemIndex]: [] }));
+    }
+  };
 
   useEffect(() => {
     // Load branches automatically when user.businessId is available
@@ -241,8 +278,26 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
         unit: 'unidad'
       },
       images: [],
-      uploadingImage: false
+      uploadingImage: false,
+      searchTerm: '',
+      showDropdown: false
     }]);
+  };
+
+  const selectProduct = (itemIndex, product) => {
+    const newItems = [...items];
+    newItems[itemIndex] = {
+      ...newItems[itemIndex],
+      productId: product.id,
+      productName: product.name,
+      sku: product.sku || '',
+      searchTerm: product.name,
+      showDropdown: false,
+      unitCost: parseFloat(product.cost) || 0,
+      salePrice: parseFloat(product.price) || 0
+    };
+    setItems(newItems);
+    setSearchResults(prev => ({ ...prev, [itemIndex]: [] }));
   };
 
   const handleProductImageUpload = async (index, e) => {
@@ -985,22 +1040,81 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
                         </div>
                       </div>
                     ) : (
-                      <div>
+                      <div className="relative">
                         <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Producto <span className="text-red-500">*</span>
+                          Buscar Producto <span className="text-red-500">*</span>
                         </label>
-                        <select
-                          value={item.productId}
-                          onChange={(e) => updateItem(index, 'productId', e.target.value)}
-                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">Seleccionar producto...</option>
-                          {products.map(p => (
-                            <option key={p.id} value={p.id}>
-                              {p.name} - {p.sku}
-                            </option>
-                          ))}
-                        </select>
+                        <input
+                          type="text"
+                          value={item.searchTerm}
+                          onChange={(e) => {
+                            const newItems = [...items];
+                            newItems[index] = {
+                              ...newItems[index],
+                              searchTerm: e.target.value,
+                              showDropdown: true
+                            };
+                            setItems(newItems);
+                          }}
+                          onFocus={() => {
+                            const newItems = [...items];
+                            newItems[index].showDropdown = true;
+                            setItems(newItems);
+                          }}
+                          placeholder="Escribe SKU, nombre o descripción (mín. 2 caracteres)..."
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                        
+                        {/* Dropdown de resultados */}
+                        {item.showDropdown && searchResults[index] && searchResults[index].length > 0 && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            {searchResults[index].map((product) => (
+                              <button
+                                key={product.id}
+                                type="button"
+                                onClick={() => selectProduct(index, product)}
+                                className="w-full px-3 py-2 text-left hover:bg-blue-50 border-b border-gray-100 last:border-b-0"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {product.name}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      SKU: {product.sku || 'N/A'} | Stock: {product.currentStock || 0}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm font-semibold text-gray-900">
+                                      ${parseFloat(product.cost || 0).toLocaleString()}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      Venta: ${parseFloat(product.price || 0).toLocaleString()}
+                                    </div>
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Mensaje cuando no hay resultados */}
+                        {item.showDropdown && item.searchTerm.length >= 2 && searchResults[index] && searchResults[index].length === 0 && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3">
+                            <p className="text-sm text-gray-500 text-center">
+                              No se encontraron productos. Intenta con otro término.
+                            </p>
+                          </div>
+                        )}
+                        
+                        {/* Producto seleccionado */}
+                        {item.productId && (
+                          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                            <span className="font-medium text-blue-900">Seleccionado:</span>
+                            <span className="text-blue-700 ml-1">{item.productName}</span>
+                            {item.sku && <span className="text-blue-600 ml-1">({item.sku})</span>}
+                          </div>
+                        )}
                       </div>
                     )}
 
