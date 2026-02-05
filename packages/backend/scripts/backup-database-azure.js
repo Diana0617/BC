@@ -123,7 +123,12 @@ async function backupDatabase() {
  */
 function executeCommand(command, stepName = 'command') {
   return new Promise((resolve, reject) => {
-    exec(command, { maxBuffer: 1024 * 1024 * 100 }, (error, stdout, stderr) => {
+    // En Windows, forzar uso de bash (Git Bash)
+    const shellOptions = process.platform === 'win32' 
+      ? { shell: 'bash', maxBuffer: 1024 * 1024 * 100 }
+      : { maxBuffer: 1024 * 1024 * 100 };
+    
+    exec(command, shellOptions, (error, stdout, stderr) => {
       if (error) {
         console.error(`❌ Error en ${stepName}:`, error.message);
         if (stderr) console.error('STDERR:', stderr);

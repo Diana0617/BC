@@ -24,12 +24,25 @@ jobs:
     
     - name: Install dependencies
       working-directory: ./packages/backend
-      run: npm ci
+      run: npm ci --production
     
     - name: Run tests (if available)
       working-directory: ./packages/backend
       run: npm test --if-present
       continue-on-error: true
+    
+    - name: Create deployment package
+      working-directory: ./packages/backend
+      run: |
+        # Crear archivo ZIP excluyendo carpetas innecesarias
+        zip -r backend-deploy.zip . \
+          -x "*.git*" \
+          -x "*.log" \
+          -x "backups/*" \
+          -x "deploy/*" \
+          -x "tests/*" \
+          -x ".env.example" \
+          -x "node_modules/.cache/*"
     
     - name: Login to Azure
       uses: azure/login@v1
@@ -40,4 +53,4 @@ jobs:
       uses: azure/webapps-deploy@v2
       with:
         app-name: beautycontrol-api
-        package: ./packages/backend
+        package: ./packages/backend/backend-deploy.zip
