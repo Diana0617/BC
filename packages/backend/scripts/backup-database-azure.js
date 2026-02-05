@@ -28,12 +28,13 @@ const RETENTION_DAYS = parseInt(process.env.BACKUP_RETENTION_DAYS || '30');
 const BACKUP_TO_CLOUD = process.env.BACKUP_TO_CLOUD === 'true';
 
 // Azure PostgreSQL Configuration
+// Usar variables específicas de Azure (AZURE_*) o fallback a las de producción
 const DB_CONFIG = {
-  host: process.env.DB_HOST || 'beautycontrol-db.postgres.database.azure.com',
-  port: process.env.DB_PORT || '5432',
-  database: process.env.DB_NAME || 'beautycontrol',
-  user: process.env.DB_USER || 'dbadmin',
-  password: process.env.DB_PASSWORD || 'BeautyControl2024!'
+  host: process.env.AZURE_DB_HOST || 'beautycontrol-db.postgres.database.azure.com',
+  port: process.env.AZURE_DB_PORT || '5432',
+  database: process.env.AZURE_DB_NAME || 'beautycontrol',
+  user: process.env.AZURE_DB_USER || 'dbadmin',
+  password: process.env.AZURE_DB_PASSWORD || 'BeautyControl2024!'
 };
 
 // Azure Blob Storage Configuration (opcional)
@@ -68,17 +69,8 @@ async function backupDatabase() {
     // 1. Ejecutar pg_dump
     console.log('⏳ Paso 1/5: Ejecutando pg_dump...');
     
-    // En Windows, PGPASSWORD debe ser variable de entorno antes del comando
-    const isWindows = process.platform === 'win32';
-    let pgDumpCommand;
-    
-    if (isWindows) {
-      // Windows: usar set y && para concatenar comandos
-      pgDumpCommand = `set PGPASSWORD=${DB_CONFIG.password}&& pg_dump -h ${DB_CONFIG.host} -p ${DB_CONFIG.port} -U ${DB_CONFIG.user} -d ${DB_CONFIG.database} --no-owner --no-acl --verbose -F p -f "${backupFile}"`;
-    } else {
-      // Linux/Mac: usar PGPASSWORD inline
-      pgDumpCommand = `PGPASSWORD="${DB_CONFIG.password}" pg_dump -h ${DB_CONFIG.host} -p ${DB_CONFIG.port} -U ${DB_CONFIG.user} -d ${DB_CONFIG.database} --no-owner --no-acl --verbose -F p -f "${backupFile}"`;
-    }
+    // Git Bash en Windows soporta sintaxis Unix
+    const pgDumpCommand = `PGPASSWORD="${DB_CONFIG.password}" pg_dump -h ${DB_CONFIG.host} -p ${DB_CONFIG.port} -U ${DB_CONFIG.user} -d ${DB_CONFIG.database} --no-owner --no-acl --verbose -F p -f "${backupFile}"`;
     
     await executeCommand(pgDumpCommand, 'pg_dump');
     console.log('✅ Backup SQL creado exitosamente\n');
@@ -90,18 +82,7 @@ async function backupDatabase() {
 
     // 3. Comprimir backup con gzip
     console.log('\n⏳ Paso 2/5: Comprimiendo backup...');
-    
-    const isWindows = process.platform === 'win32';
-    let gzipCommand;
-    
-    if (isWindows) {
-      // Windows: intentar con 7zip o tar
-      gzipCommand = `tar -czf "${backupGzFile}" -C "${path.dirname(backupFile)}" "${path.basename(backupFile)}"`;
-    } else {
-      gzipCommand = `gzip "${backupFile}"`;
-    }
-    
-    await executeCommand(gzipCommand, 'gzip');
+    await executeCommand(`gzip "${backupFile}"`, 'gzip');
     
     const gzStats = fs.statSync(backupGzFile);
     const gzSizeMB = (gzStats.size / (1024 * 1024)).toFixed(2);
