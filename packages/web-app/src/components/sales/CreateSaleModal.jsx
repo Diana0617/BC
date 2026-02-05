@@ -103,50 +103,40 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
     loadBranches();
   }, [isOpen, businessId, initialBranchId]);
 
-  // Cargar productos cuando se selecciona una sucursal
+  // Búsqueda dinámica de productos (solo cuando escriben 3+ caracteres)
   useEffect(() => {
-    if (selectedBranch && businessId) {
-      console.log('🏪 ===== CARGANDO PRODUCTOS PARA VENTA =====');
-      console.log('🏪 Sucursal:', selectedBranch.name, '| ID:', selectedBranch.id);
-      console.log('🏢 BusinessId:', businessId);
-      console.log('📦 Filtros aplicados:', {
-        businessId,
-        productType: 'FOR_SALE,BOTH',
-        isActive: true,
-        branchId: selectedBranch.id,
-        limit: 1000 // Cargar hasta 1000 productos para ventas
-      });
-      
+    // Si no hay sucursal seleccionada, no buscar
+    if (!selectedBranch || !businessId) {
+      return;
+    }
+
+    // Solo buscar si tienen 3+ caracteres
+    if (searchTerm.length < 3) {
+      return;
+    }
+
+    // Debounce: esperar 500ms después de que dejen de escribir
+    const timer = setTimeout(() => {
+      console.log('🔍 Buscando productos:', searchTerm);
       dispatch(fetchProducts({ 
         businessId,
         productType: 'FOR_SALE,BOTH',
         isActive: true,
         branchId: selectedBranch.id,
-        limit: 1000 // Cargar todos los productos sin paginación
+        search: searchTerm,
+        limit: 100 // Máximo 100 resultados de búsqueda
       }));
-    }
-  }, [selectedBranch, businessId, dispatch]);
+    }, 500);
 
-  // Log cuando cambien los productos
-  useEffect(() => {
-    if (products && products.length > 0) {
-      console.log('📦 ===== PRODUCTOS CARGADOS EN MODAL =====');
-      console.log(`📦 Total productos: ${products.length}`);
-      console.log('📦 Lista de productos:', products.map(p => ({
-        id: p.id,
-        name: p.name,
-        sku: p.sku,
-        productType: p.productType,
-        isActive: p.isActive,
-        trackInventory: p.trackInventory,
-        currentStock: p.currentStock,
-        price: p.price
-      })));
-      console.log('====================================\n');
-    } else {
-      console.log('📦 No hay productos cargados aún o array vacío');
-    }
-  }, [products]);
+    return () => clearTimeout(timer);
+  }, [searchTerm, selectedBranch, businessId, dispatch]);
+
+  // Log cuando cambien los productos (deshabilitado para reducir ruido)
+  // useEffect(() => {
+  //   if (products && products.length > 0) {
+  //     console.log('📦 Productos encontrados:', products.length);
+  //   }
+  // }, [products]);
 
   // Buscar clientes
   useEffect(() => {
