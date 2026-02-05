@@ -113,14 +113,16 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
         businessId,
         productType: 'FOR_SALE,BOTH',
         isActive: true,
-        branchId: selectedBranch.id
+        branchId: selectedBranch.id,
+        limit: 1000 // Cargar hasta 1000 productos para ventas
       });
       
       dispatch(fetchProducts({ 
         businessId,
         productType: 'FOR_SALE,BOTH',
         isActive: true,
-        branchId: selectedBranch.id
+        branchId: selectedBranch.id,
+        limit: 1000 // Cargar todos los productos sin paginación
       }));
     }
   }, [selectedBranch, businessId, dispatch]);
