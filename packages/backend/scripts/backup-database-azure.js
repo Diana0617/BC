@@ -67,7 +67,18 @@ async function backupDatabase() {
   try {
     // 1. Ejecutar pg_dump
     console.log('⏳ Paso 1/5: Ejecutando pg_dump...');
-    const pgDumpCommand = `PGPASSWORD="${DB_CONFIG.password}" pg_dump -h ${DB_CONFIG.host} -p ${DB_CONFIG.port} -U ${DB_CONFIG.user} -d ${DB_CONFIG.database} --no-owner --no-acl --verbose -F p -f "${backupFile}"`;
+    
+    // En Windows, PGPASSWORD debe ser variable de entorno antes del comando
+    const isWindows = process.platform === 'win32';
+    let pgDumpCommand;
+    
+    if (isWindows) {
+      // Windows: usar set y && para concatenar comandos
+      pgDumpCommand = `set PGPASSWORD=${DB_CONFIG.password}&& pg_dump -h ${DB_CONFIG.host} -p ${DB_CONFIG.port} -U ${DB_CONFIG.user} -d ${DB_CONFIG.database} --no-owner --no-acl --verbose -F p -f "${backupFile}"`;
+    } else {
+      // Linux/Mac: usar PGPASSWORD inline
+      pgDumpCommand = `PGPASSWORD="${DB_CONFIG.password}" pg_dump -h ${DB_CONFIG.host} -p ${DB_CONFIG.port} -U ${DB_CONFIG.user} -d ${DB_CONFIG.database} --no-owner --no-acl --verbose -F p -f "${backupFile}"`;
+    }
     
     await executeCommand(pgDumpCommand, 'pg_dump');
     console.log('✅ Backup SQL creado exitosamente\n');
@@ -79,7 +90,18 @@ async function backupDatabase() {
 
     // 3. Comprimir backup con gzip
     console.log('\n⏳ Paso 2/5: Comprimiendo backup...');
-    await executeCommand(`gzip "${backupFile}"`, 'gzip');
+    
+    const isWindows = process.platform === 'win32';
+    let gzipCommand;
+    
+    if (isWindows) {
+      // Windows: intentar con 7zip o tar
+      gzipCommand = `tar -czf "${backupGzFile}" -C "${path.dirname(backupFile)}" "${path.basename(backupFile)}"`;
+    } else {
+      gzipCommand = `gzip "${backupFile}"`;
+    }
+    
+    await executeCommand(gzipCommand, 'gzip');
     
     const gzStats = fs.statSync(backupGzFile);
     const gzSizeMB = (gzStats.size / (1024 * 1024)).toFixed(2);
