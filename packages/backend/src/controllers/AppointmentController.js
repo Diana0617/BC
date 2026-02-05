@@ -1747,42 +1747,67 @@ class AppointmentController {
       }
 
       // Calcular comisión si está configurada
+      // Prioridad: 1) SpecialistProfile, 2) ServiceCommission, 3) BusinessCommissionConfig, 4) Default 50%
       try {
+        const SpecialistProfile = require('../models/SpecialistProfile');
         const ServiceCommission = require('../models/ServiceCommission');
         const BusinessCommissionConfig = require('../models/BusinessCommissionConfig');
-
-        // Buscar comisión específica del servicio
-        const serviceCommission = await ServiceCommission.findOne({
-          where: {
-            businessId,
-            serviceId: appointment.serviceId,
-            isActive: true
-          }
-        });
 
         let specialistPercentage = null;
         let businessPercentage = null;
 
-        if (serviceCommission) {
-          // Usar configuración específica del servicio
-          specialistPercentage = serviceCommission.specialistPercentage;
-          businessPercentage = serviceCommission.businessPercentage;
+        // 1️⃣ PRIORIDAD MÁXIMA: Comisión del perfil del especialista
+        const specialistProfile = await SpecialistProfile.findOne({
+          where: {
+            userId: appointment.specialistId,
+            businessId,
+            isActive: true
+          }
+        });
+
+        if (specialistProfile && specialistProfile.commissionRate !== null) {
+          // Usar la comisión individual del especialista
+          specialistPercentage = parseFloat(specialistProfile.commissionRate);
+          businessPercentage = 100 - specialistPercentage;
+          console.log(`✅ Usando comisión del especialista: ${specialistPercentage}%`);
         } else {
-          // Usar configuración global del negocio
-          const businessConfig = await BusinessCommissionConfig.findOne({
+          // 2️⃣ Buscar comisión específica del servicio
+          const serviceCommission = await ServiceCommission.findOne({
             where: {
               businessId,
+              serviceId: appointment.serviceId,
               isActive: true
             }
           });
 
-          if (businessConfig) {
-            specialistPercentage = businessConfig.defaultSpecialistPercentage;
-            businessPercentage = businessConfig.defaultBusinessPercentage;
+          if (serviceCommission) {
+            // Usar configuración específica del servicio
+            specialistPercentage = serviceCommission.specialistPercentage;
+            businessPercentage = serviceCommission.businessPercentage;
+            console.log(`✅ Usando comisión del servicio: ${specialistPercentage}%`);
+          } else {
+            // 3️⃣ Usar configuración global del negocio
+            const businessConfig = await BusinessCommissionConfig.findOne({
+              where: {
+                businessId,
+                isActive: true
+              }
+            });
+
+            if (businessConfig) {
+              specialistPercentage = businessConfig.defaultSpecialistPercentage;
+              businessPercentage = businessConfig.defaultBusinessPercentage;
+              console.log(`✅ Usando comisión global del negocio: ${specialistPercentage}%`);
+            } else {
+              // 4️⃣ Default: 50% especialista, 50% negocio
+              specialistPercentage = 50;
+              businessPercentage = 50;
+              console.log(`✅ Usando comisión default: 50%`);
+            }
           }
         }
 
-        // Si hay configuración de comisión, calcularla
+        // Calcular montos de comisión
         if (specialistPercentage !== null && businessPercentage !== null) {
           const amount = finalAmount !== undefined ? finalAmount : appointment.totalAmount;
           const specialistCommission = (amount * specialistPercentage) / 100;
@@ -1790,6 +1815,8 @@ class AppointmentController {
 
           updateData.specialistCommission = specialistCommission;
           updateData.businessCommission = businessCommission;
+          
+          console.log(`💰 Comisión calculada - Especialista: $${specialistCommission.toFixed(2)}, Negocio: $${businessCommission.toFixed(2)}`);
         }
       } catch (commissionError) {
         console.warn('Error calculando comisión (continuando sin comisión):', commissionError);
