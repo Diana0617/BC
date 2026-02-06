@@ -55,14 +55,15 @@ class ProductController {
         console.log('🏪 Filtro productType:', types);
       }
       
-      // Búsqueda por nombre, SKU o barcode
+      // Búsqueda por nombre, SKU o barcode (case-insensitive)
       if (search) {
         where[Op.or] = [
-          { name: { [Op.like]: `%${search}%` } },
-          { sku: { [Op.like]: `%${search}%` } },
-          { barcode: { [Op.like]: `%${search}%` } }
+          { name: { [Op.iLike]: `%${search}%` } },
+          { sku: { [Op.iLike]: `%${search}%` } },
+          { barcode: { [Op.iLike]: `%${search}%` } },
+          { description: { [Op.iLike]: `%${search}%` } }
         ];
-        console.log('🔍 Búsqueda:', search);
+        console.log('🔍 Búsqueda (case-insensitive):', search);
       }
 
       console.log('📋 WHERE clause final:', JSON.stringify(where, null, 2));
