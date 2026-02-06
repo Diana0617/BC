@@ -114,7 +114,13 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
     }
 
     try {
-      console.log('🔍 Buscando productos:', searchTerm);
+      console.log('🔍 Buscando productos con params:', {
+        businessId: user.businessId,
+        search: searchTerm,
+        isActive: true,
+        limit: 20
+      });
+      
       const result = await dispatch(fetchProducts({
         businessId: user.businessId,
         search: searchTerm,
@@ -122,11 +128,12 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
         limit: 20
       })).unwrap();
 
-      console.log('✅ Productos encontrados:', result);
+      console.log('✅ Respuesta completa del backend:', result);
       
       // fetchProducts retorna { products: [...], total, page, ... }
-      const productsArray = result.products || result.data?.products || result;
-      console.log('📦 Array de productos:', productsArray);
+      const productsArray = result.data || result.products || result;
+      console.log('📦 Array de productos extraído:', productsArray);
+      console.log('📦 Cantidad de productos:', Array.isArray(productsArray) ? productsArray.length : 'No es array');
 
       setSearchResults(prev => ({
         ...prev,
