@@ -90,15 +90,21 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
 
   // Búsqueda dinámica de productos por item
   useEffect(() => {
+    const timers = [];
+    
     items.forEach((item, index) => {
       if (!item.createProduct && item.searchTerm && item.searchTerm.length >= 2) {
         // Debounce: esperar 300ms después de que dejen de escribir
         const timer = setTimeout(() => {
           searchProducts(index, item.searchTerm);
         }, 300);
-        return () => clearTimeout(timer);
+        timers.push(timer);
       }
     });
+
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
   }, [items.map(i => i.searchTerm).join(',')]);
 
   const searchProducts = async (itemIndex, searchTerm) => {
@@ -108,19 +114,26 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
     }
 
     try {
-      const response = await dispatch(fetchProducts({
+      console.log('🔍 Buscando productos:', searchTerm);
+      const result = await dispatch(fetchProducts({
         businessId: user.businessId,
         search: searchTerm,
         isActive: true,
         limit: 20
       })).unwrap();
 
+      console.log('✅ Productos encontrados:', result);
+      
+      // fetchProducts retorna { products: [...], total, page, ... }
+      const productsArray = result.products || result.data?.products || result;
+      console.log('📦 Array de productos:', productsArray);
+
       setSearchResults(prev => ({
         ...prev,
-        [itemIndex]: response.products || []
+        [itemIndex]: Array.isArray(productsArray) ? productsArray : []
       }));
     } catch (error) {
-      console.error('Error searching products:', error);
+      console.error('❌ Error searching products:', error);
       setSearchResults(prev => ({ ...prev, [itemIndex]: [] }));
     }
   };
