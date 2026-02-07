@@ -21,7 +21,8 @@ const ExpensesTab = ({
   onApproveExpense,
   onMarkAsPaid,
   filters,
-  onFilterChange
+  onFilterChange,
+  permissions = {} // Permisos del usuario
 }) => {
   const [showFilters, setShowFilters] = useState(false);
 
@@ -77,13 +78,15 @@ const ExpensesTab = ({
       {/* Actions Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg shadow">
         <div className="flex gap-2">
-          <button
-            onClick={onCreateExpense}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-          >
-            <PlusIcon className="w-5 h-5 mr-2" />
-            Nuevo Gasto
-          </button>
+          {permissions?.create && (
+            <button
+              onClick={onCreateExpense}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+            >
+              <PlusIcon className="w-5 h-5 mr-2" />
+              Nuevo Gasto
+            </button>
+          )}
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
@@ -163,13 +166,15 @@ const ExpensesTab = ({
         ) : expenses.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-gray-500">No hay gastos registrados</p>
-            <button
-              onClick={onCreateExpense}
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700"
-            >
-              <PlusIcon className="w-5 h-5 mr-2" />
-              Crear Primer Gasto
-            </button>
+            {permissions?.create && (
+              <button
+                onClick={onCreateExpense}
+                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700"
+              >
+                <PlusIcon className="w-5 h-5 mr-2" />
+                Crear Primer Gasto
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -230,7 +235,7 @@ const ExpensesTab = ({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
-                        {expense.status === 'pending' && (
+                        {permissions?.approve && expense.status === 'pending' && (
                           <button
                             onClick={() => onApproveExpense(expense.id)}
                             className="text-green-600 hover:text-green-900"
@@ -239,7 +244,7 @@ const ExpensesTab = ({
                             <CheckCircleIcon className="w-5 h-5" />
                           </button>
                         )}
-                        {expense.status === 'approved' && !expense.isPaid && (
+                        {permissions?.approve && expense.status === 'approved' && !expense.isPaid && (
                           <button
                             onClick={() => onMarkAsPaid(expense.id)}
                             className="text-blue-600 hover:text-blue-900"
@@ -248,18 +253,22 @@ const ExpensesTab = ({
                             Pagar
                           </button>
                         )}
-                        <button
-                          onClick={() => onEditExpense(expense)}
-                          className="text-pink-600 hover:text-pink-900"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => onDeleteExpense(expense.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Eliminar
-                        </button>
+                        {permissions?.edit && (
+                          <button
+                            onClick={() => onEditExpense(expense)}
+                            className="text-pink-600 hover:text-pink-900"
+                          >
+                            Editar
+                          </button>
+                        )}
+                        {permissions?.delete && (
+                          <button
+                            onClick={() => onDeleteExpense(expense.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Eliminar
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

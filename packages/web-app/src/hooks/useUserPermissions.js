@@ -120,6 +120,14 @@ export const useUserPermissions = () => {
   const canViewConsents = hasPermission('consents.view') || hasPermission('appointments.manage_consents');
   const canCreateConsents = hasPermission('consents.create');
 
+  // Permisos de gastos (expenses)
+  const canViewExpenses = hasPermission('expenses.view');
+  const canCreateExpenses = hasPermission('expenses.create');
+  const canEditExpenses = hasPermission('expenses.edit');
+  const canDeleteExpenses = hasPermission('expenses.delete');
+  const canApproveExpenses = hasPermission('expenses.approve');
+  const canManageExpenseCategories = hasPermission('expenses.categories');
+
   // Log de depuración
   console.log('📊 [useUserPermissions] Estructura final:', {
     loading,
@@ -188,6 +196,14 @@ export const useUserPermissions = () => {
     consents: {
       view: canViewConsents,
       create: canCreateConsents
+    },
+    expenses: {
+      view: canViewExpenses,
+      create: canCreateExpenses,
+      edit: canEditExpenses,
+      delete: canDeleteExpenses,
+      approve: canApproveExpenses,
+      categories: canManageExpenseCategories
     },
     
     // Función para refrescar permisos

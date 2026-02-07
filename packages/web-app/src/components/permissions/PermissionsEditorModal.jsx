@@ -158,6 +158,7 @@ const PermissionsEditorModal = ({ isOpen, onClose, staffMember, businessId }) =>
       'SERVICES': '✨',
       'PRODUCTS': '📦',
       'PAYMENTS': '💰',
+      'EXPENSES': '💸',
       'REPORTS': '📊',
       'SETTINGS': '⚙️',
       'STAFF': '👔'

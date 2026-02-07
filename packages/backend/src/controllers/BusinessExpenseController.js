@@ -3,6 +3,7 @@ const { BusinessExpense, BusinessExpenseCategory, FinancialMovement, User, Busin
 const { uploadPaymentReceipt, deleteDocument } = require('../config/cloudinary');
 const PaginationService = require('../services/PaginationService');
 const { validatePaginationParams, generatePaginationMeta } = PaginationService;
+const PermissionService = require('../services/PermissionService');
 const fs = require('fs').promises;
 
 /**
@@ -20,6 +21,19 @@ class BusinessExpenseController {
   static async getCategories(req, res) {
     try {
       const businessId = req.tenancy.businessId || req.user.businessId;
+
+      // Verificar permiso
+      const hasPermission = await PermissionService.hasPermission(
+        req.user.id,
+        businessId,
+        'expenses.view'
+      );
+      if (!hasPermission) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para ver categorías de gastos'
+        });
+      }
 
       const categories = await BusinessExpenseCategory.findAll({
         where: { businessId, isActive: true },
@@ -65,6 +79,20 @@ class BusinessExpenseController {
   static async createCategory(req, res) {
     try {
       const businessId = req.tenancy.businessId || req.user.businessId;
+
+      // Verificar permiso
+      const hasPermission = await PermissionService.hasPermission(
+        req.user.id,
+        businessId,
+        'expenses.categories'
+      );
+      if (!hasPermission) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para crear categorías de gastos'
+        });
+      }
+
       const {
         name,
         description,
@@ -217,6 +245,20 @@ class BusinessExpenseController {
   static async getExpenses(req, res) {
     try {
       const businessId = req.tenancy.businessId || req.user.businessId;
+
+      // Verificar permiso
+      const hasPermission = await PermissionService.hasPermission(
+        req.user.id,
+        businessId,
+        'expenses.view'
+      );
+      if (!hasPermission) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para ver gastos'
+        });
+      }
+
       const {
         categoryId,
         status,
@@ -305,6 +347,20 @@ class BusinessExpenseController {
       console.log('📝 [createExpense] req.file:', req.file);
       
       const businessId = req.tenancy.businessId || req.user.businessId;
+
+      // Verificar permiso
+      const hasPermission = await PermissionService.hasPermission(
+        req.user.id,
+        businessId,
+        'expenses.create'
+      );
+      if (!hasPermission) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para crear gastos'
+        });
+      }
+
       const {
         categoryId,
         description,
@@ -521,6 +577,19 @@ class BusinessExpenseController {
       const { id } = req.params;
       const businessId = req.tenancy.businessId || req.user.businessId;
 
+      // Verificar permiso
+      const hasPermission = await PermissionService.hasPermission(
+        req.user.id,
+        businessId,
+        'expenses.edit'
+      );
+      if (!hasPermission) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para editar gastos'
+        });
+      }
+
       const expense = await BusinessExpense.findOne({
         where: { id, businessId, isActive: true }
       });
@@ -613,6 +682,19 @@ class BusinessExpenseController {
       const { id } = req.params;
       const businessId = req.tenancy.businessId || req.user.businessId;
 
+      // Verificar permiso
+      const hasPermission = await PermissionService.hasPermission(
+        req.user.id,
+        businessId,
+        'expenses.delete'
+      );
+      if (!hasPermission) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para eliminar gastos'
+        });
+      }
+
       const expense = await BusinessExpense.findOne({
         where: { id, businessId, isActive: true }
       });
@@ -669,6 +751,20 @@ class BusinessExpenseController {
     try {
       const { id } = req.params;
       const businessId = req.tenancy.businessId || req.user.businessId;
+
+      // Verificar permiso
+      const hasPermission = await PermissionService.hasPermission(
+        req.user.id,
+        businessId,
+        'expenses.approve'
+      );
+      if (!hasPermission) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para aprobar gastos'
+        });
+      }
+
       const { notes } = req.body;
 
       const expense = await BusinessExpense.findOne({

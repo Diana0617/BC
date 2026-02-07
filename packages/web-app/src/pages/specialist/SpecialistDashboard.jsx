@@ -17,7 +17,8 @@ import {
   ChartBarIcon,
   DocumentTextIcon,
   UserGroupIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  ReceiptPercentIcon
 } from '@heroicons/react/24/outline';
 import { format, addDays, subDays, startOfWeek, endOfWeek, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -60,6 +61,7 @@ export default function SpecialistDashboard() {
     clients: clientsPerms,
     commissions: commissionsPerms,
     consents: consentsPerms,
+    expenses: expensesPerms,
     hasPermission
   } = useUserPermissions();
   
@@ -726,6 +728,23 @@ export default function SpecialistDashboard() {
               <p className="text-xs text-gray-500">{clientsPerms.edit ? 'Gestionar' : 'Ver lista'}</p>
             </button>
           )}
+
+          {/* Gastos - Solo si tiene permiso otorgado por BUSINESS */}
+          {expensesPerms?.view && (
+            <button
+              onClick={() => navigate('/business/profile?tab=movements&section=expenses')}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all text-left"
+            >
+              <ReceiptPercentIcon className="w-6 h-6 text-orange-600 mb-2" />
+              <p className="text-sm font-semibold text-gray-900">Gastos</p>
+              <p className="text-xs text-gray-500">{expensesPerms.create ? 'Registrar gastos' : 'Ver gastos'}</p>
+            </button>
+          )}
+
+          {/* 
+            ⚠️ NOTA: Permisos de gastos deben ser otorgados por BUSINESS
+            Ver: packages/backend/scripts/seed-expenses-permissions.js
+          */}
         </div>
 
         {/* Mensaje informativo para especialistas con permisos básicos */}

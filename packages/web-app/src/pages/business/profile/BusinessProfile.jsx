@@ -119,12 +119,17 @@ const BusinessProfile = () => {
   console.log('📊 Subscriptions:', business?.subscriptions)
   console.log('⚙️  BusinessConfiguration:', { loading, saving, error, setupProgress, completedSteps, isSetupMode })
 
-  // Detectar si venimos del setup inicial
+  // Detectar si venimos del setup inicial o navegación directa a una sección
   useEffect(() => {
     const setupParam = searchParams.get('setup')
+    const tabParam = searchParams.get('tab')
+    
     if (setupParam === 'true') {
       dispatch(setSetupMode(true))
       setActiveSection('basic-info') // Empezar con datos básicos en setup
+    } else if (tabParam) {
+      // Permitir navegar directamente a una sección específica (ej: ?tab=movements)
+      setActiveSection(tabParam)
     }
   }, [searchParams, dispatch])
 

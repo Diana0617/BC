@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useSearchParams } from 'react-router-dom'
+import useUserPermissions from '../../../../hooks/useUserPermissions'
 import {
   fetchFinancialMovements,
   fetchTodayAppointmentsSummary,
@@ -58,6 +60,10 @@ import { exportMovementsToExcel, exportPaymentMethodBalanceToExcel } from '../..
 const MovementsSection = () => {
   const dispatch = useDispatch()
   const { currentBusiness } = useSelector(state => state.business)
+  const [searchParams] = useSearchParams()
+  
+  // Permisos del usuario
+  const { expenses: expensesPerms, loading: permissionsLoading } = useUserPermissions()
   
   // Redux state
   const movements = useSelector(selectMovements)
@@ -83,6 +89,15 @@ const MovementsSection = () => {
 
   // Local state
   const [activeTab, setActiveTab] = useState('financial') // 'financial', 'appointments', 'expenses', 'commissions'
+
+  // Leer parámetro de URL para establecer pestaña activa al cargar
+  useEffect(() => {
+    const sectionParam = searchParams.get('section')
+    if (sectionParam && ['financial', 'appointments', 'expenses', 'commissions'].includes(sectionParam)) {
+      setActiveTab(sectionParam)
+    }
+  }, [searchParams])
+
   const [dateRange, setDateRange] = useState({
     startDate: format(new Date(), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd')
@@ -337,17 +352,19 @@ const MovementsSection = () => {
             <CalendarDaysIcon className="h-5 w-5 inline-block mr-2" />
             Turnos del Día
           </button>
-          <button
-            onClick={() => setActiveTab('expenses')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
-              activeTab === 'expenses'
-                ? 'border-pink-500 text-pink-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <ReceiptPercentIcon className="h-5 w-5 inline-block mr-2" />
-            Gastos del Negocio
-          </button>
+          {expensesPerms?.view && (
+            <button
+              onClick={() => setActiveTab('expenses')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+                activeTab === 'expenses'
+                  ? 'border-pink-500 text-pink-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <ReceiptPercentIcon className="h-5 w-5 inline-block mr-2" />
+              Gastos del Negocio
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('commissions')}
             className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
@@ -427,7 +444,7 @@ const MovementsSection = () => {
         />
       )}
 
-      {activeTab === 'expenses' && (
+      {activeTab === 'expenses' && expensesPerms?.view && (
         <ExpensesTab
           expenses={expenses}
           categories={expenseCategories}
@@ -439,6 +456,7 @@ const MovementsSection = () => {
           onMarkAsPaid={handleMarkAsPaid}
           filters={expenseFilters}
           onFilterChange={setExpenseFilters}
+          permissions={expensesPerms}
         />
       )}
 
