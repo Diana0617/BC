@@ -21,7 +21,6 @@ import { ReceiptPercentIcon } from '@heroicons/react/24/outline'
 const ExpensesPage = () => {
   const dispatch = useDispatch()
   const { currentBusiness } = useSelector(state => state.business)
-  const { user } = useSelector(state => state.auth)
 
   // Permisos del usuario
   const { expenses: expensesPerms, loading: permissionsLoading } = useUserPermissions()

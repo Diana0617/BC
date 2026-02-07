@@ -116,13 +116,15 @@ const ClientDetailModal = ({ isOpen, onClose, client, onEdit }) => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={onEdit}
-                  className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                  title="Editar cliente"
-                >
-                  <PencilIcon className="w-5 h-5" />
-                </button>
+                {onEdit && (
+                  <button
+                    onClick={onEdit}
+                    className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    title="Editar cliente"
+                  >
+                    <PencilIcon className="w-5 h-5" />
+                  </button>
+                )}
                 <button
                   onClick={onClose}
                   className="p-2 text-gray-400 hover:text-gray-600 transition-colors"

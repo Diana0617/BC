@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
+import { Navigate } from 'react-router-dom'
 import {
   UserGroupIcon,
   MagnifyingGlassIcon,
@@ -16,10 +17,12 @@ import { apiClient } from '@shared/api/client'
 import CreateEditClientModal from './components/CreateEditClientModal'
 import ClientDetailModal from './components/ClientDetailModal'
 import { formatInTimezone } from '../../utils/timezone'
+import useUserPermissions from '../../hooks/useUserPermissions'
 
 const ClientsPage = () => {
   const { currentBusiness } = useSelector(state => state.business)
   const timezone = currentBusiness?.timezone || 'America/Bogota'
+  const { clients: clientsPerms, loading: permissionsLoading } = useUserPermissions()
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -42,6 +45,7 @@ const ClientsPage = () => {
     if (currentBusiness?.id) {
       loadClients()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentBusiness, page, statusFilter])
 
   useEffect(() => {
@@ -55,6 +59,7 @@ const ClientsPage = () => {
     }, 500)
 
     return () => clearTimeout(timer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm])
 
   const loadClients = async () => {
@@ -152,6 +157,19 @@ const ClientsPage = () => {
     return age
   }
 
+  // Validar permisos
+  if (permissionsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
+      </div>
+    )
+  }
+
+  if (!clientsPerms?.view) {
+    return <Navigate to="/" replace />
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -166,13 +184,15 @@ const ClientsPage = () => {
               {totalClients} cliente{totalClients !== 1 ? 's' : ''} registrado{totalClients !== 1 ? 's' : ''}
             </p>
           </div>
-          <button
-            onClick={handleCreateClient}
-            className="inline-flex items-center px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-medium rounded-lg transition-colors shadow-sm"
-          >
-            <PlusIcon className="w-5 h-5 mr-2" />
-            Nuevo Cliente
-          </button>
+          {clientsPerms?.create && (
+            <button
+              onClick={handleCreateClient}
+              className="inline-flex items-center px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-medium rounded-lg transition-colors shadow-sm"
+            >
+              <PlusIcon className="w-5 h-5 mr-2" />
+              Nuevo Cliente
+            </button>
+          )}
         </div>
 
         {/* Filters and Search */}
@@ -250,15 +270,17 @@ const ClientsPage = () => {
               <p className="mt-1 text-sm text-gray-500">
                 {searchTerm ? 'No se encontraron resultados' : 'Comienza agregando tu primer cliente'}
               </p>
-              <div className="mt-6">
-                <button
-                  onClick={handleCreateClient}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-pink-600 hover:bg-pink-700"
-                >
-                  <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-                  Nuevo Cliente
-                </button>
-              </div>
+              {clientsPerms?.create && (
+                <div className="mt-6">
+                  <button
+                    onClick={handleCreateClient}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-pink-600 hover:bg-pink-700"
+                  >
+                    <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
+                    Nuevo Cliente
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -348,13 +370,15 @@ const ClientsPage = () => {
                           >
                             <EyeIcon className="w-5 h-5" />
                           </button>
-                          <button
-                            onClick={() => handleEditClient(client)}
-                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50 transition-colors"
-                            title="Editar"
-                          >
-                            <PencilIcon className="w-5 h-5" />
-                          </button>
+                          {clientsPerms?.edit && (
+                            <button
+                              onClick={() => handleEditClient(client)}
+                              className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50 transition-colors"
+                              title="Editar"
+                            >
+                              <PencilIcon className="w-5 h-5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -441,10 +465,10 @@ const ClientsPage = () => {
             setSelectedClient(null)
           }}
           client={selectedClient}
-          onEdit={() => {
+          onEdit={clientsPerms?.edit ? () => {
             setShowDetailModal(false)
             handleEditClient(selectedClient)
-          }}
+          } : undefined}
         />
       )}
     </div>
