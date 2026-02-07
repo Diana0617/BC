@@ -732,7 +732,7 @@ export default function SpecialistDashboard() {
           {/* Gastos - Solo si tiene permiso otorgado por BUSINESS */}
           {expensesPerms?.view && (
             <button
-              onClick={() => navigate('/business/profile?tab=movements&section=expenses')}
+              onClick={() => navigate('/expenses')}
               className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all text-left"
             >
               <ReceiptPercentIcon className="w-6 h-6 text-orange-600 mb-2" />

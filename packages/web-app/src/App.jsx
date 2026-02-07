@@ -48,6 +48,7 @@ import BusinessOwnerDashboard from './pages/dashboard/BusinessOwnerDashboard.jsx
 import ConsentTemplatesPage from './pages/ConsentTemplatesPage.jsx'
 import InventoryDashboard from './pages/business/inventory/InventoryDashboard.jsx'
 import ClientsPage from './pages/clients/ClientsPage.jsx'
+import ExpensesPage from './pages/expenses/ExpensesPage.jsx'
 
 // Specialist Pages
 import SpecialistDashboard from './pages/specialist/SpecialistDashboard.jsx'
@@ -472,7 +473,7 @@ function AppLayout() {
           <Route 
             path="/business/profile" 
             element={
-              isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST'].includes(user?.role)
+              isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST'].includes(user?.role)
                 ? <BusinessProfile /> 
                 : <Navigate to="/" replace />
             } 
@@ -507,6 +508,12 @@ function AppLayout() {
               isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST'].includes(user?.role)
                 ? <ClientsPage /> 
                 : <Navigate to="/" replace />
+            } 
+          />
+          <Route 
+            path="/expenses" 
+            element={
+              isAuthenticated ? <ExpensesPage /> : <Navigate to="/" replace />
             } 
           />
           
