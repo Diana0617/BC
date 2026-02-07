@@ -688,11 +688,14 @@ const BusinessProfile = () => {
     // Renderizar componente específico si existe
     if (section.component) {
       const Component = section.component
+      // Leer parámetro section de URL (ej: ?section=expenses)
+      const sectionParam = searchParams.get('section')
       return (
         <Component
           isSetupMode={isSetupMode}
           onComplete={() => completeStep(section.setupStep)}
           isCompleted={section.setupStep ? isStepCompleted(section.setupStep) : false}
+          initialSection={sectionParam}
         />
       )
     }

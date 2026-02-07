@@ -472,7 +472,7 @@ function AppLayout() {
           <Route 
             path="/business/profile" 
             element={
-              isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST'].includes(user?.role)
+              isAuthenticated && ['BUSINESS', 'BUSINESS_SPECIALIST', 'RECEPTIONIST', 'RECEPTIONIST_SPECIALIST', 'SPECIALIST'].includes(user?.role)
                 ? <BusinessProfile /> 
                 : <Navigate to="/" replace />
             } 
