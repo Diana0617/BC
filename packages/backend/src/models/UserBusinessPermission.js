@@ -76,6 +76,7 @@ const UserBusinessPermission = sequelize.define('UserBusinessPermission', {
 }, {
   tableName: 'user_business_permissions',
   timestamps: true,
+  underscored: true,
   indexes: [
     {
       fields: ['userId', 'businessId', 'permissionId'],
