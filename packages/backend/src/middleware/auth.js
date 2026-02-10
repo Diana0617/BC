@@ -121,17 +121,17 @@ const authenticateToken = async (req, res, next) => {
       const isBusinessProfileEndpoint = (fullPath.includes('/api/business') || req.path === '/') && req.method === 'GET';
       const isAllowedEndpoint = isRenewalEndpoint || isBusinessProfileEndpoint;
       
-      console.log('🔍 Verificando renovación:', {
-        path: req.path,
-        originalUrl: req.originalUrl,
-        fullPath,
-        method: req.method,
-        isRenewalEndpoint,
-        isBusinessProfileEndpoint,
-        isAllowedEndpoint,
-        trialStatus: business.status,
-        trialEnd: business.trialEndDate
-      });
+      // console.log('🔍 Verificando renovación:', {
+      //   path: req.path,
+      //   originalUrl: req.originalUrl,
+      //   fullPath,
+      //   method: req.method,
+      //   isRenewalEndpoint,
+      //   isBusinessProfileEndpoint,
+      //   isAllowedEndpoint,
+      //   trialStatus: business.status,
+      //   trialEnd: business.trialEndDate
+      // });
       
       if (business.status === 'TRIAL' && business.trialEndDate && !isAllowedEndpoint) {
         const now = new Date();
@@ -157,9 +157,9 @@ const authenticateToken = async (req, res, next) => {
       console.log('🏢 Auth Middleware - Branches cargadas:', branches.length);
     }
 
-    console.log('🔐 Auth Middleware - Datos del usuario:');
-    console.log('  business:', user.business?.toJSON());
-    console.log('  branches:', branches.length > 0 ? branches.map(b => b.toJSON()) : 'Sin sucursales');
+    // console.log('🔐 Auth Middleware - Datos del usuario:');
+    // console.log('  business:', user.business?.toJSON());
+    // console.log('  branches:', branches.length > 0 ? branches.map(b => b.toJSON()) : 'Sin sucursales');
 
     req.user = {
       id: user.id,
@@ -374,7 +374,7 @@ const requireSpecialistOrReceptionist = async (req, res, next) => {
             
             if (specialistProfile) {
               req.user.specialistProfile = specialistProfile;
-              console.log('✅ SpecialistProfile cargado:', specialistProfile.id);
+              // console.log('✅ SpecialistProfile cargado:', specialistProfile.id);
             }
           }
           
@@ -382,7 +382,7 @@ const requireSpecialistOrReceptionist = async (req, res, next) => {
           if (req.user.specialistProfile && req.user.specialistProfile.id) {
             req.body.specialistId = req.user.specialistProfile.id;
             req.params.specialistId = req.user.specialistProfile.id;
-            console.log('✅ specialistId establecido a:', req.body.specialistId);
+            // console.log('✅ specialistId establecido a:', req.body.specialistId);
           } else {
             console.warn('⚠️ No se encontró SpecialistProfile para userId:', req.user.id);
           }
@@ -450,4 +450,4 @@ module.exports = {
   requireSpecialist, 
   requireReceptionist, 
   requireSpecialistOrReceptionist 
-};console.log('SIMPLE TEST LOG');
+};
