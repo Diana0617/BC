@@ -55,11 +55,13 @@ const SupplierInvoice = sequelize.define('SupplierInvoice', {
     ),
     allowNull: false,
     defaultValue: 'PENDING_RECEIPT',
+    field: 'receipt_status',
     comment: 'Estado de recepción de mercancía'
   },
   branchId: {
     type: DataTypes.UUID,
     allowNull: true,
+    field: 'branch_id',
     references: {
       model: 'branches',
       key: 'id'
@@ -69,11 +71,13 @@ const SupplierInvoice = sequelize.define('SupplierInvoice', {
   receivedAt: {
     type: DataTypes.DATE,
     allowNull: true,
+    field: 'received_at',
     comment: 'Fecha de recepción completa de mercancía'
   },
   receivedBy: {
     type: DataTypes.UUID,
     allowNull: true,
+    field: 'received_by',
     references: {
       model: 'users',
       key: 'id'
