@@ -18,7 +18,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { createSale, clearCreateSuccess, clearSalesError } from '@shared/store/slices/salesSlice';
 import { fetchProducts } from '@shared/store/slices/productsSlice';
-import { searchClients, getClientVouchers, getClientBalance } from '@shared';
+import { searchClients, getClientVouchers, getClientBalance, createClient } from '@shared';
 import branchApi from '../../api/branchApi';
 
 /**
@@ -50,6 +50,13 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [isNewClient, setIsNewClient] = useState(false);
+  const [newClientData, setNewClientData] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: ''
+  });
   
   // Loyalty Points
   const [clientBalance, setClientBalance] = useState(null);
@@ -264,6 +271,13 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
     setClientSearch('');
     setClients([]);
     setSelectedClient(null);
+    setIsNewClient(false);
+    setNewClientData({
+      firstName: '',
+      lastName: '',
+      phone: '',
+      email: ''
+    });
     setClientBalance(null);
     setClientVouchers([]);
     setPointsToUse(0);
@@ -283,8 +297,43 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
   // Seleccionar cliente
   const handleSelectClient = (client) => {
     setSelectedClient(client);
-    setClientSearch(client.name);
+    setClientSearch(`${client.firstName} ${client.lastName}`);
     setShowClientDropdown(false);
+    setIsNewClient(false);
+  };
+
+  // Crear nuevo cliente
+  const handleCreateNewClient = () => {
+    setIsNewClient(true);
+    setSelectedClient(null);
+    setClientSearch('');
+    setClients([]);
+    setShowClientDropdown(false);
+    setNewClientData({
+      firstName: clientSearch,
+      lastName: '',
+      phone: '',
+      email: ''
+    });
+  };
+
+  // Limpiar búsqueda de cliente
+  const clearClientSearch = () => {
+    setClientSearch('');
+    setSelectedClient(null);
+    setIsNewClient(false);
+    setClients([]);
+    setShowClientDropdown(false);
+    setNewClientData({
+      firstName: '',
+      lastName: '',
+      phone: '',
+      email: ''
+    });
+    setClientBalance(null);
+    setClientVouchers([]);
+    setPointsToUse(0);
+    setSelectedVoucher(null);
   };
 
   // Agregar producto al carrito
@@ -486,9 +535,32 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
       return;
     }
 
+    // Crear cliente nuevo si es necesario
+    let clientId = selectedClient?.id || null;
+    if (isNewClient) {
+      if (!newClientData.firstName || !newClientData.phone) {
+        toast.error('Debe ingresar nombre y teléfono del cliente');
+        setIsSubmitting(false);
+        return;
+      }
+
+      try {
+        console.log('👤 Creando nuevo cliente:', newClientData);
+        const createClientResponse = await createClient(businessId, newClientData);
+        clientId = createClientResponse.data?.id;
+        console.log('✅ Cliente creado con ID:', clientId);
+        toast.success(`Cliente ${newClientData.firstName} creado exitosamente`);
+      } catch (createClientError) {
+        console.error('❌ Error creando cliente:', createClientError);
+        toast.error('Error al crear el cliente. Intente nuevamente.');
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     const saleData = {
       branchId: selectedBranch?.id || null,
-      clientId: selectedClient?.id || null,
+      clientId: clientId,
       shiftId: shiftId || null,
       items: items.map(item => ({
         productId: item.productId,
@@ -783,43 +855,105 @@ const CreateSaleModal = ({ isOpen, onClose, shiftId = null, branchId: initialBra
                 <UserIcon className="inline h-4 w-4 mr-1" />
                 Cliente (Opcional)
               </label>
-              <input
-                type="text"
-                placeholder="Buscar cliente..."
-                value={clientSearch}
-                onChange={(e) => {
-                  setClientSearch(e.target.value);
-                  setShowClientDropdown(true);
-                }}
-                onFocus={() => setShowClientDropdown(true)}
-                className="w-full px-3 py-2 border rounded-lg"
-              />
               
-              {showClientDropdown && clients.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {clients.map(client => (
-                    <div
-                      key={client.id}
-                      onClick={() => handleSelectClient(client)}
-                      className="p-2 hover:bg-gray-50 cursor-pointer"
-                    >
-                      <p className="font-medium">{client.name}</p>
-                      <p className="text-sm text-gray-500">{client.email} - {client.phone}</p>
+              {!isNewClient && !selectedClient && (
+                <>
+                  <input
+                    type="text"
+                    placeholder="Buscar cliente..."
+                    value={clientSearch}
+                    onChange={(e) => {
+                      setClientSearch(e.target.value);
+                      setShowClientDropdown(true);
+                    }}
+                    onFocus={() => setShowClientDropdown(true)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                  
+                  {showClientDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {clients.length > 0 ? (
+                        clients.map(client => (
+                          <div
+                            key={client.id}
+                            onClick={() => handleSelectClient(client)}
+                            className="p-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                          >
+                            <p className="font-medium">{client.firstName} {client.lastName}</p>
+                            <p className="text-sm text-gray-500">{client.email} - {client.phone}</p>
+                          </div>
+                        ))
+                      ) : clientSearch.length >= 2 ? (
+                        <div className="p-3">
+                          <p className="text-sm text-gray-500 mb-2">No se encontraron clientes</p>
+                          <button
+                            type="button"
+                            onClick={handleCreateNewClient}
+                            className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                          >
+                            <PlusIcon className="inline h-4 w-4 mr-1" />
+                            Crear nuevo cliente
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
-                  ))}
+                  )}
+                </>
+              )}
+
+              {isNewClient && (
+                <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-blue-900 mb-2">Nuevo Cliente</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Nombre *"
+                      value={newClientData.firstName}
+                      onChange={(e) => setNewClientData({ ...newClientData, firstName: e.target.value })}
+                      className="px-3 py-2 border rounded-lg text-sm"
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="Apellido"
+                      value={newClientData.lastName}
+                      onChange={(e) => setNewClientData({ ...newClientData, lastName: e.target.value })}
+                      className="px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                  <input
+                    type="tel"
+                    placeholder="Teléfono *"
+                    value={newClientData.phone}
+                    onChange={(e) => setNewClientData({ ...newClientData, phone: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                    required
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email (opcional)"
+                    value={newClientData.email}
+                    onChange={(e) => setNewClientData({ ...newClientData, email: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearClientSearch}
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    Cancelar y buscar otro cliente
+                  </button>
                 </div>
               )}
 
               {selectedClient && (
-                <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
-                  <p className="font-medium text-blue-900">{selectedClient.name}</p>
+                <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <p className="font-medium text-green-900">{selectedClient.firstName} {selectedClient.lastName}</p>
+                  <p className="text-sm text-green-700">{selectedClient.phone}</p>
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedClient(null);
-                      setClientSearch('');
-                    }}
-                    className="text-xs text-blue-600 hover:text-blue-800"
+                    onClick={clearClientSearch}
+                    className="text-xs text-green-600 hover:text-green-800 mt-1"
                   >
                     Cambiar cliente
                   </button>
