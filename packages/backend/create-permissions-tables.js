@@ -154,17 +154,49 @@ async function seedDefaultRolePermissions() {
     { role: 'OWNER', permissionKey: 'settings.business' },
     { role: 'OWNER', permissionKey: 'settings.subscription' },
 
-    // BUSINESS - Similar a OWNER pero sin gestionar suscripción
+    // BUSINESS - Dueño del tenant, todos los permisos del negocio (excepto subscription que es de OWNER plataforma)
+    // Appointments - Control completo
+    { role: 'BUSINESS', permissionKey: 'appointments.view' },
+    { role: 'BUSINESS', permissionKey: 'appointments.create' },
+    { role: 'BUSINESS', permissionKey: 'appointments.edit' },
+    { role: 'BUSINESS', permissionKey: 'appointments.delete' },
     { role: 'BUSINESS', permissionKey: 'appointments.manage_all' },
+    // Clients - Control completo
     { role: 'BUSINESS', permissionKey: 'clients.view' },
     { role: 'BUSINESS', permissionKey: 'clients.create' },
     { role: 'BUSINESS', permissionKey: 'clients.edit' },
+    { role: 'BUSINESS', permissionKey: 'clients.delete' },
+    { role: 'BUSINESS', permissionKey: 'clients.view_history' },
+    // Payments - Control completo
     { role: 'BUSINESS', permissionKey: 'payments.view' },
     { role: 'BUSINESS', permissionKey: 'payments.create' },
+    { role: 'BUSINESS', permissionKey: 'payments.refund' },
     { role: 'BUSINESS', permissionKey: 'payments.reports' },
+    // Services - Control completo
     { role: 'BUSINESS', permissionKey: 'services.view' },
+    { role: 'BUSINESS', permissionKey: 'services.create' },
+    { role: 'BUSINESS', permissionKey: 'services.edit' },
+    { role: 'BUSINESS', permissionKey: 'services.delete' },
+    // Inventory - Control completo
+    { role: 'BUSINESS', permissionKey: 'inventory.view' },
+    { role: 'BUSINESS', permissionKey: 'inventory.create' },
+    { role: 'BUSINESS', permissionKey: 'inventory.edit' },
+    { role: 'BUSINESS', permissionKey: 'inventory.delete' },
+    { role: 'BUSINESS', permissionKey: 'inventory.movements' },
+    // Staff - Control completo
     { role: 'BUSINESS', permissionKey: 'staff.view' },
+    { role: 'BUSINESS', permissionKey: 'staff.create' },
+    { role: 'BUSINESS', permissionKey: 'staff.edit' },
+    { role: 'BUSINESS', permissionKey: 'staff.delete' },
+    { role: 'BUSINESS', permissionKey: 'staff.permissions' },
+    // Reports - Control completo
     { role: 'BUSINESS', permissionKey: 'reports.view' },
+    { role: 'BUSINESS', permissionKey: 'reports.export' },
+    { role: 'BUSINESS', permissionKey: 'reports.financial' },
+    // Settings - Control del negocio (NO subscription)
+    { role: 'BUSINESS', permissionKey: 'settings.view' },
+    { role: 'BUSINESS', permissionKey: 'settings.edit' },
+    { role: 'BUSINESS', permissionKey: 'settings.business' },
 
     // SPECIALIST - Solo sus propias citas y clientes
     { role: 'SPECIALIST', permissionKey: 'appointments.view' },

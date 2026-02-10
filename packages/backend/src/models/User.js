@@ -48,9 +48,10 @@ const User = sequelize.define('User', {
     }
   },
   role: {
-    type: DataTypes.ENUM('OWNER', 'BUSINESS', 'SPECIALIST', 'RECEPTIONIST', 'CLIENT', 'RECEPTIONIST_SPECIALIST', ' '),
+    type: DataTypes.ENUM('OWNER', 'BUSINESS', 'SPECIALIST', 'RECEPTIONIST', 'CLIENT', 'RECEPTIONIST_SPECIALIST'),
     allowNull: false,
-    defaultValue: 'CLIENT'
+    defaultValue: 'CLIENT',
+    comment: 'OWNER: Dueño plataforma | BUSINESS: Dueño del tenant | Resto: Staff del negocio'
   },
   status: {
     type: DataTypes.ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED'),

@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
-  PlusIcon,
+  Plus Icon,
   FunnelIcon,
   DocumentArrowDownIcon,
   CheckCircleIcon,
   ClockIcon,
-  XCircleIcon
+  XCircleIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { selectUserBranches, selectUserHasMultipleBranches } from '@shared';
 
 const ExpensesTab = ({
   expenses = [],
@@ -25,6 +28,8 @@ const ExpensesTab = ({
   permissions = {} // Permisos del usuario
 }) => {
   const [showFilters, setShowFilters] = useState(false);
+  const userBranches = useSelector(selectUserBranches);
+  const hasMultipleBranches = useSelector(selectUserHasMultipleBranches);
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -120,6 +125,28 @@ const ExpensesTab = ({
                 ))}
               </select>
             </div>
+            
+            {/* Filtro de sucursal (solo si hay múltiples) */}
+            {hasMultipleBranches && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <BuildingOfficeIcon className="w-4 h-4 inline-block mr-1" />
+                  Sucursal
+                </label>
+                <select
+                  value={filters?.branchId || ''}
+                  onChange={(e) => onFilterChange({ ...filters, branchId: e.target.value })}
+                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500"
+                >
+                  <option value="">Todas</option>
+                  <option value="general">General</option>
+                  {userBranches.map(branch => (
+                    <option key={branch.id} value={branch.id}>{branch.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
               <select

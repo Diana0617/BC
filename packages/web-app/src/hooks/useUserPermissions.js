@@ -56,12 +56,22 @@ export const useUserPermissions = () => {
 
   // Crear Set de permisos activos para búsqueda rápida
   const activePermissions = useMemo(() => {
-    if (!permissionsData?.permissions) return new Set();
+    // BUSINESS siempre tiene acceso completo (es el dueño del tenant)
+    const userRole = permissionsData?.user?.role || user?.role;
+    const isBusiness = userRole === 'BUSINESS';
+    
+    if (!permissionsData?.permissions) {
+      // Si no hay datos de permisos pero es BUSINESS, retornar Set vacío
+      // (el hasPermission lo manejará abajo)
+      return new Set();
+    }
     
     const granted = permissionsData.permissions.filter(p => p.isGranted);
     const keys = granted.map(p => p.key || p.permission?.key);
     
     console.log('🔍 [useUserPermissions] Permisos activos:', {
+      role: userRole,
+      isBusiness,
       total: granted.length,
       keys: keys,
       hasPaymentsCreate: keys.includes('payments.create'),
@@ -69,25 +79,46 @@ export const useUserPermissions = () => {
     });
     
     return new Set(keys.filter(k => k)); // Filtrar nulls/undefined
-  }, [permissionsData]);
+  }, [permissionsData, user]);
 
   // Función para verificar un permiso específico
   const hasPermission = useCallback((permissionKey) => {
     if (!permissionKey) return false;
+    
+    // BUSINESS siempre tiene todos los permisos (es el dueño del tenant)
+    const userRole = permissionsData?.user?.role || user?.role;
+    if (userRole === 'BUSINESS') {
+      return true;
+    }
+    
     return activePermissions.has(permissionKey);
-  }, [activePermissions]);
+  }, [activePermissions, permissionsData, user]);
 
   // Función para verificar si tiene alguno de los permisos
   const hasAnyPermission = useCallback((permissionKeys) => {
     if (!Array.isArray(permissionKeys)) return false;
+    
+    // BUSINESS siempre tiene todos los permisos
+    const userRole = permissionsData?.user?.role || user?.role;
+    if (userRole === 'BUSINESS') {
+      return true;
+    }
+    
     return permissionKeys.some(key => activePermissions.has(key));
-  }, [activePermissions]);
+  }, [activePermissions, permissionsData, user]);
 
   // Función para verificar si tiene todos los permisos
   const hasAllPermissions = useCallback((permissionKeys) => {
     if (!Array.isArray(permissionKeys)) return false;
+    
+    // BUSINESS siempre tiene todos los permisos
+    const userRole = permissionsData?.user?.role || user?.role;
+    if (userRole === 'BUSINESS') {
+      return true;
+    }
+    
     return permissionKeys.every(key => activePermissions.has(key));
-  }, [activePermissions]);
+  }, [activePermissions, permissionsData, user]);
 
   // Obtener permisos por categoría
   const getPermissionsByCategory = useCallback((category) => {
@@ -131,6 +162,9 @@ export const useUserPermissions = () => {
   // Log de depuración
   console.log('📊 [useUserPermissions] Estructura final:', {
     loading,
+    userRole: permissionsData?.user?.role || user?.role,
+    isBusinessOwner: (permissionsData?.user?.role || user?.role) === 'BUSINESS',
+    hasAutomaticFullAccess: (permissionsData?.user?.role || user?.role) === 'BUSINESS',
     activePermissionsCount: activePermissions.size,
     activePermissionsList: Array.from(activePermissions),
     paymentsObject: {

@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { BusinessExpense, BusinessExpenseCategory, FinancialMovement, User, Business } = require('../models');
+const { BusinessExpense, BusinessExpenseCategory, FinancialMovement, User, Business, Branch } = require('../models');
 const { uploadPaymentReceipt, deleteDocument } = require('../config/cloudinary');
 const PaginationService = require('../services/PaginationService');
 const { validatePaginationParams, generatePaginationMeta } = PaginationService;
@@ -261,6 +261,7 @@ class BusinessExpenseController {
 
       const {
         categoryId,
+        branchId,
         status,
         vendor,
         startDate,
@@ -275,6 +276,7 @@ class BusinessExpenseController {
       const where = { businessId, isActive: true };
 
       if (categoryId) where.categoryId = categoryId;
+      if (branchId) where.branchId = branchId; // 🆕 Filtro por sucursal
       if (status) where.status = status;
       if (vendor) where.vendor = { [Op.iLike]: `%${vendor}%` };
       if (isRecurring !== undefined) where.isRecurring = isRecurring === 'true';
@@ -294,6 +296,12 @@ class BusinessExpenseController {
             model: BusinessExpenseCategory,
             as: 'category',
             attributes: ['id', 'name', 'color', 'icon', 'requiresReceipt']
+          },
+          {
+            model: Branch,
+            as: 'branch',
+            attributes: ['id', 'name', 'code'],
+            required: false
           },
           {
             model: User,

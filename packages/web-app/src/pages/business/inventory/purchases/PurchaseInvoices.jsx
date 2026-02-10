@@ -10,13 +10,15 @@ import {
   EyeIcon,
   FilterIcon,
   DollarSignIcon,
-  Share2Icon
+  Share2Icon,
+  PackageIcon
 } from 'lucide-react';
 import supplierInvoiceApi from '../../../../api/supplierInvoiceApi';
 import CreateInvoiceModal from './CreateInvoiceModal';
 import InvoiceDetailModal from './InvoiceDetailModal';
 import SupplierAccountSummary from './SupplierAccountSummary';
 import DistributeStockModal from './DistributeStockModal';
+import ReceiveGoodsModal from './ReceiveGoodsModal';
 import { formatInTimezone } from '../../../../utils/timezone';
 
 const PurchaseInvoices = () => {
@@ -28,6 +30,7 @@ const PurchaseInvoices = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDistributeModal, setShowDistributeModal] = useState(false);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showAccountSummary, setShowAccountSummary] = useState(false);
@@ -142,7 +145,35 @@ const PurchaseInvoices = () => {
     setSelectedInvoice(invoice);
     setShowDistributeModal(true);
   };
+const handleReceiveGoods = (invoice) => {
+    setSelectedInvoice(invoice);
+    setShowReceiveModal(true);
+  };
 
+  const handleGoodsReceived = () => {
+    setShowReceiveModal(false);
+    setSuccess('Mercancía recibida exitosamente');
+    loadInvoices();
+    setTimeout(() => setSuccess(null), 3000);
+  };
+
+  const getReceiptStatusBadge = (receiptStatus) => {
+    const statusConfig = {
+      PENDING_RECEIPT: { color: 'bg-orange-100 text-orange-800', icon: ClockIcon, label: 'Pendiente Recibo' },
+      PARTIALLY_RECEIVED: { color: 'bg-blue-100 text-blue-800', icon: PackageIcon, label: 'Recepción Parcial' },
+      FULLY_RECEIVED: { color: 'bg-green-100 text-green-800', icon: CheckCircleIcon, label: 'Recibido' }
+    };
+
+    const config = statusConfig[receiptStatus] || statusConfig.PENDING_RECEIPT;
+    const Icon = config.icon;
+
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+        <Icon className="w-3 h-3" />
+        {config.label}
+      </span>
+    );
+  };
   
 
   const getStatusBadge = (status) => {
@@ -339,7 +370,10 @@ const PurchaseInvoices = () => {
                       Total
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Estado
+                      Estado Pago
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Recepción
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Acciones
@@ -395,6 +429,9 @@ const PurchaseInvoices = () => {
                         {getStatusBadge(invoice.status)}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
+                        {getReceiptStatusBadge(invoice.receiptStatus)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleViewInvoice(invoice)}
@@ -403,10 +440,19 @@ const PurchaseInvoices = () => {
                           >
                             <EyeIcon className="w-4 h-4" />
                           </button>
-                          {invoice.status === 'PENDING' && !invoice.metadata?.stockDistributed && (
+                          {(invoice.receiptStatus === 'PENDING_RECEIPT' || invoice.receiptStatus === 'PARTIALLY_RECEIVED') && (
+                            <button
+                              onClick={() => handleReceiveGoods(invoice)}
+                              className="p-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded"
+                              title="Recibir mercancía"
+                            >
+                              <PackageIcon className="w-4 h-4" />
+                            </button>
+                          )}
+                          {invoice.status === 'PENDING' && !invoice.metadata?.stockDistributed && invoice.receiptStatus === 'FULLY_RECEIVED' && (
                             <button
                               onClick={() => handleDistribute(invoice)}
-                              className="p-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded"
+                              className="p-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded"
                               title="Distribuir stock"
                             >
                               <Share2Icon className="w-4 h-4" />
@@ -504,6 +550,27 @@ const PurchaseInvoices = () => {
           onClose={() => {
             setShowDistributeModal(false);
             setSelectedInvoice(null);
+          }}
+          onSuccess={() => {
+            setShowDistributeModal(false);
+            setSelectedInvoice(null);
+            setSuccess('Stock distribuido exitosamente');
+            loadInvoices();
+            setTimeout(() => setSuccess(null), 3000);
+          }}
+        />
+      )}
+
+      {showReceiveModal && selectedInvoice && (
+        <ReceiveGoodsModal
+          invoice={selectedInvoice}
+          onClose={() => {
+            setShowReceiveModal(false);
+            setSelectedInvoice(null);
+          }}
+          onSuccess={handleGoodsReceived}
+        />
+      )}
           }}
           onDistributed={() => {
             setShowDistributeModal(false);

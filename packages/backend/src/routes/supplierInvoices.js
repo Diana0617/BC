@@ -52,6 +52,16 @@ router.post(
 );
 
 /**
+ * POST /api/business/:businessId/supplier-invoices/:invoiceId/receive-goods
+ * Recibir mercancía de una factura (total o parcial)
+ * Body: { itemsReceived: [{ productId, quantityReceived }] }
+ */
+router.post(
+  '/:invoiceId/receive-goods',
+  SupplierInvoiceController.receiveGoods
+);
+
+/**
  * POST /api/business/:businessId/supplier-invoices/:invoiceId/distribute-stock
  * Distribuir el stock de una factura pendiente entre sucursales
  * Body: { distribution: [{ branchId, items: [{ productId, quantity }] }] }

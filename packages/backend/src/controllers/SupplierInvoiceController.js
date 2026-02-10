@@ -170,7 +170,7 @@ class SupplierInvoiceController {
         invoiceNumber,
         issueDate,
         dueDate,
-        items, // [{ productId, productData, quantity, unitCost, total }]
+        items, // [{ productId, productData, quantity, unitCost, total, description }]
         subtotal,
         tax,
         taxIncluded = false, // Si el IVA está incluido en los precios
@@ -178,7 +178,8 @@ class SupplierInvoiceController {
         total,
         currency = 'COP',
         notes,
-        attachments = [] // URLs de Cloudinary
+        attachments = [], // URLs de Cloudinary
+        receivedImmediately = false // Si la mercancía ya fue recibida
       } = req.body;
 
       console.log('📎 Attachments recibidos:', attachments);
@@ -322,17 +323,23 @@ class SupplierInvoiceController {
           productId: finalProductId,
           productName: item.productData?.name || item.productName,
           sku: item.productData?.sku || item.sku,
-          quantity: item.quantity,
+          description: item.description || '', // Descripción del item
+          quantityOrdered: item.quantity,
+          quantityReceived: receivedImmediately ? item.quantity : 0,
           unitCost: item.unitCost,
           salePrice: item.salePrice, // Incluir precio de venta
           total: item.total || (item.quantity * item.unitCost)
         });
       }
 
-      // Crear la factura (SIN actualizar stock aún)
+      // Determinar estado de recepción
+      const receiptStatus = receivedImmediately ? 'FULLY_RECEIVED' : 'PENDING_RECEIPT';
+      
+      // Crear la factura
       const invoice = await SupplierInvoice.create({
         businessId,
         supplierId: finalSupplierId,
+        branchId, // Sucursal donde se recibirá/recibió la mercancía
         invoiceNumber,
         issueDate: new Date(issueDate),
         dueDate: new Date(dueDate),
@@ -345,18 +352,97 @@ class SupplierInvoiceController {
         currency,
         notes,
         attachments,
-        status: 'PENDING', // Queda pendiente hasta que se distribuya el stock
+        status: 'PENDING',
+        receiptStatus,
+        receivedAt: receivedImmediately ? new Date() : null,
+        receivedBy: receivedImmediately ? userId : null,
         paidAmount: 0,
         remainingAmount: total,
         metadata: {
-          stockDistributed: false, // Marca que el stock NO ha sido distribuido
-          branchDistribution: null // Se llenará cuando se distribuya
+          stockDistributed: false,
+          branchDistribution: null
         }
       }, { transaction });
 
-      console.log(`✅ Factura creada: ${invoiceNumber} - Stock pendiente de distribución`)
+      // Si se marcó como recibida inmediatamente, actualizar stock
+      if (receivedImmediately) {
+        console.log(`📦 Mercancía marcada como recibida, actualizando stock...`);
+        
+        for (const item of processedItems) {
+          const product = await Product.findByPk(item.productId, { transaction });
+          if (!product) continue;
 
-      console.log(`✅ Factura creada: ${invoiceNumber} - Stock pendiente de distribución`);
+          // Obtener o crear stock de sucursal
+          const [branchStock, created] = await BranchStock.findOrCreate({
+            where: { branchId, productId: item.productId },
+            defaults: {
+              businessId,
+              branchId,
+              productId: item.productId,
+              currentStock: 0,
+              minStock: 0,
+              maxStock: null,
+              lastCountDate: new Date()
+            },
+            transaction
+          });
+
+          const previousStock = branchStock.currentStock;
+          const newStock = previousStock + item.quantityOrdered;
+
+          // Crear movimiento de inventario
+          await InventoryMovement.create({
+            businessId,
+            productId: item.productId,
+            branchId,
+            userId,
+            movementType: 'PURCHASE',
+            quantity: item.quantityOrdered,
+            unitCost: item.unitCost,
+            totalCost: item.unitCost * item.quantityOrdered,
+            previousStock,
+            newStock,
+            reason: `Recepción inmediata - Factura ${invoiceNumber}`,
+            notes: `Proveedor: ${supplier.name}`,
+            referenceId: invoice.id,
+            referenceType: 'SUPPLIER_INVOICE',
+            supplierInfo: {
+              supplierId: finalSupplierId,
+              supplierName: supplier.name,
+              invoiceNumber
+            }
+          }, { transaction });
+
+          // Actualizar costo del producto
+          await product.update({ cost: item.unitCost }, { transaction });
+
+          // Actualizar stock de sucursal
+          await branchStock.update({
+            currentStock: newStock,
+            lastCountDate: new Date()
+          }, { transaction });
+
+          console.log(`✅ Stock actualizado: ${item.productName} | ${previousStock} → ${newStock}`);
+        }
+
+        // Marcar stock como distribuido
+        await invoice.update({
+          metadata: {
+            stockDistributed: true,
+            branchDistribution: [{
+              branchId,
+              items: processedItems.map(i => ({
+                productId: i.productId,
+                quantity: i.quantityOrdered
+              })),
+              distributedAt: new Date(),
+              distributedBy: userId
+            }]
+          }
+        }, { transaction });
+      }
+
+      console.log(`✅ Factura creada: ${invoiceNumber} - Estado de recepción: ${receiptStatus}`);
 
       await transaction.commit();
 
@@ -373,7 +459,9 @@ class SupplierInvoiceController {
 
       res.status(201).json({
         success: true,
-        message: 'Factura creada exitosamente. Debe distribuir el stock antes de aprobar.',
+        message: receivedImmediately 
+          ? 'Factura creada y mercancía recibida exitosamente'
+          : 'Factura creada exitosamente. Pendiente de recepción de mercancía.',
         data: createdInvoice
       });
     } catch (error) {
@@ -482,7 +570,7 @@ class SupplierInvoiceController {
       // Validar que las cantidades distribuidas coincidan con las de la factura
       const productQuantities = {};
       invoice.items.forEach(item => {
-        productQuantities[item.productId] = item.quantity;
+        productQuantities[item.productId] = item.quantityOrdered || item.quantity;
       });
 
       const distributedQuantities = {};
@@ -1319,6 +1407,228 @@ class SupplierInvoiceController {
       res.status(500).json({
         success: false,
         message: 'Error al subir el archivo de la factura',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Recibir mercancía de una factura
+   * POST /api/business/:businessId/supplier-invoices/:invoiceId/receive-goods
+   * 
+   * Body: {
+   *   itemsReceived: [
+   *     { productId: 'uuid', quantityReceived: 10 },
+   *     { productId: 'uuid', quantityReceived: 5 }
+   *   ]
+   * }
+   */
+  static async receiveGoods(req, res) {
+    const transaction = await sequelize.transaction();
+    
+    try {
+      const { businessId, invoiceId } = req.params;
+      const { businessId: userBusinessId, id: userId } = req.user;
+      const { itemsReceived } = req.body;
+
+      if (businessId !== userBusinessId) {
+        await transaction.rollback();
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para acceder a este negocio'
+        });
+      }
+
+      // Validar itemsReceived
+      if (!itemsReceived || !Array.isArray(itemsReceived) || itemsReceived.length === 0) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Debes proporcionar los items recibidos'
+        });
+      }
+
+      // Obtener factura
+      const invoice = await SupplierInvoice.findOne({
+        where: { id: invoiceId, businessId },
+        include: [{
+          model: Supplier,
+          as: 'supplier'
+        }],
+        transaction
+      });
+
+      if (!invoice) {
+        await transaction.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Factura no encontrada'
+        });
+      }
+
+      // Validar que tiene branchId asignado
+      if (!invoice.branchId) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'La factura no tiene una sucursal asignada'
+        });
+      }
+
+      // Validar que la factura no esté completamente recibida
+      if (invoice.receiptStatus === 'FULLY_RECEIVED') {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'La mercancía de esta factura ya fue recibida completamente'
+        });
+      }
+
+      console.log(`📦 Recibiendo mercancía de factura ${invoice.invoiceNumber}`);
+
+      // Actualizar items de la factura
+      const updatedItems = invoice.items.map(item => {
+        const receivedItem = itemsReceived.find(r => r.productId === item.productId);
+        if (receivedItem) {
+          const currentReceived = item.quantityReceived || 0;
+          const newReceived = currentReceived + receivedItem.quantityReceived;
+          const quantityOrdered = item.quantityOrdered || item.quantity;
+
+          // Validar que no se reciba más de lo ordenado
+          if (newReceived > quantityOrdered) {
+            throw new Error(`No puedes recibir ${newReceived} unidades de ${item.productName} cuando solo se ordenaron ${quantityOrdered}`);
+          }
+
+          return {
+            ...item,
+            quantityReceived: newReceived
+          };
+        }
+        return item;
+      });
+
+      // Calcular nuevo estado de recepción
+      let allReceived = true;
+      let anyReceived = false;
+
+      updatedItems.forEach(item => {
+        const quantityOrdered = item.quantityOrdered || item.quantity;
+        const quantityReceived = item.quantityReceived || 0;
+        
+        if (quantityReceived > 0) anyReceived = true;
+        if (quantityReceived < quantityOrdered) allReceived = false;
+      });
+
+      const newReceiptStatus = allReceived 
+        ? 'FULLY_RECEIVED' 
+        : (anyReceived ? 'PARTIALLY_RECEIVED' : 'PENDING_RECEIPT');
+
+      // Actualizar stock para los items recibidos
+      for (const receivedItem of itemsReceived) {
+        if (receivedItem.quantityReceived <= 0) continue;
+
+        const invoiceItem = invoice.items.find(i => i.productId === receivedItem.productId);
+        if (!invoiceItem) continue;
+
+        const product = await Product.findByPk(receivedItem.productId, { transaction });
+        if (!product) continue;
+
+        // Obtener o crear stock de sucursal
+        const [branchStock, created] = await BranchStock.findOrCreate({
+          where: { branchId: invoice.branchId, productId: receivedItem.productId },
+          defaults: {
+            businessId,
+            branchId: invoice.branchId,
+            productId: receivedItem.productId,
+            currentStock: 0,
+            minStock: 0,
+            maxStock: null,
+            lastCountDate: new Date()
+          },
+          transaction
+        });
+
+        const previousStock = branchStock.currentStock;
+        const newStock = previousStock + receivedItem.quantityReceived;
+
+        // Crear movimiento de inventario
+        await InventoryMovement.create({
+          businessId,
+          productId: receivedItem.productId,
+          branchId: invoice.branchId,
+          userId,
+          movementType: 'PURCHASE',
+          quantity: receivedItem.quantityReceived,
+          unitCost: invoiceItem.unitCost,
+          totalCost: invoiceItem.unitCost * receivedItem.quantityReceived,
+          previousStock,
+          newStock,
+          reason: `Recepción de mercancía - Factura ${invoice.invoiceNumber}`,
+          notes: `Proveedor: ${invoice.supplier.name}`,
+          referenceId: invoice.id,
+          referenceType: 'SUPPLIER_INVOICE',
+          supplierInfo: {
+            supplierId: invoice.supplierId,
+            supplierName: invoice.supplier.name,
+            invoiceNumber: invoice.invoiceNumber
+          }
+        }, { transaction });
+
+        // Actualizar costo del producto
+        await product.update({ cost: invoiceItem.unitCost }, { transaction });
+
+        // Actualizar stock de sucursal
+        await branchStock.update({
+          currentStock: newStock,
+          lastCountDate: new Date()
+        }, { transaction });
+
+        console.log(`✅ Stock actualizado: ${invoiceItem.productName} | ${previousStock} → ${newStock} (+${receivedItem.quantityReceived})`);
+      }
+
+      // Actualizar factura
+      const updateData = {
+        items: updatedItems,
+        receiptStatus: newReceiptStatus
+      };
+
+      // Si se completó la recepción, marcar fecha y usuario
+      if (newReceiptStatus === 'FULLY_RECEIVED') {
+        updateData.receivedAt = new Date();
+        updateData.receivedBy = userId;
+        updateData.metadata = {
+          ...invoice.metadata,
+          stockDistributed: true,
+          fullyReceivedAt: new Date(),
+          fullyReceivedBy: userId
+        };
+      }
+
+      await invoice.update(updateData, { transaction });
+
+      await transaction.commit();
+
+      // Recargar factura con relaciones
+      const updatedInvoice = await SupplierInvoice.findByPk(invoiceId, {
+        include: [{
+          model: Supplier,
+          as: 'supplier'
+        }]
+      });
+
+      res.json({
+        success: true,
+        message: newReceiptStatus === 'FULLY_RECEIVED'
+          ? 'Mercancía recibida completamente'
+          : 'Recepción parcial registrada exitosamente',
+        data: updatedInvoice
+      });
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Error receiving goods:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Error al recibir la mercancía',
         error: error.message
       });
     }

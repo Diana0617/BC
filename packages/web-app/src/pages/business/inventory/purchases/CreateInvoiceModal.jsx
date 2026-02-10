@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   XIcon,
@@ -56,7 +56,8 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
     notes: '',
     currency: 'COP',
     taxIncluded: false, // Si el IVA está incluido en los precios
-    taxPercentage: 19 // Porcentaje de IVA por defecto (Colombia)
+    taxPercentage: 19, // Porcentaje de IVA por defecto (Colombia)
+    receivedImmediately: false // Si la mercancía ya fue recibida
   });
 
   // Items
@@ -64,6 +65,7 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
     productId: '',
     productName: '',
     sku: '',
+    description: '', // Descripción del producto en la factura
     quantity: 1,
     unitCost: 0,
     salePrice: 0, // Precio de venta
@@ -80,6 +82,9 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
     searchTerm: '', // Término de búsqueda para este item
     showDropdown: false // Mostrar dropdown de resultados
   }]);
+
+  // Ref para scroll automático al nuevo producto
+  const itemsEndRef = useRef(null);
 
   // Búsqueda de productos
   const [searchResults, setSearchResults] = useState({});
@@ -286,6 +291,7 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
       productId: '',
       productName: '',
       sku: '',
+      description: '',
       quantity: 1,
       unitCost: 0,
       salePrice: 0,
@@ -302,6 +308,11 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
       searchTerm: '',
       showDropdown: false
     }]);
+    
+    // Scroll automático al final de la lista después de agregar
+    setTimeout(() => {
+      itemsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
   };
 
   const selectProduct = (itemIndex, product) => {
@@ -545,7 +556,8 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
         const itemData = {
           quantity: parseFloat(item.quantity),
           unitCost: parseFloat(item.unitCost),
-          total: parseFloat(item.quantity) * parseFloat(item.unitCost)
+          total: parseFloat(item.quantity) * parseFloat(item.unitCost),
+          description: item.description || '' // Incluir descripción
         };
 
         if (item.createProduct) {
@@ -586,6 +598,7 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
         currency: invoiceData.currency,
         notes: invoiceData.notes,
         branchId: defaultBranchId, // Asignar sucursal principal automáticamente
+        receivedImmediately: invoiceData.receivedImmediately, // Si ya fue recibida
         attachments: uploadedFile ? [{
           url: uploadedFile.url,
           publicId: uploadedFile.publicId,
@@ -633,7 +646,9 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
           <div>
             <h2 className="text-xl font-bold text-gray-900">Nueva Factura de Compra</h2>
             <p className="text-sm text-gray-600 mt-1">
-              Crea la factura → Luego distribuye los productos entre sucursales
+              {step === 1 && "Completa los datos del proveedor y la factura"}
+              {step === 2 && "Agrega los productos comprados"}
+              {step === 3 && "Revisa y confirma la información"}
             </p>
             <div className="flex items-center gap-2 mt-2">
               {[1, 2, 3].map((s) => (
@@ -899,7 +914,28 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
                     </div>
                   </div>
                 </div>
+{/* Checkbox: Mercancía recibida */}
+                <div className="col-span-2 border-t pt-4 mt-4">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={invoiceData.receivedImmediately}
+                      onChange={(e) => setInvoiceData({ ...invoiceData, receivedImmediately: e.target.checked })}
+                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">
+                        Mercancía ya recibida
+                      </span>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Marca esta opción si compraste presencialmente o si ya recibiste los productos. 
+                        El stock se actualizará automáticamente en la sucursal.
+                      </p>
+                    </div>
+                  </label>
+                </div>
 
+                
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Notas
@@ -1138,6 +1174,20 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
                       </div>
                     )}
 
+                    {/* Campo de descripción (común para ambos: nuevo o existente) */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Descripción / Notas
+                      </label>
+                      <textarea
+                        value={item.description}
+                        onChange={(e) => updateItem(index, 'description', e.target.value)}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                        rows="2"
+                        placeholder="Descripción adicional, notas sobre el producto, variaciones, etc."
+                      />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -1193,6 +1243,19 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
                     </div>
                   </div>
                 ))}
+                {/* Ref para scroll automático */}
+                <div ref={itemsEndRef} />
+              </div>
+
+              {/* Botón duplicado al final de la lista */}
+              <div className="flex justify-center pt-2">
+                <button
+                  onClick={addItem}
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Agregar Otro Producto
+                </button>
               </div>
             </div>
           )}
@@ -1246,6 +1309,11 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
                         <div className="font-medium text-gray-900">
                           {item.createProduct ? item.productData.name : item.productName}
                         </div>
+                        {item.description && (
+                          <div className="text-xs text-gray-600 italic mt-0.5">
+                            {item.description}
+                          </div>
+                        )}
                         <div className="text-xs text-gray-500">
                           {item.quantity} × {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(item.unitCost)}
                         </div>
@@ -1294,6 +1362,44 @@ const CreateInvoiceModal = ({ onClose, onSuccess }) => {
                   </div>
                 </div>
               )}
+
+              {/* Indicador de estado de recepción */}
+              <div className={`rounded-lg p-4 border-2 ${
+                invoiceData.receivedImmediately 
+                  ? 'bg-green-50 border-green-300' 
+                  : 'bg-yellow-50 border-yellow-300'
+              }`}>
+                <div className="flex items-start gap-3">
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                    invoiceData.receivedImmediately ? 'bg-green-500' : 'bg-yellow-500'
+                  }`}>
+                    {invoiceData.receivedImmediately ? (
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className={`text-sm font-semibold ${
+                      invoiceData.receivedImmediately ? 'text-green-900' : 'text-yellow-900'
+                    }`}>
+                      {invoiceData.receivedImmediately ? 'Mercancía Recibida' : 'Pendiente de Recepción'}
+                    </h4>
+                    <p className={`text-xs mt-1 ${
+                      invoiceData.receivedImmediately ? 'text-green-700' : 'text-yellow-700'
+                    }`}>
+                      {invoiceData.receivedImmediately 
+                        ? 'El stock se actualizará automáticamente al crear la factura'
+                        : 'Podrás marcar los productos como recibidos más adelante cuando lleguen'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

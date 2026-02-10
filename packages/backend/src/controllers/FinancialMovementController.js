@@ -13,7 +13,7 @@ class FinancialMovementController {
   async getMovements(req, res) {
     try {
       const { businessId } = req.query;
-      const { startDate, endDate, type, category, status, paymentMethod } = req.query;
+      const { startDate, endDate, type, category, status, paymentMethod, branchId } = req.query;
 
       if (!businessId) {
         return res.status(400).json({
@@ -30,6 +30,7 @@ class FinancialMovementController {
         category,
         status,
         paymentMethod,
+        branchId,
         userRole: req.user?.role,
         userId: req.user?.id
       });
@@ -55,6 +56,9 @@ class FinancialMovementController {
       if (category) where.category = category;
       if (status) where.status = status;
       if (paymentMethod) where.paymentMethod = paymentMethod;
+      
+      // 🆕 Filtro por sucursal
+      if (branchId) where.branchId = branchId;
 
       // Obtener movimientos con relaciones
       const movements = await FinancialMovement.findAll({
@@ -74,7 +78,7 @@ class FinancialMovementController {
           {
             model: BusinessExpense,
             as: 'expense',
-            attributes: ['id', 'description', 'vendor', 'expenseDate'],
+            attributes: ['id', 'description', 'vendor', 'expenseDate', 'branchId'],
             required: false
           },
           {

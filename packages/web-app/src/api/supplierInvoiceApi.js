@@ -112,6 +112,21 @@ export const supplierInvoiceApi = {
       paymentData
     );
     return response.data;
+  },
+
+  /**
+   * Recibir mercancía de una factura
+   * @param {string} businessId - ID del negocio
+   * @param {string} invoiceId - ID de la factura
+   * @param {object} receiptData - Datos de recepción
+   * @param {array} receiptData.itemsReceived - Items recibidos [{ productId, quantityReceived }]
+   */
+  receiveGoods: async (businessId, invoiceId, receiptData) => {
+    const response = await apiClient.post(
+      `/api/business/${businessId}/supplier-invoices/${invoiceId}/receive-goods`,
+      receiptData
+    );
+    return response.data;
   }
 };
 

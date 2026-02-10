@@ -8,7 +8,7 @@ import { apiClient } from '../../api/client';
  */
 export const fetchFinancialMovements = createAsyncThunk(
   'financialMovements/fetchMovements',
-  async ({ businessId, startDate, endDate, type, category, status, paymentMethod }, { rejectWithValue }) => {
+  async ({ businessId, startDate, endDate, type, category, status, paymentMethod, branchId }, { rejectWithValue }) => {
     try {
       const params = new URLSearchParams({
         businessId,
@@ -17,7 +17,8 @@ export const fetchFinancialMovements = createAsyncThunk(
         ...(type && { type }),
         ...(category && { category }),
         ...(status && { status }),
-        ...(paymentMethod && { paymentMethod })
+        ...(paymentMethod && { paymentMethod }),
+        ...(branchId && { branchId })
       });
 
       const response = await apiClient.get(`/api/financial/movements?${params}`);
@@ -100,7 +101,8 @@ const initialState = {
     type: null,
     category: null,
     status: null,
-    paymentMethod: null
+    paymentMethod: null,
+    branchId: null
   }
 };
 

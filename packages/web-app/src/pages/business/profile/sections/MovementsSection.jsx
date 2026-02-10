@@ -10,6 +10,9 @@ import {
   selectMovementsTotals,
   selectTodayAppointmentsSummary,
   selectTodayAppointmentsSummaryLoading,
+  // Branches
+  selectUserBranches,
+  selectUserHasMultipleBranches,
   // Expenses
   fetchExpenses,
   fetchExpenseCategories,
@@ -51,7 +54,8 @@ import {
   CalendarIcon,
   ReceiptPercentIcon,
   CurrencyDollarIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -61,6 +65,8 @@ const MovementsSection = () => {
   const dispatch = useDispatch()
   const { currentBusiness } = useSelector(state => state.business)
   const [searchParams] = useSearchParams()
+  const userBranches = useSelector(selectUserBranches)
+  const hasMultipleBranches = useSelector(selectUserHasMultipleBranches)
   
   // Permisos del usuario
   const { expenses: expensesPerms, loading: permissionsLoading } = useUserPermissions()
@@ -102,6 +108,7 @@ const MovementsSection = () => {
     startDate: format(new Date(), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd')
   })
+  const [movementFilters, setMovementFilters] = useState({})
   const [expenseFilters, setExpenseFilters] = useState({})
   const [commissionFilters, setCommissionFilters] = useState({
     month: new Date().getMonth(),
@@ -137,7 +144,8 @@ const MovementsSection = () => {
       dispatch(fetchFinancialMovements({
         businessId: currentBusiness.id,
         startDate: dateRange.startDate,
-        endDate: dateRange.endDate
+        endDate: dateRange.endDate,
+        branchId: movementFilters.branchId || undefined
       }))
     } else if (activeTab === 'appointments') {
       dispatch(fetchTodayAppointmentsSummary({
@@ -171,7 +179,7 @@ const MovementsSection = () => {
       console.log('🔷 MovementsSection - Despachando fetchCommissionConfig');
       dispatch(fetchCommissionConfig({ businessId: currentBusiness.id }))
     }
-  }, [activeTab, dateRange, currentBusiness, dispatch, expenseFilters, commissionFilters])
+  }, [activeTab, dateRange, currentBusiness, dispatch, movementFilters, expenseFilters, commissionFilters])
 
   const handleDateChange = (field, value) => {
     setDateRange(prev => ({ ...prev, [field]: value }))
@@ -352,7 +360,7 @@ const MovementsSection = () => {
             <CalendarDaysIcon className="h-5 w-5 inline-block mr-2" />
             Turnos del Día
           </button>
-          {expensesPerms?.view && (
+          {!permissionsLoading && expensesPerms?.view && (
             <button
               onClick={() => setActiveTab('expenses')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
@@ -408,6 +416,24 @@ const MovementsSection = () => {
                 />
               </div>
             )}
+            {activeTab === 'financial' && hasMultipleBranches && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <BuildingOfficeIcon className="w-4 h-4 inline-block mr-1" />
+                  Sucursal
+                </label>
+                <select
+                  value={movementFilters.branchId || ''}
+                  onChange={(e) => setMovementFilters({ ...movementFilters, branchId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                >
+                  <option value="">Todas</option>
+                  {userBranches.map(branch => (
+                    <option key={branch.id} value={branch.id}>{branch.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           <button
             onClick={() => {
@@ -444,20 +470,32 @@ const MovementsSection = () => {
         />
       )}
 
-      {activeTab === 'expenses' && expensesPerms?.view && (
-        <ExpensesTab
-          expenses={expenses}
-          categories={expenseCategories}
-          loading={expensesLoading}
-          onCreateExpense={handleCreateExpense}
-          onEditExpense={handleEditExpense}
-          onDeleteExpense={handleDeleteExpense}
-          onApproveExpense={handleApproveExpense}
-          onMarkAsPaid={handleMarkAsPaid}
-          filters={expenseFilters}
-          onFilterChange={setExpenseFilters}
-          permissions={expensesPerms}
-        />
+      {activeTab === 'expenses' && (
+        permissionsLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
+          </div>
+        ) : expensesPerms?.view ? (
+          <ExpensesTab
+            expenses={expenses}
+            categories={expenseCategories}
+            loading={expensesLoading}
+            onCreateExpense={handleCreateExpense}
+            onEditExpense={handleEditExpense}
+            onDeleteExpense={handleDeleteExpense}
+            onApproveExpense={handleApproveExpense}
+            onMarkAsPaid={handleMarkAsPaid}
+            filters={expenseFilters}
+            onFilterChange={setExpenseFilters}
+            permissions={expensesPerms}
+          />
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+            <ReceiptPercentIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Sin acceso</h3>
+            <p className="mt-1 text-sm text-gray-500">No tienes permisos para ver los gastos del negocio.</p>
+          </div>
+        )
       )}
 
       {activeTab === 'commissions' && (

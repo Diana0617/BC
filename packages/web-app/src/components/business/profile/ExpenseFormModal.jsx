@@ -279,6 +279,33 @@ const ExpenseFormModal = ({
                 </div>
               )}
 
+              {/* Sucursal (solo si hay múltiples sucursales) */}
+              {hasMultipleBranches && (
+                <div>
+                  <label htmlFor="branchId" className="block text-sm font-medium text-gray-700 mb-1">
+                    <BuildingOfficeIcon className="w-4 h-4 inline-block mr-1" />
+                    Sucursal
+                  </label>
+                  <select
+                    id="branchId"
+                    name="branchId"
+                    value={formData.branchId}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  >
+                    <option value="">General (Todas las sucursales)</option>
+                    {Array.isArray(userBranches) && userBranches.map(branch => (
+                      <option key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Deja en "General" si el gasto aplica a todo el negocio
+                  </p>
+                </div>
+              )}
+
               {/* Monto y Fecha */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
