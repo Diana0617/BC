@@ -128,7 +128,7 @@ const SupplierCatalog = () => {
           <div>
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
               <BookOpenIcon className="h-6 w-6 text-blue-600" />
-              Catálogo de Proveedores
+              Catálogo de Productos
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               {total} productos disponibles
@@ -288,7 +288,7 @@ const SupplierCatalog = () => {
                 </div>
 
                 {/* Información */}
-                <h3 className="font-semibold text-gray-900 mb-1 truncate">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1 truncate">
                   {item.name}
                 </h3>
                 <p className="text-xs text-gray-500 mb-2">SKU: {item.supplierSku}</p>
