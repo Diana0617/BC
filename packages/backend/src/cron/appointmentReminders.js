@@ -39,7 +39,7 @@ async function sendReminders() {
     const reminderStart = new Date(now.getTime() + 23 * 60 * 60 * 1000); // 23 horas
     const reminderEnd = new Date(now.getTime() + 25 * 60 * 60 * 1000);   // 25 horas
 
-    console.log(`🔍 Buscando citas entre ${reminderStart.toISOString()} y ${reminderEnd.toISOString()}`);
+    //console.log(`🔍 Buscando citas entre ${reminderStart.toISOString()} y ${reminderEnd.toISOString()}`);
 
     // Buscar citas que necesiten recordatorio
     const appointments = await Appointment.findAll({
@@ -94,7 +94,7 @@ async function sendReminders() {
         }
 
         // Intentar enviar recordatorio
-        console.log(`📤 Enviando recordatorio para cita ${appointment.id} (${appointment.client.firstName} ${appointment.client.lastName})`);
+        //console.log(`📤 Enviando recordatorio para cita ${appointment.id} (${appointment.client.firstName} ${appointment.client.lastName})`);
         
         const result = await WhatsAppService.sendAppointmentReminder(
           appointment.businessId,
@@ -110,7 +110,7 @@ async function sendReminders() {
           });
 
           sentCount++;
-          console.log(`✅ Recordatorio enviado exitosamente para cita ${appointment.id}`);
+          //console.log(`✅ Recordatorio enviado exitosamente para cita ${appointment.id}`);
         } else {
           failedCount++;
           console.error(`❌ Fallo al enviar recordatorio para cita ${appointment.id}:`, result.error);
@@ -130,12 +130,12 @@ async function sendReminders() {
       total: appointments.length
     };
 
-    console.log(`
-📊 Resumen de recordatorios:
-   ✅ Enviados: ${sentCount}
-   ❌ Fallidos: ${failedCount}
-   📋 Total procesadas: ${appointments.length}
-    `);
+//     console.log(`
+// 📊 Resumen de recordatorios:
+//    ✅ Enviados: ${sentCount}
+//    ❌ Fallidos: ${failedCount}
+//    📋 Total procesadas: ${appointments.length}
+//     `);
 
     return summary;
 

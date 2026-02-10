@@ -1466,13 +1466,31 @@ class SupplierInvoiceController {
         });
       }
 
-      // Validar que tiene branchId asignado
-      if (!invoice.branchId) {
-        await transaction.rollback();
-        return res.status(400).json({
-          success: false,
-          message: 'La factura no tiene una sucursal asignada'
+      // Si no tiene branchId, asignar la sucursal principal automáticamente
+      let targetBranchId = invoice.branchId;
+      if (!targetBranchId) {
+        const primaryBranch = await Branch.findOne({
+          where: { 
+            businessId,
+            isPrimary: true
+          },
+          transaction
         });
+
+        if (!primaryBranch) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: 'No se encontró una sucursal principal para recibir la mercancía'
+          });
+        }
+
+        targetBranchId = primaryBranch.id;
+        
+        // Actualizar la factura con la sucursal principal
+        await invoice.update({ branchId: targetBranchId }, { transaction });
+        
+        console.log(`📍 Asignada sucursal principal ${primaryBranch.name} a la factura ${invoice.invoiceNumber}`);
       }
 
       // Validar que la factura no esté completamente recibida
@@ -1535,10 +1553,10 @@ class SupplierInvoiceController {
 
         // Obtener o crear stock de sucursal
         const [branchStock, created] = await BranchStock.findOrCreate({
-          where: { branchId: invoice.branchId, productId: receivedItem.productId },
+          where: { branchId: targetBranchId, productId: receivedItem.productId },
           defaults: {
             businessId,
-            branchId: invoice.branchId,
+            branchId: targetBranchId,
             productId: receivedItem.productId,
             currentStock: 0,
             minStock: 0,
@@ -1555,7 +1573,7 @@ class SupplierInvoiceController {
         await InventoryMovement.create({
           businessId,
           productId: receivedItem.productId,
-          branchId: invoice.branchId,
+          branchId: targetBranchId,
           userId,
           movementType: 'PURCHASE',
           quantity: receivedItem.quantityReceived,
