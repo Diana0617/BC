@@ -571,16 +571,7 @@ const handleReceiveGoods = (invoice) => {
           onSuccess={handleGoodsReceived}
         />
       )}
-          }}
-          onDistributed={() => {
-            setShowDistributeModal(false);
-            setSelectedInvoice(null);
-            loadInvoices();
-            setSuccess('Stock distribuido exitosamente');
-            setTimeout(() => setSuccess(''), 3000);
-          }}
-        />
-      )}    </div>
+    </div>
   );
 };
 

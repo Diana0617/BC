@@ -1472,7 +1472,7 @@ class SupplierInvoiceController {
         const primaryBranch = await Branch.findOne({
           where: { 
             businessId,
-            isPrimary: true
+            isMain: true
           },
           transaction
         });
