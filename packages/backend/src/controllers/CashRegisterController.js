@@ -913,11 +913,26 @@ class CashRegisterController {
       movementWhere.branchId = branchId;
     }
 
-    // Obtener movimientos financieros del turno (ingresos)
+    // Obtener movimientos financieros del turno (ingresos) CON DETALLES
     const FinancialMovement = require('../models/FinancialMovement');
     const movements = await FinancialMovement.findAll({
       where: movementWhere,
-      attributes: ['id', 'amount', 'paymentMethod', 'category'],
+      attributes: ['id', 'amount', 'paymentMethod', 'category', 'description', 'createdAt'],
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName'],
+          required: false
+        },
+        {
+          model: Client,
+          as: 'client',
+          attributes: ['id', 'firstName', 'lastName'],
+          required: false
+        }
+      ],
+      order: [['createdAt', 'DESC']],
       transaction
     });
 
@@ -947,6 +962,18 @@ class CashRegisterController {
 
     // TODO: Agregar ventas de productos si tienes ese módulo
     // const productSales = await ProductSale.findAll({ ... });
+
+    // Añadir movimientos detallados al summary
+    summary.movements = movements.map(m => ({
+      id: m.id,
+      description: m.description,
+      amount: parseFloat(m.amount),
+      paymentMethod: m.paymentMethod,
+      category: m.category,
+      createdAt: m.createdAt,
+      specialist: m.user ? `${m.user.firstName} ${m.user.lastName}` : null,
+      client: m.client ? `${m.client.firstName} ${m.client.lastName}` : null
+    }));
 
     return summary;
   }

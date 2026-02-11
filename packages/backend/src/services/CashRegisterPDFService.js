@@ -128,9 +128,16 @@ class CashRegisterPDFService {
         const methodNames = {
           CASH: 'Efectivo',
           CARD: 'Tarjeta',
+          CREDIT_CARD: 'Tarjeta de Crédito',
+          DEBIT_CARD: 'Tarjeta de Débito',
           TRANSFER: 'Transferencia',
+          BANK_TRANSFER: 'Transferencia Bancaria',
           QR: 'Código QR',
           ONLINE: 'Pago en línea',
+          DIGITAL_WALLET: 'Billetera Digital',
+          CHECK: 'Cheque',
+          VOUCHER: 'Vale',
+          CREDIT: 'Crédito',
           OTHER: 'Otro'
         };
 
@@ -186,6 +193,79 @@ class CashRegisterPDFService {
         }
 
         doc.moveDown(1.5);
+
+        // ============= DETALLE DE MOVIMIENTOS =============
+        if (summary.movements && summary.movements.length > 0) {
+          doc
+            .fontSize(12)
+            .font('Helvetica-Bold')
+            .text('DETALLE DE MOVIMIENTOS', { underline: true })
+            .moveDown(0.5);
+
+          doc
+            .fontSize(9)
+            .font('Helvetica-Bold');
+
+          // Encabezados de tabla
+          const startX = 50;
+          const colWidths = { tipo: 45, desc: 120, specialist: 80, client: 80, fecha: 70, monto: 70 };
+          let currentX = startX;
+
+          doc
+            .text('Tipo', currentX, doc.y, { width: colWidths.tipo, continued: true })
+            .text('Descripción', currentX += colWidths.tipo, doc.y, { width: colWidths.desc, continued: true })
+            .text('Especialista', currentX += colWidths.desc, doc.y, { width: colWidths.specialist, continued: true })
+            .text('Cliente', currentX += colWidths.specialist, doc.y, { width: colWidths.client, continued: true })
+            .text('Fecha/Hora', currentX += colWidths.client, doc.y, { width: colWidths.fecha, continued: true })
+            .text('Monto', currentX += colWidths.fecha, doc.y, { width: colWidths.monto, align: 'right' });
+
+          doc.moveDown(0.3);
+          doc
+            .moveTo(startX, doc.y)
+            .lineTo(startX + 465, doc.y)
+            .stroke();
+          doc.moveDown(0.3);
+
+          // Filas de datos
+          doc.font('Helvetica').fontSize(8);
+          summary.movements.forEach((movement, index) => {
+            currentX = startX;
+            const y = doc.y;
+
+            // Si llegamos al final de la página, añadir nueva
+            if (y > 700) {
+              doc.addPage();
+            }
+
+            const methodNames = {
+              CASH: 'Efectivo',
+              CARD: 'Tarjeta',
+              CREDIT_CARD: 'T. Crédito',
+              DEBIT_CARD: 'T. Débito',
+              TRANSFER: 'Transfer',
+              BANK_TRANSFER: 'Transfer.',
+              QR: 'QR',
+              ONLINE: 'Online',
+              DIGITAL_WALLET: 'Wallet',
+              CHECK: 'Cheque',
+              VOUCHER: 'Vale',
+              CREDIT: 'Crédito',
+              OTHER: 'Otro'
+            };
+
+            doc
+              .text(methodNames[movement.paymentMethod] || movement.paymentMethod, currentX, y, { width: colWidths.tipo, continued: true })
+              .text(movement.description.substring(0, 30), currentX += colWidths.tipo, y, { width: colWidths.desc, continued: true })
+              .text(movement.specialist || '-', currentX += colWidths.desc, y, { width: colWidths.specialist, continued: true })
+              .text(movement.client || '-', currentX += colWidths.specialist, y, { width: colWidths.client, continued: true })
+              .text(this._formatDate(movement.createdAt).substring(11), currentX += colWidths.client, y, { width: colWidths.fecha, continued: true })
+              .text(`+$ ${this._formatMoney(movement.amount)}`, currentX += colWidths.fecha, y, { width: colWidths.monto, align: 'right' });
+
+            doc.moveDown(0.8);
+          });
+
+          doc.moveDown(1);
+        }
 
         // ============= RESUMEN DE CITAS =============
         doc

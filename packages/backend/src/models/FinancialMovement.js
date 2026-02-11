@@ -80,13 +80,18 @@ const FinancialMovement = sequelize.define('FinancialMovement', {
   paymentMethod: {
     type: DataTypes.ENUM(
       'CASH',
+      'CARD',
       'CREDIT_CARD',
       'DEBIT_CARD',
+      'TRANSFER',
       'BANK_TRANSFER',
+      'QR',
+      'ONLINE',
       'DIGITAL_WALLET',
       'CHECK',
       'VOUCHER',
-      'CREDIT'
+      'CREDIT',
+      'OTHER'
     ),
     allowNull: false
   },
