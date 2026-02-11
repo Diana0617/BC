@@ -587,8 +587,6 @@ exports.getBusinessCommissionConfig = async (req, res) => {
   try {
     const { businessId } = req.params;
 
-    console.log('🔍 getBusinessCommissionConfig - businessId:', businessId);
-
     // 1. Leer reglas de negocio (fuente de verdad) con RuleTemplate incluido
     const businessRules = await BusinessRule.findAll({
       where: {
@@ -606,12 +604,6 @@ exports.getBusinessCommissionConfig = async (req, res) => {
           }
         }
       }]
-    });
-
-    console.log('🔍 businessRules encontradas:', businessRules.length);
-    businessRules.forEach(rule => {
-      const effectiveValue = rule.customValue ?? rule.template?.defaultValue;
-      console.log(`  - ${rule.template.key}: customValue=${rule.customValue}, defaultValue=${rule.template.defaultValue}, effective=${effectiveValue}`);
     });
 
     const rulesMap = {};
