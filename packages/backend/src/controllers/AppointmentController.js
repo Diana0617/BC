@@ -26,21 +26,19 @@ async function getDefaultCommissionRate(businessId) {
     const businessRule = await BusinessRule.findOne({
       where: {
         businessId,
-        key: 'COMISIONES_PORCENTAJE_GENERAL',
         isActive: true
-      }
+      },
+      include: [{
+        model: RuleTemplate,
+        as: 'template',
+        where: { key: 'COMISIONES_PORCENTAJE_GENERAL' },
+        required: true
+      }]
     });
 
     if (businessRule) {
-      if (businessRule.effective_value !== null && businessRule.effective_value !== undefined) {
-        return parseFloat(businessRule.effective_value);
-      }
-      if (businessRule.customValue !== null && businessRule.customValue !== undefined) {
-        return parseFloat(businessRule.customValue);
-      }
-      if (businessRule.defaultValue !== null && businessRule.defaultValue !== undefined) {
-        return parseFloat(businessRule.defaultValue);
-      }
+      const val = businessRule.customValue ?? businessRule.template?.defaultValue;
+      if (val !== undefined && val !== null) return parseFloat(val);
     }
 
     const ruleTemplate = await RuleTemplate.findOne({
@@ -2491,9 +2489,6 @@ class AppointmentController {
         offset
       });
 
-      // Obtener tasa de comisión por defecto del sistema de reglas (una sola consulta)
-      const defaultCommissionRate = await getDefaultCommissionRate(businessId);
-
       // Calcular comisiones para cada cita
       const appointmentsWithCommission = await Promise.all(
         appointments.map(async (appointment) => {
@@ -2507,7 +2502,7 @@ class AppointmentController {
             }
           });
 
-          const commissionPercentage = specialistService?.commissionPercentage || defaultCommissionRate;
+          const commissionPercentage = specialistService?.commissionPercentage || 50;
           // Usar totalAmount de la cita, o el precio del servicio si no hay totalAmount
           const price = appointment.totalAmount || appointmentData.service?.price || 0;
           const commissionAmount = (price * commissionPercentage) / 100;

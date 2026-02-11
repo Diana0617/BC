@@ -1228,6 +1228,16 @@ BusinessExpense.belongsTo(User, {
   as: 'approver'
 });
 
+// BusinessExpense - Branch
+BusinessExpense.belongsTo(Branch, {
+  foreignKey: 'branchId',
+  as: 'branch'
+});
+Branch.hasMany(BusinessExpense, {
+  foreignKey: 'branchId',
+  as: 'expenses'
+});
+
 // PaymentMethod - Business
 Business.hasMany(PaymentMethod, {
   foreignKey: 'businessId',

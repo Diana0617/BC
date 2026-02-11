@@ -33,13 +33,19 @@ async function getDefaultCommissionRate(businessId) {
     const commissionRule = await BusinessRule.findOne({
       where: { 
         businessId,
-        key: 'COMISIONES_PORCENTAJE_GENERAL',
         isActive: true 
-      }
+      },
+      include: [{
+        model: RuleTemplate,
+        as: 'template',
+        where: { key: 'COMISIONES_PORCENTAJE_GENERAL' },
+        required: true
+      }]
     });
 
     if (commissionRule) {
-      return commissionRule.effective_value || commissionRule.customValue || commissionRule.defaultValue || 50;
+      const val = commissionRule.customValue ?? commissionRule.template?.defaultValue;
+      if (val !== undefined && val !== null) return parseFloat(val);
     }
 
     // Si no hay regla asignada al negocio, buscar en template
@@ -47,7 +53,7 @@ async function getDefaultCommissionRate(businessId) {
       where: { key: 'COMISIONES_PORCENTAJE_GENERAL', isActive: true }
     });
 
-    return template?.defaultValue || 50;
+    return template?.defaultValue ? parseFloat(template.defaultValue) : 50;
   } catch (error) {
     console.error('Error obteniendo tasa de comisión:', error);
     return 50; // Fallback
@@ -587,16 +593,18 @@ exports.getBusinessCommissionConfig = async (req, res) => {
     const businessRules = await BusinessRule.findAll({
       where: {
         businessId,
-        key: {
-          [Op.in]: ['COMISIONES_HABILITADAS', 'COMISIONES_TIPO_CALCULO', 'COMISIONES_PORCENTAJE_GENERAL']
-        },
         isActive: true
       },
       include: [{
         model: RuleTemplate,
         as: 'template',
         attributes: ['key', 'defaultValue'],
-        required: true
+        required: true,
+        where: {
+          key: {
+            [Op.in]: ['COMISIONES_HABILITADAS', 'COMISIONES_TIPO_CALCULO', 'COMISIONES_PORCENTAJE_GENERAL']
+          }
+        }
       }]
     });
 

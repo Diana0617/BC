@@ -30,22 +30,19 @@ class BusinessConfigService {
       const businessRule = await BusinessRule.findOne({
         where: {
           businessId,
-          key: 'COMISIONES_PORCENTAJE_GENERAL',
           isActive: true
-        }
+        },
+        include: [{
+          model: RuleTemplate,
+          as: 'template',
+          where: { key: 'COMISIONES_PORCENTAJE_GENERAL' },
+          required: true
+        }]
       });
 
       if (businessRule) {
-        // effective_value is the computed final value (customValue || defaultValue)
-        if (businessRule.effective_value !== null && businessRule.effective_value !== undefined) {
-          return parseFloat(businessRule.effective_value);
-        }
-        if (businessRule.customValue !== null && businessRule.customValue !== undefined) {
-          return parseFloat(businessRule.customValue);
-        }
-        if (businessRule.defaultValue !== null && businessRule.defaultValue !== undefined) {
-          return parseFloat(businessRule.defaultValue);
-        }
+        const val = businessRule.customValue ?? businessRule.template?.defaultValue;
+        if (val !== undefined && val !== null) return parseFloat(val);
       }
 
       // 2. Fallback to RuleTemplate default
