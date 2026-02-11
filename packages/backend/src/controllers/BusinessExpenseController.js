@@ -351,8 +351,8 @@ class BusinessExpenseController {
    */
   static async createExpense(req, res) {
     try {
-      console.log('📝 [createExpense] req.body:', req.body);
-      console.log('📝 [createExpense] req.file:', req.file);
+      // console.log('📝 [createExpense] req.body:', req.body);
+      // console.log('📝 [createExpense] req.file:', req.file);
       
       const businessId = req.tenancy.businessId || req.user.businessId;
 

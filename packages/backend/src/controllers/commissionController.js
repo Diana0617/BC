@@ -594,7 +594,7 @@ exports.getBusinessCommissionConfig = async (req, res) => {
       },
       include: [{
         model: RuleTemplate,
-        as: 'ruleTemplate',
+        as: 'template',
         attributes: ['key', 'defaultValue'],
         required: true
       }]
@@ -602,15 +602,15 @@ exports.getBusinessCommissionConfig = async (req, res) => {
 
     console.log('🔍 businessRules encontradas:', businessRules.length);
     businessRules.forEach(rule => {
-      const effectiveValue = rule.customValue ?? rule.ruleTemplate?.defaultValue;
-      console.log(`  - ${rule.ruleTemplate.key}: customValue=${rule.customValue}, defaultValue=${rule.ruleTemplate.defaultValue}, effective=${effectiveValue}`);
+      const effectiveValue = rule.customValue ?? rule.template?.defaultValue;
+      console.log(`  - ${rule.template.key}: customValue=${rule.customValue}, defaultValue=${rule.template.defaultValue}, effective=${effectiveValue}`);
     });
 
     const rulesMap = {};
     businessRules.forEach(rule => {
-      const key = rule.ruleTemplate.key;
+      const key = rule.template.key;
       // Calcular effective_value: customValue tiene prioridad sobre defaultValue
-      rulesMap[key] = rule.customValue ?? rule.ruleTemplate.defaultValue;
+      rulesMap[key] = rule.customValue ?? rule.template.defaultValue;
     });
 
     // Obtener valores desde reglas con fallbacks

@@ -1086,12 +1086,12 @@ class BusinessConfigController {
         favicon: branding.favicon || null
       };
       
-      console.log('📋 getBranding response:', {
-        businessId,
-        businessLogo: business.logo,
-        brandingLogo: branding.logo,
-        finalLogo: brandingResponse.logo
-      });
+      // console.log('📋 getBranding response:', {
+      //   businessId,
+      //   businessLogo: business.logo,
+      //   brandingLogo: branding.logo,
+      //   finalLogo: brandingResponse.logo
+      // });
       
       res.json({
         success: true,
@@ -1226,7 +1226,7 @@ class BusinessConfigController {
       const CloudinaryService = require('../services/CloudinaryService');
       const uploadResult = await CloudinaryService.uploadBusinessLogo(file.path, businessId);
       
-      console.log('☁️  Cloudinary upload result:', uploadResult);
+      // console.log('☁️  Cloudinary upload result:', uploadResult);
       
       if (!uploadResult.success) {
         return res.status(500).json({
@@ -1239,19 +1239,19 @@ class BusinessConfigController {
       const logoUrl = uploadResult.data.main?.url || uploadResult.data.url;
       const thumbnailUrl = uploadResult.data.thumbnail?.url;
       
-      console.log('💾 Updating business.logo with URL:', logoUrl);
+      // // console.log('💾 Updating business.logo with URL:', logoUrl);
       
       // Actualizar logo en el modelo Business
       const updateBusinessResult = await BusinessConfigService.updateBusiness(businessId, {
         logo: logoUrl
       });
       
-      console.log('✅ Business updated, logo value:', updateBusinessResult.logo);
+      // // console.log('✅ Business updated, logo value:', updateBusinessResult.logo);
       
       // Recargar business para obtener la versión actualizada
       const updatedBusiness = await BusinessConfigService.getBusiness(businessId);
       
-      console.log('🔄 Reloaded business, logo value:', updatedBusiness.logo);
+      // // console.log('🔄 Reloaded business, logo value:', updatedBusiness.logo);
       
       // Actualizar también en settings.branding
       const currentSettings = updatedBusiness.settings || {};
@@ -1264,11 +1264,11 @@ class BusinessConfigController {
         }
       };
       
-      console.log('📝 Updating settings.branding with:', updatedSettings.branding);
+      // console.log('📝 Updating settings.branding with:', updatedSettings.branding);
       
       await BusinessConfigService.updateBusinessSettings(businessId, updatedSettings);
       
-      console.log('✅ Settings updated successfully, sending response...');
+      // console.log('✅ Settings updated successfully, sending response...');
       
       const responseData = {
         success: true,
@@ -1283,22 +1283,22 @@ class BusinessConfigController {
         message: 'Logo subido exitosamente'
       };
       
-      console.log('📤 Response data:', JSON.stringify(responseData, null, 2));
+      // console.log('📤 Response data:', JSON.stringify(responseData, null, 2));
       
       // Limpiar archivo temporal
       const fs = require('fs');
       if (file.path && fs.existsSync(file.path)) {
         fs.unlinkSync(file.path);
-        console.log('🗑️  Temporary file cleaned:', file.path);
+        // console.log('🗑️  Temporary file cleaned:', file.path);
       }
       
-      console.log('📨 About to send JSON response...');
+      // // console.log('📨 About to send JSON response...');
       
       // Asegurar headers correctos
       res.setHeader('Content-Type', 'application/json');
       res.status(200).json(responseData);
       
-      console.log('✅ JSON response sent successfully with status 200');
+      // // console.log('✅ JSON response sent successfully with status 200');
       
     } catch (error) {
       console.error('Error uploading logo:', error);
