@@ -581,18 +581,36 @@ exports.getBusinessCommissionConfig = async (req, res) => {
   try {
     const { businessId } = req.params;
 
-    // 1. Leer reglas de negocio (fuente de verdad)
+    console.log('🔍 getBusinessCommissionConfig - businessId:', businessId);
+
+    // 1. Leer reglas de negocio (fuente de verdad) con RuleTemplate incluido
     const businessRules = await BusinessRule.findAll({
       where: {
         businessId,
-        key: ['COMISIONES_HABILITADAS', 'COMISIONES_TIPO_CALCULO', 'COMISIONES_PORCENTAJE_GENERAL'],
+        key: {
+          [Op.in]: ['COMISIONES_HABILITADAS', 'COMISIONES_TIPO_CALCULO', 'COMISIONES_PORCENTAJE_GENERAL']
+        },
         isActive: true
-      }
+      },
+      include: [{
+        model: RuleTemplate,
+        as: 'ruleTemplate',
+        attributes: ['key', 'defaultValue'],
+        required: true
+      }]
+    });
+
+    console.log('🔍 businessRules encontradas:', businessRules.length);
+    businessRules.forEach(rule => {
+      const effectiveValue = rule.customValue ?? rule.ruleTemplate?.defaultValue;
+      console.log(`  - ${rule.ruleTemplate.key}: customValue=${rule.customValue}, defaultValue=${rule.ruleTemplate.defaultValue}, effective=${effectiveValue}`);
     });
 
     const rulesMap = {};
     businessRules.forEach(rule => {
-      rulesMap[rule.key] = rule.effective_value ?? rule.customValue ?? rule.defaultValue;
+      const key = rule.ruleTemplate.key;
+      // Calcular effective_value: customValue tiene prioridad sobre defaultValue
+      rulesMap[key] = rule.customValue ?? rule.ruleTemplate.defaultValue;
     });
 
     // Obtener valores desde reglas con fallbacks
@@ -605,6 +623,12 @@ exports.getBusinessCommissionConfig = async (req, res) => {
     const generalPercentage = rulesMap.COMISIONES_PORCENTAJE_GENERAL 
       ? parseFloat(rulesMap.COMISIONES_PORCENTAJE_GENERAL)
       : await getDefaultCommissionRate(businessId);
+
+    console.log('🔍 Valores calculados:', {
+      commissionsEnabled,
+      calculationType,
+      generalPercentage
+    });
 
     // 2. Buscar o crear registro en BusinessCommissionConfig (tabla legacy)
     let config = await BusinessCommissionConfig.findOne({
@@ -630,6 +654,8 @@ exports.getBusinessCommissionConfig = async (req, res) => {
     configData.commissionsEnabled = commissionsEnabled;
     configData.calculationType = calculationType;
     configData.generalPercentage = generalPercentage;
+
+    console.log('✅ Retornando configuración:', configData);
 
     return res.json({
       success: true,
@@ -702,7 +728,9 @@ exports.updateBusinessCommissionConfig = async (req, res) => {
     // Buscar los templates de reglas por su key
     const ruleTemplates = await RuleTemplate.findAll({
       where: {
-        key: ['COMISIONES_HABILITADAS', 'COMISIONES_TIPO_CALCULO', 'COMISIONES_PORCENTAJE_GENERAL']
+        key: {
+          [Op.in]: ['COMISIONES_HABILITADAS', 'COMISIONES_TIPO_CALCULO', 'COMISIONES_PORCENTAJE_GENERAL']
+        }
       }
     });
 
