@@ -844,6 +844,8 @@ class CashRegisterController {
    * FUNCIÓN AUXILIAR: Calcular resumen del turno
    * Obtiene todas las transacciones desde que se abrió el turno
    * Si branchId está presente, filtra por esa sucursal
+   * 
+   * IMPORTANTE: Separa control de efectivo de totales por método de pago
    */
   static async _calculateShiftSummary(shiftId, businessId, userId, openedAt, branchId = null, userRole = null, transaction = null) {
     const summary = {
@@ -858,9 +860,10 @@ class CashRegisterController {
         total: 0,
         totalAmount: 0
       },
-      paymentMethods: {},
-      totalCash: 0,
-      totalNonCash: 0
+      paymentMethods: {}, // Totales por método (CASH, CARD, TRANSFER, etc.)
+      totalCash: 0,        // Solo efectivo (para control de caja)
+      totalNonCash: 0,     // Todo lo demás (referencia)
+      totalIncome: 0       // Total de todos los ingresos
     };
 
     // Construir filtros de citas
@@ -932,7 +935,9 @@ class CashRegisterController {
       
       summary.paymentMethods[method].count++;
       summary.paymentMethods[method].total += amount;
+      summary.totalIncome += amount;
 
+      // Control específico de efectivo (para balance de caja)
       if (method === 'CASH') {
         summary.totalCash += amount;
       } else {
@@ -1163,7 +1168,7 @@ class CashRegisterController {
   }
 
   /**
-   * Obtener movimientos del turno (recibos y gastos)
+   * Obtener movimientos del turno (recibos y gastos) con detalles de especialista y cliente
    * GET /api/cash-register/shift/:shiftId/movements?businessId={bizId}
    */
   static async getShiftMovements(req, res) {
@@ -1199,7 +1204,7 @@ class CashRegisterController {
         dateFilter[Op.lte] = shift.closedAt;
       }
 
-      // Obtener recibos (ingresos) del turno
+      // Obtener recibos (ingresos) del turno con información del especialista
       const receipts = await Receipt.findAll({
         where: {
           businessId,
@@ -1211,6 +1216,23 @@ class CashRegisterController {
             model: User,
             as: 'user',
             attributes: ['id', 'firstName', 'lastName']
+          },
+          {
+            model: Appointment,
+            as: 'appointment',
+            attributes: ['id', 'specialistId'],
+            include: [
+              {
+                model: User,
+                as: 'specialist',
+                attributes: ['id', 'firstName', 'lastName']
+              },
+              {
+                model: Client,
+                as: 'client',
+                attributes: ['id', 'firstName', 'lastName', 'phone']
+              }
+            ]
           }
         ],
         order: [['createdAt', 'DESC']]
@@ -1250,6 +1272,10 @@ class CashRegisterController {
         paymentMethod: receipt.paymentMethod,
         referenceId: receipt.appointmentId,
         clientName: receipt.clientName,
+        clientPhone: receipt.appointment?.client?.phone || null,
+        specialistName: receipt.appointment?.specialist 
+          ? `${receipt.appointment.specialist.firstName} ${receipt.appointment.specialist.lastName}`
+          : null,
         createdAt: receipt.createdAt,
         receiptNumber: receipt.receiptNumber,
         source: 'RECEIPT'

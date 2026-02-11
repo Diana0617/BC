@@ -90,7 +90,7 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
     certifications: '',
     bio: '',
     hourlyRate: '',
-    commissionPercentage: '',
+    commissionRate: '',
     
     // Sucursal principal
     branchId: '',

@@ -64,11 +64,11 @@ class CashRegisterPDFService {
           .text(`Cierre: ${this._formatDate(shift.closedAt || new Date())}`)
           .moveDown(1);
 
-        // ============= RESUMEN DE DINERO =============
+        // ============= RESUMEN DE DINERO (CONTROL DE EFECTIVO) =============
         doc
           .fontSize(12)
           .font('Helvetica-Bold')
-          .text('RESUMEN DE DINERO', { underline: true })
+          .text('CONTROL DE EFECTIVO', { underline: true })
           .moveDown(0.5);
 
         const openingBalance = parseFloat(shift.openingBalance || 0);
@@ -79,9 +79,9 @@ class CashRegisterPDFService {
         doc
           .font('Helvetica')
           .fontSize(10)
-          .text(`Balance Inicial:`, 100, doc.y, { continued: true, width: 250 })
+          .text(`Balance Inicial (Efectivo):`, 100, doc.y, { continued: true, width: 250 })
           .text(`$${this._formatMoney(openingBalance)}`, { align: 'right' })
-          .text(`Efectivo Cobrado:`, 100, doc.y, { continued: true, width: 250 })
+          .text(`Efectivo Cobrado en Turno:`, 100, doc.y, { continued: true, width: 250 })
           .text(`$${this._formatMoney(summary.totalCash || 0)}`, { align: 'right' })
           .moveDown(0.3);
 
@@ -95,7 +95,7 @@ class CashRegisterPDFService {
         doc
           .font('Helvetica-Bold')
           .fontSize(11)
-          .text(`Balance Esperado:`, 100, doc.y, { continued: true, width: 250 })
+          .text(`Balance Esperado (Efectivo):`, 100, doc.y, { continued: true, width: 250 })
           .text(`$${this._formatMoney(expectedClosing)}`, { align: 'right' })
           .font('Helvetica')
           .fontSize(10)
@@ -117,11 +117,11 @@ class CashRegisterPDFService {
           .fillColor('black')
           .moveDown(1.5);
 
-        // ============= MÉTODOS DE PAGO =============
+        // ============= DESGLOSE POR MÉTODO DE PAGO (TODOS LOS PAGOS) =============
         doc
           .fontSize(12)
           .font('Helvetica-Bold')
-          .text('MÉTODOS DE PAGO', { underline: true })
+          .text('DESGLOSE POR MÉTODO DE PAGO', { underline: true })
           .moveDown(0.5);
 
         const paymentMethods = summary.paymentMethods || {};
@@ -137,13 +137,50 @@ class CashRegisterPDFService {
         doc.font('Helvetica').fontSize(10);
 
         if (Object.keys(paymentMethods).length > 0) {
+          let totalAllPayments = 0;
+          
+          // Líneas de tabla
+          doc
+            .font('Helvetica-Bold')
+            .text('Método', 100, doc.y, { width: 150, continued: true })
+            .text('Cantidad', { width: 80, align: 'center', continued: true })
+            .text('Total', { align: 'right' })
+            .moveDown(0.3);
+
+          doc
+            .moveTo(100, doc.y)
+            .lineTo(450, doc.y)
+            .stroke()
+            .moveDown(0.3);
+
+          // Cada método
+          doc.font('Helvetica');
           Object.entries(paymentMethods).forEach(([method, data]) => {
             const methodName = methodNames[method] || method;
+            totalAllPayments += data.total;
+            
             doc
-              .text(`${methodName}:`, 100, doc.y, { continued: true, width: 200 })
-              .text(`${data.count} pago(s)`, { continued: true, width: 100 })
+              .text(methodName, 100, doc.y, { width: 150, continued: true })
+              .text(`${data.count}`, { width: 80, align: 'center', continued: true })
               .text(`$${this._formatMoney(data.total)}`, { align: 'right' });
           });
+
+          // Total general
+          doc
+            .moveDown(0.3)
+            .moveTo(100, doc.y)
+            .lineTo(450, doc.y)
+            .stroke()
+            .moveDown(0.3);
+
+          doc
+            .font('Helvetica-Bold')
+            .fontSize(11)
+            .text('TOTAL GENERAL:', 100, doc.y, { width: 230, continued: true })
+            .text(`$${this._formatMoney(totalAllPayments)}`, { align: 'right' })
+            .font('Helvetica')
+            .fontSize(10);
+
         } else {
           doc.text('No hay pagos registrados');
         }

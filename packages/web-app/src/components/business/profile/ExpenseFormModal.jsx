@@ -5,7 +5,8 @@ import {
   CloudArrowUpIcon,
   DocumentIcon,
   TrashIcon,
-  BuildingOfficeIcon
+  BuildingOfficeIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { selectUserBranches, selectUserHasMultipleBranches } from '@shared';
@@ -21,6 +22,11 @@ const ExpenseFormModal = ({
 }) => {
   const userBranches = useSelector(selectUserBranches);
   const hasMultipleBranches = useSelector(selectUserHasMultipleBranches);
+  
+  // Leer regla de negocio para comprobantes requeridos
+  const businessRules = useSelector(state => state.businessRule?.assignedRules || []);
+  const receiptRequiredRule = businessRules.find(r => r.key === 'GASTOS_COMPROBANTE_REQUERIDO');
+  const isReceiptRequired = receiptRequiredRule?.customValue ?? receiptRequiredRule?.effective_value ?? receiptRequiredRule?.defaultValue ?? false;
 
   const [formData, setFormData] = useState({
     categoryId: '',
@@ -134,6 +140,11 @@ const ExpenseFormModal = ({
     }
     if (!formData.description || formData.description.trim().length < 3) {
       newErrors.description = 'La descripción debe tener al menos 3 caracteres';
+    }
+    
+    // Validar comprobante si la regla de negocio lo requiere
+    if (isReceiptRequired && !selectedFile && !filePreview) {
+      newErrors.file = 'El comprobante es obligatorio según la política de tu negocio';
     }
 
     setErrors(newErrors);
@@ -262,8 +273,23 @@ const ExpenseFormModal = ({
                 )}
               </div>
 
-              {/* Mensaje de recomendación si la categoría requiere comprobante */}
-              {selectedCategory?.requiresReceipt && !selectedFile && (
+              {/* Mensaje de advertencia si el comprobante es obligatorio */}
+              {isReceiptRequired && !selectedFile && !filePreview && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start">
+                  <ExclamationTriangleIcon className="h-5 w-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-red-800">
+                      Comprobante obligatorio
+                    </p>
+                    <p className="text-xs text-red-600 mt-0.5">
+                      Tu negocio requiere adjuntar un comprobante (imagen o PDF) para todos los gastos
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Mensaje de recomendación si la categoría requiere comprobante (pero no es obligatorio por regla) */}
+              {!isReceiptRequired && selectedCategory?.requiresReceipt && !selectedFile && !filePreview && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start">
                   <svg className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -431,7 +457,11 @@ const ExpenseFormModal = ({
               {/* Archivo de Comprobante */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Comprobante (Opcional)
+                  Comprobante {isReceiptRequired ? (
+                    <span className="text-red-500">*</span>
+                  ) : (
+                    <span className="text-gray-500 text-xs">(Opcional)</span>
+                  )}
                 </label>
                 
                 {!filePreview ? (
