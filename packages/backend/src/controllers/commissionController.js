@@ -575,11 +575,38 @@ exports.createCommissionRequest = async (req, res) => {
 /**
  * Obtener configuración de comisiones del negocio
  * GET /api/business/:businessId/commission-config
+ * IMPORTANTE: Siempre lee desde BusinessRules como fuente de verdad
  */
 exports.getBusinessCommissionConfig = async (req, res) => {
   try {
     const { businessId } = req.params;
 
+    // 1. Leer reglas de negocio (fuente de verdad)
+    const businessRules = await BusinessRule.findAll({
+      where: {
+        businessId,
+        key: ['COMISIONES_HABILITADAS', 'COMISIONES_TIPO_CALCULO', 'COMISIONES_PORCENTAJE_GENERAL'],
+        isActive: true
+      }
+    });
+
+    const rulesMap = {};
+    businessRules.forEach(rule => {
+      rulesMap[rule.key] = rule.effective_value ?? rule.customValue ?? rule.defaultValue;
+    });
+
+    // Obtener valores desde reglas con fallbacks
+    const commissionsEnabled = rulesMap.COMISIONES_HABILITADAS !== undefined 
+      ? rulesMap.COMISIONES_HABILITADAS 
+      : true;
+
+    const calculationType = rulesMap.COMISIONES_TIPO_CALCULO || 'GENERAL';
+    
+    const generalPercentage = rulesMap.COMISIONES_PORCENTAJE_GENERAL 
+      ? parseFloat(rulesMap.COMISIONES_PORCENTAJE_GENERAL)
+      : await getDefaultCommissionRate(businessId);
+
+    // 2. Buscar o crear registro en BusinessCommissionConfig (tabla legacy)
     let config = await BusinessCommissionConfig.findOne({
       where: { businessId },
       include: [{
@@ -589,19 +616,24 @@ exports.getBusinessCommissionConfig = async (req, res) => {
       }]
     });
 
-    // Si no existe, crear configuración por defecto
     if (!config) {
       config = await BusinessCommissionConfig.create({
         businessId,
-        commissionsEnabled: true,
-        calculationType: 'GENERAL',
-        generalPercentage: 50
+        commissionsEnabled,
+        calculationType,
+        generalPercentage
       });
     }
 
+    // 3. SIEMPRE sobrescribir con valores de BusinessRules (ignora BD)
+    const configData = config.toJSON();
+    configData.commissionsEnabled = commissionsEnabled;
+    configData.calculationType = calculationType;
+    configData.generalPercentage = generalPercentage;
+
     return res.json({
       success: true,
-      data: config
+      data: configData
     });
 
   } catch (error) {
