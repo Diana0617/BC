@@ -14,8 +14,56 @@ const User = require('../models/User');
 const Service = require('../models/Service');
 const Branch = require('../models/Branch');
 const UserBranch = require('../models/UserBranch');
+const BusinessRule = require('../models/BusinessRule');
+const RuleTemplate = require('../models/RuleTemplate');
 
 class BusinessConfigService {
+  
+  /**
+   * Helper: Get default commission rate from business rules
+   * Reads COMISIONES_PORCENTAJE_GENERAL with fallback chain:
+   * BusinessRule.effective_value → BusinessRule.customValue → RuleTemplate.defaultValue → 50
+   */
+  async getDefaultCommissionRate(businessId) {
+    try {
+      // 1. Try to get from BusinessRule (business-specific override)
+      const businessRule = await BusinessRule.findOne({
+        where: {
+          businessId,
+          key: 'COMISIONES_PORCENTAJE_GENERAL',
+          isActive: true
+        }
+      });
+
+      if (businessRule) {
+        // effective_value is the computed final value (customValue || defaultValue)
+        if (businessRule.effective_value !== null && businessRule.effective_value !== undefined) {
+          return parseFloat(businessRule.effective_value);
+        }
+        if (businessRule.customValue !== null && businessRule.customValue !== undefined) {
+          return parseFloat(businessRule.customValue);
+        }
+        if (businessRule.defaultValue !== null && businessRule.defaultValue !== undefined) {
+          return parseFloat(businessRule.defaultValue);
+        }
+      }
+
+      // 2. Fallback to RuleTemplate default
+      const ruleTemplate = await RuleTemplate.findOne({
+        where: { key: 'COMISIONES_PORCENTAJE_GENERAL' }
+      });
+
+      if (ruleTemplate?.defaultValue !== null && ruleTemplate?.defaultValue !== undefined) {
+        return parseFloat(ruleTemplate.defaultValue);
+      }
+
+      // 3. Ultimate fallback
+      return 50;
+    } catch (error) {
+      console.error('❌ Error getting default commission rate:', error);
+      return 50; // Safe fallback
+    }
+  }
   
   // TEMPORARILY DISABLED METHODS - Return error messages
   
@@ -446,6 +494,9 @@ class BusinessConfigService {
         status: 'ACTIVE'
       }, { transaction });
 
+      // Obtener tasa de comisión por defecto del sistema de reglas
+      const defaultCommissionRate = await this.getDefaultCommissionRate(businessId);
+
       // Solo crear perfil de especialista si NO es RECEPTIONIST puro
       let profile = null;
       
@@ -463,7 +514,7 @@ class BusinessConfigService {
             : (profileData.certifications ? [profileData.certifications] : []),
           isActive: profileData.isActive !== undefined ? profileData.isActive : true,
           commissionRate: profileData.commissionRate ? parseFloat(profileData.commissionRate) :
-                         (profileData.commissionPercentage ? parseFloat(profileData.commissionPercentage) : 50.00),
+                         (profileData.commissionPercentage ? parseFloat(profileData.commissionPercentage) : defaultCommissionRate),
           commissionType: profileData.hourlyRate ? 'FIXED_AMOUNT' : 'PERCENTAGE',
           fixedCommissionAmount: profileData.hourlyRate ? parseFloat(profileData.hourlyRate) : null,
           status: 'ACTIVE'

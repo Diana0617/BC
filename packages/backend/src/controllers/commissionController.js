@@ -24,6 +24,37 @@ const BusinessExpenseController = require('./BusinessExpenseController');
  */
 
 /**
+ * Helper: Obtener tasa de comisión por defecto desde reglas de negocio
+ * @param {string} businessId - ID del negocio
+ * @returns {Promise<number>} Porcentaje de comisión (por defecto 50)
+ */
+async function getDefaultCommissionRate(businessId) {
+  try {
+    const commissionRule = await BusinessRule.findOne({
+      where: { 
+        businessId,
+        key: 'COMISIONES_PORCENTAJE_GENERAL',
+        isActive: true 
+      }
+    });
+
+    if (commissionRule) {
+      return commissionRule.effective_value || commissionRule.customValue || commissionRule.defaultValue || 50;
+    }
+
+    // Si no hay regla asignada al negocio, buscar en template
+    const template = await RuleTemplate.findOne({
+      where: { key: 'COMISIONES_PORCENTAJE_GENERAL', isActive: true }
+    });
+
+    return template?.defaultValue || 50;
+  } catch (error) {
+    console.error('Error obteniendo tasa de comisión:', error);
+    return 50; // Fallback
+  }
+}
+
+/**
  * Obtener resumen de comisiones del especialista (para dashboard)
  * GET /api/commissions/summary?specialistId=xxx&businessId=xxx
  */
@@ -87,9 +118,11 @@ exports.getSpecialistCommissionSummary = async (req, res) => {
         .map(d => d.appointmentId)
     );
     
+    // Obtener tasa de comisión desde reglas de negocio
+    const commissionRate = await getDefaultCommissionRate(businessId);
+    
     completedAppointments.forEach(appointment => {
       const price = parseFloat(appointment.totalAmount || appointment.service?.price || 0);
-      const commissionRate = 50; // Por defecto 50%, después se puede obtener de config
       const commission = (price * commissionRate) / 100;
       
       const isPaid = paidAppointmentIds.has(appointment.id);
@@ -1108,10 +1141,11 @@ exports.getSpecialistsSummary = async (req, res) => {
         let generated = 0;
         let servicesCount = 0;
 
+        // Obtener tasa de comisión desde reglas de negocio
+        const commissionRate = await getDefaultCommissionRate(businessId);
+
         completedAppointments.forEach(appointment => {
           const price = parseFloat(appointment.finalPrice || appointment.service?.price || 0);
-          // Obtener la tasa de comisión de la configuración del negocio o usar 50% por defecto
-          const commissionRate = 50; // Puede venir de specialist_services o configuración del negocio
           const commissionAmount = (price * commissionRate) / 100;
           generated += commissionAmount;
           servicesCount++;
@@ -1241,10 +1275,12 @@ exports.getSpecialistDetails = async (req, res) => {
       order: [['startTime', 'DESC']]
     });
 
+    // Obtener tasa de comisión desde reglas de negocio
+    const commissionRate = await getDefaultCommissionRate(businessId);
+
     // Calcular detalles de comisiones
     const commissionDetails = appointments.map(appointment => {
       const price = parseFloat(appointment.finalPrice || appointment.service?.price || 0);
-      const commissionRate = 50; // Tasa por defecto, puede venir de configuración del negocio
       const commissionAmount = (price * commissionRate) / 100;
       const isPaid = appointment.commissionDetails && appointment.commissionDetails.length > 0 
         && appointment.commissionDetails[0].paymentStatus === 'PAID';
@@ -1469,10 +1505,12 @@ exports.payCommission = async (req, res) => {
       ]
     });
 
+    // Obtener tasa de comisión desde reglas de negocio
+    const commissionRate = await getDefaultCommissionRate(businessId);
+
     const commissionDetailsCreated = [];
     for (const appointment of appointments) {
       const price = parseFloat(appointment.finalPrice || appointment.service?.price || 0);
-      const commissionRate = 50; // Tasa por defecto, puede venir de configuración del negocio
       const commissionAmount = (price * commissionRate) / 100;
 
       const detail = await CommissionDetail.create({
@@ -1638,10 +1676,12 @@ exports.getPaymentRequests = async (req, res) => {
         order: [['completedAt', 'DESC']]
       });
 
+      // Obtener tasa de comisión desde reglas de negocio
+      const commissionRate = await getDefaultCommissionRate(businessId);
+
       // Calcular comisiones para cada appointment
       const appointmentsWithCommission = appointments.map(appt => {
         const price = parseFloat(appt.totalAmount || appt.service?.price || 0);
-        const commissionRate = 50; // TODO: obtener de config
         const commission = (price * commissionRate) / 100;
 
         return {

@@ -3,10 +3,13 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { commissionApi } from '@shared/api'
 
 const CommissionConfigModal = ({ isOpen, onClose, onSave, service, businessId, globalConfig }) => {
+  // Usar globalConfig.generalPercentage si existe, sino 50 por defecto
+  const defaultPercentage = globalConfig?.generalPercentage || 50;
+  
   const [useCustom, setUseCustom] = useState(false)
   const [formData, setFormData] = useState({
-    specialistPercentage: 50,
-    businessPercentage: 50
+    specialistPercentage: defaultPercentage,
+    businessPercentage: 100 - defaultPercentage
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)

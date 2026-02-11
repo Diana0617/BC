@@ -8,12 +8,55 @@ const {
   Branch,
   SpecialistService,
   UserBranch,
-  BusinessClient
+  BusinessClient,
+  BusinessRule,
+  RuleTemplate
 } = require('../models');
 const { Op } = require('sequelize');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+
+/**
+ * Helper: Get default commission rate from business rules
+ * Reads COMISIONES_PORCENTAJE_GENERAL with fallback chain
+ */
+async function getDefaultCommissionRate(businessId) {
+  try {
+    const businessRule = await BusinessRule.findOne({
+      where: {
+        businessId,
+        key: 'COMISIONES_PORCENTAJE_GENERAL',
+        isActive: true
+      }
+    });
+
+    if (businessRule) {
+      if (businessRule.effective_value !== null && businessRule.effective_value !== undefined) {
+        return parseFloat(businessRule.effective_value);
+      }
+      if (businessRule.customValue !== null && businessRule.customValue !== undefined) {
+        return parseFloat(businessRule.customValue);
+      }
+      if (businessRule.defaultValue !== null && businessRule.defaultValue !== undefined) {
+        return parseFloat(businessRule.defaultValue);
+      }
+    }
+
+    const ruleTemplate = await RuleTemplate.findOne({
+      where: { key: 'COMISIONES_PORCENTAJE_GENERAL' }
+    });
+
+    if (ruleTemplate?.defaultValue !== null && ruleTemplate?.defaultValue !== undefined) {
+      return parseFloat(ruleTemplate.defaultValue);
+    }
+
+    return 50;
+  } catch (error) {
+    console.error('❌ Error getting default commission rate:', error);
+    return 50;
+  }
+}
 
 /**
  * Controlador para gestión de citas
@@ -2448,6 +2491,9 @@ class AppointmentController {
         offset
       });
 
+      // Obtener tasa de comisión por defecto del sistema de reglas (una sola consulta)
+      const defaultCommissionRate = await getDefaultCommissionRate(businessId);
+
       // Calcular comisiones para cada cita
       const appointmentsWithCommission = await Promise.all(
         appointments.map(async (appointment) => {
@@ -2461,7 +2507,7 @@ class AppointmentController {
             }
           });
 
-          const commissionPercentage = specialistService?.commissionPercentage || 50;
+          const commissionPercentage = specialistService?.commissionPercentage || defaultCommissionRate;
           // Usar totalAmount de la cita, o el precio del servicio si no hay totalAmount
           const price = appointment.totalAmount || appointmentData.service?.price || 0;
           const commissionAmount = (price * commissionPercentage) / 100;

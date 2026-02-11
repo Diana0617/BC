@@ -38,9 +38,18 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const defaultCommissionRule = businessRules.find(r => r.key === 'COMISIONES_PORCENTAJE_GENERAL');
   
   // Determinar si el negocio usa comisiones (por defecto true si no hay regla)
-  const useCommissionSystem = commissionRule?.customValue ?? commissionRule?.effective_value ?? commissionRule?.defaultValue ?? commissionRule?.template?.defaultValue ?? true;
-  const commissionCalculationType = commissionTypeRule?.customValue ?? commissionTypeRule?.effective_value ?? commissionTypeRule?.defaultValue ?? commissionTypeRule?.template?.defaultValue ?? 'POR_SERVICIO';
-  const defaultCommissionRate = defaultCommissionRule?.customValue ?? defaultCommissionRule?.effective_value ?? defaultCommissionRule?.defaultValue ?? defaultCommissionRule?.template?.defaultValue ?? 50;
+  // IMPORTANTE: effective_value es el valor final calculado (customValue || defaultValue)
+  const useCommissionSystem = commissionRule?.effective_value ?? commissionRule?.customValue ?? commissionRule?.defaultValue ?? true;
+  const commissionCalculationType = commissionTypeRule?.effective_value ?? commissionTypeRule?.customValue ?? commissionTypeRule?.defaultValue ?? 'POR_SERVICIO';
+  const defaultCommissionRate = defaultCommissionRule?.effective_value ?? defaultCommissionRule?.customValue ?? defaultCommissionRule?.defaultValue ?? 50;
+  
+  // Debug: Ver qué valores estamos leyendo
+  console.log('🔍 [StaffManagement] Commission Rules:', {
+    useCommissionSystem,
+    commissionCalculationType,
+    defaultCommissionRate,
+    rawRules: { commissionRule, commissionTypeRule, defaultCommissionRule }
+  });
   
   const { isBusinessSpecialist } = usePermissions();
   
@@ -928,48 +937,49 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
                   {commissionCalculationType === 'POR_SERVICIO' && (
                     <>
                       <strong>Comisión por servicio:</strong> Cada servicio tiene su propio porcentaje de comisión configurado. 
-                      Asigna los servicios a este especialista en la pestaña "Servicios" para definir sus comisiones.
+                      Sin embargo, puedes establecer una comisión base para este especialista que se usará como referencia.
                     </>
                   )}
                   {commissionCalculationType === 'MIXTO' && (
                     <>
                       <strong>Comisión mixta:</strong> Algunos servicios usan la comisión general ({defaultCommissionRate}%) y otros tienen comisión personalizada. 
-                      Configura las comisiones específicas en la pestaña "Servicios".
+                      La comisión del especialista se aplicará donde corresponda.
                     </>
                   )}
                 </span>
               </p>
             </div>
             
-            {/* Campo para comisión general del especialista */}
-            {(commissionCalculationType === 'GENERAL' || commissionCalculationType === 'MIXTO') && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Comisión General del Especialista (%)
-                </label>
-                <input
-                  type="number"
-                  name="commissionRate"
-                  value={formData.commissionRate}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder={defaultCommissionRate.toString()}
-                  min="0"
-                  max="100"
-                  step="5"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Porcentaje de comisión por servicio (0-100%). Dejar en blanco para usar {defaultCommissionRate}% por defecto.
-                </p>
-              </div>
-            )}
+            {/* Campo de comisión - SIEMPRE visible si usa sistema de comisiones */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {commissionCalculationType === 'POR_SERVICIO' 
+                  ? 'Comisión Base del Especialista (%)'
+                  : 'Comisión del Especialista (%)'}
+              </label>
+              <input
+                type="number"
+                name="commissionRate"
+                value={formData.commissionRate}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder={defaultCommissionRate.toString()}
+                min="0"
+                max="100"
+                step="5"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                {commissionCalculationType === 'POR_SERVICIO' 
+                  ? `Comisión base de referencia (0-100%). Dejar en blanco para usar ${defaultCommissionRate}% por defecto. Las comisiones específicas de cada servicio se configuran en la pestaña "Servicios".`
+                  : `Porcentaje de comisión (0-100%). Dejar en blanco para usar ${defaultCommissionRate}% por defecto.`}
+              </p>
+            </div>
             
-            {/* Mensaje para comisión por servicio */}
+            {/* Mensaje adicional para modo POR_SERVICIO */}
             {commissionCalculationType === 'POR_SERVICIO' && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                 <p className="text-sm text-yellow-800">
-                  ⚠️ Las comisiones se configuran individualmente por cada servicio asignado al especialista. 
-                  Una vez guardes este especialista, ve a la pestaña "Servicios" para asignar servicios y definir sus comisiones.
+                  📋 <strong>Recuerda:</strong> Después de guardar, ve a la pestaña "Servicios" para asignar servicios específicos y definir las comisiones individuales de cada uno.
                 </p>
               </div>
             )}
@@ -1449,11 +1459,17 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
             onDelete={handleDelete}
             onToggleStatus={toggleStatus}
             onEdit={(staff) => {
+              console.log('📝 [Editing Staff]:', {
+                staff,
+                commissionRate: staff.SpecialistProfile?.commissionRate,
+                fullProfile: staff.SpecialistProfile
+              });
+              
               setEditingSpecialist(staff);
               setIsAddingSpecialist(true);
               
               // Pre-cargar datos del formulario
-              setFormData({
+              const formDataToLoad = {
                 firstName: staff.firstName || '',
                 lastName: staff.lastName || '',
                 email: staff.email || '',
@@ -1468,7 +1484,10 @@ const StaffManagementSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 branchId: staff.SpecialistProfile?.branchId || '',
                 additionalBranches: staff.UserBranches?.filter(ub => !ub.isDefault).map(ub => ub.branchId) || [],
                 isActive: staff.isActive !== undefined ? staff.isActive : true
-              });
+              };
+              
+              console.log('📋 [Form Data Loaded]:', formDataToLoad);
+              setFormData(formDataToLoad);
               
               // Cargar servicios del especialista si aplica
               if (staff.role !== 'RECEPTIONIST') {
