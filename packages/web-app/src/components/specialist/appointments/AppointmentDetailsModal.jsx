@@ -914,10 +914,10 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
               </div>
             </div>
           ) : activeTab === 'details' && (
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-            <div className="flex items-center justify-between gap-3">
+          <div className="px-3 md:px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               {/* Lado izquierdo - Botones opcionales según estado */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {['CONFIRMED', 'IN_PROGRESS'].includes(appointmentDetails.status) && (
                   <button
                     onClick={handleUploadBeforePhoto}
@@ -937,7 +937,7 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
               </div>
 
               {/* Lado derecho - Acciones principales */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap justify-end">
                 {/* Botón Cancelar (siempre visible excepto si ya está cancelado o completado) */}
                 {!['CANCELED', 'COMPLETED'].includes(appointmentDetails.status) && (
                   <>
@@ -989,7 +989,7 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
                       <button
                         onClick={handleConfirm}
                         disabled={actionLoading === 'confirm'}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 text-sm md:text-base whitespace-nowrap"
                       >
                         {actionLoading === 'confirm' ? (
                           <>
@@ -1009,7 +1009,7 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
                       <button
                         onClick={handleStart}
                         disabled={actionLoading === 'start'}
-                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2 text-sm md:text-base whitespace-nowrap"
                       >
                         {actionLoading === 'start' ? (
                           <>
@@ -1029,7 +1029,7 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
                       <button
                         onClick={handleComplete}
                         disabled={actionLoading === 'complete'}
-                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2 text-sm md:text-base whitespace-nowrap"
                       >
                         {actionLoading === 'complete' ? (
                           <>
