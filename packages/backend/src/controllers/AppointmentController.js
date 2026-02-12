@@ -822,6 +822,8 @@ class AppointmentController {
 
 
       // Verificar disponibilidad del especialista (conflictos con otras citas)
+      // ✅ FIXED: Usar comparadores exclusivos para permitir citas consecutivas
+      // Una cita termina a las 09:00, otra puede empezar a las 09:00
       const conflictingAppointment = await Appointment.findOne({
         where: {
           specialistId: specialist.id, // Usar el userId del especialista
@@ -830,16 +832,21 @@ class AppointmentController {
             [Op.notIn]: ['CANCELED', 'COMPLETED']
           },
           [Op.or]: [
+            // Caso 1: La cita existente empieza DURANTE la nueva cita (exclusivo en límites)
             {
-              startTime: {
-                [Op.between]: [new Date(startTime), calculatedEndTime]
-              }
+              [Op.and]: [
+                { startTime: { [Op.gt]: new Date(startTime) } },
+                { startTime: { [Op.lt]: calculatedEndTime } }
+              ]
             },
+            // Caso 2: La cita existente termina DURANTE la nueva cita (exclusivo en límites)
             {
-              endTime: {
-                [Op.between]: [new Date(startTime), calculatedEndTime]
-              }
+              [Op.and]: [
+                { endTime: { [Op.gt]: new Date(startTime) } },
+                { endTime: { [Op.lt]: calculatedEndTime } }
+              ]
             },
+            // Caso 3: La cita existente envuelve completamente a la nueva cita
             {
               [Op.and]: [
                 { startTime: { [Op.lte]: new Date(startTime) } },
@@ -1347,6 +1354,7 @@ class AppointmentController {
         startTime,
         endTime,
         serviceId,
+        serviceIds, // ✅ NUEVO: Array de servicios para modificar durante el turno
         specialistId,
         notes,
         clientNotes,
@@ -1395,10 +1403,142 @@ class AppointmentController {
       // Preparar datos de actualización
       const updateData = {};
 
+      // ✅ NUEVO: Actualizar servicios de la cita (agregar/quitar servicios durante el turno)
+      let recalculatedDuration = null;
+      let recalculatedAmount = null;
+
+      if (serviceIds && Array.isArray(serviceIds) && serviceIds.length > 0) {
+        console.log(`📝 Actualizando servicios de la cita ${id}:`, serviceIds);
+        
+        // Validar que todos los servicios existen y pertenecen al negocio
+        const services = await Service.findAll({
+          where: {
+            id: { [Op.in]: serviceIds },
+            businessId,
+            isActive: true
+          }
+        });
+
+        if (services.length !== serviceIds.length) {
+          return res.status(400).json({
+            success: false,
+            error: 'Uno o más servicios no válidos o inactivos'
+          });
+        }
+
+        // Calcular nueva duración y monto total
+        recalculatedDuration = services.reduce((sum, s) => sum + s.duration, 0);
+        recalculatedAmount = services.reduce((sum, s) => sum + parseFloat(s.price), 0);
+
+        console.log(`📊 Nueva duración: ${recalculatedDuration} min, Nuevo monto: $${recalculatedAmount}`);
+
+        // Si hay cambio en la duración, recalcular endTime
+        if (!endTime && startTime) {
+          const newStart = new Date(startTime);
+          const calculatedEndTime = new Date(newStart.getTime() + recalculatedDuration * 60000);
+          updateData.endTime = calculatedEndTime;
+          console.log(`⏰ EndTime recalculado: ${calculatedEndTime.toISOString()}`);
+        } else if (!endTime && !startTime) {
+          // Si no se cambia startTime, usar el existente
+          const currentStart = new Date(appointment.startTime);
+          const calculatedEndTime = new Date(currentStart.getTime() + recalculatedDuration * 60000);
+          updateData.endTime = calculatedEndTime;
+          console.log(`⏰ EndTime recalculado (mismo startTime): ${calculatedEndTime.toISOString()}`);
+        }
+
+        // Actualizar monto total
+        updateData.totalAmount = recalculatedAmount;
+
+        // Actualizar el campo duration de la cita
+        updateData.duration = recalculatedDuration;
+
+        // Actualizar la tabla intermedia AppointmentService
+        const AppointmentService = require('../models/AppointmentService');
+        
+        // 1. Eliminar todos los servicios actuales de la cita
+        await AppointmentService.destroy({
+          where: { appointmentId: id }
+        });
+
+        // 2. Crear las nuevas relaciones
+        const appointmentServiceData = services.map((service, index) => ({
+          appointmentId: id,
+          serviceId: service.id,
+          price: service.price,
+          duration: service.duration,
+          order: index
+        }));
+
+        await AppointmentService.bulkCreate(appointmentServiceData);
+
+        console.log(`✅ ${services.length} servicios actualizados en la cita`);
+
+        // Si hay múltiples servicios, actualizar también serviceId al primero (por compatibilidad)
+        updateData.serviceId = serviceIds[0];
+
+        // ✅ IMPORTANTE: Si solo se actualizan servicios (sin cambiar startTime), 
+        // validar que el nuevo endTime no genere conflictos
+        if (!startTime && updateData.endTime) {
+          const targetSpecialistId = specialistId || appointment.specialistId;
+          
+          // Validar conflictos con el nuevo endTime calculado
+          const conflictingAppointment = await Appointment.findOne({
+            where: {
+              id: { [Op.ne]: id },
+              specialistId: targetSpecialistId,
+              businessId,
+              status: {
+                [Op.notIn]: ['CANCELED', 'NO_SHOW']
+              },
+              [Op.or]: [
+                {
+                  [Op.and]: [
+                    { startTime: { [Op.gt]: appointment.startTime } },
+                    { startTime: { [Op.lt]: updateData.endTime } }
+                  ]
+                },
+                {
+                  [Op.and]: [
+                    { endTime: { [Op.gt]: appointment.startTime } },
+                    { endTime: { [Op.lt]: updateData.endTime } }
+                  ]
+                },
+                {
+                  [Op.and]: [
+                    { startTime: { [Op.lte]: appointment.startTime } },
+                    { endTime: { [Op.gte]: updateData.endTime } }
+                  ]
+                }
+              ]
+            }
+          });
+
+          if (conflictingAppointment) {
+            const conflictStart = new Date(conflictingAppointment.startTime).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+            return res.status(400).json({
+              success: false,
+              error: `No se pueden agregar estos servicios. El nuevo horario (hasta ${new Date(updateData.endTime).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}) entra en conflicto con otra cita a las ${conflictStart}`,
+              details: {
+                reason: 'SCHEDULE_CONFLICT',
+                originalEndTime: appointment.endTime,
+                newEndTime: updateData.endTime,
+                conflictingAppointment: {
+                  id: conflictingAppointment.id,
+                  startTime: conflictingAppointment.startTime
+                }
+              }
+            });
+          }
+        }
+      }
+
       // Si cambia el horario, validar disponibilidad
-      if (startTime && endTime) {
+      if (startTime && (endTime || updateData.endTime)) {
         const targetSpecialistId = specialistId || appointment.specialistId;
         const targetBranchId = branchId !== undefined ? branchId : appointment.branchId;
+        
+        // Usar endTime recalculado si existe, sino el del body
+        const finalEndTime = updateData.endTime || endTime;
         
         // ✅ VALIDACIÓN: Verificar horario configurado (especialista o negocio)
         const SpecialistBranchSchedule = require('../models/SpecialistBranchSchedule');
@@ -1500,6 +1640,7 @@ class AppointmentController {
         }
         
         // Verificar disponibilidad del especialista en el nuevo horario
+        // ✅ FIXED: Usar comparadores exclusivos para permitir citas consecutivas
         const conflictingAppointment = await Appointment.findOne({
           where: {
             id: { [Op.ne]: id }, // Excluir la cita actual
@@ -1509,20 +1650,25 @@ class AppointmentController {
               [Op.notIn]: ['CANCELED', 'NO_SHOW']
             },
             [Op.or]: [
+              // Caso 1: La cita existente empieza DURANTE la nueva cita (exclusivo en límites)
               {
-                startTime: {
-                  [Op.between]: [new Date(startTime), new Date(endTime)]
-                }
+                [Op.and]: [
+                  { startTime: { [Op.gt]: new Date(startTime) } },
+                  { startTime: { [Op.lt]: new Date(finalEndTime) } }
+                ]
               },
+              // Caso 2: La cita existente termina DURANTE la nueva cita (exclusivo en límites)
               {
-                endTime: {
-                  [Op.between]: [new Date(startTime), new Date(endTime)]
-                }
+                [Op.and]: [
+                  { endTime: { [Op.gt]: new Date(startTime) } },
+                  { endTime: { [Op.lt]: new Date(finalEndTime) } }
+                ]
               },
+              // Caso 3: La cita existente envuelve completamente a la nueva cita
               {
                 [Op.and]: [
                   { startTime: { [Op.lte]: new Date(startTime) } },
-                  { endTime: { [Op.gte]: new Date(endTime) } }
+                  { endTime: { [Op.gte]: new Date(finalEndTime) } }
                 ]
               }
             ]
@@ -1537,7 +1683,10 @@ class AppointmentController {
         }
 
         updateData.startTime = new Date(startTime);
-        updateData.endTime = new Date(endTime);
+        // Usar finalEndTime que puede ser el recalculado o el del body
+        if (!updateData.endTime) {
+          updateData.endTime = new Date(finalEndTime);
+        }
       }
 
       // Si cambia el servicio, actualizar precio
@@ -1655,6 +1804,15 @@ class AppointmentController {
           {
             model: Service,
             as: 'service',
+            attributes: ['id', 'name', 'duration', 'price', 'category']
+          },
+          {
+            model: Service,
+            as: 'services', // 🆕 Relación muchos-a-muchos para múltiples servicios
+            through: { 
+              attributes: ['price', 'duration', 'order'],
+              as: 'appointmentService'
+            },
             attributes: ['id', 'name', 'duration', 'price', 'category']
           },
           {
@@ -2176,6 +2334,7 @@ class AppointmentController {
       }
 
       // Verificar disponibilidad del especialista en el nuevo horario
+      // ✅ FIXED: Usar comparadores exclusivos para permitir citas consecutivas
       const conflictingAppointment = await Appointment.findOne({
         where: {
           id: { [Op.ne]: id }, // Excluir la cita actual
@@ -2185,16 +2344,21 @@ class AppointmentController {
             [Op.notIn]: ['CANCELED', 'NO_SHOW']
           },
           [Op.or]: [
+            // Caso 1: La cita existente empieza DURANTE la nueva cita (exclusivo en límites)
             {
-              startTime: {
-                [Op.between]: [new Date(newStartTime), new Date(newEndTime)]
-              }
+              [Op.and]: [
+                { startTime: { [Op.gt]: new Date(newStartTime) } },
+                { startTime: { [Op.lt]: new Date(newEndTime) } }
+              ]
             },
+            // Caso 2: La cita existente termina DURANTE la nueva cita (exclusivo en límites)
             {
-              endTime: {
-                [Op.between]: [new Date(newStartTime), new Date(newEndTime)]
-              }
+              [Op.and]: [
+                { endTime: { [Op.gt]: new Date(newStartTime) } },
+                { endTime: { [Op.lt]: new Date(newEndTime) } }
+              ]
             },
+            // Caso 3: La cita existente envuelve completamente a la nueva cita
             {
               [Op.and]: [
                 { startTime: { [Op.lte]: new Date(newStartTime) } },

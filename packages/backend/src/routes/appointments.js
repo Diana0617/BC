@@ -56,13 +56,9 @@ router.post('/', AppointmentController.createAppointment);
 // Obtener cita por ID
 router.get('/:id', AppointmentController.getAppointmentDetail);
 
-// Actualizar cita
-router.put('/:id', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: 'Ruta de actualizar cita aún no implementada'
-  });
-});
+// Actualizar cita (incluyendo modificar servicios durante el turno)
+// Body puede incluir: serviceIds (array), startTime, endTime, specialistId, branchId, notes
+router.put('/:id', AppointmentController.updateAppointment);
 
 // Cancelar cita
 router.patch('/:id/cancel', AppointmentController.updateAppointmentStatus);

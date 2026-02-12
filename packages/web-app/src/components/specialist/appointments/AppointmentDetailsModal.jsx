@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
 import { 
@@ -14,7 +14,10 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   BeakerIcon,
-  ShoppingCartIcon
+  ShoppingCartIcon,
+  PencilSquareIcon,
+  PlusCircleIcon,
+  MinusCircleIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -31,7 +34,6 @@ import { createSale } from '@shared/store/slices/salesSlice';
 export default function AppointmentDetailsModal({ isOpen, appointment, businessId, onClose, onUpdate }) {
   const dispatch = useDispatch();
   const { token } = useSelector(state => state.auth);
-  const { user } = useSelector(state => state.auth);
   const { products } = useSelector(state => state.products);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
@@ -44,23 +46,14 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [savingSale, setSavingSale] = useState(false);
   const [activeShiftId, setActiveShiftId] = useState(null);
+  
+  // 🆕 Estados para edición de servicios
+  const [isEditingServices, setIsEditingServices] = useState(false);
+  const [editedServices, setEditedServices] = useState([]);
+  const [availableServices, setAvailableServices] = useState([]);
+  const [savingServices, setSavingServices] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && appointment?.id) {
-      loadAppointmentDetails();
-      loadActiveShift();
-      // Cargar productos para ventas
-      if (businessId) {
-        dispatch(fetchProducts({ 
-          businessId,
-          productType: 'FOR_SALE,BOTH',
-          isActive: true
-        }));
-      }
-    }
-  }, [isOpen, appointment?.id, businessId, dispatch]);
-
-  const loadAppointmentDetails = async () => {
+  const loadAppointmentDetails = useCallback(async () => {
     if (!token) return;
     
     try {
@@ -83,9 +76,9 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, businessId, appointment?.id]);
 
-  const loadActiveShift = async () => {
+  const loadActiveShift = useCallback(async () => {
     if (!token || !businessId) return;
     
     try {
@@ -106,6 +99,130 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
       }
     } catch (error) {
       console.log('No hay turno activo o error al cargar:', error);
+    }
+  }, [token, businessId]);
+
+  // 🆕 Cargar servicios disponibles del negocio (filtrados por especialista del turno)
+  const loadAvailableServices = useCallback(async () => {
+    if (!token || !businessId) return;
+    
+    try {
+      let services = [];
+      
+      // Si tenemos el especialista, intentar filtrar por sus servicios asignados
+      if (appointmentDetails?.specialistId) {
+        try {
+          const specialistResponse = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/business/${businessId}/specialists/${appointmentDetails.specialistId}/services`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            }
+          );
+          
+          if (specialistResponse.ok) {
+            const specialistData = await specialistResponse.json();
+            services = specialistData.data?.services || specialistData.services || [];
+          }
+        } catch (specialistError) {
+          console.log('No se pudieron cargar los servicios del especialista, cargando todos los servicios');
+        }
+      }
+      
+      // Si no hay servicios del especialista, cargar todos los servicios del negocio
+      if (services.length === 0) {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/services?businessId=${businessId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+        
+        if (!response.ok) throw new Error('Error cargando servicios');
+        
+        const data = await response.json();
+        services = data.data?.services || [];
+      }
+      
+      setAvailableServices(services);
+    } catch (error) {
+      console.error('Error loading services:', error);
+    }
+  }, [token, businessId, appointmentDetails?.specialistId]);
+
+  // 🆕 Iniciar edición de servicios
+  const handleStartEditServices = () => {
+    const currentServices = appointmentDetails.services || [];
+    setEditedServices(currentServices.map(s => s.id));
+    setIsEditingServices(true);
+  };
+
+  // 🆕 Cancelar edición de servicios
+  const handleCancelEditServices = () => {
+    setIsEditingServices(false);
+    setEditedServices([]);
+  };
+
+  // 🆕 Agregar servicio a la lista
+  const handleAddService = (serviceId) => {
+    if (!editedServices.includes(serviceId)) {
+      setEditedServices([...editedServices, serviceId]);
+    }
+  };
+
+  // 🆕 Quitar servicio de la lista
+  const handleRemoveService = (serviceId) => {
+    setEditedServices(editedServices.filter(id => id !== serviceId));
+  };
+
+  // 🆕 Guardar servicios actualizados
+  const handleSaveServices = async () => {
+    if (editedServices.length === 0) {
+      toast.error('Debes tener al menos un servicio');
+      return;
+    }
+
+    try {
+      setSavingServices(true);
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentDetails.id}?businessId=${businessId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            serviceIds: editedServices
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error actualizando servicios');
+      }
+
+      // Consumir respuesta para completar la request
+      await response.json();
+      
+      toast.success('Servicios actualizados exitosamente');
+      setIsEditingServices(false);
+      setEditedServices([]);
+      
+      // Recargar detalles de la cita
+      await loadAppointmentDetails();
+      onUpdate();
+      
+    } catch (error) {
+      console.error('Error saving services:', error);
+      toast.error(error.message || 'No se pudieron actualizar los servicios');
+    } finally {
+      setSavingServices(false);
     }
   };
 
@@ -151,7 +268,8 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
 
       if (!response.ok) throw new Error('Error confirmando turno');
 
-      const data = await response.json();
+      // Consumir respuesta para completar la request
+      await response.json();
       setAppointmentDetails(prev => ({ ...prev, status: 'CONFIRMED' }));
       toast.success('✅ Turno confirmado');
       onUpdate();
@@ -194,7 +312,8 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
 
       if (!response.ok) throw new Error('Error completando turno');
 
-      const data = await response.json();
+      // Consumir respuesta para completar la request
+      await response.json();
       setAppointmentDetails(prev => ({ ...prev, status: 'COMPLETED' }));
       toast.success('✅ Turno completado');
       onUpdate();
@@ -243,7 +362,8 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
 
       if (!response.ok) throw new Error('Error cancelando turno');
 
-      const data = await response.json();
+      // Consumir respuesta para completar la request
+      await response.json();
       setAppointmentDetails(prev => ({ ...prev, status: 'CANCELED' }));
       setShowCancelForm(false);
       setCancelReason('');
@@ -459,47 +579,173 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
 
                 {/* Servicio(s) */}
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TagIcon className="w-5 h-5 text-gray-600" />
-                    <span className="font-semibold text-gray-900">
-                      {hasMultipleServices ? 'Servicios' : 'Servicio'}
-                    </span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <TagIcon className="w-5 h-5 text-gray-600" />
+                      <span className="font-semibold text-gray-900">
+                        {hasMultipleServices ? 'Servicios' : 'Servicio'}
+                      </span>
+                    </div>
+                    
+                    {/* 🆕 Botón de editar servicios (solo en PENDING, CONFIRMED, IN_PROGRESS) */}
+                    {!isEditingServices && ['PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(appointmentDetails.status) && (
+                      <button
+                        onClick={handleStartEditServices}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        <PencilSquareIcon className="w-4 h-4" />
+                        Editar
+                      </button>
+                    )}
                   </div>
                   
-                  {hasMultipleServices ? (
-                    <div className="space-y-3">
-                      {services.map((svc, index) => (
-                        <div key={svc.id || index} className="border-l-2 border-blue-400 pl-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p className="text-gray-900 font-medium">{svc.name}</p>
-                              {svc.appointmentService?.duration && (
-                                <p className="text-gray-600 text-sm mt-1">
-                                  Duración: {svc.appointmentService.duration} min
-                                </p>
-                              )}
-                            </div>
-                            {svc.appointmentService?.price && (
-                              <p className="text-gray-900 font-semibold ml-2">
-                                ${parseFloat(svc.appointmentService.price).toLocaleString('es-CO')}
-                              </p>
-                            )}
-                          </div>
+                  {isEditingServices ? (
+                    // 🆕 Modo de edición de servicios
+                    <div className="space-y-4">
+                      {/* Lista de servicios actuales en edición */}
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600 mb-2">Servicios seleccionados:</p>
+                        {editedServices.length === 0 ? (
+                          <p className="text-sm text-gray-500 italic">No hay servicios seleccionados</p>
+                        ) : (
+                          editedServices.map((serviceId) => {
+                            const service = availableServices.find(s => s.id === serviceId);
+                            if (!service) return null;
+                            
+                            return (
+                              <div key={serviceId} className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-900">{service.name}</p>
+                                  <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
+                                    <span>{service.duration} min</span>
+                                    <span className="font-semibold">${parseFloat(service.price).toLocaleString('es-CO')}</span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleRemoveService(serviceId)}
+                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Quitar servicio"
+                                >
+                                  <MinusCircleIcon className="w-5 h-5" />
+                                </button>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {/* Selector para agregar más servicios */}
+                      <div>
+                        <p className="text-sm text-gray-600 mb-2">Agregar servicios:</p>
+                        <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-200 rounded-lg p-2">
+                          {availableServices
+                            .filter(service => !editedServices.includes(service.id))
+                            .map((service) => (
+                              <button
+                                key={service.id}
+                                onClick={() => handleAddService(service.id)}
+                                className="w-full flex items-center justify-between p-2 hover:bg-blue-50 rounded-lg transition-colors text-left"
+                              >
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-900 text-sm">{service.name}</p>
+                                  <div className="flex items-center gap-3 text-xs text-gray-600 mt-0.5">
+                                    <span>{service.duration} min</span>
+                                    <span>${parseFloat(service.price).toLocaleString('es-CO')}</span>
+                                  </div>
+                                </div>
+                                <PlusCircleIcon className="w-5 h-5 text-blue-600" />
+                              </button>
+                            ))}
                         </div>
-                      ))}
-                      <div className="border-t pt-2 mt-2">
-                        <p className="text-gray-600 text-sm">
-                          Duración total: {services.reduce((sum, s) => sum + (s.appointmentService?.duration || 0), 0)} min
-                        </p>
+                      </div>
+
+                      {/* Resumen de cambios */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p className="text-sm font-semibold text-blue-900">Resumen:</p>
+                        <div className="flex items-center justify-between text-sm text-blue-800 mt-1">
+                          <span>Total servicios: {editedServices.length}</span>
+                          <span className="font-bold">
+                            Duración: {editedServices.reduce((sum, id) => {
+                              const svc = availableServices.find(s => s.id === id);
+                              return sum + (svc?.duration || 0);
+                            }, 0)} min
+                          </span>
+                          <span className="font-bold">
+                            ${editedServices.reduce((sum, id) => {
+                              const svc = availableServices.find(s => s.id === id);
+                              return sum + parseFloat(svc?.price || 0);
+                            }, 0).toLocaleString('es-CO')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Botones de acción */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleCancelEditServices}
+                          disabled={savingServices}
+                          className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={handleSaveServices}
+                          disabled={savingServices || editedServices.length === 0}
+                          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {savingServices ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Guardando...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircleIcon className="w-5 h-5" />
+                              Guardar Cambios
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
                   ) : (
+                    // Vista normal de servicios
                     <>
-                      <p className="text-gray-900">{serviceName}</p>
-                      {service?.duration && (
-                        <p className="text-gray-600 text-sm mt-1">
-                          Duración: {service.duration} min
-                        </p>
+                      {hasMultipleServices ? (
+                        <div className="space-y-3">
+                          {services.map((svc, index) => (
+                            <div key={svc.id || index} className="border-l-2 border-blue-400 pl-3">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <p className="text-gray-900 font-medium">{svc.name}</p>
+                                  {svc.appointmentService?.duration && (
+                                    <p className="text-gray-600 text-sm mt-1">
+                                      Duración: {svc.appointmentService.duration} min
+                                    </p>
+                                  )}
+                                </div>
+                                {svc.appointmentService?.price && (
+                                  <p className="text-gray-900 font-semibold ml-2">
+                                    ${parseFloat(svc.appointmentService.price).toLocaleString('es-CO')}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          <div className="border-t pt-2 mt-2">
+                            <p className="text-gray-600 text-sm">
+                              Duración total: {services.reduce((sum, s) => sum + (s.appointmentService?.duration || 0), 0)} min
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-gray-900">{serviceName}</p>
+                          {service?.duration && (
+                            <p className="text-gray-600 text-sm mt-1">
+                              Duración: {service.duration} min
+                            </p>
+                          )}
+                        </>
                       )}
                     </>
                   )}
