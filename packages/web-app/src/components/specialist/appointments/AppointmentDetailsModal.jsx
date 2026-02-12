@@ -557,7 +557,7 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
           </div>
 
           {/* Body */}
-          <div className="px-6 py-4 max-h-[600px] overflow-y-auto">
+          <div className="px-3 md:px-6 py-4 max-h-[600px] overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -875,7 +875,7 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
 
           {/* Footer - Acciones según el tab activo */}
           {activeTab === 'sales' ? (
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div className="px-3 md:px-6 py-4 bg-gray-50 border-t border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
                   {selectedProducts.length > 0 ? (
@@ -896,7 +896,7 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
                   <button
                     onClick={handleSaveSale}
                     disabled={savingSale || selectedProducts.length === 0}
-                    className="px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm md:text-base"
                   >
                     {savingSale ? (
                       <>
