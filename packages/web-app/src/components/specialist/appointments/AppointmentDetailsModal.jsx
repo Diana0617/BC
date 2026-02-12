@@ -158,12 +158,36 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
     console.log('🎬 Servicios actuales:', currentServices);
     console.log('🎬 IDs de servicios:', currentServices.map(s => s.id));
     
+    // Establecer los servicios actuales en la lista de edición
     setEditedServices(currentServices.map(s => s.id));
     setIsEditingServices(true);
     
     // Cargar servicios disponibles
     console.log('🎬 Cargando servicios disponibles...');
     await loadAvailableServices();
+    
+    // 🔥 IMPORTANTE: Asegurar que los servicios actuales estén en availableServices
+    // Esto evita que se "pierdan" servicios que ya están en la cita
+    setAvailableServices(prev => {
+      console.log('🔄 Fusionando servicios actuales con disponibles');
+      console.log('🔄 Servicios disponibles antes:', prev);
+      console.log('🔄 Servicios actuales a agregar:', currentServices);
+      
+      // Crear un Map de servicios disponibles por ID
+      const servicesMap = new Map(prev.map(s => [s.id, s]));
+      
+      // Agregar los servicios actuales de la cita que no estén en la lista
+      currentServices.forEach(service => {
+        if (!servicesMap.has(service.id)) {
+          console.log(`➕ Agregando servicio actual a disponibles: ${service.name} (${service.id})`);
+          servicesMap.set(service.id, service);
+        }
+      });
+      
+      const mergedServices = Array.from(servicesMap.values());
+      console.log('✅ Servicios finales después de fusionar:', mergedServices);
+      return mergedServices;
+    });
   };
 
   // 🆕 Cancelar edición de servicios
