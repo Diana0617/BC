@@ -480,6 +480,12 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, bra
                           Descripción
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Especialista
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Método Pago
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Fecha
                         </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -520,6 +526,20 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, bra
                                 </div>
                               )}
                             </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {movement.specialistName || '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {movement.paymentMethod ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {movement.paymentMethod === 'CASH' ? 'Efectivo' :
+                                 movement.paymentMethod === 'CARD' ? 'Tarjeta' :
+                                 movement.paymentMethod === 'TRANSFER' ? 'Transferencia' :
+                                 movement.paymentMethod === 'WOMPI' ? 'Wompi' :
+                                 movement.paymentMethod}
+                              </span>
+                            ) : '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {formatDate(movement.createdAt)}
@@ -562,9 +582,23 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, bra
                           Cliente: {movement.clientName}
                         </p>
                       )}
+                      {movement.specialistName && (
+                        <p className="text-xs text-gray-500 mb-1">
+                          Especialista: {movement.specialistName}
+                        </p>
+                      )}
                       {movement.vendor && (
                         <p className="text-xs text-gray-500 mb-1">
                           Proveedor: {movement.vendor}
+                        </p>
+                      )}
+                      {movement.paymentMethod && (
+                        <p className="text-xs text-gray-500 mb-1">
+                          Pago: {movement.paymentMethod === 'CASH' ? 'Efectivo' :
+                                 movement.paymentMethod === 'CARD' ? 'Tarjeta' :
+                                 movement.paymentMethod === 'TRANSFER' ? 'Transferencia' :
+                                 movement.paymentMethod === 'WOMPI' ? 'Wompi' :
+                                 movement.paymentMethod}
                         </p>
                       )}
                       {movement.receiptNumber && (

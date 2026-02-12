@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
 import { 
@@ -24,7 +24,6 @@ import { es } from 'date-fns/locale';
 import AppointmentWorkflowModal from './AppointmentWorkflowModal';
 import AppointmentSuppliesTab from './AppointmentSuppliesTab';
 import ProductSelector from '../../sales/ProductSelector';
-import { fetchProducts } from '@shared/store/slices/productsSlice';
 import { createSale } from '@shared/store/slices/salesSlice';
 
 /**
@@ -45,7 +44,7 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
   const [activeTab, setActiveTab] = useState('details');
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [savingSale, setSavingSale] = useState(false);
-  const [activeShiftId, setActiveShiftId] = useState(null);
+  const [activeShiftId, _setActiveShiftId] = useState(null);
   
   // 🆕 Estados para edición de servicios
   const [isEditingServices, setIsEditingServices] = useState(false);
@@ -70,7 +69,13 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
       if (!response.ok) throw new Error('Error cargando detalles');
       
       const data = await response.json();
-      setAppointmentDetails(data.data || data.appointment);
+      const details = data.data || data.appointment;
+      
+      console.log('📝 Detalles de la cita cargados:', details);
+      console.log('📝 details.services:', details.services);
+      console.log('📝 details.Service (legacy):', details.Service);
+      
+      setAppointmentDetails(details);
     } catch (error) {
       console.error('Error loading appointment details:', error);
     } finally {
@@ -78,33 +83,16 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
     }
   }, [token, businessId, appointment?.id]);
 
-  const loadActiveShift = useCallback(async () => {
-    if (!token || !businessId) return;
-    
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/cash-register/active-shift?businessId=${businessId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      
-      if (!response.ok) return;
-      
-      const result = await response.json();
-      if (result.success && result.data?.hasActiveShift && result.data?.shift) {
-        setActiveShiftId(result.data.shift.id);
-      }
-    } catch (error) {
-      console.log('No hay turno activo o error al cargar:', error);
-    }
-  }, [token, businessId]);
-
   // 🆕 Cargar servicios disponibles del negocio (filtrados por especialista del turno)
   const loadAvailableServices = useCallback(async () => {
-    if (!token || !businessId) return;
+    if (!token || !businessId) {
+      console.log('🔍 loadAvailableServices: No hay token o businessId');
+      return;
+    }
+    
+    console.log('🔍 loadAvailableServices iniciando...');
+    console.log('🔍 appointmentDetails:', appointmentDetails);
+    console.log('🔍 specialistId:', appointmentDetails?.specialistId);
     
     try {
       let services = [];
@@ -112,52 +100,70 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
       // Si tenemos el especialista, intentar filtrar por sus servicios asignados
       if (appointmentDetails?.specialistId) {
         try {
-          const specialistResponse = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/business/${businessId}/specialists/${appointmentDetails.specialistId}/services`,
-            {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
+          const url = `${import.meta.env.VITE_API_URL}/api/business/${businessId}/specialists/${appointmentDetails.specialistId}/services`;
+          console.log('🔍 Cargando servicios del especialista desde:', url);
+          
+          const specialistResponse = await fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${token}`
             }
-          );
+          });
+          
+          console.log('🔍 Respuesta especialista:', specialistResponse.status, specialistResponse.ok);
           
           if (specialistResponse.ok) {
             const specialistData = await specialistResponse.json();
+            console.log('🔍 Datos del especialista:', specialistData);
             services = specialistData.data?.services || specialistData.services || [];
+            console.log('🔍 Servicios del especialista encontrados:', services.length);
           }
         } catch (specialistError) {
-          console.log('No se pudieron cargar los servicios del especialista, cargando todos los servicios');
+          console.log('⚠️ Error cargando servicios del especialista:', specialistError);
+          console.log('⚠️ Fallback: cargando todos los servicios');
         }
       }
       
       // Si no hay servicios del especialista, cargar todos los servicios del negocio
       if (services.length === 0) {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/services?businessId=${businessId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+        const url = `${import.meta.env.VITE_API_URL}/api/services?businessId=${businessId}`;
+        console.log('🔍 Cargando todos los servicios desde:', url);
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
-        );
+        });
         
         if (!response.ok) throw new Error('Error cargando servicios');
         
         const data = await response.json();
         services = data.data?.services || [];
+        console.log('🔍 Servicios totales encontrados:', services.length);
       }
       
+      console.log('✅ Servicios finales cargados:', services);
       setAvailableServices(services);
     } catch (error) {
-      console.error('Error loading services:', error);
+      console.error('❌ Error loading services:', error);
     }
-  }, [token, businessId, appointmentDetails?.specialistId]);
+  }, [token, businessId, appointmentDetails]);
 
   // 🆕 Iniciar edición de servicios
-  const handleStartEditServices = () => {
+  const handleStartEditServices = async () => {
+    console.log('🎬 Iniciando edición de servicios');
+    console.log('🎬 appointmentDetails completo:', appointmentDetails);
+    console.log('🎬 appointmentDetails.services:', appointmentDetails.services);
+    
     const currentServices = appointmentDetails.services || [];
+    console.log('🎬 Servicios actuales:', currentServices);
+    console.log('🎬 IDs de servicios:', currentServices.map(s => s.id));
+    
     setEditedServices(currentServices.map(s => s.id));
     setIsEditingServices(true);
+    
+    // Cargar servicios disponibles
+    console.log('🎬 Cargando servicios disponibles...');
+    await loadAvailableServices();
   };
 
   // 🆕 Cancelar edición de servicios
@@ -168,18 +174,32 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
 
   // 🆕 Agregar servicio a la lista
   const handleAddService = (serviceId) => {
+    console.log('➕ Agregando servicio:', serviceId);
+    console.log('➕ Lista actual antes de agregar:', editedServices);
+    
     if (!editedServices.includes(serviceId)) {
-      setEditedServices([...editedServices, serviceId]);
+      const newList = [...editedServices, serviceId];
+      console.log('➕ Lista después de agregar:', newList);
+      setEditedServices(newList);
+    } else {
+      console.log('⚠️ El servicio ya está en la lista');
     }
   };
 
   // 🆕 Quitar servicio de la lista
   const handleRemoveService = (serviceId) => {
-    setEditedServices(editedServices.filter(id => id !== serviceId));
+    console.log('❌ Quitando servicio:', serviceId);
+    console.log('❌ Lista actual antes de quitar:', editedServices);
+    const newList = editedServices.filter(id => id !== serviceId);
+    console.log('❌ Lista después de quitar:', newList);
+    setEditedServices(newList);
   };
 
   // 🆕 Guardar servicios actualizados
   const handleSaveServices = async () => {
+    console.log('💾 Guardando servicios actualizados');
+    console.log('💾 editedServices:', editedServices);
+    
     if (editedServices.length === 0) {
       toast.error('Debes tener al menos un servicio');
       return;
@@ -188,38 +208,47 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
     try {
       setSavingServices(true);
       
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentDetails.id}?businessId=${businessId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            serviceIds: editedServices
-          })
-        }
-      );
+      const url = `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentDetails.id}?businessId=${businessId}`;
+      const body = { serviceIds: editedServices };
+      
+      console.log('💾 URL:', url);
+      console.log('💾 Body:', body);
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      console.log('💾 Response status:', response.status);
+      console.log('💾 Response ok:', response.ok);
 
       if (!response.ok) {
         const error = await response.json();
+        console.log('❌ Error response:', error);
         throw new Error(error.error || 'Error actualizando servicios');
       }
 
       // Consumir respuesta para completar la request
-      await response.json();
+      const result = await response.json();
+      console.log('✅ Servicios guardados exitosamente:', result);
       
       toast.success('Servicios actualizados exitosamente');
       setIsEditingServices(false);
       setEditedServices([]);
       
       // Recargar detalles de la cita
+      console.log('🔄 Recargando detalles de la cita...');
       await loadAppointmentDetails();
       onUpdate();
       
     } catch (error) {
-      console.error('Error saving services:', error);
+      console.error('❌ Error saving services:', error);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
       toast.error(error.message || 'No se pudieron actualizar los servicios');
     } finally {
       setSavingServices(false);
@@ -605,11 +634,18 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
                       {/* Lista de servicios actuales en edición */}
                       <div className="space-y-2">
                         <p className="text-sm text-gray-600 mb-2">Servicios seleccionados:</p>
+                        {(() => {
+                          console.log('🎨 Renderizando servicios seleccionados');
+                          console.log('🎨 editedServices:', editedServices);
+                          console.log('🎨 availableServices:', availableServices);
+                          return null;
+                        })()}
                         {editedServices.length === 0 ? (
                           <p className="text-sm text-gray-500 italic">No hay servicios seleccionados</p>
                         ) : (
                           editedServices.map((serviceId) => {
                             const service = availableServices.find(s => s.id === serviceId);
+                            console.log(`🎨 Buscando servicio ${serviceId}:`, service);
                             if (!service) return null;
                             
                             return (
@@ -638,9 +674,11 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
                       <div>
                         <p className="text-sm text-gray-600 mb-2">Agregar servicios:</p>
                         <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-200 rounded-lg p-2">
-                          {availableServices
-                            .filter(service => !editedServices.includes(service.id))
-                            .map((service) => (
+                          {(() => {
+                            const servicesToAdd = availableServices.filter(service => !editedServices.includes(service.id));
+                            console.log('🎨 Servicios disponibles para agregar:', servicesToAdd);
+                            console.log('🎨 Total servicios para agregar:', servicesToAdd.length);
+                            return servicesToAdd.map((service) => (
                               <button
                                 key={service.id}
                                 onClick={() => handleAddService(service.id)}
@@ -655,7 +693,8 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
                                 </div>
                                 <PlusCircleIcon className="w-5 h-5 text-blue-600" />
                               </button>
-                            ))}
+                            ));
+                          })()}
                         </div>
                       </div>
 

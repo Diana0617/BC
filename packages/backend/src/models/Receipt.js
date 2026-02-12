@@ -523,8 +523,12 @@ Receipt.createFromAppointment = async function(appointmentData, paymentData, opt
         '00:00',
       issueDate: new Date(),
       
-      // Información del servicio
-      serviceName: appointmentData.service?.name || 'Servicio',
+      // Información del servicio - soporta múltiples servicios
+      serviceName: appointmentData.services && appointmentData.services.length > 0
+        ? (appointmentData.services.length === 1 
+           ? appointmentData.services[0].name 
+           : `${appointmentData.services.length} servicios: ${appointmentData.services.map(s => s.name).join(', ')}`)
+        : (appointmentData.service?.name || 'Servicio'),
       serviceDescription: appointmentData.notes || null,
       
       // Información financiera

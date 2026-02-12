@@ -1020,6 +1020,22 @@ class CashRegisterController {
             attributes: ['id', 'name', 'email']
           },
           {
+            model: Client,
+            as: 'client',
+            attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
+          },
+          {
+            model: Service,
+            as: 'services',
+            through: { attributes: ['price', 'duration', 'order'] },
+            attributes: ['id', 'name', 'duration', 'price']
+          },
+          {
+            model: Service,
+            as: 'service',
+            attributes: ['id', 'name', 'duration', 'price']
+          },
+          {
             model: AppointmentPayment,
             as: 'payments',
             where: { status: 'COMPLETED' },

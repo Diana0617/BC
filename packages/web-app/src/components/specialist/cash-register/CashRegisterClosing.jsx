@@ -1,4 +1,4 @@
-import  { useState, useEffect } from 'react';
+import  { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { 
   BanknotesIcon,
@@ -64,7 +64,7 @@ export default function CashRegisterClosing({
     const closingAmount = parseFloat(formData.closingAmount) || 0;
     const expectedAmount = calculateExpectedAmount();
     setDifference(closingAmount - expectedAmount);
-  }, [formData.closingAmount, shiftData]);
+  }, [formData.closingAmount, shiftData, calculateExpectedAmount]);
 
   // Cargar movimientos del turno
   useEffect(() => {
@@ -100,7 +100,7 @@ export default function CashRegisterClosing({
     }, 0);
   };
 
-  const calculateExpectedAmount = () => {
+  const calculateExpectedAmount = useCallback(() => {
     if (!shiftData) return 0;
     
     const opening = parseFloat(shiftData.openingBalance) || 0;
@@ -108,7 +108,7 @@ export default function CashRegisterClosing({
     const expenses = parseFloat(shiftData.totalExpenses) || 0;
     
     return opening + income - expenses;
-  };
+  }, [shiftData]);
 
   const handleDenominationChange = (key, value) => {
     const numValue = parseInt(value) || 0;
@@ -247,9 +247,11 @@ export default function CashRegisterClosing({
         // Encabezado de tabla
         doc.setFont(undefined, 'bold');
         doc.text('Tipo', 20, yPos);
-        doc.text('Descripcion', 45, yPos);
-        doc.text('Fecha/Hora', 120, yPos);
-        doc.text('Monto', 165, yPos);
+        doc.text('Descripcion', 40, yPos);
+        doc.text('Especialista', 95, yPos);
+        doc.text('Metodo', 130, yPos);
+        doc.text('Fecha', 155, yPos);
+        doc.text('Monto', 180, yPos);
         yPos += 4;
         
         // Línea divisoria
@@ -270,9 +272,11 @@ export default function CashRegisterClosing({
             doc.setFontSize(9);
             doc.setFont(undefined, 'bold');
             doc.text('Tipo', 20, yPos);
-            doc.text('Descripcion', 45, yPos);
-            doc.text('Fecha/Hora', 120, yPos);
-            doc.text('Monto', 165, yPos);
+            doc.text('Descripcion', 40, yPos);
+            doc.text('Especialista', 95, yPos);
+            doc.text('Metodo', 130, yPos);
+            doc.text('Fecha', 155, yPos);
+            doc.text('Monto', 180, yPos);
             yPos += 4;
             doc.setDrawColor(100, 100, 100);
             doc.line(20, yPos, pageWidth - 20, yPos);
@@ -281,16 +285,28 @@ export default function CashRegisterClosing({
           }
 
           const tipo = movement.type === 'INCOME' ? 'Ingreso' : 'Egreso';
-          const descripcion = movement.description.length > 30 
-            ? movement.description.substring(0, 27) + '...' 
+          const descripcion = movement.description.length > 20 
+            ? movement.description.substring(0, 17) + '...' 
             : movement.description;
+          const especialista = movement.specialistName 
+            ? (movement.specialistName.length > 15 ? movement.specialistName.substring(0, 12) + '...' : movement.specialistName)
+            : '-';
+          const metodo = movement.paymentMethod 
+            ? (movement.paymentMethod === 'CASH' ? 'Efect.' :
+               movement.paymentMethod === 'CARD' ? 'Tarj.' :
+               movement.paymentMethod === 'TRANSFER' ? 'Transf' :
+               movement.paymentMethod === 'WOMPI' ? 'Wompi' :
+               movement.paymentMethod)
+            : '-';
           const fecha = format(new Date(movement.createdAt), "dd/MM HH:mm", { locale: es });
           const monto = `${movement.type === 'INCOME' ? '+' : '-'}${formatCurrency(movement.amount)}`;
 
           doc.text(tipo, 20, yPos);
-          doc.text(descripcion, 45, yPos);
-          doc.text(fecha, 120, yPos);
-          doc.text(monto, 165, yPos);
+          doc.text(descripcion, 40, yPos);
+          doc.text(especialista, 95, yPos);
+          doc.text(metodo, 130, yPos);
+          doc.text(fecha, 155, yPos);
+          doc.text(monto, 180, yPos);
           
           yPos += 6;
 
