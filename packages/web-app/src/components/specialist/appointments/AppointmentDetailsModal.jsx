@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
 import { 
@@ -51,6 +51,14 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
   const [editedServices, setEditedServices] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
   const [savingServices, setSavingServices] = useState(false);
+
+  // Sincronizar appointmentDetails cuando cambia el prop appointment
+  useEffect(() => {
+    console.log('🔄 useEffect: appointment prop cambió:', appointment?.id)
+    if (appointment) {
+      setAppointmentDetails(appointment);
+    }
+  }, [appointment]);
 
   const loadAppointmentDetails = useCallback(async () => {
     if (!token) return;
@@ -470,7 +478,11 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
     }
   };
 
+  console.log('🔷 AppointmentDetailsModal llamado - isOpen:', isOpen, 'appointmentDetails:', appointmentDetails?.id)
+
   if (!isOpen) return null;
+  
+  console.log('🔷 AppointmentDetailsModal render - isOpen:', isOpen, 'appointment:', appointment?.id)
   
   const tabs = [
     { id: 'details', name: 'Detalles', icon: ClockIcon },

@@ -72,6 +72,16 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [createModalData, setCreateModalData] = useState({})
   
+  // Debug: rastrear cambios en los estados de los modales
+  useEffect(() => {
+    console.log('🟢 showDetailModal cambió a:', showDetailModal)
+    console.log('🟢 selectedAppointment:', selectedAppointment?.id || 'null')
+  }, [showDetailModal, selectedAppointment])
+  
+  useEffect(() => {
+    console.log('🟡 showCreateModal cambió a:', showCreateModal)
+  }, [showCreateModal])
+  
   // Estados para datos del modal
   const [specialists, setSpecialists] = useState([])
   const [services, setServices] = useState([])
@@ -814,8 +824,12 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
                 const appointment = eventData.extendedProps?.appointment || eventData.appointment
                 console.log('📋 Appointment data:', appointment)
                 if (appointment) {
+                  console.log('✅ Appointment encontrado, abriendo modal de detalles...')
+                  console.log('🔵 showDetailModal ANTES:', showDetailModal)
+                  console.log('🔵 showCreateModal ANTES:', showCreateModal)
                   setSelectedAppointment(appointment)
                   setShowDetailModal(true)
+                  console.log('✅ setShowDetailModal(true) ejecutado')
                 } else {
                   console.error('❌ No se encontró el appointment en eventData')
                 }
@@ -1041,10 +1055,12 @@ const CalendarAccessSection = ({ isSetupMode, onComplete, isCompleted }) => {
         appointment={selectedAppointment}
         businessId={currentBusiness?.id || user?.businessId}
         onClose={() => {
+          console.log('🔴 Cerrando AppointmentDetailsModal')
           setShowDetailModal(false)
           setSelectedAppointment(null)
         }}
         onUpdate={() => {
+          console.log('🔄 Actualizando desde AppointmentDetailsModal')
           loadAppointments() // Recargar calendario después de actualizar
         }}
       />
