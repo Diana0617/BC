@@ -46,6 +46,17 @@ class BusinessPaymentController {
         return res.status(404).json({ success: false, message: 'El plan seleccionado no existe.' });
       }
 
+      const isLifetimePlan =
+        String(newPlan?.name || '').toUpperCase() === 'LIFETIME' ||
+        String(newPlan?.billingCycle || '').toUpperCase() === 'LIFETIME';
+
+      if (isLifetimePlan && req.user?.role !== 'OWNER') {
+        return res.status(403).json({
+          success: false,
+          message: 'Solo un OWNER puede asignar un plan LIFETIME a un negocio.'
+        });
+      }
+
       // Calcular diferencia de precio/prorrateo si aplica
       const now = new Date();
       const expiresAt = currentSubscription.expiresAt || currentSubscription.endDate;

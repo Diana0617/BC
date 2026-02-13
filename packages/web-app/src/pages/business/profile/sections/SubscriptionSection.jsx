@@ -29,6 +29,12 @@ const SubscriptionSection = ({ isSetupMode }) => {
   const isLoading = useSelector(state => state.business?.isLoading)
   // Selector de planes disponibles desde el store de plans
   const availablePlans = useSelector(state => state.plans?.plans || [])
+  // Ocultar plan LIFETIME (solo OWNER puede asignarlo)
+  const selectablePlans = availablePlans.filter(plan => {
+    const planName = String(plan?.name || '').toUpperCase()
+    const billingCycle = String(plan?.billingCycle || '').toUpperCase()
+    return planName !== 'LIFETIME' && billingCycle !== 'LIFETIME'
+  })
   // Estado para modal y selección
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showRenewModal, setShowRenewModal] = useState(false)
@@ -616,8 +622,8 @@ const SubscriptionSection = ({ isSetupMode }) => {
             <h3 className="text-xl font-bold mb-4 text-gray-900">Selecciona un nuevo plan</h3>
             <div className="mb-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[52vh] overflow-auto">
-                {availablePlans && availablePlans.length > 0 ? (
-                  availablePlans.map(plan => {
+                {selectablePlans && selectablePlans.length > 0 ? (
+                  selectablePlans.map(plan => {
                     const planId = plan.id;
                     const isCurrent = currentPlan && currentPlan.id === planId;
                     const displayPrice = plan.displayPrice || plan.price || 0;
@@ -679,7 +685,7 @@ const SubscriptionSection = ({ isSetupMode }) => {
             {/* Selected summary and confirm */}
             <div className="mt-4">
               {selectedPlanId ? (() => {
-                const sel = availablePlans.find(p => p.id === selectedPlanId) || {};
+                const sel = selectablePlans.find(p => p.id === selectedPlanId) || {};
                 const selPrice = Number(sel.displayPrice || sel.price || 0);
                 const curPrice = Number(currentPlan?.displayPrice || currentPlan?.price || 0);
                 const diff = selPrice - curPrice;
