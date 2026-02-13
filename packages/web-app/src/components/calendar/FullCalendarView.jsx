@@ -143,12 +143,19 @@ const FullCalendarView = ({
 
   // Handler para click en evento
   const handleEventClick = (info) => {
+    console.log('🎯 handleEventClick ejecutado en FullCalendarView:', info)
+    console.log('🎯 Event ID:', info.event.id)
+    console.log('🎯 ExtendedProps:', info.event.extendedProps)
+    console.log('🎯 Appointment en extendedProps:', info.event.extendedProps?.appointment)
+    
     if (onEventClick) {
       onEventClick({
         event: info.event,
         appointmentId: info.event.id,
         extendedProps: info.event.extendedProps
       })
+    } else {
+      console.error('❌ onEventClick no está definido')
     }
   }
 
@@ -200,6 +207,7 @@ const FullCalendarView = ({
         selectable={true}
         selectMirror={true}
         dayMaxEvents={true}
+        moreLinkClick="popover" // Mostrar popover al hacer click en "+X más"
         weekends={true}
         eventClick={handleEventClick}
         dateClick={handleDateClick}
