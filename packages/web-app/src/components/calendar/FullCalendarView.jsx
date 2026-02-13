@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useRef } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -29,6 +29,9 @@ const FullCalendarView = ({
   branchColors = [],
   showAllBranches = false
 }) => {
+  
+  // Referencia al componente FullCalendar para acceder a su API
+  const calendarRef = useRef(null);
   
   // Colores por estado de cita
   const getStatusColor = (status) => {
@@ -148,6 +151,20 @@ const FullCalendarView = ({
     console.log('🎯 ExtendedProps:', info.event.extendedProps)
     console.log('🎯 Appointment en extendedProps:', info.event.extendedProps?.appointment)
     
+    // Prevenir la propagación del evento para evitar comportamientos inesperados
+    info.jsEvent.stopPropagation();
+    
+    // Cerrar el popover de FullCalendar (si está abierto) 
+    // simulando un click fuera del popover
+    setTimeout(() => {
+      // Buscar y cerrar cualquier popover abierto
+      const popover = document.querySelector('.fc-popover');
+      if (popover) {
+        console.log('🔴 Cerrando popover de FullCalendar');
+        popover.remove();
+      }
+    }, 100);
+    
     if (onEventClick) {
       onEventClick({
         event: info.event,
@@ -186,6 +203,7 @@ const FullCalendarView = ({
   return (
     <div className="full-calendar-wrapper">
       <FullCalendar
+        ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
         initialView="dayGridMonth"
         initialDate={initialDate}
