@@ -1366,11 +1366,11 @@ class AppointmentController {
         businessId
       };
 
-      // Solo recepcionistas pueden actualizar citas
-      if (!req.receptionist) {
+      // Solo recepcionistas o BUSINESS pueden actualizar citas
+      if (!req.receptionist && req.user?.role !== 'BUSINESS') {
         return res.status(403).json({
           success: false,
-          error: 'Solo recepcionistas pueden actualizar citas'
+          error: 'No tienes permisos para actualizar citas'
         });
       }
 
@@ -1847,6 +1847,213 @@ class AppointmentController {
 
     } catch (error) {
       console.error('Error actualizando cita:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+
+  /**
+   * Verificar disponibilidad para cambio de fecha/hora
+   * POST /api/appointments/:id/check-availability
+   * Valida disponibilidad sin guardar cambios
+   */
+  static async checkAvailability(req, res) {
+    try {
+      const { id } = req.params;
+      const { businessId } = req.query;
+      const { startTime, endTime, specialistId, branchId } = req.body;
+
+      console.log('🔍 Verificando disponibilidad:', { id, startTime, endTime, specialistId, branchId });
+
+      // Validar que se proporcionen los datos necesarios
+      if (!startTime || !endTime) {
+        return res.status(400).json({
+          success: false,
+          error: 'Se requieren startTime y endTime'
+        });
+      }
+
+      // Obtener la cita original
+      const appointment = await Appointment.findOne({
+        where: { id, businessId }
+      });
+
+      if (!appointment) {
+        return res.status(404).json({
+          success: false,
+          error: 'Cita no encontrada'
+        });
+      }
+
+      const targetSpecialistId = specialistId || appointment.specialistId;
+      const targetBranchId = branchId || appointment.branchId;
+
+      // ✅ VALIDACIÓN 1: Verificar horario configurado (especialista o negocio)
+      const SpecialistBranchSchedule = require('../models/SpecialistBranchSchedule');
+      const SpecialistProfile = require('../models/SpecialistProfile');
+      const Branch = require('../models/Branch');
+      
+      const specialistProfile = await SpecialistProfile.findOne({
+        where: {
+          userId: targetSpecialistId,
+          businessId,
+          isActive: true
+        }
+      });
+
+      let scheduleErrors = [];
+
+      if (specialistProfile) {
+        const appointmentDate = new Date(startTime);
+        const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][appointmentDate.getDay()];
+        const appointmentTime = appointmentDate.toTimeString().split(' ')[0];
+
+        // 1. Intentar horarios del especialista
+        let schedules = await SpecialistBranchSchedule.findAll({
+          where: {
+            specialistId: specialistProfile.id,
+            branchId: targetBranchId || null,
+            dayOfWeek,
+            isActive: true
+          }
+        });
+
+        // 2. Si no hay horarios del especialista, usar horarios del negocio
+        let targetBranch = null;
+        if (schedules.length === 0) {
+          if (!targetBranchId) {
+            const branches = await Branch.findAll({
+              where: { businessId, status: 'ACTIVE' },
+              order: [['isMain', 'DESC']]
+            });
+            
+            if (branches.length > 0) {
+              targetBranch = branches[0];
+            }
+          } else {
+            targetBranch = await Branch.findByPk(targetBranchId);
+          }
+          
+          if (targetBranch && targetBranch.businessHours && targetBranch.businessHours[dayOfWeek]) {
+            const branchHours = targetBranch.businessHours[dayOfWeek];
+            
+            const isOpen = branchHours.enabled !== false && 
+                          !branchHours.closed && 
+                          (branchHours.shifts?.length > 0 || (branchHours.open && branchHours.close));
+            
+            if (isOpen) {
+              if (branchHours.shifts && branchHours.shifts.length > 0) {
+                const firstShift = branchHours.shifts[0];
+                schedules = [{
+                  startTime: firstShift.start + ':00',
+                  endTime: firstShift.end + ':00',
+                  _isBranchHours: true
+                }];
+              } else if (branchHours.open && branchHours.close) {
+                schedules = [{
+                  startTime: branchHours.open + ':00',
+                  endTime: branchHours.close + ':00',
+                  _isBranchHours: true
+                }];
+              }
+            }
+          }
+        }
+
+        if (schedules.length === 0) {
+          const dayNames = {
+            monday: 'lunes', tuesday: 'martes', wednesday: 'miércoles',
+            thursday: 'jueves', friday: 'viernes', saturday: 'sábado', sunday: 'domingo'
+          };
+          
+          scheduleErrors.push(`No hay horarios disponibles para los ${dayNames[dayOfWeek]}${targetBranchId ? ' en esta sucursal' : ''}.`);
+        } else {
+          const isWithinSchedule = schedules.some(schedule => 
+            appointmentTime >= schedule.startTime && appointmentTime < schedule.endTime
+          );
+
+          if (!isWithinSchedule) {
+            const availableRanges = schedules.map(s => `${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)}`).join(', ');
+            scheduleErrors.push(`No hay disponibilidad a las ${appointmentTime.substring(0, 5)}. Horarios: ${availableRanges}`);
+          }
+        }
+      }
+
+      // ✅ VALIDACIÓN 2: Verificar conflictos con otras citas
+      const conflictingAppointments = await Appointment.findAll({
+        where: {
+          id: { [Op.ne]: id },
+          specialistId: targetSpecialistId,
+          businessId,
+          status: {
+            [Op.notIn]: ['CANCELED', 'NO_SHOW']
+          },
+          [Op.or]: [
+            {
+              [Op.and]: [
+                { startTime: { [Op.gt]: new Date(startTime) } },
+                { startTime: { [Op.lt]: new Date(endTime) } }
+              ]
+            },
+            {
+              [Op.and]: [
+                { endTime: { [Op.gt]: new Date(startTime) } },
+                { endTime: { [Op.lt]: new Date(endTime) } }
+              ]
+            },
+            {
+              [Op.and]: [
+                { startTime: { [Op.lte]: new Date(startTime) } },
+                { endTime: { [Op.gte]: new Date(endTime) } }
+              ]
+            }
+          ]
+        },
+        include: [
+          {
+            model: Client,
+            as: 'client',
+            attributes: ['firstName', 'lastName']
+          }
+        ]
+      });
+
+      const conflicts = conflictingAppointments.map(apt => {
+        const clientName = apt.client ? `${apt.client.firstName} ${apt.client.lastName}` : 'Sin cliente';
+        const timeStart = new Date(apt.startTime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        const timeEnd = new Date(apt.endTime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        return `Cita con ${clientName} de ${timeStart} a ${timeEnd}`;
+      });
+
+      // Determinar si está disponible
+      const available = scheduleErrors.length === 0 && conflicts.length === 0;
+
+      // Construir mensaje
+      let message = '';
+      if (available) {
+        message = '✓ El especialista está disponible en este horario';
+      } else {
+        if (scheduleErrors.length > 0) {
+          message = scheduleErrors[0];
+        } else if (conflicts.length > 0) {
+          message = 'El especialista tiene otras citas en este horario';
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          available,
+          conflicts,
+          scheduleErrors
+        },
+        message
+      });
+
+    } catch (error) {
+      console.error('❌ Error verificando disponibilidad:', error);
       res.status(500).json({
         success: false,
         error: 'Error interno del servidor'

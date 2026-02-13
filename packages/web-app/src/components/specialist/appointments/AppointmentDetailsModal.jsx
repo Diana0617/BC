@@ -52,6 +52,14 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
   const [availableServices, setAvailableServices] = useState([]);
   const [savingServices, setSavingServices] = useState(false);
 
+  // 🆕 Estados para edición de fecha/hora
+  const [isEditingDateTime, setIsEditingDateTime] = useState(false);
+  const [editedStartTime, setEditedStartTime] = useState('');
+  const [editedEndTime, setEditedEndTime] = useState('');
+  const [savingDateTime, setSavingDateTime] = useState(false);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [availabilityInfo, setAvailabilityInfo] = useState(null);
+
   // Sincronizar appointmentDetails cuando cambia el prop appointment
   useEffect(() => {
     console.log('🔄 useEffect: appointment prop cambió:', appointment?.id)
@@ -284,6 +292,196 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
       toast.error(error.message || 'No se pudieron actualizar los servicios');
     } finally {
       setSavingServices(false);
+    }
+  };
+
+  // 🆕 Funciones para edición de fecha/hora
+  const handleStartEditDateTime = () => {
+    console.log('📅 Iniciando edición de fecha/hora');
+    // Formatear las fechas para inputs datetime-local (YYYY-MM-DDTHH:MM)
+    const startDate = new Date(appointmentDetails.startTime);
+    const endDate = new Date(appointmentDetails.endTime);
+    
+    const formatToInputValue = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+    
+    setEditedStartTime(formatToInputValue(startDate));
+    setEditedEndTime(formatToInputValue(endDate));
+    setIsEditingDateTime(true);
+  };
+
+  const handleCancelEditDateTime = () => {
+    console.log('❌ Cancelando edición de fecha/hora');
+    setIsEditingDateTime(false);
+    setEditedStartTime('');
+    setEditedEndTime('');
+    setAvailabilityInfo(null);
+  };
+
+  // 🆕 Verificar disponibilidad del especialista
+  const checkSpecialistAvailability = async (startTime, endTime) => {
+    if (!startTime || !endTime) return;
+
+    try {
+      setCheckingAvailability(true);
+      setAvailabilityInfo(null);
+
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+
+      // Validar que endTime es posterior a startTime
+      if (end <= start) {
+        setAvailabilityInfo({
+          available: false,
+          message: 'La hora de fin debe ser posterior a la hora de inicio'
+        });
+        return;
+      }
+
+      // Verificar disponibilidad llamando al endpoint con los nuevos horarios
+      // El backend ya tiene la validación, así que hacemos una "simulación" de la actualización
+      const url = `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentDetails.id}/check-availability?businessId=${businessId}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+          specialistId: appointmentDetails.specialistId,
+          branchId: appointmentDetails.branchId
+        })
+      });
+
+      if (!response.ok) {
+        // Si el endpoint no existe, asumimos que está disponible
+        // El backend validará al guardar
+        if (response.status === 404) {
+          setAvailabilityInfo({
+            available: true,
+            message: '✓ Horario seleccionado (se verificará al guardar)'
+          });
+        } else {
+          const error = await response.json();
+          setAvailabilityInfo({
+            available: false,
+            message: error.error || 'Horario no disponible'
+          });
+        }
+        return;
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data?.available) {
+        setAvailabilityInfo({
+          available: true,
+          message: '✓ El especialista está disponible en este horario'
+        });
+      } else {
+        setAvailabilityInfo({
+          available: false,
+          message: result.message || 'El especialista no está disponible en este horario',
+          conflicts: result.data?.conflicts
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Error verificando disponibilidad:', error);
+      // No bloqueamos el guardado, pero mostramos advertencia
+      setAvailabilityInfo({
+        available: true,
+        message: '⚠️ No se pudo verificar disponibilidad (se verificará al guardar)',
+        warning: true
+      });
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
+
+  const handleSaveDateTime = async () => {
+    console.log('💾 Guardando fecha/hora actualizada');
+    console.log('💾 Nueva startTime:', editedStartTime);
+    console.log('💾 Nueva endTime:', editedEndTime);
+    
+    if (!editedStartTime || !editedEndTime) {
+      toast.error('Debes especificar fecha y hora de inicio y fin');
+      return;
+    }
+
+    // Validar que endTime es posterior a startTime
+    const start = new Date(editedStartTime);
+    const end = new Date(editedEndTime);
+    
+    if (end <= start) {
+      toast.error('La hora de fin debe ser posterior a la hora de inicio');
+      return;
+    }
+
+    // Si ya verificamos disponibilidad y no está disponible, confirmar con el usuario
+    if (availabilityInfo && !availabilityInfo.available && !availabilityInfo.warning) {
+      const confirmed = window.confirm(
+        `${availabilityInfo.message}\n\n¿Deseas intentar guardar de todos modos?`
+      );
+      if (!confirmed) return;
+    }
+
+    try {
+      setSavingDateTime(true);
+      
+      const url = `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentDetails.id}?businessId=${businessId}`;
+      const body = { 
+        startTime: new Date(editedStartTime).toISOString(),
+        endTime: new Date(editedEndTime).toISOString()
+      };
+      
+      console.log('💾 URL:', url);
+      console.log('💾 Body:', body);
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      console.log('💾 Response status:', response.status);
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.log('❌ Error response:', error);
+        throw new Error(error.error || 'Error actualizando fecha/hora');
+      }
+
+      const result = await response.json();
+      console.log('✅ Fecha/hora guardada exitosamente:', result);
+      
+      toast.success('Fecha y hora actualizadas exitosamente');
+      setIsEditingDateTime(false);
+      setEditedStartTime('');
+      setEditedEndTime('');
+      
+      // Recargar detalles de la cita
+      console.log('🔄 Recargando detalles de la cita...');
+      await loadAppointmentDetails();
+      onUpdate();
+      
+    } catch (error) {
+      console.error('❌ Error saving date/time:', error);
+      toast.error(error.message || 'No se pudo actualizar la fecha/hora');
+    } finally {
+      setSavingDateTime(false);
     }
   };
 
@@ -609,16 +807,151 @@ export default function AppointmentDetailsModal({ isOpen, appointment, businessI
               <div className="space-y-4">
                 {/* Fecha y Hora */}
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <ClockIcon className="w-5 h-5 text-gray-600" />
-                    <span className="font-semibold text-gray-900">Fecha y Hora</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <ClockIcon className="w-5 h-5 text-gray-600" />
+                      <span className="font-semibold text-gray-900">Fecha y Hora</span>
+                    </div>
+                    
+                    {/* 🆕 Botón de editar fecha/hora (solo en PENDING, CONFIRMED) */}
+                    {!isEditingDateTime && ['PENDING', 'CONFIRMED'].includes(appointmentDetails.status) && (
+                      <button
+                        onClick={handleStartEditDateTime}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        <PencilSquareIcon className="w-4 h-4" />
+                        Editar
+                      </button>
+                    )}
                   </div>
-                  <p className="text-gray-700">
-                    {format(startDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
-                  </p>
-                  <p className="text-gray-600">
-                    {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
-                  </p>
+                  
+                  {isEditingDateTime ? (
+                    // 🆕 Modo de edición de fecha/hora
+                    <div className="space-y-4">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p className="text-sm text-yellow-800">
+                          ⚠️ Cambiar la fecha/hora verificará automáticamente la disponibilidad del especialista
+                        </p>
+                      </div>
+                      
+                      {/* Input de fecha/hora de inicio */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Fecha y hora de inicio
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={editedStartTime}
+                          onChange={(e) => setEditedStartTime(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      {/* Input de fecha/hora de fin */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Fecha y hora de fin
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={editedEndTime}
+                          onChange={(e) => setEditedEndTime(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* 🆕 Botón para verificar disponibilidad */}
+                      {editedStartTime && editedEndTime && (
+                        <button
+                          onClick={() => checkSpecialistAvailability(editedStartTime, editedEndTime)}
+                          disabled={checkingAvailability}
+                          className="w-full px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {checkingAvailability ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                              Verificando disponibilidad...
+                            </>
+                          ) : (
+                            <>
+                              <ClockIcon className="w-4 h-4" />
+                              Verificar Disponibilidad
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {/* 🆕 Resultado de verificación de disponibilidad */}
+                      {availabilityInfo && (
+                        <div className={`rounded-lg p-3 ${
+                          availabilityInfo.available 
+                            ? availabilityInfo.warning 
+                              ? 'bg-yellow-50 border border-yellow-200'
+                              : 'bg-green-50 border border-green-200' 
+                            : 'bg-red-50 border border-red-200'
+                        }`}>
+                          <p className={`text-sm font-medium ${
+                            availabilityInfo.available 
+                              ? availabilityInfo.warning 
+                                ? 'text-yellow-800'
+                                : 'text-green-800' 
+                              : 'text-red-800'
+                          }`}>
+                            {availabilityInfo.message}
+                          </p>
+                          
+                          {availabilityInfo.conflicts && availabilityInfo.conflicts.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              <p className="text-xs font-semibold text-red-700">Conflictos encontrados:</p>
+                              {availabilityInfo.conflicts.map((conflict, idx) => (
+                                <p key={idx} className="text-xs text-red-600">
+                                  • {conflict}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Botones de acción */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleCancelEditDateTime}
+                          disabled={savingDateTime}
+                          className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={handleSaveDateTime}
+                          disabled={savingDateTime || !editedStartTime || !editedEndTime}
+                          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {savingDateTime ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Guardando...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircleIcon className="w-5 h-5" />
+                              Guardar Cambios
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // Vista normal de fecha/hora
+                    <>
+                      <p className="text-gray-700">
+                        {format(startDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
+                      </p>
+                      <p className="text-gray-600">
+                        {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 {/* Cliente */}

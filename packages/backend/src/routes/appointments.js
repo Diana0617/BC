@@ -60,6 +60,9 @@ router.get('/:id', AppointmentController.getAppointmentDetail);
 // Body puede incluir: serviceIds (array), startTime, endTime, specialistId, branchId, notes
 router.put('/:id', AppointmentController.updateAppointment);
 
+// 🆕 Verificar disponibilidad para cambio de horario (sin guardar cambios)
+router.post('/:id/check-availability', AppointmentController.checkAvailability);
+
 // Cancelar cita
 router.patch('/:id/cancel', AppointmentController.updateAppointmentStatus);
 
