@@ -157,7 +157,7 @@ const ExpensesPage = () => {
             setIsExpenseModalOpen(false)
             setEditingExpense(null)
           }}
-          onSave={handleSaveExpense}
+          onSubmit={handleSaveExpense}
           expense={editingExpense}
           categories={expenseCategories}
         />
