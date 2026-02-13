@@ -60,7 +60,10 @@ const RenewSubscriptionModal = ({ onClose, onSuccess }) => {
 
   // Renderizar paso de selección de plan
   const renderPlanSelection = () => {
-    const activePlans = Array.isArray(plans) ? plans.filter(p => p.status === 'ACTIVE') : [];
+    // Filtrar planes activos y excluir LIFETIME (solo para owner)
+    const activePlans = Array.isArray(plans) 
+      ? plans.filter(p => p.status === 'ACTIVE' && p.billingCycle !== 'LIFETIME') 
+      : [];
 
     return (
       <div className="space-y-4">
@@ -109,9 +112,12 @@ const RenewSubscriptionModal = ({ onClose, onSuccess }) => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto">
             {activePlans.map((plan) => {
-              const price = billingCycle === 'MONTHLY' ? plan.price : plan.yearlyPrice;
+              // Calcular precio según ciclo de facturación
+              const monthlyPrice = plan.monthlyPrice || plan.price || 0;
+              const yearlyPrice = plan.annualPrice || (monthlyPrice * 12 * 0.8); // 20% descuento si no existe annualPrice
+              const price = billingCycle === 'MONTHLY' ? monthlyPrice : yearlyPrice;
               const isSelected = selectedPlan?.id === plan.id;
-              const monthlyEquivalent = billingCycle === 'YEARLY' ? (plan.yearlyPrice / 12) : null;
+              const monthlyEquivalent = billingCycle === 'YEARLY' ? (yearlyPrice / 12) : null;
 
               return (
                 <div

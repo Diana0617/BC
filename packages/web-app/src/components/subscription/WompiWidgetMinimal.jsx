@@ -62,11 +62,11 @@ const WompiWidgetMinimal = ({
   const calculateAmount = () => {
     if (!selectedPlan) return amount;
     
-    if (billingCycle === 'YEARLY' && selectedPlan.yearlyPrice) {
-      return selectedPlan.yearlyPrice;
+    if (billingCycle === 'YEARLY' && selectedPlan.annualPrice) {
+      return selectedPlan.annualPrice;
     }
     
-    return selectedPlan.price || amount;
+    return selectedPlan.monthlyPrice || selectedPlan.price || amount;
   };
 
   const finalAmount = calculateAmount();

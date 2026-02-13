@@ -70,9 +70,9 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 // WebView Components
 import ExpenseFormWebView from './pages/webview/ExpenseFormWebView'
 
-// Test Components (temporal)
+// Test Components (temporal - Comentado para producción)
 import ReduxPlansTest from './components/test/ReduxPlansTest'
-import TestPayment1000 from './components/payments/TestPayment1000'
+// import TestPayment1000 from './components/payments/TestPayment1000' // Solo desarrollo
 
 function AppLayout() {
   const dispatch = useDispatch()
@@ -429,8 +429,8 @@ function AppLayout() {
           <Route path="/invitation/:token" element={<SubscriptionPage />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           
-          {/* Test routes (Temporal) */}
-          <Route path="/test-payment-1000" element={<TestPayment1000 />} />
+          {/* Test routes (Temporal) - Comentado para producción */}
+          {/* <Route path="/test-payment-1000" element={<TestPayment1000 />} /> */}
           
           {/* Developer routes - Protected (OWNER only) */}
           <Route path="/developer" element={

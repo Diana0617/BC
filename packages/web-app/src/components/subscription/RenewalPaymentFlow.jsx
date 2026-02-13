@@ -14,10 +14,10 @@ const RenewalPaymentFlow = ({
   onError 
 }) => {
   const getAmount = () => {
-    if (billingCycle === 'YEARLY' && selectedPlan.yearlyPrice) {
-      return selectedPlan.yearlyPrice;
+    if (billingCycle === 'YEARLY' && selectedPlan.annualPrice) {
+      return selectedPlan.annualPrice;
     }
-    return selectedPlan.price;
+    return selectedPlan.monthlyPrice || selectedPlan.price;
   };
 
   return (

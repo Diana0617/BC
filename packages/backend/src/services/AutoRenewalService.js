@@ -64,6 +64,7 @@ class AutoRenewalService {
   
   /**
    * Obtener suscripciones TRIAL que vencen en 1 día o menos (para cobrar por primera vez)
+   * EXCLUYE: pagos manuales (CASH/FREE/MANUAL) y negocios con acceso LIFETIME
    */
   static async getExpiringTrialSubscriptions() {
     const tomorrow = new Date();
@@ -75,13 +76,28 @@ class AutoRenewalService {
         status: 'TRIAL',
         trialEndDate: {
           [Op.lte]: tomorrow
+        },
+        // Excluir suscripciones con pago manual/gratuito
+        paymentMethod: {
+          [Op.notIn]: ['CASH', 'FREE', 'MANUAL']
+        },
+        // Excluir suscripciones con ciclo LIFETIME
+        billingCycle: {
+          [Op.ne]: 'LIFETIME'
         }
       },
       include: [
         {
           model: Business,
           as: 'business',
-          attributes: ['id', 'name', 'email', 'phone']
+          attributes: ['id', 'name', 'email', 'phone', 'isLifetime', 'bypassSubscriptionChecks'],
+          // Excluir negocios con acceso LIFETIME
+          where: {
+            [Op.or]: [
+              { isLifetime: { [Op.or]: [false, null] } },
+              { isLifetime: { [Op.is]: null } }
+            ]
+          }
         },
         {
           model: SubscriptionPlan,
@@ -94,6 +110,7 @@ class AutoRenewalService {
 
   /**
    * Obtener suscripciones ACTIVE que vencen próximamente (renovaciones)
+   * EXCLUYE: pagos manuales (CASH/FREE/MANUAL) y negocios con acceso LIFETIME
    */
   static async getExpiringActiveSubscriptions() {
     const tomorrow = new Date();
@@ -105,13 +122,28 @@ class AutoRenewalService {
         status: 'ACTIVE',
         endDate: {
           [Op.lte]: tomorrow
+        },
+        // Excluir suscripciones con pago manual/gratuito
+        paymentMethod: {
+          [Op.notIn]: ['CASH', 'FREE', 'MANUAL']
+        },
+        // Excluir suscripciones con ciclo LIFETIME
+        billingCycle: {
+          [Op.ne]: 'LIFETIME'
         }
       },
       include: [
         {
           model: Business,
           as: 'business',
-          attributes: ['id', 'name', 'email', 'phone']
+          attributes: ['id', 'name', 'email', 'phone', 'isLifetime', 'bypassSubscriptionChecks'],
+          // Excluir negocios con acceso LIFETIME
+          where: {
+            [Op.or]: [
+              { isLifetime: { [Op.or]: [false, null] } },
+              { isLifetime: { [Op.is]: null } }
+            ]
+          }
         },
         {
           model: SubscriptionPlan,
@@ -132,6 +164,25 @@ class AutoRenewalService {
     const transaction = await sequelize.transaction();
     
     try {
+      // 0. Verificar si es pago manual o LIFETIME (no debe procesarse automáticamente)
+      if (subscription.paymentMethod && ['CASH', 'FREE', 'MANUAL'].includes(subscription.paymentMethod)) {
+        console.log(`⚠️ Suscripción ${subscription.id} usa pago manual (${subscription.paymentMethod}). Omitiendo auto-renovación.`);
+        await transaction.commit();
+        return { success: true, action: 'skipped_manual_payment', reason: 'Manual payment method' };
+      }
+      
+      if (subscription.billingCycle === 'LIFETIME') {
+        console.log(`⭐ Suscripción ${subscription.id} es LIFETIME. Omitiendo auto-renovación.`);
+        await transaction.commit();
+        return { success: true, action: 'skipped_lifetime', reason: 'Lifetime subscription' };
+      }
+      
+      if (subscription.business && subscription.business.isLifetime) {
+        console.log(`⭐ Negocio ${subscription.businessId} tiene acceso LIFETIME. Omitiendo auto-renovación.`);
+        await transaction.commit();
+        return { success: true, action: 'skipped_business_lifetime', reason: 'Business has lifetime access' };
+      }
+      
       // 1. Verificar si el negocio quiere cancelar
       if (subscription.cancelAtPeriodEnd) {
         await this.handleTrialCancellation(subscription, transaction);

@@ -92,6 +92,49 @@ class SubscriptionStatusService {
    * Calcula el estado actual de una suscripción
    */
   static async calculateSubscriptionStatus(subscription) {
+    // 🔑 VERIFICACIONES DE ACCESO ILIMITADO
+    // 1. LIFETIME billing cycle siempre está ACTIVE
+    if (subscription.billingCycle === 'LIFETIME') {
+      return 'ACTIVE';
+    }
+
+    // 2. Verificar si el business tiene acceso LIFETIME
+    if (subscription.business && subscription.business.isLifetime) {
+      return 'ACTIVE';
+    }
+
+    // 3. Pagos manuales: validar último pago en vez de fechas automáticas
+    const isManualPayment = ['CASH', 'FREE', 'MANUAL'].includes(subscription.paymentMethod);
+    
+    if (isManualPayment) {
+      // Para pagos manuales, buscar el último pago COMPLETED
+      const lastPayment = await SubscriptionPayment.findOne({
+        where: {
+          businessSubscriptionId: subscription.id,
+          status: 'COMPLETED'
+        },
+        order: [['createdAt', 'DESC']]
+      });
+
+      // Si hay un pago reciente, usar su fecha para calcular estado
+      if (lastPayment) {
+        const today = new Date();
+        const nextPaymentDate = new Date(subscription.nextPaymentDate);
+        const daysOverdue = Math.floor((today - nextPaymentDate) / (1000 * 60 * 60 * 24));
+
+        if (daysOverdue <= 0) {
+          return 'ACTIVE';
+        } else if (daysOverdue <= 7) {
+          return 'PENDING'; // Período de gracia 7 días
+        } else if (daysOverdue <= 30) {
+          return 'OVERDUE'; // Acceso limitado
+        } else {
+          return 'SUSPENDED'; // Sin acceso
+        }
+      }
+    }
+
+    // 📅 CÁLCULO ESTÁNDAR PARA PAGOS AUTOMÁTICOS (WOMPI)
     const today = new Date();
     const nextPaymentDate = new Date(subscription.nextPaymentDate);
     const daysOverdue = Math.floor((today - nextPaymentDate) / (1000 * 60 * 60 * 24));
