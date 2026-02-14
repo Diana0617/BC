@@ -59,6 +59,17 @@ export default function CashRegisterClosing({
     { key: 'coins_50', label: '$50', value: 50 }
   ];
 
+  // Definir calculateExpectedAmount antes de usarlo
+  const calculateExpectedAmount = useCallback(() => {
+    if (!shiftData) return 0;
+    
+    const opening = parseFloat(shiftData.openingBalance) || 0;
+    const income = parseFloat(shiftData.totalIncome) || 0;
+    const expenses = parseFloat(shiftData.totalExpenses) || 0;
+    
+    return opening + income - expenses;
+  }, [shiftData]);
+
   useEffect(() => {
     console.log('CashRegisterClosing - shiftData:', shiftData);
     const closingAmount = parseFloat(formData.closingAmount) || 0;
@@ -100,16 +111,6 @@ export default function CashRegisterClosing({
     }, 0);
   };
 
-  const calculateExpectedAmount = useCallback(() => {
-    if (!shiftData) return 0;
-    
-    const opening = parseFloat(shiftData.openingBalance) || 0;
-    const income = parseFloat(shiftData.totalIncome) || 0;
-    const expenses = parseFloat(shiftData.totalExpenses) || 0;
-    
-    return opening + income - expenses;
-  }, [shiftData]);
-
   const handleDenominationChange = (key, value) => {
     const numValue = parseInt(value) || 0;
     setFormData({
@@ -143,6 +144,9 @@ export default function CashRegisterClosing({
       const { jsPDF } = await import('jspdf');
       const { format } = await import('date-fns');
       const { es } = await import('date-fns/locale');
+      
+      // Calcular expectedAmount actualizado al momento de generar el PDF
+      const expectedAmount = calculateExpectedAmount();
       
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
