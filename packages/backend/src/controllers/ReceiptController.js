@@ -79,10 +79,10 @@ class ReceiptController {
       if (!paymentData) {
         console.log('🔧 [ReceiptController] Construyendo paymentData desde la cita...');
         
-        // Buscar el último pago registrado para esta cita
+        // Buscar el último pago registrado para esta cita (por createdAt para tomar el más reciente)
         const lastPayment = await AppointmentPayment.findOne({
           where: { appointmentId: appointment.id },
-          order: [['paymentDate', 'DESC']],
+          order: [['createdAt', 'DESC']],
           attributes: ['paymentMethodType', 'paymentMethodName', 'amount', 'reference']
         });
         
