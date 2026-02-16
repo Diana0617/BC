@@ -369,74 +369,86 @@ Receipt.createFromAppointment = async function(appointmentData, paymentData, opt
   
   // Usar transacción para atomicidad
   return await sequelize.transaction(async (t) => {
-    console.log('🔄 [createFromAppointment v2] Generando número...');
-    
-    // Generar número de recibo
-    const { receiptNumber, sequenceNumber } = await Receipt.generateReceiptNumber(
-      appointmentData.businessId,
-      t
-    );
-    
-    console.log('✅ [createFromAppointment v2] Número:', receiptNumber);
-    
-    // Preparar datos del recibo
-    const receiptData = {
-      receiptNumber,
-      sequenceNumber,
-      businessId: appointmentData.businessId,
-      appointmentId: appointmentData.id,
-      specialistId: appointmentData.specialistId,
-      userId: options.createdBy || null,
+    try {
+      console.log('🔄 [createFromAppointment v2] Generando número...');
       
-      specialistName: appointmentData.specialist ? 
-        `${appointmentData.specialist.firstName} ${appointmentData.specialist.lastName}` : 'N/A',
-      specialistCode: appointmentData.specialist?.code || null,
+      // Generar número de recibo
+      const { receiptNumber, sequenceNumber } = await Receipt.generateReceiptNumber(
+        appointmentData.businessId,
+        t
+      );
       
-      clientName: appointmentData.client ? 
-        `${appointmentData.client.firstName} ${appointmentData.client.lastName}` : 'N/A',
-      clientPhone: appointmentData.client?.phone || null,
-      clientEmail: appointmentData.client?.email || null,
+      console.log('✅ [createFromAppointment v2] Número:', receiptNumber);
       
-      serviceDate: appointmentData.startTime ? 
-        new Date(appointmentData.startTime).toISOString().substring(0, 10) : 
-        new Date().toISOString().substring(0, 10),
-      serviceTime: appointmentData.startTime ? 
-        new Date(appointmentData.startTime).toTimeString().substring(0, 5) : '00:00',
-      issueDate: new Date(),
+      // Preparar datos del recibo
+      const receiptData = {
+        receiptNumber,
+        sequenceNumber,
+        businessId: appointmentData.businessId,
+        appointmentId: appointmentData.id,
+        specialistId: appointmentData.specialistId,
+        userId: options.createdBy || null,
+        
+        specialistName: appointmentData.specialist ? 
+          `${appointmentData.specialist.firstName} ${appointmentData.specialist.lastName}` : 'N/A',
+        specialistCode: appointmentData.specialist?.code || null,
+        
+        clientName: appointmentData.client ? 
+          `${appointmentData.client.firstName} ${appointmentData.client.lastName}` : 'N/A',
+        clientPhone: appointmentData.client?.phone || null,
+        clientEmail: appointmentData.client?.email || null,
+        
+        serviceDate: appointmentData.startTime ? 
+          new Date(appointmentData.startTime).toISOString().substring(0, 10) : 
+          new Date().toISOString().substring(0, 10),
+        serviceTime: appointmentData.startTime ? 
+          new Date(appointmentData.startTime).toTimeString().substring(0, 5) : '00:00',
+        issueDate: new Date(),
+        
+        serviceName: appointmentData.services && appointmentData.services.length > 0
+          ? (appointmentData.services.length === 1 
+             ? appointmentData.services[0].name 
+             : `${appointmentData.services.length} servicios`)
+          : (appointmentData.service?.name || 'Servicio'),
+        serviceDescription: appointmentData.notes || null,
+        
+        subtotal: appointmentData.baseAmount || paymentData.amount,
+        tax: appointmentData.tax || 0,
+        discount: appointmentData.discount || 0,
+        tip: appointmentData.tip || 0,
+        totalAmount: appointmentData.finalAmount || paymentData.amount,
+        
+        paymentMethod: paymentData.method || 'CASH',
+        paymentReference: paymentData.transactionId || paymentData.reference,
+        paymentStatus: 'PAID',
+        
+        metadata: {
+          appointmentServices: appointmentData.services || [],
+          appliedRules: appointmentData.appliedRules || [],
+          commissionData: appointmentData.commissionData || null,
+          paymentData: paymentData
+        },
+        
+        createdBy: options.createdBy || appointmentData.specialistId
+      };
       
-      serviceName: appointmentData.services && appointmentData.services.length > 0
-        ? (appointmentData.services.length === 1 
-           ? appointmentData.services[0].name 
-           : `${appointmentData.services.length} servicios`)
-        : (appointmentData.service?.name || 'Servicio'),
-      serviceDescription: appointmentData.notes || null,
+      console.log('💾 [createFromAppointment v2] Creando recibo...');
       
-      subtotal: appointmentData.baseAmount || paymentData.amount,
-      tax: appointmentData.tax || 0,
-      discount: appointmentData.discount || 0,
-      tip: appointmentData.tip || 0,
-      totalAmount: appointmentData.finalAmount || paymentData.amount,
+      const receipt = await Receipt.create(receiptData, { transaction: t });
       
-      paymentMethod: paymentData.method || 'CASH',
-      paymentReference: paymentData.transactionId || paymentData.reference,
-      paymentStatus: 'PAID',
+      console.log('✅ [createFromAppointment v2] Recibo creado:', receipt.id);
+      return receipt;
       
-      metadata: {
-        appointmentServices: appointmentData.services || [],
-        appliedRules: appointmentData.appliedRules || [],
-        commissionData: appointmentData.commissionData || null,
-        paymentData: paymentData
-      },
-      
-      createdBy: options.createdBy || appointmentData.specialistId
-    };
-    
-    console.log('💾 [createFromAppointment v2] Creando recibo...');
-    
-    const receipt = await Receipt.create(receiptData, { transaction: t });
-    
-    console.log('✅ [createFromAppointment v2] Recibo creado:', receipt.id);
-    return receipt;
+    } catch (transactionError) {
+      console.error('❌❌❌ [createFromAppointment v2] ERROR EN TRANSACCIÓN ❌❌❌');
+      console.error('Error name:', transactionError.name);
+      console.error('Error message:', transactionError.message);
+      console.error('Error code:', transactionError.original?.code);
+      console.error('Error detail:', transactionError.original?.detail);
+      console.error('Error constraint:', transactionError.original?.constraint);
+      console.error('Error stack:', transactionError.stack);
+      throw transactionError;
+    }
   });
 };
 
