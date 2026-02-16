@@ -290,47 +290,22 @@ const Receipt = sequelize.define('Receipt', {
 
 /**
  * Método estático para generar el siguiente número de recibo
+ * VERSION SIMPLIFICADA - Sin advisory locks
  */
 Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
   const { Business, sequelize } = require('./index');
   
-  try {
-    // Usar advisory lock de PostgreSQL para prevenir race conditions
-    // Convertir businessId UUID a número hash consistente para pg_advisory_xact_lock
-    const lockKey = parseInt(businessId.replace(/-/g, '').substring(0, 10), 16) % 2147483647;
-    console.log('🔐 [generateReceiptNumber] Adquiriendo advisory lock:', lockKey);
-    
-    if (transaction) {
-      // Advisory lock a nivel de transacción - se libera automáticamente al commit/rollback
-      await sequelize.query('SELECT pg_advisory_xact_lock(:lockKey)', {
-        replacements: { lockKey },
-        transaction
-      });
-      console.log('✅ [generateReceiptNumber] Advisory lock adquirido');
-    } else {
-      // Si no hay transacción, crear una para garantizar atomicidad
-      console.log('⚠️ [generateReceiptNumber] No hay transacción, creando una nueva');
-      return await sequelize.transaction(async (t) => {
-        await sequelize.query('SELECT pg_advisory_xact_lock(:lockKey)', {
-          replacements: { lockKey },
-          transaction: t
-        });
-        return await Receipt.generateReceiptNumber(businessId, t);
-      });
-    }
-    
-    // Obtener configuraciones del negocio (SIN lock - advisory lock ya protege)
-    console.log('🏢 [generateReceiptNumber] Buscando negocio:', businessId);
-    const business = await Business.findByPk(businessId, {
-      transaction
-    });
+  console.log('💯 [generateReceiptNumber v2] Iniciando generación para businessId:', businessId);
   
-    if (!business) {
-      console.error('❌ [generateReceiptNumber] Negocio no encontrado:', businessId);
-      throw new Error('Negocio no encontrado');
-    }
-    
-    console.log('✅ [generateReceiptNumber] Negocio encontrado:', business.name);
+  // Obtener configuraciones del negocio
+  const business = await Business.findByPk(businessId, { transaction });
+  
+  if (!business) {
+    console.error('❌ [generateReceiptNumber v2] Negocio no encontrado');
+    throw new Error('Negocio no encontrado');
+  }
+  
+  console.log('✅ [generateReceiptNumber v2] Negocio encontrado:', business.name);
   
   const settings = business.settings || {};
   const receiptSettings = settings.numbering?.receipts || {
@@ -344,7 +319,7 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
   
   const currentYear = new Date().getFullYear();
   
-  // Determinar el número base para buscar
+  // Buscar el último recibo para este negocio (en este año si resetYearly)
   let baseCondition = { businessId };
   if (receiptSettings.resetYearly) {
     baseCondition.createdAt = {
@@ -353,269 +328,116 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
     };
   }
   
-  // Buscar el último recibo tanto por sequenceNumber como por receiptNumber
-  // para asegurar consistencia
-  console.log('🔍 Buscando último recibo con baseCondition:', JSON.stringify(baseCondition));
+  console.log('🔍 [generateReceiptNumber v2] Buscando último recibo...');
   const lastReceipt = await Receipt.findOne({
     where: baseCondition,
-    order: [
-      ['sequenceNumber', 'DESC'],
-      ['createdAt', 'DESC']
-    ],
+    order: [['sequenceNumber', 'DESC']],
+    attributes: ['sequenceNumber', 'receiptNumber'],
     transaction
   });
-  console.log('🔍 lastReceipt encontrado:', lastReceipt ? {
-    id: lastReceipt.id,
-    receiptNumber: lastReceipt.receiptNumber,
-    sequenceNumber: lastReceipt.sequenceNumber,
-    createdAt: lastReceipt.createdAt
-  } : null);
   
-  // También verificar el último receiptNumber con el patrón actual
-  const receiptPattern = receiptSettings.format
+  console.log('📊 [generateReceiptNumber v2] Último recibo:', lastReceipt ? lastReceipt.receiptNumber : 'ninguno');
+  
+  // Calcular siguiente número
+  let nextSequence = lastReceipt ? (lastReceipt.sequenceNumber + 1) : (receiptSettings.initialNumber || 1);
+  
+  // Generar número de recibo
+  const paddedNumber = nextSequence.toString().padStart(receiptSettings.padLength || 5, '0');
+  let receiptNumber = receiptSettings.format
     .replace('{YEAR}', currentYear.toString())
     .replace('{PREFIX}', receiptSettings.prefix || 'REC')
-    .replace('{NUMBER}', '%');
+    .replace('{NUMBER}', paddedNumber);
   
-  console.log('🔍 Buscando recibo con patrón:', receiptPattern);
-  const lastByNumber = await Receipt.findOne({
-    where: {
-      businessId,
-      receiptNumber: {
-        [Op.like]: receiptPattern
-      }
-    },
-    order: [['receiptNumber', 'DESC']],
-    transaction
-  });
-  console.log('🔍 lastByNumber encontrado:', lastByNumber ? {
-    id: lastByNumber.id,
-    receiptNumber: lastByNumber.receiptNumber,
-    sequenceNumber: lastByNumber.sequenceNumber
-  } : null);
+  console.log('🎯 [generateReceiptNumber v2] Número generado:', receiptNumber, 'sequence:', nextSequence);
   
-  // Calcular siguiente número usando el máximo entre ambos
-  let nextSequence;
-  let maxSequence = 0;
-  
-  if (lastReceipt) {
-    maxSequence = Math.max(maxSequence, lastReceipt.sequenceNumber || 0);
-    console.log('🔍 maxSequence desde lastReceipt:', maxSequence);
-  }
-  
-  if (lastByNumber) {
-    // Extraer número del receiptNumber (último grupo de dígitos)
-    const match = lastByNumber.receiptNumber.match(/(\d+)$/);
-    if (match) {
-      const numberFromReceipt = parseInt(match[1]);
-      console.log('🔍 Número extraído de receiptNumber:', numberFromReceipt);
-      maxSequence = Math.max(maxSequence, numberFromReceipt);
-    }
-  }
-  
-  console.log('🔍 maxSequence final:', maxSequence);
-  
-  // IMPORTANTE: También considerar el currentNumber de la configuración
-  // para evitar crear recibos con números ya usados manualmente
-  const configuredNumber = receiptSettings.currentNumber || 0;
-  console.log('🔍 currentNumber en configuración:', configuredNumber);
-  maxSequence = Math.max(maxSequence, configuredNumber);
-  console.log('🔍 maxSequence después de comparar con config:', maxSequence);
-  
-  if (maxSequence > 0) {
-    nextSequence = maxSequence + 1;
-  } else {
-    // Si es el primer recibo, usar el número inicial configurado
-    nextSequence = receiptSettings.initialNumber || 1;
-  }
-  console.log('🔍 nextSequence calculado:', nextSequence);
-  
-  // VERIFICACIÓN CRÍTICA: Asegurarse de que el número no exista ya
-  // Esto maneja el caso de race conditions no resueltas por el advisory lock
-  let receiptNumber;
-  let attempts = 0;
-  const maxAttempts = 10;
-  
-  console.log('🔍 Iniciando verificación de disponibilidad de número...');
-  while (attempts < maxAttempts) {
-    receiptNumber = receiptSettings.format
-      .replace('{YEAR}', currentYear.toString())
-      .replace('{PREFIX}', receiptSettings.prefix || 'REC')
-      .replace('{NUMBER}', nextSequence.toString().padStart(receiptSettings.padLength || 5, '0'));
-    
-    console.log(`🔍 Intento ${attempts + 1}: Verificando disponibilidad de ${receiptNumber}`);
-    // Verificar si ya existe un recibo con este número
-    const existing = await Receipt.findOne({
-      where: { businessId, receiptNumber },
-      attributes: ['id', 'receiptNumber'],
-      transaction
-    });
-    
-    console.log(`🔍 ¿Existe ${receiptNumber}?`, existing ? 'SÍ' : 'NO');
-    if (!existing) {
-      // Número disponible, salir del loop
-      break;
-    }
-    
-    // Si existe, incrementar y reintentar
-    console.warn(`⚠️ Receipt number ${receiptNumber} already exists, incrementing to ${nextSequence + 1}`);
-    nextSequence++;
-    attempts++;
-  }
-  
-  if (attempts >= maxAttempts) {
-    throw new Error(`No se pudo generar un número de recibo único después de ${maxAttempts} intentos`);
-  }
-  
-  // Actualizar currentNumber en configuraciones del negocio
-  const updatedSettings = {
-    ...settings,
-    numbering: {
-      ...settings.numbering,
-      receipts: {
-        ...receiptSettings,
-        currentNumber: nextSequence
-      }
-    }
-  };
-  
-  console.log('💾 [generateReceiptNumber] Actualizando settings del negocio');
-  await business.update({ settings: updatedSettings }, { transaction });
-  
-  console.log('✅ [generateReceiptNumber] Número generado exitosamente:', receiptNumber);
   return {
     receiptNumber,
     sequenceNumber: nextSequence
   };
-  } catch (error) {
-    console.error('❌ [generateReceiptNumber] Error generando número de recibo:', error);
-    console.error('❌ [generateReceiptNumber] Error stack:', error.stack);
-    throw error;
-  }
 };
 
 /**
  * Método estático para crear un recibo desde una cita
- * ATÓMICO: Usa transacción para garantizar que el número de recibo sea único
+ * VERSION SIMPLIFICADA
  */
 Receipt.createFromAppointment = async function(appointmentData, paymentData, options = {}) {
   const { sequelize } = require('../config/database');
-  const providedTransaction = options.transaction;
   
-  console.log('🧾 [createFromAppointment] Iniciando creación de recibo');
-  console.log('📋 [createFromAppointment] appointmentData:', {
-    id: appointmentData.id,
-    businessId: appointmentData.businessId,
-    clientId: appointmentData.clientId,
-    specialistId: appointmentData.specialistId
+  console.log('🧾 [createFromAppointment v2] INICIO');
+  console.log('📋 [createFromAppointment v2] appointmentId:', appointmentData.id);
+  console.log('💰 [createFromAppointment v2] payment:', paymentData.amount, paymentData.method);
+  
+  // Usar transacción para atomicidad
+  return await sequelize.transaction(async (t) => {
+    console.log('🔄 [createFromAppointment v2] Generando número...');
+    
+    // Generar número de recibo
+    const { receiptNumber, sequenceNumber } = await Receipt.generateReceiptNumber(
+      appointmentData.businessId,
+      t
+    );
+    
+    console.log('✅ [createFromAppointment v2] Número:', receiptNumber);
+    
+    // Preparar datos del recibo
+    const receiptData = {
+      receiptNumber,
+      sequenceNumber,
+      businessId: appointmentData.businessId,
+      appointmentId: appointmentData.id,
+      specialistId: appointmentData.specialistId,
+      userId: options.createdBy || null,
+      
+      specialistName: appointmentData.specialist ? 
+        `${appointmentData.specialist.firstName} ${appointmentData.specialist.lastName}` : 'N/A',
+      specialistCode: appointmentData.specialist?.code || null,
+      
+      clientName: appointmentData.client ? 
+        `${appointmentData.client.firstName} ${appointmentData.client.lastName}` : 'N/A',
+      clientPhone: appointmentData.client?.phone || null,
+      clientEmail: appointmentData.client?.email || null,
+      
+      serviceDate: appointmentData.startTime ? 
+        new Date(appointmentData.startTime).toISOString().substring(0, 10) : 
+        new Date().toISOString().substring(0, 10),
+      serviceTime: appointmentData.startTime ? 
+        new Date(appointmentData.startTime).toTimeString().substring(0, 5) : '00:00',
+      issueDate: new Date(),
+      
+      serviceName: appointmentData.services && appointmentData.services.length > 0
+        ? (appointmentData.services.length === 1 
+           ? appointmentData.services[0].name 
+           : `${appointmentData.services.length} servicios`)
+        : (appointmentData.service?.name || 'Servicio'),
+      serviceDescription: appointmentData.notes || null,
+      
+      subtotal: appointmentData.baseAmount || paymentData.amount,
+      tax: appointmentData.tax || 0,
+      discount: appointmentData.discount || 0,
+      tip: appointmentData.tip || 0,
+      totalAmount: appointmentData.finalAmount || paymentData.amount,
+      
+      paymentMethod: paymentData.method || 'CASH',
+      paymentReference: paymentData.transactionId || paymentData.reference,
+      paymentStatus: 'PAID',
+      
+      metadata: {
+        appointmentServices: appointmentData.services || [],
+        appliedRules: appointmentData.appliedRules || [],
+        commissionData: appointmentData.commissionData || null,
+        paymentData: paymentData
+      },
+      
+      createdBy: options.createdBy || appointmentData.specialistId
+    };
+    
+    console.log('💾 [createFromAppointment v2] Creando recibo...');
+    
+    const receipt = await Receipt.create(receiptData, { transaction: t });
+    
+    console.log('✅ [createFromAppointment v2] Recibo creado:', receipt.id);
+    return receipt;
   });
-  console.log('💳 [createFromAppointment] paymentData:', paymentData);
-  
-  // Función interna que hace el trabajo real
-  const createReceiptInTransaction = async (t) => {
-    try {
-      console.log('🔄 [createFromAppointment] Generando número de recibo...');
-      // Generar número de recibo (con transacción para evitar duplicados)
-      const { receiptNumber, sequenceNumber } = await Receipt.generateReceiptNumber(
-        appointmentData.businessId,
-        t
-      );
-      
-      console.log('✅ [createFromAppointment] Número generado:', receiptNumber);
-      console.log('🏗️ [createFromAppointment] Preparando datos del recibo...');
-      
-      // Preparar datos del recibo
-      const receiptData = {
-        receiptNumber,
-        sequenceNumber,
-        businessId: appointmentData.businessId,
-        appointmentId: appointmentData.id,
-        specialistId: appointmentData.specialistId,
-        userId: options.createdBy || null, // Usuario que crea el recibo (quien registra el pago)
-        
-        // Información del especialista
-        specialistName: appointmentData.specialist ? 
-          `${appointmentData.specialist.firstName} ${appointmentData.specialist.lastName}` : 
-          'N/A',
-        specialistCode: appointmentData.specialist?.code || null,
-        
-        // Información del cliente
-        clientName: appointmentData.client ? 
-          `${appointmentData.client.firstName} ${appointmentData.client.lastName}` : 
-          'N/A',
-        clientPhone: appointmentData.client?.phone || null,
-        clientEmail: appointmentData.client?.email || null,
-        
-        // Fechas - extraer de startTime
-        serviceDate: appointmentData.startTime ? new Date(appointmentData.startTime) : new Date(),
-        serviceTime: appointmentData.startTime ? 
-          new Date(appointmentData.startTime).toTimeString().substring(0, 5) : 
-          '00:00',
-        issueDate: new Date(),
-        
-        // Información del servicio - soporta múltiples servicios
-        serviceName: appointmentData.services && appointmentData.services.length > 0
-          ? (appointmentData.services.length === 1 
-             ? appointmentData.services[0].name 
-             : `${appointmentData.services.length} servicios: ${appointmentData.services.map(s => s.name).join(', ')}`)
-          : (appointmentData.service?.name || 'Servicio'),
-        serviceDescription: appointmentData.notes || null,
-        
-        // Información financiera
-        subtotal: appointmentData.baseAmount || paymentData.amount,
-        tax: appointmentData.tax || 0,
-        discount: appointmentData.discount || 0,
-        tip: appointmentData.tip || 0,
-        totalAmount: appointmentData.finalAmount || paymentData.amount,
-        
-        // Información del pago
-        paymentMethod: paymentData.method || 'WOMPI',
-        paymentReference: paymentData.transactionId || paymentData.reference,
-        paymentStatus: 'PAID',
-        
-        // Metadatos
-        metadata: {
-          appointmentServices: appointmentData.services || [],
-          appliedRules: appointmentData.appliedRules || [],
-          commissionData: appointmentData.commissionData || null,
-          paymentData: paymentData
-        },
-        
-        createdBy: options.createdBy || appointmentData.specialistId
-      };
-      
-      console.log('💾 [createFromAppointment] Creando recibo en base de datos...');
-      console.log('📄 [createFromAppointment] receiptData:', JSON.stringify(receiptData, null, 2));
-      
-      const receipt = await Receipt.create(receiptData, { transaction: t });
-      
-      console.log('✅ [createFromAppointment] Recibo creado exitosamente:', receipt.id);
-      return receipt;
-    } catch (error) {
-      console.error('❌ [createFromAppointment] Error en createReceiptInTransaction:', error);
-      console.error('❌ [createFromAppointment] Error name:', error.name);
-      console.error('❌ [createFromAppointment] Error message:', error.message);
-      console.error('❌ [createFromAppointment] Error stack:', error.stack);
-      throw error;
-    }
-  };
-  
-  // Si ya hay una transacción, usarla. Si no, crear una nueva.
-  try {
-    if (providedTransaction) {
-      console.log('♻️ [createFromAppointment] Usando transacción existente');
-      return await createReceiptInTransaction(providedTransaction);
-    } else {
-      console.log('🆕 [createFromAppointment] Creando nueva transacción');
-      // Crear nueva transacción para garantizar atomicidad
-      return await sequelize.transaction(async (t) => {
-        return await createReceiptInTransaction(t);
-      });
-    }
-  } catch (error) {
-    console.error('❌ [createFromAppointment] Error final:', error);
-    throw error;
-  }
 };
 
 /**

@@ -104,47 +104,13 @@ class ReceiptController {
       
       console.log('🆕 [ReceiptController] Creando nuevo recibo...');
       const appointmentJSON = appointment.toJSON();
-      console.log('🔍 [ReceiptController] Appointment data keys:', Object.keys(appointmentJSON));
-      console.log('🔍 [ReceiptController] userId:', appointmentJSON.userId);
-      console.log('🔍 [ReceiptController] clientId:', appointmentJSON.clientId);
-      console.log('🔍 [ReceiptController] startTime:', appointmentJSON.startTime);
       
-      // Crear el recibo con retry simple (el advisory lock debería prevenir duplicados)
-      let receipt;
-      let retries = 0;
-      const maxRetries = 2; // Reducido a 2 reintentos ya que el advisory lock maneja la concurrencia
-      
-      while (retries <= maxRetries) {
-        try {
-          console.log(`🔄 [ReceiptController] Intento ${retries + 1} de ${maxRetries + 1} para crear recibo`);
-          receipt = await Receipt.createFromAppointment(
-            appointmentJSON,
-            paymentData,
-            { createdBy: req.user.id }
-          );
-          console.log(`✅ [ReceiptController] Recibo creado exitosamente en intento ${retries + 1}`);
-          break; // Éxito, salir del loop
-        } catch (createError) {
-          console.error(`❌ [ReceiptController] Error en intento ${retries + 1}:`, createError.name, createError.message);
-          
-          // Si es un error de número duplicado y aún tenemos retries, reintentar
-          if (createError.name === 'SequelizeUniqueConstraintError' && 
-              (createError.message?.includes('receipts_number_unique') || 
-               createError.fields?.receiptNumber) &&
-              retries < maxRetries) {
-            retries++;
-            const waitTime = 500 + (200 * retries); // Backoff: 700ms, 900ms
-            console.log(`⚠️ [ReceiptController] Race condition en receiptNumber (intento ${retries}/${maxRetries}), esperando ${waitTime}ms antes de reintentar...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            continue;
-          }
-          
-          // Para cualquier otro error, propagarlo inmediatamente
-          console.error(`❌ [ReceiptController] Error creating receipt:`, createError);
-          console.error(`❌ [ReceiptController] Error stack:`, createError.stack);
-          throw createError;
-        }
-      }
+      // Crear el recibo (versión simplificada con transacción interna)
+      const receipt = await Receipt.createFromAppointment(
+        appointmentJSON,
+        paymentData,
+        { createdBy: req.user.id }
+      );
       
       console.log('✅ [ReceiptController] Recibo creado exitosamente:', receipt.id);
       
