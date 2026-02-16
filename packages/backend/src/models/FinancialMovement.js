@@ -78,22 +78,9 @@ const FinancialMovement = sequelize.define('FinancialMovement', {
     allowNull: true
   },
   paymentMethod: {
-    type: DataTypes.ENUM(
-      'CASH',
-      'CARD',
-      'CREDIT_CARD',
-      'DEBIT_CARD',
-      'TRANSFER',
-      'BANK_TRANSFER',
-      'QR',
-      'ONLINE',
-      'DIGITAL_WALLET',
-      'CHECK',
-      'VOUCHER',
-      'CREDIT',
-      'OTHER'
-    ),
-    allowNull: false
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    comment: 'Tipo de método de pago usado (CASH, TRANSFER, CARD, QR, etc.)'
   },
   transactionId: {
     type: DataTypes.STRING,
