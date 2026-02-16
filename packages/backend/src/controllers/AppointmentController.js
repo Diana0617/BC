@@ -1366,20 +1366,25 @@ class AppointmentController {
         businessId
       };
 
-      // Solo recepcionistas o BUSINESS pueden actualizar citas
-      if (!req.receptionist && req.user?.role !== 'BUSINESS') {
-        return res.status(403).json({
-          success: false,
-          error: 'No tienes permisos para actualizar citas'
-        });
-      }
-
+      // Obtener la cita primero para validar permisos del especialista
       const appointment = await Appointment.findOne({ where });
 
       if (!appointment) {
         return res.status(404).json({
           success: false,
           error: 'Cita no encontrada'
+        });
+      }
+
+      // Validación de permisos: BUSINESS, recepcionista, o especialista de la cita
+      const isBusinessOwner = req.user?.role === 'BUSINESS';
+      const isReceptionist = !!req.receptionist;
+      const isAppointmentSpecialist = req.specialist && req.specialist.id === appointment.specialistId;
+      
+      if (!isBusinessOwner && !isReceptionist && !isAppointmentSpecialist) {
+        return res.status(403).json({
+          success: false,
+          error: 'No tienes permisos para actualizar esta cita'
         });
       }
 
