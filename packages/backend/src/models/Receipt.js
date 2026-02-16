@@ -433,11 +433,23 @@ Receipt.createFromAppointment = async function(appointmentData, paymentData, opt
       };
       
       console.log('💾 [createFromAppointment v2] Creando recibo...');
+      console.log('📝 [createFromAppointment v2] receiptData keys:', Object.keys(receiptData));
+      console.log('📝 [createFromAppointment v2] serviceDate:', receiptData.serviceDate, 'type:', typeof receiptData.serviceDate);
+      console.log('📝 [createFromAppointment v2] paymentMethod:', receiptData.paymentMethod);
+      console.log('📝 [createFromAppointment v2] metadata:', JSON.stringify(receiptData.metadata).substring(0, 100));
       
-      const receipt = await Receipt.create(receiptData, { transaction: t });
-      
-      console.log('✅ [createFromAppointment v2] Recibo creado:', receipt.id);
-      return receipt;
+      try {
+        const receipt = await Receipt.create(receiptData, { transaction: t });
+        console.log('✅ [createFromAppointment v2] Recibo creado:', receipt.id);
+        return receipt;
+      } catch (createError) {
+        console.error('💥 [createFromAppointment v2] Error en Receipt.create():');
+        console.error('   Name:', createError.name);
+        console.error('   Message:', createError.message);
+        console.error('   SQL:', createError.sql);
+        console.error('   Original error:', createError.original);
+        throw createError;
+      }
       
     } catch (transactionError) {
       console.error('❌❌❌ [createFromAppointment v2] ERROR EN TRANSACCIÓN ❌❌❌');

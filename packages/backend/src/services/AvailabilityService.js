@@ -131,15 +131,15 @@ class AvailabilityService {
         }
       });
 
-      console.log('📋 Horario del especialista encontrado:', specialistSchedule ? {
-        id: specialistSchedule.id,
-        startTime: specialistSchedule.startTime,
-        endTime: specialistSchedule.endTime,
-        breakStart: specialistSchedule.breakStart,
-        breakEnd: specialistSchedule.breakEnd,
-        dayOfWeek: specialistSchedule.dayOfWeek,
-        branchId: specialistSchedule.branchId
-      } : 'NULL - No encontrado');
+      // console.log('📋 Horario del especialista encontrado:', specialistSchedule ? {
+      //   id: specialistSchedule.id,
+      //   startTime: specialistSchedule.startTime,
+      //   endTime: specialistSchedule.endTime,
+      //   breakStart: specialistSchedule.breakStart,
+      //   breakEnd: specialistSchedule.breakEnd,
+      //   dayOfWeek: specialistSchedule.dayOfWeek,
+      //   branchId: specialistSchedule.branchId
+      // } : 'NULL - No encontrado');
 
       // Si no hay horario específico del especialista, usar horarios de la sucursal
       // Esto permite que los especialistas trabajen en los horarios de la sucursal por defecto
@@ -199,12 +199,12 @@ class AvailabilityService {
       const cleanupTime = 0; // service.cleanupTime || 0;
       const totalTimeNeeded = serviceDuration; // Sin buffers adicionales
 
-      console.log(`🕐 Tiempos del servicio "${service.name}":`, {
-        duration: serviceDuration,
-        preparation: preparationTime,
-        cleanup: cleanupTime,
-        total: totalTimeNeeded
-      });
+      // console.log(`🕐 Tiempos del servicio "${service.name}":`, {
+      //   duration: serviceDuration,
+      //   preparation: preparationTime,
+      //   cleanup: cleanupTime,
+      //   total: totalTimeNeeded
+      // });
 
       // 7. Calcular intersección de horarios
       const workStartTime = this.maxTime(branchHours.open, workingHours.startTime);
@@ -276,7 +276,7 @@ class AvailabilityService {
       // 11. Filtrar solo slots disponibles
       const availableSlots = slotsWithAvailability.filter(slot => slot.available);
 
-      console.log(`✅ ${availableSlots.length} slots disponibles de ${allSlots.length} generados`);
+      // console.log(`✅ ${availableSlots.length} slots disponibles de ${allSlots.length} generados`);
 
       return {
         date,

@@ -28,7 +28,7 @@ class AutoRenewalService {
       
       const allSubscriptions = [...expiringTrialSubscriptions, ...expiringActiveSubscriptions];
       
-      console.log(`📊 Encontradas ${expiringTrialSubscriptions.length} trials expirando y ${expiringActiveSubscriptions.length} activas a renovar`);
+      // console.log(`📊 Encontradas ${expiringTrialSubscriptions.length} trials expirando y ${expiringActiveSubscriptions.length} activas a renovar`);
       
       let successCount = 0;
       let failureCount = 0;
@@ -714,7 +714,7 @@ class AutoRenewalService {
       ]
     });
     
-    console.log(`📊 Encontradas ${subscriptionsToRetry.length} suscripciones para reintento`);
+    // console.log(`📊 Encontradas ${subscriptionsToRetry.length} suscripciones para reintento`);
     
     for (const subscription of subscriptionsToRetry) {
       try {
