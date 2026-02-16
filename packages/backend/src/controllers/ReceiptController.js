@@ -1,5 +1,6 @@
 const Receipt = require('../models/Receipt');
 const Appointment = require('../models/Appointment');
+const AppointmentPayment = require('../models/AppointmentPayment');
 const User = require('../models/User');
 const Client = require('../models/Client');
 const Business = require('../models/Business');
@@ -77,11 +78,26 @@ class ReceiptController {
       // Si no se proporcionó paymentData en el body, construirlo desde la cita
       if (!paymentData) {
         console.log('🔧 [ReceiptController] Construyendo paymentData desde la cita...');
+        
+        // Buscar el último pago registrado para esta cita
+        const lastPayment = await AppointmentPayment.findOne({
+          where: { appointmentId: appointment.id },
+          order: [['paymentDate', 'DESC']],
+          attributes: ['paymentMethodType', 'paymentMethodName', 'amount', 'reference']
+        });
+        
+        console.log('🔍 [ReceiptController] Último pago encontrado:', lastPayment ? 'Sí' : 'No');
+        if (lastPayment) {
+          console.log('🔍 [ReceiptController] paymentMethodType:', lastPayment.paymentMethodType);
+          console.log('🔍 [ReceiptController] paymentMethodName:', lastPayment.paymentMethodName);
+        }
+        
         paymentData = {
           amount: appointment.paidAmount || 0,
-          method: appointment.paymentMethodId || 'CASH',
+          method: lastPayment?.paymentMethodType || 'CASH',
+          methodName: lastPayment?.paymentMethodName || 'Efectivo',
           transactionId: appointment.paymentTransactionId,
-          reference: appointment.paymentReference
+          reference: lastPayment?.reference || appointment.paymentReference
         };
         console.log('🔧 [ReceiptController] paymentData construido:', paymentData);
       }
@@ -93,12 +109,34 @@ class ReceiptController {
       console.log('🔍 [ReceiptController] clientId:', appointmentJSON.clientId);
       console.log('🔍 [ReceiptController] startTime:', appointmentJSON.startTime);
       
-      // Crear el recibo
-      const receipt = await Receipt.createFromAppointment(
-        appointmentJSON,
-        paymentData,
-        { createdBy: req.user.id }
-      );
+      // Crear el recibo con retry logic para race conditions
+      let receipt;
+      let retries = 0;
+      const maxRetries = 3;
+      
+      while (retries < maxRetries) {
+        try {
+          receipt = await Receipt.createFromAppointment(
+            appointmentJSON,
+            paymentData,
+            { createdBy: req.user.id }
+          );
+          break; // Éxito, salir del loop
+        } catch (createError) {
+          // Si es un error de número duplicado y aún tenemos retries, reintentar
+          if (createError.name === 'SequelizeUniqueConstraintError' && 
+              createError.message?.includes('receipts_number_unique') &&
+              retries < maxRetries - 1) {
+            retries++;
+            console.log(`⚠️ [ReceiptController] Race condition detectado en receiptNumber, reintento ${retries}/${maxRetries}`);
+            // Esperar un poco antes de reintentar (backoff exponencial)
+            await new Promise(resolve => setTimeout(resolve, 100 * retries));
+            continue;
+          }
+          // Si no es un error de número duplicado o ya no quedan retries, lanzar el error
+          throw createError;
+        }
+      }
       
       console.log('✅ [ReceiptController] Recibo creado exitosamente:', receipt.id);
       
@@ -125,7 +163,8 @@ class ReceiptController {
       
       // Si es un error de constraint único (duplicate key), retornar el recibo existente
       if (error.name === 'SequelizeUniqueConstraintError' || 
-          error.message?.includes('receipts_appointment_id_unique')) {
+          error.message?.includes('receipts_appointment_id_unique') ||
+          error.message?.includes('receipts_number_unique')) {
         console.log('⚠️ [ReceiptController] Recibo duplicado detectado por constraint, buscando existente...');
         try {
           const { appointmentId } = req.params;
@@ -139,6 +178,7 @@ class ReceiptController {
             ]
           });
           if (existingReceipt) {
+            console.log('✅ [ReceiptController] Recibo existente encontrado:', existingReceipt.receiptNumber);
             return res.status(200).json({
               success: true,
               message: 'Ya existe un recibo para esta cita',

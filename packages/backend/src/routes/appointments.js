@@ -325,10 +325,12 @@ router.post('/:id/payment', async (req, res) => {
 
     // 💰 Crear registro en FinancialMovement
     const FinancialMovement = require('../models/FinancialMovement');
+    const AppointmentPayment = require('../models/AppointmentPayment');
     const BusinessPaymentConfig = require('../models/BusinessPaymentConfig');
     
     // Obtener el método de pago para extraer su tipo (CASH, CARD, etc.)
     let paymentMethodType = 'CASH'; // default
+    let paymentMethodName = 'Efectivo'; // default
     try {
       const paymentConfig = await BusinessPaymentConfig.findOne({
         where: { businessId }
@@ -336,13 +338,37 @@ router.post('/:id/payment', async (req, res) => {
       
       if (paymentConfig && paymentConfig.paymentMethods) {
         const method = paymentConfig.paymentMethods.find(m => m.id === paymentMethodId);
-        if (method && method.type) {
-          paymentMethodType = method.type;
+        if (method) {
+          if (method.type) paymentMethodType = method.type;
+          if (method.name) paymentMethodName = method.name;
         }
       }
     } catch (error) {
       console.warn('⚠️ No se pudo obtener el tipo de método de pago, usando CASH por defecto');
     }
+    
+    // 🧾 Crear registro de AppointmentPayment (necesario para el recibo)
+    await AppointmentPayment.create({
+      appointmentId: appointment.id,
+      businessId,
+      clientId: appointment.clientId,
+      paymentMethodId,
+      paymentMethodName,
+      paymentMethodType,
+      amount: finalAmount,
+      reference: null,
+      notes: notes || null,
+      proofUrl: null,
+      proofType: null,
+      status: 'COMPLETED',
+      registeredBy: req.user.id,
+      registeredByRole: req.user.role,
+      paymentDate: new Date(),
+      metadata: {
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent')
+      }
+    });
     
     await FinancialMovement.create({
       businessId,
