@@ -68,7 +68,16 @@ class CashRegisterPDFService {
         doc
           .fontSize(12)
           .font('Helvetica-Bold')
-          .text('CONTROL DE EFECTIVO', { underline: true })
+          .text('CONTROL DE CAJA (SOLO EFECTIVO)', { underline: true })
+          .moveDown(0.3);
+        
+        // Nota explicativa
+        doc
+          .fontSize(9)
+          .font('Helvetica')
+          .fillColor('gray')
+          .text('La caja registradora solo controla dinero en efectivo. Los pagos por otros medios se detallan más abajo.')
+          .fillColor('black')
           .moveDown(0.5);
 
         const openingBalance = parseFloat(shift.openingBalance || 0);
@@ -81,7 +90,7 @@ class CashRegisterPDFService {
           .fontSize(10)
           .text(`Balance Inicial (Efectivo):`, 100, doc.y, { continued: true, width: 250 })
           .text(`$${this._formatMoney(openingBalance)}`, { align: 'right' })
-          .text(`Efectivo Cobrado en Turno:`, 100, doc.y, { continued: true, width: 250 })
+          .text(`+ Efectivo Cobrado en Turno:`, 100, doc.y, { continued: true, width: 250 })
           .text(`$${this._formatMoney(summary.totalCash || 0)}`, { align: 'right' })
           .moveDown(0.3);
 
@@ -95,7 +104,7 @@ class CashRegisterPDFService {
         doc
           .font('Helvetica-Bold')
           .fontSize(11)
-          .text(`Balance Esperado (Efectivo):`, 100, doc.y, { continued: true, width: 250 })
+          .text(`= Balance Esperado en Caja:`, 100, doc.y, { continued: true, width: 250 })
           .text(`$${this._formatMoney(expectedClosing)}`, { align: 'right' })
           .font('Helvetica')
           .fontSize(10)
@@ -121,7 +130,16 @@ class CashRegisterPDFService {
         doc
           .fontSize(12)
           .font('Helvetica-Bold')
-          .text('DESGLOSE POR MÉTODO DE PAGO', { underline: true })
+          .text('RESUMEN TOTAL DE VENTAS', { underline: true })
+          .moveDown(0.3);
+        
+        // Nota explicativa
+        doc
+          .fontSize(9)
+          .font('Helvetica')
+          .fillColor('gray')
+          .text('Detalle de todos los ingresos del turno, discriminados por método de pago.')
+          .fillColor('black')
           .moveDown(0.5);
 
         const paymentMethods = summary.paymentMethods || {};
@@ -149,8 +167,8 @@ class CashRegisterPDFService {
           // Líneas de tabla
           doc
             .font('Helvetica-Bold')
-            .text('Método', 100, doc.y, { width: 150, continued: true })
-            .text('Cantidad', { width: 80, align: 'center', continued: true })
+            .text('Método de Pago', 100, doc.y, { width: 150, continued: true })
+            .text('Transacciones', { width: 100, align: 'center', continued: true })
             .text('Total', { align: 'right' })
             .moveDown(0.3);
 
@@ -160,16 +178,33 @@ class CashRegisterPDFService {
             .stroke()
             .moveDown(0.3);
 
-          // Cada método
+          // Cada método - primero CASH, luego los demás
           doc.font('Helvetica');
-          Object.entries(paymentMethods).forEach(([method, data]) => {
+          
+          // Priorizar CASH primero
+          const sortedMethods = Object.entries(paymentMethods).sort(([methodA], [methodB]) => {
+            if (methodA === 'CASH') return -1;
+            if (methodB === 'CASH') return 1;
+            return 0;
+          });
+          
+          sortedMethods.forEach(([method, data]) => {
             const methodName = methodNames[method] || method;
             totalAllPayments += data.total;
             
+            // Resaltar efectivo
+            if (method === 'CASH') {
+              doc.font('Helvetica-Bold');
+            }
+            
             doc
               .text(methodName, 100, doc.y, { width: 150, continued: true })
-              .text(`${data.count}`, { width: 80, align: 'center', continued: true })
+              .text(`${data.count}`, { width: 100, align: 'center', continued: true })
               .text(`$${this._formatMoney(data.total)}`, { align: 'right' });
+              
+            if (method === 'CASH') {
+              doc.font('Helvetica');
+            }
           });
 
           // Total general
@@ -182,14 +217,28 @@ class CashRegisterPDFService {
 
           doc
             .font('Helvetica-Bold')
-            .fontSize(11)
-            .text('TOTAL GENERAL:', 100, doc.y, { width: 230, continued: true })
+            .fontSize(12)
+            .fillColor('#2563eb')
+            .text('TOTAL VENTAS DEL TURNO:', 100, doc.y, { width: 250, continued: true })
             .text(`$${this._formatMoney(totalAllPayments)}`, { align: 'right' })
+            .fillColor('black')
             .font('Helvetica')
             .fontSize(10);
+            
+          // Desglose de pagos no efectivo
+          if (summary.totalNonCash > 0) {
+            doc
+              .moveDown(0.5)
+              .fontSize(9)
+              .fillColor('gray')
+              .text(`• Pagos en Efectivo: $${this._formatMoney(summary.totalCash || 0)} (va a caja física)`, 100)
+              .text(`• Pagos otros medios: $${this._formatMoney(summary.totalNonCash || 0)} (no van a caja física)`, 100)
+              .fillColor('black')
+              .fontSize(10);
+          }
 
         } else {
-          doc.text('No hay pagos registrados');
+          doc.text('No hay pagos registrados en este turno');
         }
 
         doc.moveDown(1.5);
@@ -199,7 +248,15 @@ class CashRegisterPDFService {
           doc
             .fontSize(12)
             .font('Helvetica-Bold')
-            .text('DETALLE DE MOVIMIENTOS', { underline: true })
+            .text('DETALLE DE TRANSACCIONES', { underline: true })
+            .moveDown(0.3);
+          
+          doc
+            .fontSize(9)
+            .font('Helvetica')
+            .fillColor('gray')
+            .text(`Total de ${summary.movements.length} transacciones registradas en este turno.`)
+            .fillColor('black')
             .moveDown(0.5);
 
           doc
@@ -208,12 +265,12 @@ class CashRegisterPDFService {
 
           // Encabezados de tabla
           const startX = 50;
-          const colWidths = { tipo: 45, desc: 120, specialist: 80, client: 80, fecha: 70, monto: 70 };
+          const colWidths = { metodo: 50, desc: 115, specialist: 75, client: 75, fecha: 70, monto: 70 };
           let currentX = startX;
 
           doc
-            .text('Tipo', currentX, doc.y, { width: colWidths.tipo, continued: true })
-            .text('Descripción', currentX += colWidths.tipo, doc.y, { width: colWidths.desc, continued: true })
+            .text('Método', currentX, doc.y, { width: colWidths.metodo, continued: true })
+            .text('Descripción', currentX += colWidths.metodo, doc.y, { width: colWidths.desc, continued: true })
             .text('Especialista', currentX += colWidths.desc, doc.y, { width: colWidths.specialist, continued: true })
             .text('Cliente', currentX += colWidths.specialist, doc.y, { width: colWidths.client, continued: true })
             .text('Fecha/Hora', currentX += colWidths.client, doc.y, { width: colWidths.fecha, continued: true })
@@ -222,7 +279,7 @@ class CashRegisterPDFService {
           doc.moveDown(0.3);
           doc
             .moveTo(startX, doc.y)
-            .lineTo(startX + 465, doc.y)
+            .lineTo(startX + 455, doc.y)
             .stroke();
           doc.moveDown(0.3);
 
@@ -238,28 +295,39 @@ class CashRegisterPDFService {
             }
 
             const methodNames = {
-              CASH: 'Efectivo',
-              CARD: 'Tarjeta',
-              CREDIT_CARD: 'T. Crédito',
-              DEBIT_CARD: 'T. Débito',
-              TRANSFER: 'Transfer',
-              BANK_TRANSFER: 'Transfer.',
-              QR: 'QR',
-              ONLINE: 'Online',
-              DIGITAL_WALLET: 'Wallet',
-              CHECK: 'Cheque',
-              VOUCHER: 'Vale',
-              CREDIT: 'Crédito',
-              OTHER: 'Otro'
+              CASH: '💵 Efectivo',
+              CARD: '💳 Tarjeta',
+              CREDIT_CARD: '💳 T.Créd',
+              DEBIT_CARD: '💳 T.Déb',
+              TRANSFER: '🏦 Transfer',
+              BANK_TRANSFER: '🏦 Transf.',
+              QR: '📱 QR',
+              ONLINE: '🌐 Online',
+              DIGITAL_WALLET: '📱 Wallet',
+              CHECK: '📝 Cheque',
+              VOUCHER: '🎟️ Vale',
+              CREDIT: '💰 Crédito',
+              OTHER: '❓ Otro'
             };
 
+            const methodDisplay = methodNames[movement.paymentMethod] || movement.paymentMethod;
+            
+            // Resaltar efectivo
+            if (movement.paymentMethod === 'CASH') {
+              doc.font('Helvetica-Bold');
+            }
+
             doc
-              .text(methodNames[movement.paymentMethod] || movement.paymentMethod, currentX, y, { width: colWidths.tipo, continued: true })
-              .text(movement.description.substring(0, 30), currentX += colWidths.tipo, y, { width: colWidths.desc, continued: true })
-              .text(movement.specialist || '-', currentX += colWidths.desc, y, { width: colWidths.specialist, continued: true })
-              .text(movement.client || '-', currentX += colWidths.specialist, y, { width: colWidths.client, continued: true })
-              .text(this._formatDate(movement.createdAt).substring(11), currentX += colWidths.client, y, { width: colWidths.fecha, continued: true })
-              .text(`+$ ${this._formatMoney(movement.amount)}`, currentX += colWidths.fecha, y, { width: colWidths.monto, align: 'right' });
+              .text(methodDisplay, currentX, y, { width: colWidths.metodo, continued: true })
+              .text(movement.description.substring(0, 28), currentX += colWidths.metodo, y, { width: colWidths.desc, continued: true })
+              .text(movement.specialist ? movement.specialist.substring(0, 18) : '-', currentX += colWidths.desc, y, { width: colWidths.specialist, continued: true })
+              .text(movement.client ? movement.client.substring(0, 18) : '-', currentX += colWidths.specialist, y, { width: colWidths.client, continued: true })
+              .text(this._formatDate(movement.createdAt).substring(11, 22), currentX += colWidths.client, y, { width: colWidths.fecha, continued: true })
+              .text(`$${this._formatMoney(movement.amount)}`, currentX += colWidths.fecha, y, { width: colWidths.monto, align: 'right' });
+
+            if (movement.paymentMethod === 'CASH') {
+              doc.font('Helvetica');
+            }
 
             doc.moveDown(0.8);
           });

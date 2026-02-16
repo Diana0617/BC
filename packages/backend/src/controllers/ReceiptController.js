@@ -112,28 +112,32 @@ class ReceiptController {
       // Crear el recibo con retry logic para race conditions
       let receipt;
       let retries = 0;
-      const maxRetries = 3;
+      const maxRetries = 5;
       
-      while (retries < maxRetries) {
+      while (retries <= maxRetries) {
         try {
+          console.log(`🔄 [ReceiptController] Intento ${retries + 1} de ${maxRetries + 1} para crear recibo`);
           receipt = await Receipt.createFromAppointment(
             appointmentJSON,
             paymentData,
             { createdBy: req.user.id }
           );
+          console.log(`✅ [ReceiptController] Recibo creado exitosamente en intento ${retries + 1}`);
           break; // Éxito, salir del loop
         } catch (createError) {
           // Si es un error de número duplicado y aún tenemos retries, reintentar
           if (createError.name === 'SequelizeUniqueConstraintError' && 
-              createError.message?.includes('receipts_number_unique') &&
-              retries < maxRetries - 1) {
+              (createError.message?.includes('receipts_number_unique') || 
+               createError.fields?.receiptNumber) &&
+              retries < maxRetries) {
             retries++;
-            console.log(`⚠️ [ReceiptController] Race condition detectado en receiptNumber, reintento ${retries}/${maxRetries}`);
-            // Esperar un poco antes de reintentar (backoff exponencial)
-            await new Promise(resolve => setTimeout(resolve, 100 * retries));
+            const waitTime = 200 + (100 * retries); // Backoff: 300ms, 400ms, 500ms, 600ms, 700ms
+            console.log(`⚠️ [ReceiptController] Race condition en receiptNumber (intento ${retries}/${maxRetries}), esperando ${waitTime}ms antes de reintentar...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
             continue;
           }
           // Si no es un error de número duplicado o ya no quedan retries, lanzar el error
+          console.error(`❌ [ReceiptController] Error en intento ${retries + 1}:`, createError.name, createError.message);
           throw createError;
         }
       }

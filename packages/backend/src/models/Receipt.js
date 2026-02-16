@@ -294,6 +294,12 @@ const Receipt = sequelize.define('Receipt', {
 Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
   const { Business, sequelize } = require('./index');
   
+  // Añadir pequeño delay aleatorio para distribuir solicitudes concurrentes (jitter)
+  const jitter = Math.floor(Math.random() * 50); // 0-50ms
+  if (jitter > 0) {
+    await new Promise(resolve => setTimeout(resolve, jitter));
+  }
+  
   // Usar advisory lock de PostgreSQL para prevenir race conditions
   // Convertir businessId UUID a número hash consistente para pg_advisory_xact_lock
   // Usamos los primeros 10 caracteres para mayor unicidad
@@ -483,83 +489,98 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
 
 /**
  * Método estático para crear un recibo desde una cita
+ * ATÓMICO: Usa transacción para garantizar que el número de recibo sea único
  */
 Receipt.createFromAppointment = async function(appointmentData, paymentData, options = {}) {
-  const transaction = options.transaction;
+  const { sequelize } = require('../config/database');
+  const providedTransaction = options.transaction;
   
-  try {
-    // Generar número de recibo (con transacción para evitar duplicados)
-    const { receiptNumber, sequenceNumber } = await Receipt.generateReceiptNumber(
-      appointmentData.businessId,
-      transaction
-    );
-    
-    // Preparar datos del recibo
-    const receiptData = {
-      receiptNumber,
-      sequenceNumber,
-      businessId: appointmentData.businessId,
-      appointmentId: appointmentData.id,
-      specialistId: appointmentData.specialistId,
-      userId: options.createdBy || null, // Usuario que crea el recibo (quien registra el pago)
+  // Función interna que hace el trabajo real
+  const createReceiptInTransaction = async (t) => {
+    try {
+      // Generar número de recibo (con transacción para evitar duplicados)
+      const { receiptNumber, sequenceNumber } = await Receipt.generateReceiptNumber(
+        appointmentData.businessId,
+        t
+      );
       
-      // Información del especialista
-      specialistName: appointmentData.specialist ? 
-        `${appointmentData.specialist.firstName} ${appointmentData.specialist.lastName}` : 
-        'N/A',
-      specialistCode: appointmentData.specialist?.code || null,
+      // Preparar datos del recibo
+      const receiptData = {
+        receiptNumber,
+        sequenceNumber,
+        businessId: appointmentData.businessId,
+        appointmentId: appointmentData.id,
+        specialistId: appointmentData.specialistId,
+        userId: options.createdBy || null, // Usuario que crea el recibo (quien registra el pago)
+        
+        // Información del especialista
+        specialistName: appointmentData.specialist ? 
+          `${appointmentData.specialist.firstName} ${appointmentData.specialist.lastName}` : 
+          'N/A',
+        specialistCode: appointmentData.specialist?.code || null,
+        
+        // Información del cliente
+        clientName: appointmentData.client ? 
+          `${appointmentData.client.firstName} ${appointmentData.client.lastName}` : 
+          'N/A',
+        clientPhone: appointmentData.client?.phone || null,
+        clientEmail: appointmentData.client?.email || null,
+        
+        // Fechas - extraer de startTime
+        serviceDate: appointmentData.startTime ? new Date(appointmentData.startTime) : new Date(),
+        serviceTime: appointmentData.startTime ? 
+          new Date(appointmentData.startTime).toTimeString().substring(0, 5) : 
+          '00:00',
+        issueDate: new Date(),
+        
+        // Información del servicio - soporta múltiples servicios
+        serviceName: appointmentData.services && appointmentData.services.length > 0
+          ? (appointmentData.services.length === 1 
+             ? appointmentData.services[0].name 
+             : `${appointmentData.services.length} servicios: ${appointmentData.services.map(s => s.name).join(', ')}`)
+          : (appointmentData.service?.name || 'Servicio'),
+        serviceDescription: appointmentData.notes || null,
+        
+        // Información financiera
+        subtotal: appointmentData.baseAmount || paymentData.amount,
+        tax: appointmentData.tax || 0,
+        discount: appointmentData.discount || 0,
+        tip: appointmentData.tip || 0,
+        totalAmount: appointmentData.finalAmount || paymentData.amount,
+        
+        // Información del pago
+        paymentMethod: paymentData.method || 'WOMPI',
+        paymentReference: paymentData.transactionId || paymentData.reference,
+        paymentStatus: 'PAID',
+        
+        // Metadatos
+        metadata: {
+          appointmentServices: appointmentData.services || [],
+          appliedRules: appointmentData.appliedRules || [],
+          commissionData: appointmentData.commissionData || null,
+          paymentData: paymentData
+        },
+        
+        createdBy: options.createdBy || appointmentData.specialistId
+      };
       
-      // Información del cliente
-      clientName: appointmentData.client ? 
-        `${appointmentData.client.firstName} ${appointmentData.client.lastName}` : 
-        'N/A',
-      clientPhone: appointmentData.client?.phone || null,
-      clientEmail: appointmentData.client?.email || null,
+      const receipt = await Receipt.create(receiptData, { transaction: t });
       
-      // Fechas - extraer de startTime
-      serviceDate: appointmentData.startTime ? new Date(appointmentData.startTime) : new Date(),
-      serviceTime: appointmentData.startTime ? 
-        new Date(appointmentData.startTime).toTimeString().substring(0, 5) : 
-        '00:00',
-      issueDate: new Date(),
-      
-      // Información del servicio - soporta múltiples servicios
-      serviceName: appointmentData.services && appointmentData.services.length > 0
-        ? (appointmentData.services.length === 1 
-           ? appointmentData.services[0].name 
-           : `${appointmentData.services.length} servicios: ${appointmentData.services.map(s => s.name).join(', ')}`)
-        : (appointmentData.service?.name || 'Servicio'),
-      serviceDescription: appointmentData.notes || null,
-      
-      // Información financiera
-      subtotal: appointmentData.baseAmount || paymentData.amount,
-      tax: appointmentData.tax || 0,
-      discount: appointmentData.discount || 0,
-      tip: appointmentData.tip || 0,
-      totalAmount: appointmentData.finalAmount || paymentData.amount,
-      
-      // Información del pago
-      paymentMethod: paymentData.method || 'WOMPI',
-      paymentReference: paymentData.transactionId || paymentData.reference,
-      paymentStatus: 'PAID',
-      
-      // Metadatos
-      metadata: {
-        appointmentServices: appointmentData.services || [],
-        appliedRules: appointmentData.appliedRules || [],
-        commissionData: appointmentData.commissionData || null,
-        paymentData: paymentData
-      },
-      
-      createdBy: options.createdBy || appointmentData.specialistId
-    };
-    
-    const receipt = await Receipt.create(receiptData, { transaction });
-    
-    return receipt;
-  } catch (error) {
-    console.error('Error creating receipt from appointment:', error);
-    throw error;
+      return receipt;
+    } catch (error) {
+      console.error('Error creating receipt from appointment:', error);
+      throw error;
+    }
+  };
+  
+  // Si ya hay una transacción, usarla. Si no, crear una nueva.
+  if (providedTransaction) {
+    return await createReceiptInTransaction(providedTransaction);
+  } else {
+    // Crear nueva transacción para garantizar atomicidad
+    return await sequelize.transaction(async (t) => {
+      return await createReceiptInTransaction(t);
+    });
   }
 };
 
