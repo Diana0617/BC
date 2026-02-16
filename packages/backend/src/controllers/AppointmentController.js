@@ -1376,10 +1376,23 @@ class AppointmentController {
         });
       }
 
-      // Validación de permisos: BUSINESS, recepcionista, o especialista de la cita
-      const isBusinessOwner = req.user?.role === 'BUSINESS';
-      const isReceptionist = !!req.receptionist;
-      const isAppointmentSpecialist = req.specialist && req.specialist.id === appointment.specialistId;
+      // Validación de permisos: BUSINESS, RECEPTIONIST, o SPECIALIST de la cita
+      const userRole = req.user?.role;
+      const userId = req.user?.id;
+      
+      const isBusinessOwner = userRole === 'BUSINESS';
+      const isReceptionist = ['RECEPTIONIST', 'RECEPTIONIST_SPECIALIST'].includes(userRole);
+      const isAppointmentSpecialist = ['SPECIALIST', 'BUSINESS_SPECIALIST', 'RECEPTIONIST_SPECIALIST'].includes(userRole) 
+        && userId === appointment.specialistId;
+      
+      console.log('🔐 [updateAppointment] Validación de permisos:', {
+        userRole,
+        userId,
+        appointmentSpecialistId: appointment.specialistId,
+        isBusinessOwner,
+        isReceptionist,
+        isAppointmentSpecialist
+      });
       
       if (!isBusinessOwner && !isReceptionist && !isAppointmentSpecialist) {
         return res.status(403).json({
