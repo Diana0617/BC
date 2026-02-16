@@ -1305,6 +1305,24 @@ class CashRegisterController {
         order: [['createdAt', 'DESC']]
       });
 
+      // Obtener movimientos financieros manuales del turno
+      const FinancialMovement = require('../models/FinancialMovement');
+      const financialMovements = await FinancialMovement.findAll({
+        where: {
+          businessId,
+          createdAt: dateFilter
+        },
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'firstName', 'lastName'],
+            required: false
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
       // Formatear recibos como movimientos
       const receiptMovements = receipts.map(receipt => ({
         id: receipt.id,
