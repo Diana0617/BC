@@ -711,7 +711,7 @@ router.get('/appointments/:appointmentId/validate-completion', authenticateToken
  *       200:
  *         description: Pago registrado exitosamente
  */
-router.post('/appointments/:appointmentId/payment', authenticateToken, requireSpecialist, paymentProofUpload.single('file'), AppointmentPaymentController.recordPayment);
+router.post('/appointments/:appointmentId/payment', authenticateToken, requireSpecialist, AppointmentPaymentController.recordPayment);
 
 /**
  * @swagger
