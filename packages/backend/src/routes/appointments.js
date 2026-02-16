@@ -326,25 +326,37 @@ router.post('/:id/payment', async (req, res) => {
     // 💰 Crear registro en FinancialMovement
     const FinancialMovement = require('../models/FinancialMovement');
     const AppointmentPayment = require('../models/AppointmentPayment');
-    const BusinessPaymentConfig = require('../models/BusinessPaymentConfig');
+    const PaymentMethod = require('../models/PaymentMethod');
     
-    // Obtener el método de pago para extraer su tipo (CASH, CARD, etc.)
+    // ✅ FIX: Consultar tabla payment_methods directamente
+    console.log('💳 [appointments/payment] Buscando PaymentMethod con ID:', paymentMethodId);
+    
     let paymentMethodType = 'CASH'; // default
     let paymentMethodName = 'Efectivo'; // default
+    
     try {
-      const paymentConfig = await BusinessPaymentConfig.findOne({
-        where: { businessId }
+      const foundPaymentMethod = await PaymentMethod.findOne({
+        where: {
+          id: paymentMethodId,
+          businessId,
+          isActive: true
+        }
       });
       
-      if (paymentConfig && paymentConfig.paymentMethods) {
-        const method = paymentConfig.paymentMethods.find(m => m.id === paymentMethodId);
-        if (method) {
-          if (method.type) paymentMethodType = method.type;
-          if (method.name) paymentMethodName = method.name;
-        }
+      if (foundPaymentMethod) {
+        paymentMethodType = foundPaymentMethod.type; // TRANSFER, CASH, CARD, QR, etc.
+        paymentMethodName = foundPaymentMethod.name; // "Transferencia", "Efectivo", etc.
+        console.log('✅ [appointments/payment] Método encontrado:', {
+          id: foundPaymentMethod.id,
+          name: paymentMethodName,
+          type: paymentMethodType
+        });
+      } else {
+        console.warn('⚠️ [appointments/payment] PaymentMethod no encontrado, usando CASH por defecto');
       }
     } catch (error) {
-      console.warn('⚠️ No se pudo obtener el tipo de método de pago, usando CASH por defecto');
+      console.error('❌ [appointments/payment] Error consultando PaymentMethod:', error);
+      console.warn('⚠️ [appointments/payment] Usando CASH por defecto');
     }
     
     // 🧾 Crear registro de AppointmentPayment (necesario para el recibo)
