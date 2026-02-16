@@ -109,10 +109,10 @@ class ReceiptController {
       console.log('🔍 [ReceiptController] clientId:', appointmentJSON.clientId);
       console.log('🔍 [ReceiptController] startTime:', appointmentJSON.startTime);
       
-      // Crear el recibo con retry logic para race conditions
+      // Crear el recibo con retry simple (el advisory lock debería prevenir duplicados)
       let receipt;
       let retries = 0;
-      const maxRetries = 5;
+      const maxRetries = 2; // Reducido a 2 reintentos ya que el advisory lock maneja la concurrencia
       
       while (retries <= maxRetries) {
         try {
@@ -125,19 +125,23 @@ class ReceiptController {
           console.log(`✅ [ReceiptController] Recibo creado exitosamente en intento ${retries + 1}`);
           break; // Éxito, salir del loop
         } catch (createError) {
+          console.error(`❌ [ReceiptController] Error en intento ${retries + 1}:`, createError.name, createError.message);
+          
           // Si es un error de número duplicado y aún tenemos retries, reintentar
           if (createError.name === 'SequelizeUniqueConstraintError' && 
               (createError.message?.includes('receipts_number_unique') || 
                createError.fields?.receiptNumber) &&
               retries < maxRetries) {
             retries++;
-            const waitTime = 200 + (100 * retries); // Backoff: 300ms, 400ms, 500ms, 600ms, 700ms
+            const waitTime = 500 + (200 * retries); // Backoff: 700ms, 900ms
             console.log(`⚠️ [ReceiptController] Race condition en receiptNumber (intento ${retries}/${maxRetries}), esperando ${waitTime}ms antes de reintentar...`);
             await new Promise(resolve => setTimeout(resolve, waitTime));
             continue;
           }
-          // Si no es un error de número duplicado o ya no quedan retries, lanzar el error
-          console.error(`❌ [ReceiptController] Error en intento ${retries + 1}:`, createError.name, createError.message);
+          
+          // Para cualquier otro error, propagarlo inmediatamente
+          console.error(`❌ [ReceiptController] Error creating receipt:`, createError);
+          console.error(`❌ [ReceiptController] Error stack:`, createError.stack);
           throw createError;
         }
       }

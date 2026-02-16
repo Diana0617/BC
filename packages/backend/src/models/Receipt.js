@@ -294,43 +294,43 @@ const Receipt = sequelize.define('Receipt', {
 Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
   const { Business, sequelize } = require('./index');
   
-  // Añadir pequeño delay aleatorio para distribuir solicitudes concurrentes (jitter)
-  const jitter = Math.floor(Math.random() * 50); // 0-50ms
-  if (jitter > 0) {
-    await new Promise(resolve => setTimeout(resolve, jitter));
-  }
-  
-  // Usar advisory lock de PostgreSQL para prevenir race conditions
-  // Convertir businessId UUID a número hash consistente para pg_advisory_xact_lock
-  // Usamos los primeros 10 caracteres para mayor unicidad
-  const lockKey = parseInt(businessId.replace(/-/g, '').substring(0, 10), 16) % 2147483647;
-  
-  if (transaction) {
-    // Advisory lock a nivel de transacción - se libera automáticamente al commit/rollback
-    await sequelize.query('SELECT pg_advisory_xact_lock(:lockKey)', {
-      replacements: { lockKey },
-      transaction
-    });
-  } else {
-    // Si no hay transacción, crear una para garantizar atomicidad
-    return await sequelize.transaction(async (t) => {
+  try {
+    // Usar advisory lock de PostgreSQL para prevenir race conditions
+    // Convertir businessId UUID a número hash consistente para pg_advisory_xact_lock
+    const lockKey = parseInt(businessId.replace(/-/g, '').substring(0, 10), 16) % 2147483647;
+    console.log('🔐 [generateReceiptNumber] Adquiriendo advisory lock:', lockKey);
+    
+    if (transaction) {
+      // Advisory lock a nivel de transacción - se libera automáticamente al commit/rollback
       await sequelize.query('SELECT pg_advisory_xact_lock(:lockKey)', {
         replacements: { lockKey },
-        transaction: t
+        transaction
       });
-      return await Receipt.generateReceiptNumber(businessId, t);
+      console.log('✅ [generateReceiptNumber] Advisory lock adquirido');
+    } else {
+      // Si no hay transacción, crear una para garantizar atomicidad
+      console.log('⚠️ [generateReceiptNumber] No hay transacción, creando una nueva');
+      return await sequelize.transaction(async (t) => {
+        await sequelize.query('SELECT pg_advisory_xact_lock(:lockKey)', {
+          replacements: { lockKey },
+          transaction: t
+        });
+        return await Receipt.generateReceiptNumber(businessId, t);
+      });
+    }
+    
+    // Obtener configuraciones del negocio (SIN lock - advisory lock ya protege)
+    console.log('🏢 [generateReceiptNumber] Buscando negocio:', businessId);
+    const business = await Business.findByPk(businessId, {
+      transaction
     });
-  }
   
-  // Obtener configuraciones del negocio con LOCK UPDATE
-  const business = await Business.findByPk(businessId, {
-    transaction,
-    lock: true // Siempre usar lock
-  });
-  
-  if (!business) {
-    throw new Error('Negocio no encontrado');
-  }
+    if (!business) {
+      console.error('❌ [generateReceiptNumber] Negocio no encontrado:', businessId);
+      throw new Error('Negocio no encontrado');
+    }
+    
+    console.log('✅ [generateReceiptNumber] Negocio encontrado:', business.name);
   
   const settings = business.settings || {};
   const receiptSettings = settings.numbering?.receipts || {
@@ -479,12 +479,19 @@ Receipt.generateReceiptNumber = async function(businessId, transaction = null) {
     }
   };
   
+  console.log('💾 [generateReceiptNumber] Actualizando settings del negocio');
   await business.update({ settings: updatedSettings }, { transaction });
   
+  console.log('✅ [generateReceiptNumber] Número generado exitosamente:', receiptNumber);
   return {
     receiptNumber,
     sequenceNumber: nextSequence
   };
+  } catch (error) {
+    console.error('❌ [generateReceiptNumber] Error generando número de recibo:', error);
+    console.error('❌ [generateReceiptNumber] Error stack:', error.stack);
+    throw error;
+  }
 };
 
 /**
@@ -495,14 +502,27 @@ Receipt.createFromAppointment = async function(appointmentData, paymentData, opt
   const { sequelize } = require('../config/database');
   const providedTransaction = options.transaction;
   
+  console.log('🧾 [createFromAppointment] Iniciando creación de recibo');
+  console.log('📋 [createFromAppointment] appointmentData:', {
+    id: appointmentData.id,
+    businessId: appointmentData.businessId,
+    clientId: appointmentData.clientId,
+    specialistId: appointmentData.specialistId
+  });
+  console.log('💳 [createFromAppointment] paymentData:', paymentData);
+  
   // Función interna que hace el trabajo real
   const createReceiptInTransaction = async (t) => {
     try {
+      console.log('🔄 [createFromAppointment] Generando número de recibo...');
       // Generar número de recibo (con transacción para evitar duplicados)
       const { receiptNumber, sequenceNumber } = await Receipt.generateReceiptNumber(
         appointmentData.businessId,
         t
       );
+      
+      console.log('✅ [createFromAppointment] Número generado:', receiptNumber);
+      console.log('🏗️ [createFromAppointment] Preparando datos del recibo...');
       
       // Preparar datos del recibo
       const receiptData = {
@@ -564,23 +584,37 @@ Receipt.createFromAppointment = async function(appointmentData, paymentData, opt
         createdBy: options.createdBy || appointmentData.specialistId
       };
       
+      console.log('💾 [createFromAppointment] Creando recibo en base de datos...');
+      console.log('📄 [createFromAppointment] receiptData:', JSON.stringify(receiptData, null, 2));
+      
       const receipt = await Receipt.create(receiptData, { transaction: t });
       
+      console.log('✅ [createFromAppointment] Recibo creado exitosamente:', receipt.id);
       return receipt;
     } catch (error) {
-      console.error('Error creating receipt from appointment:', error);
+      console.error('❌ [createFromAppointment] Error en createReceiptInTransaction:', error);
+      console.error('❌ [createFromAppointment] Error name:', error.name);
+      console.error('❌ [createFromAppointment] Error message:', error.message);
+      console.error('❌ [createFromAppointment] Error stack:', error.stack);
       throw error;
     }
   };
   
   // Si ya hay una transacción, usarla. Si no, crear una nueva.
-  if (providedTransaction) {
-    return await createReceiptInTransaction(providedTransaction);
-  } else {
-    // Crear nueva transacción para garantizar atomicidad
-    return await sequelize.transaction(async (t) => {
-      return await createReceiptInTransaction(t);
-    });
+  try {
+    if (providedTransaction) {
+      console.log('♻️ [createFromAppointment] Usando transacción existente');
+      return await createReceiptInTransaction(providedTransaction);
+    } else {
+      console.log('🆕 [createFromAppointment] Creando nueva transacción');
+      // Crear nueva transacción para garantizar atomicidad
+      return await sequelize.transaction(async (t) => {
+        return await createReceiptInTransaction(t);
+      });
+    }
+  } catch (error) {
+    console.error('❌ [createFromAppointment] Error final:', error);
+    throw error;
   }
 };
 
