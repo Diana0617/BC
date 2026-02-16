@@ -87,9 +87,26 @@ export default function PaymentModal({
       return;
     }
 
+    console.log('💳 [PaymentModal] Iniciando pago con datos:', {
+      paymentMethodId: formData.paymentMethodId,
+      amount: formData.amount,
+      discount: formData.discount,
+      notes: formData.notes
+    });
+
     setLoading(true);
     try {
       // 1. Registrar el pago en el appointment
+      const paymentPayload = {
+        businessId: user.businessId,
+        paymentMethodId: formData.paymentMethodId,
+        amount: formData.amount,
+        discount: formData.discount,
+        notes: formData.notes
+      };
+      
+      console.log('📤 [PaymentModal] Enviando payload al backend:', paymentPayload);
+      
       const paymentResponse = await fetch(
         `${import.meta.env.VITE_API_URL}/api/appointments/${appointment.id}/payment`,
         {
@@ -98,13 +115,7 @@ export default function PaymentModal({
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            businessId: user.businessId,
-            paymentMethodId: formData.paymentMethodId,
-            amount: formData.amount,
-            discount: formData.discount,
-            notes: formData.notes
-          })
+          body: JSON.stringify(paymentPayload)
         }
       );
 

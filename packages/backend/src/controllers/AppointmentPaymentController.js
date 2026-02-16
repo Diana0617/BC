@@ -55,10 +55,16 @@ class AppointmentPaymentController {
       const { appointmentId } = req.params;
       const { businessId } = req.body;
       
+      console.log('💳 [recordPayment] Iniciando registro de pago');
+      console.log('💳 [recordPayment] appointmentId:', appointmentId);
+      console.log('💳 [recordPayment] req.body:', JSON.stringify(req.body, null, 2));
+      console.log('💳 [recordPayment] paymentMethodId:', req.body.paymentMethodId);
+      console.log('💳 [recordPayment] paymentMethod:', req.body.paymentMethod);
+      
       // Verificar que el especialista tenga acceso a la cita
       const appointment = await Appointment.findOne({
         where: {
-          id: appointmentId,
+         id: appointmentId,
           businessId,
           specialistId: req.specialist.id
         },
@@ -83,15 +89,55 @@ class AppointmentPaymentController {
 
       const {
         paymentMethod,
+        paymentMethodId,
         amount,
         currency = 'COP',
         notes,
         transactionId
       } = req.body;
+      
+      console.log('💳 [recordPayment] Datos extraídos - paymentMethod:', paymentMethod, 'paymentMethodId:', paymentMethodId);
+      
+      // ✅ NUEVO: Si viene paymentMethodId, buscar el método de pago para obtener su tipo
+      let resolvedPaymentMethod = paymentMethod;
+      let paymentMethodName = null;
+      let paymentMethodType = null;
+      
+      if (paymentMethodId && !paymentMethod) {
+        console.log('💳 [recordPayment] Buscando PaymentMethod con ID:', paymentMethodId);
+        
+        const PaymentMethod = require('../models/PaymentMethod');
+        const foundPaymentMethod = await PaymentMethod.findOne({
+          where: {
+            id: paymentMethodId,
+            businessId,
+            isActive: true
+          }
+        });
+        
+        if (!foundPaymentMethod) {
+          console.error('❌ [recordPayment] Método de pago no encontrado:', paymentMethodId);
+          return res.status(400).json({
+            success: false,
+            error: 'Método de pago no válido o inactivo'
+          });
+        }
+        
+        resolvedPaymentMethod = foundPaymentMethod.type; // CASH, CARD, TRANSFER, etc.
+        paymentMethodName = foundPaymentMethod.name; // "Efectivo", "Tarjeta", etc.
+        paymentMethodType = foundPaymentMethod.type;
+        
+        console.log('✅ [recordPayment] Método encontrado:', {
+          id: foundPaymentMethod.id,
+          name: paymentMethodName,
+          type: paymentMethodType
+        });
+      }
 
       // Validar método de pago
       const validPaymentMethods = ['CASH', 'CARD', 'TRANSFER', 'QR', 'OTHER'];
-      if (!validPaymentMethods.includes(paymentMethod)) {
+      if (!validPaymentMethods.includes(resolvedPaymentMethod)) {
+        console.error('❌ [recordPayment] Método de pago no válido:', resolvedPaymentMethod);
         return res.status(400).json({
           success: false,
           error: 'Método de pago no válido'
@@ -140,9 +186,9 @@ class AppointmentPaymentController {
         }
       }
 
-      // Crear registro de pago
+      // Crear registro de pago (en metadata para backward compatibility)
       const paymentRecord = {
-        method: paymentMethod,
+        method: resolvedPaymentMethod,
         amount: paymentAmount,
         currency,
         transactionId,
@@ -180,6 +226,43 @@ class AppointmentPaymentController {
         paymentStatus,
         metadata
       });
+      
+      // ✅ NUEVO: Crear registro en AppointmentPayment
+      console.log('💾 [recordPayment] Creando registro en AppointmentPayment...');
+      const AppointmentPayment = require('../models/AppointmentPayment');
+      
+      try {
+        const appointmentPaymentData = {
+          appointmentId: appointment.id,
+          businessId,
+          clientId: appointment.clientId,
+          paymentMethodId: paymentMethodId || null,
+          paymentMethodName: paymentMethodName || resolvedPaymentMethod,
+          paymentMethodType: paymentMethodType || resolvedPaymentMethod,
+          amount: paymentAmount,
+          reference: transactionId || null,
+          notes: notes || null,
+          proofUrl: proofUrl || null,
+          proofType: proofUrl ? 'image/jpeg' : null,
+          status: 'COMPLETED',
+          registeredBy: req.specialist.id,
+          registeredByRole: req.user.role,
+          paymentDate: new Date(),
+          metadata: {
+            ipAddress: req.ip,
+            userAgent: req.get('user-agent'),
+            proofPublicId: proofPublicId || null
+          }
+        };
+        
+        console.log('💾 [recordPayment] Datos AppointmentPayment:', JSON.stringify(appointmentPaymentData, null, 2));
+        
+        await AppointmentPayment.create(appointmentPaymentData);
+        console.log('✅ [recordPayment] AppointmentPayment creado exitosamente');
+      } catch (apError) {
+        console.error('❌ [recordPayment] Error creando AppointmentPayment:', apError);
+        // No fallar el pago completo si falla esto, solo loguearlo
+      }
 
       res.json({
         success: true,
