@@ -1341,13 +1341,30 @@ class CashRegisterController {
         source: 'EXPENSE'
       }));
 
+      // Formatear movimientos financieros manuales
+      const manualMovements = financialMovements.map(fm => ({
+        id: fm.id,
+        type: fm.type,
+        category: fm.category,
+        description: fm.description,
+        amount: parseFloat(fm.amount),
+        paymentMethod: fm.paymentMethod,
+        reference: fm.reference,
+        referenceId: fm.referenceId,
+        specialistName: fm.user ? `${fm.user.firstName} ${fm.user.lastName}` : null,
+        createdAt: fm.createdAt,
+        source: 'MANUAL'
+      }));
+
       // Combinar y ordenar por fecha
-      const allMovements = [...receiptMovements, ...expenseMovements]
+      const allMovements = [...receiptMovements, ...expenseMovements, ...manualMovements]
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
       // Calcular totales
-      const totalIncome = receiptMovements.reduce((sum, m) => sum + parseFloat(m.amount), 0);
-      const totalExpenses = expenseMovements.reduce((sum, m) => sum + parseFloat(m.amount), 0);
+      const totalIncome = receiptMovements.reduce((sum, m) => sum + parseFloat(m.amount), 0) +
+                          manualMovements.filter(m => m.type === 'INCOME').reduce((sum, m) => sum + parseFloat(m.amount), 0);
+      const totalExpenses = expenseMovements.reduce((sum, m) => sum + parseFloat(m.amount), 0) +
+                            manualMovements.filter(m => m.type === 'EXPENSE').reduce((sum, m) => sum + parseFloat(m.amount), 0);
 
       return res.json({
         success: true,
@@ -1356,8 +1373,8 @@ class CashRegisterController {
           summary: {
             totalIncome,
             totalExpenses,
-            incomeCount: receiptMovements.length,
-            expenseCount: expenseMovements.length,
+            incomeCount: receiptMovements.length + manualMovements.filter(m => m.type === 'INCOME').length,
+            expenseCount: expenseMovements.length + manualMovements.filter(m => m.type === 'EXPENSE').length,
             netBalance: totalIncome - totalExpenses
           }
         }

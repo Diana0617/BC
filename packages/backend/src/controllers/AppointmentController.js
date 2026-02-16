@@ -2294,13 +2294,24 @@ class AppointmentController {
           paymentRecord = await AppointmentPayment.create({
             appointmentId: appointment.id,
             businessId,
+            clientId: appointment.clientId,
             paymentMethodId: payment.methodId,
+            paymentMethodName: paymentMethod.name,
+            paymentMethodType: paymentMethod.type,
             amount: payment.amount,
-            proofUrl,
-            proofPublicId,
+            reference: payment.reference || null,
             notes: payment.notes || null,
-            createdBy: req.user.id,
-            createdAt: new Date()
+            proofUrl,
+            proofType: payment.proofImageBase64 ? 'image/jpeg' : null,
+            status: 'COMPLETED',
+            registeredBy: req.user.id,
+            registeredByRole: req.user.role,
+            paymentDate: new Date(),
+            metadata: {
+              ipAddress: req.ip,
+              userAgent: req.get('user-agent'),
+              proofPublicId
+            }
           });
           
           // Actualizar monto pagado del appointment
