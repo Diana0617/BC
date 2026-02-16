@@ -98,12 +98,13 @@ class AppointmentPaymentController {
       
       console.log('💳 [recordPayment] Datos extraídos - paymentMethod:', paymentMethod, 'paymentMethodId:', paymentMethodId);
       
-      // ✅ NUEVO: Si viene paymentMethodId, buscar el método de pago para obtener su tipo
+      // ✅ CORREGIDO: Si viene paymentMethodId, SIEMPRE buscar en DB (ignorar paymentMethod del body)
       let resolvedPaymentMethod = paymentMethod;
       let paymentMethodName = null;
       let paymentMethodType = null;
       
-      if (paymentMethodId && !paymentMethod) {
+      if (paymentMethodId) {
+        // Si viene paymentMethodId, consultar la base de datos para obtener el tipo y nombre correctos
         console.log('💳 [recordPayment] Buscando PaymentMethod con ID:', paymentMethodId);
         
         const PaymentMethod = require('../models/PaymentMethod');
@@ -123,8 +124,9 @@ class AppointmentPaymentController {
           });
         }
         
+        // Usar los valores de la base de datos (ignora cualquier valor en paymentMethod del body)
         resolvedPaymentMethod = foundPaymentMethod.type; // CASH, CARD, TRANSFER, etc.
-        paymentMethodName = foundPaymentMethod.name; // "Efectivo", "Tarjeta", etc.
+        paymentMethodName = foundPaymentMethod.name; // "Efectivo", "Transferencia", etc.
         paymentMethodType = foundPaymentMethod.type;
         
         console.log('✅ [recordPayment] Método encontrado:', {
@@ -132,6 +134,11 @@ class AppointmentPaymentController {
           name: paymentMethodName,
           type: paymentMethodType
         });
+      } else if (paymentMethod) {
+        // Si no viene paymentMethodId pero sí paymentMethod (legacy/manual), usar ese valor
+        console.log('⚠️ [recordPayment] Usando paymentMethod legacy:', paymentMethod);
+        paymentMethodName = paymentMethod;
+        paymentMethodType = paymentMethod;
       }
 
       // Validar método de pago
