@@ -1077,6 +1077,8 @@ class CashRegisterController {
           appointment.toJSON(),
           {
             method: payment.paymentMethodType,
+            methodName: payment.paymentMethodName,
+            methodId: payment.paymentMethodId,
             amount: payment.amount,
             transactionId: payment.transactionId,
             reference: payment.reference
@@ -1306,11 +1308,13 @@ class CashRegisterController {
       });
 
       // Obtener movimientos financieros manuales del turno
+      // IMPORTANTE: Excluir movimientos de categoría APPOINTMENT para evitar duplicación con receipts
       const FinancialMovement = require('../models/FinancialMovement');
       const financialMovements = await FinancialMovement.findAll({
         where: {
           businessId,
-          createdAt: dateFilter
+          createdAt: dateFilter,
+          category: { [Op.ne]: 'APPOINTMENT' } // Excluir movimientos de citas (ya incluidos en receipts)
         },
         include: [
           {
@@ -1324,23 +1328,31 @@ class CashRegisterController {
       });
 
       // Formatear recibos como movimientos
-      const receiptMovements = receipts.map(receipt => ({
-        id: receipt.id,
-        type: 'INCOME',
-        category: 'APPOINTMENT',
-        description: `Pago de cita - ${receipt.serviceName}`,
-        amount: receipt.totalAmount,
-        paymentMethod: receipt.paymentMethod,
-        referenceId: receipt.appointmentId,
-        clientName: receipt.clientName,
-        clientPhone: receipt.appointment?.client?.phone || null,
-        specialistName: receipt.appointment?.specialist 
-          ? `${receipt.appointment.specialist.firstName} ${receipt.appointment.specialist.lastName}`
-          : null,
-        createdAt: receipt.createdAt,
-        receiptNumber: receipt.receiptNumber,
-        source: 'RECEIPT'
-      }));
+      const receiptMovements = receipts.map(receipt => {
+        // Intentar obtener el nombre personalizado del método de pago desde metadata
+        const paymentMethodName = receipt.metadata?.paymentData?.methodName || null;
+        const paymentMethodId = receipt.metadata?.paymentData?.methodId || null;
+        
+        return {
+          id: receipt.id,
+          type: 'INCOME',
+          category: 'APPOINTMENT',
+          description: `Pago de cita - ${receipt.serviceName}`,
+          amount: receipt.totalAmount,
+          paymentMethod: receipt.paymentMethod, // Enum (CASH, TRANSFER, etc.)
+          paymentMethodName, // Nombre personalizado (ej: "transferencia" del negocio)
+          paymentMethodId, // ID del método personalizado
+          referenceId: receipt.appointmentId,
+          clientName: receipt.clientName,
+          clientPhone: receipt.appointment?.client?.phone || null,
+          specialistName: receipt.appointment?.specialist 
+            ? `${receipt.appointment.specialist.firstName} ${receipt.appointment.specialist.lastName}`
+            : null,
+          createdAt: receipt.createdAt,
+          receiptNumber: receipt.receiptNumber,
+          source: 'RECEIPT'
+        };
+      });
 
       // Formatear gastos como movimientos
       const expenseMovements = expenses.map(expense => ({
@@ -1462,7 +1474,7 @@ class CashRegisterController {
           status: 'ACTIVE',
           createdAt: dateFilter
         },
-        attributes: ['id', 'totalAmount', 'paymentMethod']
+        attributes: ['id', 'totalAmount', 'paymentMethod', 'metadata']
       });
 
       // Obtener gastos del turno
@@ -1480,6 +1492,33 @@ class CashRegisterController {
       const totalIncome = receipts.reduce((sum, r) => sum + parseFloat(r.totalAmount), 0);
       const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
+      // Calcular desglose por método de pago (solo ingresos)
+      // IMPORTANTE: Usar el nombre personalizado del método si existe
+      const paymentMethodsBreakdown = {};
+      receipts.forEach(receipt => {
+        // Intentar obtener el nombre personalizado desde metadata
+        const customName = receipt.metadata?.paymentData?.methodName;
+        const methodKey = customName || receipt.paymentMethod; // Usar nombre personalizado o enum
+        
+        if (!paymentMethodsBreakdown[methodKey]) {
+          paymentMethodsBreakdown[methodKey] = {
+            count: 0,
+            total: 0,
+            type: receipt.paymentMethod, // Guardar el enum para referencia
+            isCustom: !!customName // Indicar si es método personalizado
+          };
+        }
+        paymentMethodsBreakdown[methodKey].count++;
+        paymentMethodsBreakdown[methodKey].total += parseFloat(receipt.totalAmount);
+      });
+
+      // Calcular total de efectivo para el balance esperado
+      const totalCash = paymentMethodsBreakdown['CASH']?.total || 
+                        Object.entries(paymentMethodsBreakdown)
+                          .filter(([key, data]) => data.type === 'CASH')
+                          .reduce((sum, [, data]) => sum + data.total, 0);
+      const expectedClosingBalance = parseFloat(shift.openingBalance || 0) + totalCash;
+
       return res.json({
         success: true,
         data: {
@@ -1487,10 +1526,12 @@ class CashRegisterController {
           openingBalance: parseFloat(shift.openingBalance || 0),
           totalIncome,
           totalExpenses,
+          totalCash, // Solo efectivo
           incomeCount: receipts.length,
           expenseCount: expenses.length,
           movementsCount: receipts.length + expenses.length,
-          expectedClosingBalance: parseFloat(shift.openingBalance || 0) + totalIncome - totalExpenses
+          expectedClosingBalance, // Solo basado en efectivo
+          paymentMethodsBreakdown // Desglose por método
         }
       });
 

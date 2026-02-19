@@ -117,10 +117,10 @@ const Sale = sequelize.define('Sale', {
     comment: 'Total final: subtotal - descuento + impuesto'
   },
   paymentMethod: {
-    type: DataTypes.ENUM('CASH', 'CARD', 'TRANSFER', 'MIXED', 'OTHER'),
+    type: DataTypes.STRING(50),
     allowNull: false,
     defaultValue: 'CASH',
-    comment: 'Método de pago utilizado'
+    comment: 'Método de pago utilizado (acepta valores personalizados del negocio)'
   },
   paymentDetails: {
     type: DataTypes.JSONB,

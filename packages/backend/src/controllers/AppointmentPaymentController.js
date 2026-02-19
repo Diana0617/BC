@@ -139,17 +139,17 @@ class AppointmentPaymentController {
         console.log('⚠️ [recordPayment] Usando paymentMethod legacy:', paymentMethod);
         paymentMethodName = paymentMethod;
         paymentMethodType = paymentMethod;
-      }
-
-      // Validar método de pago
-      const validPaymentMethods = ['CASH', 'CARD', 'TRANSFER', 'QR', 'OTHER'];
-      if (!validPaymentMethods.includes(resolvedPaymentMethod)) {
-        console.error('❌ [recordPayment] Método de pago no válido:', resolvedPaymentMethod);
+      } else {
+        // Si no viene ni paymentMethodId ni paymentMethod, error
+        console.error('❌ [recordPayment] No se proporcionó método de pago');
         return res.status(400).json({
           success: false,
-          error: 'Método de pago no válido'
+          error: 'Debe proporcionar un método de pago'
         });
       }
+
+      // Nota: No validamos contra un enum hardcodeado porque los negocios pueden crear
+      // sus propios métodos de pago. La validación ya se hizo al buscar en la BD.
 
       // Validar monto
       const paymentAmount = parseFloat(amount);

@@ -4,7 +4,10 @@ import {
   BanknotesIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  CreditCardIcon,
+  DevicePhoneMobileIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 import { formatInTimezone } from '../../../utils/timezone';
 
@@ -26,9 +29,9 @@ export default function CashRegisterSummary({ shiftData }) {
 
   const calculateBalance = () => {
     const opening = parseFloat(shiftData?.openingBalance) || 0;
-    const income = parseFloat(shiftData?.totalIncome) || 0;
-    const expenses = parseFloat(shiftData?.totalExpenses) || 0;
-    return opening + income - expenses;
+    // Solo sumar efectivo para el balance
+    const cash = parseFloat(shiftData?.totalCash) || 0;
+    return opening + cash;
   };
 
   const getIncomePercentage = () => {
@@ -37,17 +40,56 @@ export default function CashRegisterSummary({ shiftData }) {
     return ((parseFloat(shiftData?.totalIncome) || 0) / total) * 100;
   };
 
+  const getPaymentMethodIcon = (method, methodType = null) => {
+    // Si se proporciona el tipo, usar ese; sino intentar detectar por el nombre del método
+    const type = methodType || method;
+    
+    if (type === 'CASH' || method === 'CASH') {
+      return <BanknotesIcon className="w-5 h-5 text-green-600" />;
+    }
+    if (type === 'CARD' || method === 'CARD') {
+      return <CreditCardIcon className="w-5 h-5 text-blue-600" />;
+    }
+    if (type === 'TRANSFER' || method === 'TRANSFER') {
+      return <DevicePhoneMobileIcon className="w-5 h-5 text-purple-600" />;
+    }
+    if (type === 'WOMPI' || method === 'WOMPI') {
+      return <CurrencyDollarIcon className="w-5 h-5 text-orange-600" />;
+    }
+    // Icono genérico para métodos personalizados
+    return <CurrencyDollarIcon className="w-5 h-5 text-gray-600" />;
+  };
+
+  const getPaymentMethodLabel = (method) => {
+    // Si es un método personalizado (no es uno de los enums), mostrarlo tal cual
+    const standardEnums = ['CASH', 'CARD', 'TRANSFER', 'WOMPI', 'OTHER'];
+    if (!standardEnums.includes(method)) {
+      return method; // Nombre personalizado del negocio
+    }
+    
+    // Si es un enum estándar, traducirlo
+    const labels = {
+      'CASH': 'Efectivo',
+      'CARD': 'Tarjeta',
+      'TRANSFER': 'Transferencia',
+      'WOMPI': 'Wompi',
+      'OTHER': 'Otro'
+    };
+    return labels[method] || method;
+  };
+
   const balance = calculateBalance();
   const incomePercentage = getIncomePercentage();
 
   return (
     <div className="space-y-6">
-      {/* Balance Actual */}
+      {/* Balance Actual (Solo Efectivo) */}
       <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-6 text-white">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-sm text-blue-100 mb-1">Balance Actual</p>
+            <p className="text-sm text-blue-100 mb-1">Balance Efectivo</p>
             <p className="text-4xl font-bold">{formatCurrency(balance)}</p>
+            <p className="text-xs text-blue-200 mt-1">(Apertura + Efectivo recibido)</p>
           </div>
           <div className="bg-white bg-opacity-20 rounded-full p-4">
             <BanknotesIcon className="w-10 h-10" />
@@ -69,6 +111,42 @@ export default function CashRegisterSummary({ shiftData }) {
           </div>
         </div>
       </div>
+
+      {/* Resumen por Método de Pago */}
+      {shiftData?.paymentMethodsBreakdown && Object.keys(shiftData.paymentMethodsBreakdown).length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <ChartBarIcon className="w-5 h-5" />
+            Ingresos por Método de Pago
+          </h4>
+          <div className="space-y-3">
+            {Object.entries(shiftData.paymentMethodsBreakdown).map(([method, data]) => (
+              <div key={method} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  {getPaymentMethodIcon(method, data.type)}
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{getPaymentMethodLabel(method)}</p>
+                    <p className="text-xs text-gray-500">{data.count} transacciones</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-gray-900">
+                    {formatCurrency(data.total)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Total Ingresos</span>
+              <span className="text-xl font-bold text-green-600">
+                {formatCurrency(shiftData?.totalIncome)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Ingresos y Egresos */}
       <div className="grid grid-cols-2 gap-4">

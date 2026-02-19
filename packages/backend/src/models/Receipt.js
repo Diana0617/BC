@@ -182,9 +182,9 @@ const Receipt = sequelize.define('Receipt', {
   
   // Información del pago
   paymentMethod: {
-    type: DataTypes.ENUM('CASH', 'CARD', 'TRANSFER', 'WOMPI', 'OTHER'),
+    type: DataTypes.STRING(50),
     allowNull: false,
-    
+    comment: 'Tipo de método de pago (CASH, CARD, TRANSFER, QR, etc.) - Ahora acepta valores personalizados'
   },
   
   paymentReference: {
