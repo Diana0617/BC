@@ -322,10 +322,16 @@ class ReceiptPDFService {
           .moveDown(0.5);
 
         // ============= METODO DE PAGO Y USUARIO =============
+        // Método de pago - Usar nombre personalizado si existe en metadata
+        const paymentMethodDisplay = receipt.metadata?.paymentData?.customName 
+          || receipt.metadata?.paymentData?.methodName 
+          || receipt.paymentMethod 
+          || 'Efectivo';
+        
         doc
           .fontSize(7)
           .font('Helvetica')
-          .text(`Método de pago: ${receipt.paymentMethod || 'Efectivo'}`, 10, doc.y, { 
+          .text(`Método de pago: ${paymentMethodDisplay}`, 10, doc.y, { 
             width: pageWidth - 20, 
             align: 'center' 
           });

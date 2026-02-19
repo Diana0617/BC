@@ -920,7 +920,7 @@ class CashRegisterController {
     const FinancialMovement = require('../models/FinancialMovement');
     const movements = await FinancialMovement.findAll({
       where: movementWhere,
-      attributes: ['id', 'amount', 'paymentMethod', 'category', 'description', 'createdAt', 'metadata'],
+      attributes: ['id', 'amount', 'paymentMethod', 'category', 'description', 'createdAt'],
       include: [
         {
           model: User,
@@ -964,16 +964,9 @@ class CashRegisterController {
       const method = movement.paymentMethod || 'OTHER';
       const amount = parseFloat(movement.amount);
       
-      // Intentar determinar el tipo real del método
-      let methodType = method; // Fallback
-      const methodId = movement.metadata?.paymentMethodId;
-      
-      if (methodId && paymentMethodMap[methodId]) {
-        methodType = paymentMethodMap[methodId].type;
-      } else if (movement.metadata?.paymentMethodData?.type) {
-        // Si no está en el mapa pero tenemos el tipo en metadata
-        methodType = movement.metadata.paymentMethodData.type;
-      }
+      // Usar el paymentMethod directamente como tipo
+      // Ya no tenemos metadata en FinancialMovement
+      let methodType = method; // El paymentMethod YA es el tipo
       
       if (!summary.paymentMethods[method]) {
         summary.paymentMethods[method] = {
@@ -987,7 +980,7 @@ class CashRegisterController {
       summary.totalIncome += amount;
 
       // Control específico de efectivo (solo si el TIPO es CASH)
-      if (methodType === 'CASH') {
+      if (methodType === 'CASH' || method === 'CASH') {
         summary.totalCash += amount;
       } else {
         summary.totalNonCash += amount;
@@ -1365,8 +1358,13 @@ class CashRegisterController {
       const receiptMovements = receipts.map(receipt => {
         // El campo receipt.paymentMethod ahora guarda el nombre personalizado del método
         // metadata.paymentData se mantiene como respaldo para información adicional
-        const paymentMethodType = receipt.metadata?.paymentData?.method || null;
+        const paymentMethodType = receipt.metadata?.paymentData?.method || receipt.paymentMethod || null;
         const paymentMethodId = receipt.metadata?.paymentData?.methodId || null;
+        // Nombre personalizado del método de pago (para mostrar al usuario)
+        const paymentMethodName = receipt.metadata?.paymentData?.customName 
+          || receipt.metadata?.paymentData?.methodName 
+          || receipt.paymentMethod 
+          || null;
         
         return {
           id: receipt.id,
@@ -1374,7 +1372,7 @@ class CashRegisterController {
           category: 'APPOINTMENT',
           description: `Pago de cita - ${receipt.serviceName}`,
           amount: receipt.totalAmount,
-          paymentMethod: receipt.paymentMethod, // Nombre personalizado del negocio (ej: "transferencia", "Qr")
+          paymentMethod: paymentMethodName, // Nombre personalizado del negocio (ej: "transferencia", "Qr")
           paymentMethodType, // Tipo del sistema (CASH, TRANSFER, QR) - para íconos
           paymentMethodId, // ID del método personalizado
           referenceId: receipt.appointmentId,
@@ -1554,12 +1552,15 @@ class CashRegisterController {
       receipts.forEach(receipt => {
         const amount = parseFloat(receipt.totalAmount);
         
-        // receipt.paymentMethod ya contiene el nombre personalizado (ej: "transferencia", "Qr")
-        const methodDisplayName = receipt.paymentMethod;
+        // receipt.paymentMethod ahora es el TIPO del sistema (CASH, TRANSFER, etc.)
+        // El nombre personalizado está en metadata
+        const methodDisplayName = receipt.metadata?.paymentData?.customName 
+          || receipt.metadata?.paymentData?.methodName 
+          || receipt.paymentMethod;
         
-        // Obtener el tipo del método desde metadata o del mapa
+        // Obtener el tipo del método desde metadata o direct del campo
         const methodId = receipt.metadata?.paymentData?.methodId;
-        let methodType = receipt.metadata?.paymentData?.method; // Tipo del sistema
+        let methodType = receipt.metadata?.paymentData?.method || receipt.paymentMethod; // Tipo del sistema
         
         // Si tenemos methodId, buscar el tipo en el mapa
         if (methodId && paymentMethodMap[methodId]) {

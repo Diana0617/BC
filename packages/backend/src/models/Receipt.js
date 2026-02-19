@@ -182,9 +182,9 @@ const Receipt = sequelize.define('Receipt', {
   
   // Información del pago
   paymentMethod: {
-    type: DataTypes.STRING(50),
+    type: DataTypes.STRING(50), // En Azure es ENUM, pero Sequelize lo maneja como string
     allowNull: false,
-    comment: 'Tipo de método de pago (CASH, CARD, TRANSFER, QR, etc.) - Ahora acepta valores personalizados'
+    comment: 'Tipo de método de pago del sistema: CASH, CARD, TRANSFER, QR, etc. (ENUM en Azure)'
   },
   
   paymentReference: {
@@ -380,7 +380,7 @@ Receipt.createFromAppointment = async function(appointmentData, paymentData, opt
       
       console.log('✅ [createFromAppointment v2] Número:', receiptNumber);
       
-      // Preparar datos del recibo
+      // Preparar datos del recibo - ASEGURAR QUE paymentReference NO SEA undefined
       const receiptData = {
         receiptNumber,
         sequenceNumber,
@@ -418,25 +418,32 @@ Receipt.createFromAppointment = async function(appointmentData, paymentData, opt
         tip: 0,
         totalAmount: appointmentData.totalAmount || paymentData.amount,
         
-        // IMPORTANTE: Guardar el NOMBRE personalizado del método de pago, no el tipo del sistema
-        paymentMethod: paymentData.methodName || paymentData.method || 'CASH',
-        paymentReference: paymentData.transactionId || paymentData.reference,
+        // IMPORTANTE: paymentMethod es un ENUM en Azure - debe ser el TIPO del sistema (CASH, TRANSFER, etc.)
+        // El nombre personalizado va en metadata.paymentData.methodName
+        paymentMethod: paymentData.method || 'CASH',
+        paymentReference: (paymentData.transactionId || paymentData.reference) ? String(paymentData.transactionId || paymentData.reference) : null,
         paymentStatus: 'PAID',
         
         metadata: {
           appointmentServices: appointmentData.services || [],
           appliedRules: appointmentData.appliedRules || [],
           commissionData: appointmentData.commissionData || null,
-          paymentData: paymentData
+          paymentData: {
+            ...paymentData,
+            // Guardar el nombre personalizado aquí para usar en el PDF
+            customName: paymentData.methodName || paymentData.method
+          }
         },
         
-        createdBy: options.createdBy || appointmentData.specialistId
+        createdBy: options.createdBy || appointmentData.specialistId,
+        notes: null // Explicitly set notes to null
       };
       
       console.log('💾 [createFromAppointment v2] Creando recibo...');
       console.log('📝 [createFromAppointment v2] receiptData keys:', Object.keys(receiptData));
       console.log('📝 [createFromAppointment v2] serviceDate:', receiptData.serviceDate, 'type:', typeof receiptData.serviceDate);
       console.log('📝 [createFromAppointment v2] paymentMethod:', receiptData.paymentMethod);
+      console.log('📝 [createFromAppointment v2] paymentReference:', receiptData.paymentReference, 'type:', typeof receiptData.paymentReference);
       console.log('📝 [createFromAppointment v2] metadata:', JSON.stringify(receiptData.metadata).substring(0, 100));
       
       try {
