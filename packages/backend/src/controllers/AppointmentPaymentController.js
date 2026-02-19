@@ -272,7 +272,9 @@ class AppointmentPaymentController {
       }
       
       // ✅ NUEVO: Crear recibo automáticamente cuando el pago está completo
+    console.log(`📊 [recordPayment] ====== INICIANDO CREACIÓN DE RECIBO ======`);
       console.log(`📊 [recordPayment] paymentStatus: ${paymentStatus}, totalPaid: ${totalPaid}, totalAmount: ${appointment.totalAmount}`);
+      console.log(`📊 [recordPayment] appointment.status: ${appointment.status}`);
       
       if (paymentStatus === 'PAID') {
         console.log('🧾 [recordPayment] ✅ Payment PAID - Creando recibo automáticamente...');
@@ -326,27 +328,32 @@ class AppointmentPaymentController {
               reference: transactionId
             };
             
-            console.log('🧾 [recordPayment] Invocando Receipt.createFromAppointment con paymentData:', receiptPaymentData);
+            console.log('🧾 [recordPayment] Invocando Receipt.createFromAppointment con paymentData:', JSON.stringify(receiptPaymentData, null, 2));
+            console.log('🧾 [recordPayment] fullAppointment.toJSON():', JSON.stringify(fullAppointment.toJSON(), null, 2).substring(0, 500));
             
             const createdReceipt = await Receipt.createFromAppointment(
               fullAppointment.toJSON(),
               receiptPaymentData,
               { createdBy: req.specialist.id }
             );
-            console.log('✅ [recordPayment] Recibo creado automáticamente - ID:', createdReceipt.id, 'Number:', createdReceipt.receiptNumber);
+            console.log('✅✅✅ [recordPayment] RECIBO CREADO EXITOSAMENTE - ID:', createdReceipt.id, 'Number:', createdReceipt.receiptNumber);
           } else {
-            console.log('ℹ️ [recordPayment] Ya existe recibo para esta cita - ID:', existingReceipt.id);
+            console.log('ℹ️ [recordPayment] Ya existe recibo para esta cita - ID:', existingReceipt.id, 'Number:', existingReceipt.receiptNumber);
           }
         } catch (receiptError) {
-          console.error('❌ [recordPayment] Error creando recibo:');
+          console.error('❌❌❌ [recordPayment] ERROR CREANDO RECIBO ❌❌❌');
           console.error('   Name:', receiptError.name);
           console.error('   Message:', receiptError.message);
+          console.error('   Code:', receiptError.code);
+          console.error('   SQL:', receiptError.sql);
+          console.error('   Original:', receiptError.original);
           console.error('   Stack:', receiptError.stack);
           // No fallar el pago si falla la creación del recibo
         }
       } else {
         console.log(`⏭️ [recordPayment] paymentStatus=${paymentStatus} - No se crea recibo automático (solo cuando PAID)`);
       }
+      console.log(`📊 [recordPayment] ====== FIN CREACIÓN DE RECIBO ======`);
 
       res.json({
         success: true,

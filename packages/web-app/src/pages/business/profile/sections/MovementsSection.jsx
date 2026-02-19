@@ -297,12 +297,14 @@ const MovementsSection = () => {
       CREDIT_CARD: 'Tarjeta de Crédito',
       DEBIT_CARD: 'Tarjeta de Débito',
       BANK_TRANSFER: 'Transferencia',
+      TRANSFER: 'Transferencia', // Legacy support
+      QR: 'QR',
       DIGITAL_WALLET: 'Billetera Digital',
       CHECK: 'Cheque',
       VOUCHER: 'Bono',
       CREDIT: 'Crédito'
     }
-    return labels[method] || method
+    return labels[method] || method // Si no está mapeado, retorna el nombre personalizado tal cual
   }
 
   const getStatusBadge = (status) => {

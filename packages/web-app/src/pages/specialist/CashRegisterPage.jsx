@@ -99,6 +99,14 @@ const CashRegisterPage = () => {
   const checkActiveCashRegister = useCallback(async () => {
     if (!token || !user?.businessId) return;
     
+    console.log('🔍 [checkActiveCashRegister] Verificando turno activo...', {
+      userId: user.id,
+      businessId: user.businessId,
+      role: user.role,
+      hasMultipleBranches: hasMultipleBranchesAvailable,
+      selectedBranchId
+    });
+    
     try {
       setLoading(true)
       // Para usuarios no-BUSINESS: NO filtrar por branchId al buscar turno activo
@@ -106,9 +114,12 @@ const CashRegisterPage = () => {
       let url = `${import.meta.env.VITE_API_URL}/api/cash-register/active-shift?businessId=${user.businessId}`;
       
       // Solo BUSINESS puede filtrar por sucursal al buscar turnos
-      if (user?.role === 'BUSINESS' && hasMultipleBranchesAvailable && effectiveBranchId) {
-        url += `&branchId=${effectiveBranchId}`;
+      if (user?.role === 'BUSINESS' && hasMultipleBranchesAvailable && selectedBranchId) {
+        url += `&branchId=${selectedBranchId}`;
+        console.log('🔍 [checkActiveCashRegister] Filtrando por branchId:', selectedBranchId);
       }
+      
+      console.log('🔍 [checkActiveCashRegister] URL:', url);
       
       const response = await fetch(url, {
         headers: { 
@@ -119,30 +130,39 @@ const CashRegisterPage = () => {
       
       if (response.ok) {
         const result = await response.json()
+        console.log('✅ [checkActiveCashRegister] Respuesta:', result);
+        
         // El endpoint devuelve { success: true, data: { hasActiveShift: true, shift: {...} } }
         const shift = result?.data?.shift || null
         setActiveCashRegister(shift)
         
-        // Si hay caja activa, actualizar selectedBranchId al del turno activo
-        if (shift && shift.branchId && shift.branchId !== selectedBranchId) {
-          console.log('🔄 Actualizando selectedBranchId al del turno activo:', shift.branchId)
-          setSelectedBranchId(shift.branchId)
-        }
-        
-        // Si hay caja activa, mostrar movimientos por defecto
         if (shift) {
-          setActiveTab('movements')
+          console.log('✅ [checkActiveCashRegister] Turno activo encontrado:', {
+            shiftId: shift.id,
+            branchId: shift.branchId,
+            branchName: shift.branch?.name,
+            openedAt: shift.openedAt
+          });
+          
+          // Si hay caja activa, actualizar selectedBranchId al del turno activo
+          if (shift.branchId && shift.branchId !== selectedBranchId) {
+            console.log('🔄 Actualizando selectedBranchId al del turno activo:', shift.branchId)
+            setSelectedBranchId(shift.branchId)
+          }
+        } else {
+          console.log('ℹ️ [checkActiveCashRegister] No hay turno activo');
         }
       } else {
+        console.error('❌ [checkActiveCashRegister] Error en respuesta:', response.status);
         setActiveCashRegister(null)
       }
     } catch (error) {
-      console.error('Error checking active cash register:', error)
+      console.error('❌ [checkActiveCashRegister] Error:', error)
       setActiveCashRegister(null)
     } finally {
       setLoading(false)
     }
-  }, [token, user?.businessId, user?.role, hasMultipleBranchesAvailable, effectiveBranchId, selectedBranchId])
+  }, [token, user?.businessId, user?.role, user?.id, hasMultipleBranchesAvailable, selectedBranchId])
 
   useEffect(() => {
     checkActiveCashRegister()
