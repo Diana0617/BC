@@ -38,42 +38,25 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, bra
     searchTerm: ''
   });
 
-  const getPaymentMethodIcon = (method, methodType = null) => {
-    // Si se proporciona el tipo, usar ese; sino intentar detectar por el nombre del método
-    const type = methodType || method;
-    
-    if (type === 'CASH' || method === 'CASH') {
+  const getPaymentMethodIcon = (methodType) => {
+    // Usar el tipo del sistema para determinar el ícono
+    if (methodType === 'CASH') {
       return <BanknotesIcon className="w-5 h-5 text-green-600" />;
     }
-    if (type === 'CARD' || method === 'CARD') {
+    if (methodType === 'CARD') {
       return <CreditCardIcon className="w-5 h-5 text-blue-600" />;
     }
-    if (type === 'TRANSFER' || method === 'TRANSFER') {
+    if (methodType === 'TRANSFER') {
       return <DevicePhoneMobileIcon className="w-5 h-5 text-purple-600" />;
     }
-    if (type === 'WOMPI' || method === 'WOMPI') {
+    if (methodType === 'QR') {
+      return <DevicePhoneMobileIcon className="w-5 h-5 text-purple-600" />;
+    }
+    if (methodType === 'WOMPI' || methodType === 'ONLINE') {
       return <CurrencyDollarIcon className="w-5 h-5 text-orange-600" />;
     }
-    // Icono genérico para métodos personalizados
+    // Icono genérico para otros métodos
     return <CurrencyDollarIcon className="w-5 h-5 text-gray-600" />;
-  };
-
-  const getPaymentMethodLabel = (method) => {
-    // Si es un método personalizado (no es uno de los enums), mostrarlo tal cual
-    const standardEnums = ['CASH', 'CARD', 'TRANSFER', 'WOMPI', 'OTHER'];
-    if (!standardEnums.includes(method)) {
-      return method; // Nombre personalizado del negocio
-    }
-    
-    // Si es un enum estándar, traducirlo
-    const labels = {
-      'CASH': 'Efectivo',
-      'CARD': 'Tarjeta',
-      'TRANSFER': 'Transferencia',
-      'WOMPI': 'Wompi',
-      'OTHER': 'Otro'
-    };
-    return labels[method] || method;
   };
 
   // Cargar turno activo si no hay shiftId proporcionado
@@ -355,12 +338,12 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, bra
                     Ingresos por Método de Pago
                   </h4>
                   <div className="space-y-3">
-                    {Object.entries(shiftData.paymentMethodsBreakdown).map(([method, data]) => (
-                      <div key={method} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    {Object.entries(shiftData.paymentMethodsBreakdown).map(([methodName, data]) => (
+                      <div key={methodName} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div className="flex items-center gap-3">
-                          {getPaymentMethodIcon(method, data.type)}
+                          {getPaymentMethodIcon(data.type)}
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{getPaymentMethodLabel(method)}</p>
+                            <p className="text-sm font-medium text-gray-900">{methodName}</p>
                             <p className="text-xs text-gray-500">{data.count} transacciones</p>
                           </div>
                         </div>
@@ -610,11 +593,7 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, bra
                           <td className="px-6 py-4 whitespace-nowrap">
                             {movement.paymentMethod ? (
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {movement.paymentMethod === 'CASH' ? 'Efectivo' :
-                                 movement.paymentMethod === 'CARD' ? 'Tarjeta' :
-                                 movement.paymentMethod === 'TRANSFER' ? 'Transferencia' :
-                                 movement.paymentMethod === 'WOMPI' ? 'Wompi' :
-                                 movement.paymentMethod}
+                                {movement.paymentMethod}
                               </span>
                             ) : '-'}
                           </td>
@@ -671,11 +650,7 @@ export default function CashRegisterMovementsUnified({ shiftId: propShiftId, bra
                       )}
                       {movement.paymentMethod && (
                         <p className="text-xs text-gray-500 mb-1">
-                          Pago: {movement.paymentMethod === 'CASH' ? 'Efectivo' :
-                                 movement.paymentMethod === 'CARD' ? 'Tarjeta' :
-                                 movement.paymentMethod === 'TRANSFER' ? 'Transferencia' :
-                                 movement.paymentMethod === 'WOMPI' ? 'Wompi' :
-                                 movement.paymentMethod}
+                          Pago: {movement.paymentMethod}
                         </p>
                       )}
                       {movement.receiptNumber && (

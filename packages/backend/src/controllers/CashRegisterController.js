@@ -1363,8 +1363,9 @@ class CashRegisterController {
 
       // Formatear recibos como movimientos
       const receiptMovements = receipts.map(receipt => {
-        // Intentar obtener el nombre personalizado del método de pago desde metadata
-        const paymentMethodName = receipt.metadata?.paymentData?.methodName || null;
+        // El campo receipt.paymentMethod ahora guarda el nombre personalizado del método
+        // metadata.paymentData se mantiene como respaldo para información adicional
+        const paymentMethodType = receipt.metadata?.paymentData?.method || null;
         const paymentMethodId = receipt.metadata?.paymentData?.methodId || null;
         
         return {
@@ -1373,8 +1374,8 @@ class CashRegisterController {
           category: 'APPOINTMENT',
           description: `Pago de cita - ${receipt.serviceName}`,
           amount: receipt.totalAmount,
-          paymentMethod: receipt.paymentMethod, // Enum (CASH, TRANSFER, etc.)
-          paymentMethodName, // Nombre personalizado (ej: "transferencia" del negocio)
+          paymentMethod: receipt.paymentMethod, // Nombre personalizado del negocio (ej: "transferencia", "Qr")
+          paymentMethodType, // Tipo del sistema (CASH, TRANSFER, QR) - para íconos
           paymentMethodId, // ID del método personalizado
           referenceId: receipt.appointmentId,
           clientName: receipt.clientName,
@@ -1546,25 +1547,33 @@ class CashRegisterController {
       const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
       // Calcular desglose por método de pago (solo ingresos)
-      // IMPORTANTE: Usar el nombre personalizado del método y su tipo real
+      // IMPORTANTE: receipt.paymentMethod ahora guarda el nombre personalizado del método
       const paymentMethodsBreakdown = {};
       let totalCashCalculated = 0; // Acumulador para solo efectivo
       
       receipts.forEach(receipt => {
         const amount = parseFloat(receipt.totalAmount);
         
-        // Obtener datos del método de pago desde metadata
+        // receipt.paymentMethod ya contiene el nombre personalizado (ej: "transferencia", "Qr")
+        const methodDisplayName = receipt.paymentMethod;
+        
+        // Obtener el tipo del método desde metadata o del mapa
         const methodId = receipt.metadata?.paymentData?.methodId;
-        const customName = receipt.metadata?.paymentData?.methodName;
+        let methodType = receipt.metadata?.paymentData?.method; // Tipo del sistema
         
-        // Determinar tipo y nombre del método
-        let methodType = receipt.paymentMethod; // Fallback al enum guardado
-        let methodDisplayName = customName || receipt.paymentMethod;
-        
-        // Si tenemos methodId, buscar en el mapa
+        // Si tenemos methodId, buscar el tipo en el mapa
         if (methodId && paymentMethodMap[methodId]) {
           methodType = paymentMethodMap[methodId].type;
-          methodDisplayName = paymentMethodMap[methodId].name;
+        }
+        
+        // Si no tenemos tipo, intentar inferir del nombre (legacy)
+        if (!methodType) {
+          const upperName = methodDisplayName?.toUpperCase();
+          if (upperName === 'CASH' || upperName === 'EFECTIVO') methodType = 'CASH';
+          else if (upperName === 'CARD' || upperName === 'TARJETA') methodType = 'CARD';
+          else if (upperName === 'TRANSFER' || upperName === 'TRANSFERENCIA') methodType = 'TRANSFER';
+          else if (upperName === 'QR') methodType = 'QR';
+          else methodType = 'OTHER';
         }
         
         // Usar el nombre personalizado como key para el breakdown
@@ -1572,8 +1581,8 @@ class CashRegisterController {
           paymentMethodsBreakdown[methodDisplayName] = {
             count: 0,
             total: 0,
-            type: methodType, // Guardar el tipo real
-            isCustom: !!customName
+            type: methodType, // Tipo del sistema (para íconos)
+            isCustom: true
           };
         }
         paymentMethodsBreakdown[methodDisplayName].count++;

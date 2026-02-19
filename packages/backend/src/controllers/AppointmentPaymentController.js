@@ -272,8 +272,10 @@ class AppointmentPaymentController {
       }
       
       // ✅ NUEVO: Crear recibo automáticamente cuando el pago está completo
+      console.log(`📊 [recordPayment] paymentStatus: ${paymentStatus}, totalPaid: ${totalPaid}, totalAmount: ${appointment.totalAmount}`);
+      
       if (paymentStatus === 'PAID') {
-        console.log('🧾 [recordPayment] Creando recibo automáticamente...');
+        console.log('🧾 [recordPayment] ✅ Payment PAID - Creando recibo automáticamente...');
         try {
           const Receipt = require('../models/Receipt');
           
@@ -287,6 +289,7 @@ class AppointmentPaymentController {
           });
           
           if (!existingReceipt) {
+            console.log('🧾 [recordPayment] No existe recibo previo. Recargando appointment con relaciones...');
             // Recargar appointment con todas las relaciones necesarias para el recibo
             const fullAppointment = await Appointment.findByPk(appointment.id, {
               include: [
@@ -306,26 +309,43 @@ class AppointmentPaymentController {
               ]
             });
             
-            await Receipt.createFromAppointment(
+            console.log('🧾 [recordPayment] fullAppointment cargado:', {
+              id: fullAppointment.id,
+              hasService: !!fullAppointment.Service,
+              hasClient: !!fullAppointment.Client,
+              hasSpecialist: !!fullAppointment.specialist,
+              totalAmount: fullAppointment.totalAmount
+            });
+            
+            const receiptPaymentData = {
+              method: paymentMethodType || resolvedPaymentMethod,
+              methodName: paymentMethodName || resolvedPaymentMethod,
+              methodId: paymentMethodId || null,
+              amount: paymentAmount,
+              transactionId: transactionId,
+              reference: transactionId
+            };
+            
+            console.log('🧾 [recordPayment] Invocando Receipt.createFromAppointment con paymentData:', receiptPaymentData);
+            
+            const createdReceipt = await Receipt.createFromAppointment(
               fullAppointment.toJSON(),
-              {
-                method: paymentMethodType || resolvedPaymentMethod,
-                methodName: paymentMethodName || resolvedPaymentMethod,
-                methodId: paymentMethodId || null,
-                amount: paymentAmount,
-                transactionId: transactionId,
-                reference: transactionId
-              },
+              receiptPaymentData,
               { createdBy: req.specialist.id }
             );
-            console.log('✅ [recordPayment] Recibo creado automáticamente');
+            console.log('✅ [recordPayment] Recibo creado automáticamente - ID:', createdReceipt.id, 'Number:', createdReceipt.receiptNumber);
           } else {
-            console.log('ℹ️ [recordPayment] Ya existe recibo para esta cita');
+            console.log('ℹ️ [recordPayment] Ya existe recibo para esta cita - ID:', existingReceipt.id);
           }
         } catch (receiptError) {
-          console.error('❌ [recordPayment] Error creando recibo:', receiptError);
+          console.error('❌ [recordPayment] Error creando recibo:');
+          console.error('   Name:', receiptError.name);
+          console.error('   Message:', receiptError.message);
+          console.error('   Stack:', receiptError.stack);
           // No fallar el pago si falla la creación del recibo
         }
+      } else {
+        console.log(`⏭️ [recordPayment] paymentStatus=${paymentStatus} - No se crea recibo automático (solo cuando PAID)`);
       }
 
       res.json({

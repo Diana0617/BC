@@ -409,16 +409,17 @@ Receipt.createFromAppointment = async function(appointmentData, paymentData, opt
           ? (appointmentData.services.length === 1 
              ? appointmentData.services[0].name 
              : `${appointmentData.services.length} servicios`)
-          : (appointmentData.service?.name || 'Servicio'),
+          : (appointmentData.Service?.name || appointmentData.service?.name || 'Servicio'),
         serviceDescription: appointmentData.notes || null,
         
-        subtotal: appointmentData.baseAmount || paymentData.amount,
-        tax: appointmentData.tax || 0,
-        discount: appointmentData.discount || 0,
-        tip: appointmentData.tip || 0,
-        totalAmount: appointmentData.finalAmount || paymentData.amount,
+        subtotal: appointmentData.totalAmount || paymentData.amount,
+        tax: 0,
+        discount: appointmentData.discountAmount || 0,
+        tip: 0,
+        totalAmount: appointmentData.totalAmount || paymentData.amount,
         
-        paymentMethod: paymentData.method || 'CASH',
+        // IMPORTANTE: Guardar el NOMBRE personalizado del método de pago, no el tipo del sistema
+        paymentMethod: paymentData.methodName || paymentData.method || 'CASH',
         paymentReference: paymentData.transactionId || paymentData.reference,
         paymentStatus: 'PAID',
         
