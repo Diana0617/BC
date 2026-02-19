@@ -131,16 +131,16 @@ export default function CashRegisterOpening({
           const shouldGoToShift = window.confirm(
             'Ya tienes un turno abierto.\n\n¿Deseas ir al turno activo?'
           );
-          if (shouldGoToShift && data.debug?.existingShiftId) {
-            // Redirigir al turno existente
-            onSuccess?.({ shift: { id: data.debug.existingShiftId } });
+          if (shouldGoToShift) {
+            // Siempre llamar a onSuccess para forzar la recarga del turno activo
+            // y cambiar a la tab de movimientos
+            onSuccess?.({ shouldReload: true });
             return;
-          } else if (shouldGoToShift) {
-            // Si no hay ID, simplemente cerrar el modal
-            onSuccess?.(null);
+          } else {
+            // Si cancela, simplemente cerrar el modal
+            onCancel?.();
             return;
           }
-          return;
         }
         throw new Error(data.error || 'Error opening cash register');
       }

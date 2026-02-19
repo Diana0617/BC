@@ -134,20 +134,23 @@ class CashRegisterController {
         });
       }
 
-      // BUSINESS puede ver cualquier turno activo del negocio
+      // BUSINESS puede ver cualquier turno activo del negocio (filtrado por sucursal)
+      // Otros usuarios: buscar SU turno activo en CUALQUIER sucursal
       const whereClause = {
         businessId,
         status: 'OPEN'
       };
       
-      // Filtrar por sucursal si se especifica
-      if (branchId) {
-        whereClause.branchId = branchId;
-      }
-      
-      // Si no es BUSINESS, solo ver su propio turno
+      // Si no es BUSINESS, solo ver su propio turno (sin filtrar por sucursal)
+      // Esto evita que no encuentre su turno si está en otra sucursal
       if (userRole !== 'BUSINESS') {
         whereClause.userId = userId;
+        // NO filtrar por branchId aquí - queremos encontrar el turno activo del usuario sin importar la sucursal
+      } else {
+        // BUSINESS puede filtrar por sucursal si se especifica
+        if (branchId) {
+          whereClause.branchId = branchId;
+        }
       }
 
       const activeShift = await CashRegisterShift.findOne({

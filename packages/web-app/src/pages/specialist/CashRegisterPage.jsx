@@ -101,10 +101,12 @@ const CashRegisterPage = () => {
     
     try {
       setLoading(true)
+      // Para usuarios no-BUSINESS: NO filtrar por branchId al buscar turno activo
+      // Queremos encontrar SU turno activo sin importar en qué sucursal esté
       let url = `${import.meta.env.VITE_API_URL}/api/cash-register/active-shift?businessId=${user.businessId}`;
       
-      // Si hay múltiples sucursales y se seleccionó una, filtrar por ella
-      if (hasMultipleBranchesAvailable && effectiveBranchId) {
+      // Solo BUSINESS puede filtrar por sucursal al buscar turnos
+      if (user?.role === 'BUSINESS' && hasMultipleBranchesAvailable && effectiveBranchId) {
         url += `&branchId=${effectiveBranchId}`;
       }
       
@@ -121,6 +123,12 @@ const CashRegisterPage = () => {
         const shift = result?.data?.shift || null
         setActiveCashRegister(shift)
         
+        // Si hay caja activa, actualizar selectedBranchId al del turno activo
+        if (shift && shift.branchId && shift.branchId !== selectedBranchId) {
+          console.log('🔄 Actualizando selectedBranchId al del turno activo:', shift.branchId)
+          setSelectedBranchId(shift.branchId)
+        }
+        
         // Si hay caja activa, mostrar movimientos por defecto
         if (shift) {
           setActiveTab('movements')
@@ -134,11 +142,11 @@ const CashRegisterPage = () => {
     } finally {
       setLoading(false)
     }
-  }, [token, user?.businessId, hasMultipleBranchesAvailable, effectiveBranchId])
+  }, [token, user?.businessId, user?.role, hasMultipleBranchesAvailable, effectiveBranchId, selectedBranchId])
 
   useEffect(() => {
     checkActiveCashRegister()
-  }, [checkActiveCashRegister, effectiveBranchId])
+  }, [checkActiveCashRegister])
 
   const loadShiftData = useCallback(async () => {
     if (!activeCashRegister?.id || !token || !user?.businessId) return;
@@ -170,7 +178,9 @@ const CashRegisterPage = () => {
   }, [activeTab, activeCashRegister, loadShiftData]);
 
   const handleCashRegisterOpened = () => {
+    // Recargar información del turno activo y cambiar a tab de movimientos
     checkActiveCashRegister()
+    setActiveTab('movements')
   }
 
   const handleCashRegisterClosed = () => {
