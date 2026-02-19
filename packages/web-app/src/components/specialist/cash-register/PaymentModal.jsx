@@ -5,7 +5,8 @@ import {
   BanknotesIcon,
   CreditCardIcon,
   CheckCircleIcon,
-  ReceiptPercentIcon
+  ReceiptPercentIcon,
+  QrCodeIcon
 } from '@heroicons/react/24/outline';
 import ReceiptActions from '../payments/ReceiptActions';
 
@@ -300,6 +301,41 @@ export default function PaymentModal({
               ))}
             </select>
           </div>
+
+          {/* Mostrar información QR si el método seleccionado es tipo QR */}
+          {(() => {
+            const selectedMethod = paymentMethods.find(m => m.id === formData.paymentMethodId);
+            if (selectedMethod?.type === 'QR' && selectedMethod?.qrInfo) {
+              return (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-blue-900">
+                    <QrCodeIcon className="w-5 h-5" />
+                    <h4 className="font-semibold">Código QR para Pago</h4>
+                  </div>
+                  {selectedMethod.qrInfo.qrImage && (
+                    <div className="bg-white rounded-lg p-4 text-center">
+                      <img 
+                        src={selectedMethod.qrInfo.qrImage} 
+                        alt="Código QR de pago"
+                        className="max-w-[200px] mx-auto"
+                      />
+                    </div>
+                  )}
+                  {selectedMethod.qrInfo.phoneNumber && (
+                    <div className="bg-white rounded-lg p-3">
+                      <p className="text-sm text-gray-700">
+                        <strong>Número:</strong> {selectedMethod.qrInfo.phoneNumber}
+                      </p>
+                    </div>
+                  )}
+                  <p className="text-xs text-blue-700">
+                    💡 El cliente debe escanear el código QR o enviar al número indicado
+                  </p>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Monto a Pagar */}
           <div>

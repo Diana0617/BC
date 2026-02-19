@@ -270,6 +270,63 @@ class AppointmentPaymentController {
         console.error('❌ [recordPayment] Error creando AppointmentPayment:', apError);
         // No fallar el pago completo si falla esto, solo loguearlo
       }
+      
+      // ✅ NUEVO: Crear recibo automáticamente cuando el pago está completo
+      if (paymentStatus === 'PAID') {
+        console.log('🧾 [recordPayment] Creando recibo automáticamente...');
+        try {
+          const Receipt = require('../models/Receipt');
+          
+          // Verificar si ya existe un recibo para esta cita
+          const existingReceipt = await Receipt.findOne({
+            where: {
+              appointmentId: appointment.id,
+              businessId,
+              status: 'ACTIVE'
+            }
+          });
+          
+          if (!existingReceipt) {
+            // Recargar appointment con todas las relaciones necesarias para el recibo
+            const fullAppointment = await Appointment.findByPk(appointment.id, {
+              include: [
+                {
+                  model: Service,
+                  attributes: ['id', 'name', 'price']
+                },
+                {
+                  model: Client,
+                  attributes: ['id', 'firstName', 'lastName', 'phone', 'email']
+                },
+                {
+                  model: require('../models/User'),
+                  as: 'specialist',
+                  attributes: ['id', 'firstName', 'lastName']
+                }
+              ]
+            });
+            
+            await Receipt.createFromAppointment(
+              fullAppointment.toJSON(),
+              {
+                method: paymentMethodType || resolvedPaymentMethod,
+                methodName: paymentMethodName || resolvedPaymentMethod,
+                methodId: paymentMethodId || null,
+                amount: paymentAmount,
+                transactionId: transactionId,
+                reference: transactionId
+              },
+              { createdBy: req.specialist.id }
+            );
+            console.log('✅ [recordPayment] Recibo creado automáticamente');
+          } else {
+            console.log('ℹ️ [recordPayment] Ya existe recibo para esta cita');
+          }
+        } catch (receiptError) {
+          console.error('❌ [recordPayment] Error creando recibo:', receiptError);
+          // No fallar el pago si falla la creación del recibo
+        }
+      }
 
       res.json({
         success: true,

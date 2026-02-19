@@ -917,7 +917,7 @@ class CashRegisterController {
     const FinancialMovement = require('../models/FinancialMovement');
     const movements = await FinancialMovement.findAll({
       where: movementWhere,
-      attributes: ['id', 'amount', 'paymentMethod', 'category', 'description', 'createdAt'],
+      attributes: ['id', 'amount', 'paymentMethod', 'category', 'description', 'createdAt', 'metadata'],
       include: [
         {
           model: User,
@@ -935,11 +935,42 @@ class CashRegisterController {
       order: [['createdAt', 'DESC']],
       transaction
     });
+    
+    // Obtener métodos de pago del negocio para mapear tipos
+    const PaymentMethod = require('../models/PaymentMethod');
+    const paymentMethods = await PaymentMethod.findAll({
+      where: {
+        businessId,
+        isActive: true
+      },
+      attributes: ['id', 'name', 'type'],
+      transaction
+    });
+    
+    // Crear mapa id -> datos del método
+    const paymentMethodMap = {};
+    paymentMethods.forEach(pm => {
+      paymentMethodMap[pm.id] = {
+        name: pm.name,
+        type: pm.type
+      };
+    });
 
     // Agrupar por método de pago
     movements.forEach(movement => {
       const method = movement.paymentMethod || 'OTHER';
       const amount = parseFloat(movement.amount);
+      
+      // Intentar determinar el tipo real del método
+      let methodType = method; // Fallback
+      const methodId = movement.metadata?.paymentMethodId;
+      
+      if (methodId && paymentMethodMap[methodId]) {
+        methodType = paymentMethodMap[methodId].type;
+      } else if (movement.metadata?.paymentMethodData?.type) {
+        // Si no está en el mapa pero tenemos el tipo en metadata
+        methodType = movement.metadata.paymentMethodData.type;
+      }
       
       if (!summary.paymentMethods[method]) {
         summary.paymentMethods[method] = {
@@ -952,8 +983,8 @@ class CashRegisterController {
       summary.paymentMethods[method].total += amount;
       summary.totalIncome += amount;
 
-      // Control específico de efectivo (para balance de caja)
-      if (method === 'CASH') {
+      // Control específico de efectivo (solo si el TIPO es CASH)
+      if (methodType === 'CASH') {
         summary.totalCash += amount;
       } else {
         summary.totalNonCash += amount;
@@ -1476,6 +1507,25 @@ class CashRegisterController {
         },
         attributes: ['id', 'totalAmount', 'paymentMethod', 'metadata']
       });
+      
+      // Obtener todos los métodos de pago del negocio para mapear tipos
+      const PaymentMethod = require('../models/PaymentMethod');
+      const paymentMethods = await PaymentMethod.findAll({
+        where: {
+          businessId,
+          isActive: true
+        },
+        attributes: ['id', 'name', 'type']
+      });
+      
+      // Crear mapa rápido de id -> tipo
+      const paymentMethodMap = {};
+      paymentMethods.forEach(pm => {
+        paymentMethodMap[pm.id] = {
+          name: pm.name,
+          type: pm.type
+        };
+      });
 
       // Obtener gastos del turno
       const BusinessExpense = require('../models/BusinessExpense');
@@ -1493,30 +1543,47 @@ class CashRegisterController {
       const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
       // Calcular desglose por método de pago (solo ingresos)
-      // IMPORTANTE: Usar el nombre personalizado del método si existe
+      // IMPORTANTE: Usar el nombre personalizado del método y su tipo real
       const paymentMethodsBreakdown = {};
+      let totalCashCalculated = 0; // Acumulador para solo efectivo
+      
       receipts.forEach(receipt => {
-        // Intentar obtener el nombre personalizado desde metadata
-        const customName = receipt.metadata?.paymentData?.methodName;
-        const methodKey = customName || receipt.paymentMethod; // Usar nombre personalizado o enum
+        const amount = parseFloat(receipt.totalAmount);
         
-        if (!paymentMethodsBreakdown[methodKey]) {
-          paymentMethodsBreakdown[methodKey] = {
+        // Obtener datos del método de pago desde metadata
+        const methodId = receipt.metadata?.paymentData?.methodId;
+        const customName = receipt.metadata?.paymentData?.methodName;
+        
+        // Determinar tipo y nombre del método
+        let methodType = receipt.paymentMethod; // Fallback al enum guardado
+        let methodDisplayName = customName || receipt.paymentMethod;
+        
+        // Si tenemos methodId, buscar en el mapa
+        if (methodId && paymentMethodMap[methodId]) {
+          methodType = paymentMethodMap[methodId].type;
+          methodDisplayName = paymentMethodMap[methodId].name;
+        }
+        
+        // Usar el nombre personalizado como key para el breakdown
+        if (!paymentMethodsBreakdown[methodDisplayName]) {
+          paymentMethodsBreakdown[methodDisplayName] = {
             count: 0,
             total: 0,
-            type: receipt.paymentMethod, // Guardar el enum para referencia
-            isCustom: !!customName // Indicar si es método personalizado
+            type: methodType, // Guardar el tipo real
+            isCustom: !!customName
           };
         }
-        paymentMethodsBreakdown[methodKey].count++;
-        paymentMethodsBreakdown[methodKey].total += parseFloat(receipt.totalAmount);
+        paymentMethodsBreakdown[methodDisplayName].count++;
+        paymentMethodsBreakdown[methodDisplayName].total += amount;
+        
+        // Sumar al total de efectivo solo si el tipo es CASH
+        if (methodType === 'CASH') {
+          totalCashCalculated += amount;
+        }
       });
-
-      // Calcular total de efectivo para el balance esperado
-      const totalCash = paymentMethodsBreakdown['CASH']?.total || 
-                        Object.entries(paymentMethodsBreakdown)
-                          .filter(([key, data]) => data.type === 'CASH')
-                          .reduce((sum, [, data]) => sum + data.total, 0);
+      
+      // Usar el total de efectivo calculado
+      const totalCash = totalCashCalculated;
       const expectedClosingBalance = parseFloat(shift.openingBalance || 0) + totalCash;
 
       return res.json({
