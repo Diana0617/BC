@@ -420,7 +420,14 @@ Receipt.createFromAppointment = async function(appointmentData, paymentData, opt
         
         // IMPORTANTE: paymentMethod es un ENUM en Azure - debe ser el TIPO del sistema (CASH, TRANSFER, etc.)
         // El nombre personalizado va en metadata.paymentData.methodName
-        paymentMethod: paymentData.method || 'CASH',
+        // Mapeo de tipos PaymentMethod → ENUM Receipt:
+        // CASH → CASH, CARD → CARD, TRANSFER → TRANSFER, WOMPI → WOMPI, QR → OTHER, ONLINE → OTHER
+        paymentMethod: (() => {
+          const methodType = paymentData.method || 'CASH';
+          if (['CASH', 'CARD', 'TRANSFER', 'WOMPI', 'OTHER'].includes(methodType)) return methodType;
+          // QR, ONLINE y cualquier otro tipo no estándar → OTHER
+          return 'OTHER';
+        })(),
         paymentReference: (paymentData.transactionId || paymentData.reference) ? String(paymentData.transactionId || paymentData.reference) : null,
         paymentStatus: 'PAID',
         
