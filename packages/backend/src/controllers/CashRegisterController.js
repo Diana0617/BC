@@ -902,6 +902,7 @@ class CashRegisterController {
     summary.appointments.paidAmount = appointments.reduce((sum, a) => sum + parseFloat(a.paidAmount || 0), 0);
 
     // Construir filtros de recibos (para desglose por método de pago)
+    // NOTA: Receipt no tiene columna branchId, se filtra solo por businessId y fecha
     const receiptWhere = {
       businessId,
       status: 'ACTIVE',
@@ -909,11 +910,6 @@ class CashRegisterController {
         [Op.gte]: openedAt
       }
     };
-    
-    // Si hay sucursal, filtrar por ella
-    if (branchId) {
-      receiptWhere.branchId = branchId;
-    }
     
     // Obtener recibos del turno para extraer métodos de pago con nombres personalizados
     const Receipt = require('../models/Receipt');

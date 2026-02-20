@@ -153,7 +153,8 @@ const CashRegisterPage = () => {
           console.log('ℹ️ [checkActiveCashRegister] No hay turno activo');
         }
       } else {
-        console.error('❌ [checkActiveCashRegister] Error en respuesta:', response.status);
+        const errBody = await response.text();
+        console.error('❌ [checkActiveCashRegister] Error en respuesta:', response.status, errBody);
         setActiveCashRegister(null)
       }
     } catch (error) {
@@ -162,7 +163,11 @@ const CashRegisterPage = () => {
     } finally {
       setLoading(false)
     }
-  }, [token, user?.businessId, user?.role, user?.id, hasMultipleBranchesAvailable, selectedBranchId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, user?.businessId, user?.role, user?.id, hasMultipleBranchesAvailable,
+      // Para BUSINESS incluir selectedBranchId como dependencia; para otros roles no es necesario
+      // pero lo mantenemos para que BUSINESS pueda cambiar de sucursal correctamente
+      selectedBranchId])
 
   useEffect(() => {
     checkActiveCashRegister()
