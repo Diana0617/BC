@@ -13,8 +13,10 @@ import {
   RefreshCwIcon,
   FilterIcon,
   XIcon,
-  ArrowLeftRightIcon
+  ArrowLeftRightIcon,
+  DownloadIcon
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import productApi from '../../../../api/productApi';
 import businessBranchesApi from '@shared/api/businessBranchesApi';
 import EditProductModal from './EditProductModal';
@@ -153,6 +155,70 @@ const ProductManagement = () => {
     }).format(amount);
   };
 
+  const exportToExcel = async () => {
+    try {
+      setLoading(true);
+      // Obtener TODOS los productos sin paginación
+      const response = await productApi.getProducts(user.businessId, {
+        limit: 10000 // Un límite alto para obtener todos
+      });
+
+      if (!response.success || !response.data || response.data.length === 0) {
+        alert('No hay productos para exportar');
+        return;
+      }
+
+      // Formatear los datos para Excel, excluyendo el campo 'images'
+      const excelData = response.data.map(product => ({
+        'ID': product.id,
+        'Nombre': product.name,
+        'Descripción': product.description || '',
+        'SKU': product.sku || '',
+        'Código de Barras': product.barcode || '',
+        'Categoría': product.category || '',
+        'Marca': product.brand || '',
+        'Precio': product.price,
+        'Costo': product.cost,
+        'Estado': product.isActive ? 'Activo' : 'Inactivo',
+        'Controlar Inventario': product.trackInventory ? 'Sí' : 'No',
+        'Stock Actual': product.currentStock || 0,
+        'Stock Mínimo': product.minStock || 0,
+        'Stock Máximo': product.maxStock || '',
+        'Unidad': product.unit || '',
+        'Peso': product.weight || '',
+        'Dimensiones': product.dimensions ? JSON.stringify(product.dimensions) : '',
+        'Gravable': product.taxable ? 'Sí' : 'No',
+        'Tasa de Impuesto': product.taxRate || 0,
+        'Proveedor': product.supplier ? JSON.stringify(product.supplier) : '',
+        'Etiquetas': product.tags ? product.tags.join(', ') : '',
+        'Variantes': product.variants ? JSON.stringify(product.variants) : '',
+        'Seguimiento de Expiración': product.expirationTracking ? 'Sí' : 'No',
+        'Seguimiento de Lote': product.batchTracking ? 'Sí' : 'No',
+        'Seguimiento de Serial': product.serialTracking ? 'Sí' : 'No',
+        'Tipo de Producto': product.productType || '',
+        'Requiere Seguimiento de Especialista': product.requiresSpecialistTracking ? 'Sí' : 'No',
+        'Fecha de Creación': product.createdAt ? new Date(product.createdAt).toLocaleString('es-CO') : '',
+        'Última Actualización': product.updatedAt ? new Date(product.updatedAt).toLocaleString('es-CO') : ''
+      }));
+
+      // Crear el libro de trabajo
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
+
+      // Generar el archivo
+      const fileName = `productos_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+
+      alert(`✅ Archivo exportado exitosamente: ${fileName}`);
+    } catch (err) {
+      console.error('Error exporting to Excel:', err);
+      alert('Error al exportar a Excel: ' + (err.message || 'Error desconocido'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading && products.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -177,6 +243,15 @@ const ProductManagement = () => {
           </div>
           
           <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={exportToExcel}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              title="Exportar todos los productos a Excel"
+            >
+              <DownloadIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Exportar</span>
+            </button>
+            
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
