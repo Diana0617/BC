@@ -28,26 +28,76 @@ class BusinessInventoryController {
   async getProducts(req, res) {
     try {
       const businessId = req.business.id;
-      const filters = {
-        category: req.query.category,
-        subcategory: req.query.subcategory,
-        brand: req.query.brand,
-        supplier: req.query.supplier,
-        status: req.query.status || "ACTIVE",
-        search: req.query.search,
-        lowStock: req.query.lowStock === "true",
-        outOfStock: req.query.outOfStock === "true",
-        page: parseInt(req.query.page) || 1,
-        limit: parseInt(req.query.limit) || 10,
-        sortBy: req.query.sortBy || "name",
-        sortOrder: req.query.sortOrder || "ASC"
-      };
+      const {
+        category,
+        subcategory,
+        brand,
+        supplier,
+        status,
+        search,
+        lowStock,
+        outOfStock,
+        page = 1,
+        limit = 20,
+        sortBy = "name",
+        sortOrder = "ASC"
+      } = req.query;
 
-      const result = await BusinessConfigService.getProducts(businessId, filters);
+      // Construir filtros
+      const where = { businessId };
+
+      if (status && status !== 'ALL') {
+        where.isActive = status === 'ACTIVE';
+      }
+
+      if (category && category !== 'all') {
+        where.category = category;
+      }
+
+      if (subcategory) {
+        where.subcategory = subcategory;
+      }
+
+      if (brand) {
+        where.brand = brand;
+      }
+
+      // Búsqueda por nombre o SKU
+      if (search && search.trim()) {
+        where[Op.or] = [
+          { name: { [Op.iLike]: `%${search.trim()}%` } },
+          { sku: { [Op.iLike]: `%${search.trim()}%` } }
+        ];
+      }
+
+      // Calcular offset para paginación
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+
+      // Consultar productos con stock si es necesario
+      const { count, rows: products } = await Product.findAndCountAll({
+        where,
+        include: [{
+          model: BranchStock,
+          as: 'branchStocks',
+          include: [{
+            model: Branch,
+            as: 'branch',
+            attributes: ['id', 'name']
+          }],
+          required: false
+        }],
+        limit: parseInt(limit),
+        offset,
+        order: [[sortBy, sortOrder]],
+        distinct: true
+      });
 
       res.json({
         success: true,
-        data: result,
+        data: products,
+        totalPages: Math.ceil(count / parseInt(limit)),
+        currentPage: parseInt(page),
+        total: count,
         message: "Productos obtenidos exitosamente"
       });
     } catch (error) {

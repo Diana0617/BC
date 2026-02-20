@@ -259,6 +259,38 @@ class SupplierInvoiceController {
         });
       }
 
+      // 🔥 VALIDAR ITEMS ANTES DE PROCESAR
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        // Validar que tiene productId o productData
+        if (!item.productId && !item.productData) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: `Item ${i + 1}: Debes proporcionar productId o productData para crear el producto`
+          });
+        }
+        
+        // Validar quantity
+        if (!item.quantity || typeof item.quantity !== 'number' || item.quantity <= 0) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: `Item ${i + 1} (${item.productData?.name || item.productId}): quantity es requerida y debe ser un número mayor a 0`
+          });
+        }
+        
+        // Validar unitCost
+        if (!item.unitCost || typeof item.unitCost !== 'number' || item.unitCost <= 0) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: `Item ${i + 1} (${item.productData?.name || item.productId}): unitCost es requerido y debe ser un número mayor a 0`
+          });
+        }
+      }
+
       // Procesar items y crear productos si es necesario
       const processedItems = [];
       
@@ -773,7 +805,7 @@ class SupplierInvoiceController {
           branchId: mainBranch.id,
           items: invoice.items.map(item => ({
             productId: item.productId,
-            quantity: item.quantity
+            quantity: item.quantityOrdered // El campo guardado en la factura es quantityOrdered
           }))
         }];
 
@@ -803,7 +835,7 @@ class SupplierInvoiceController {
           });
 
           const previousBranchStock = branchStock.currentStock;
-          const newBranchStock = previousBranchStock + item.quantity;
+          const newBranchStock = previousBranchStock + item.quantityOrdered; // El campo guardado es quantityOrdered
 
           // Crear movimiento de inventario
           await InventoryMovement.create({
@@ -812,7 +844,7 @@ class SupplierInvoiceController {
             branchId: mainBranch.id,
             userId,
             movementType: 'PURCHASE',
-            quantity: item.quantity,
+            quantity: item.quantityOrdered, // El campo guardado es quantityOrdered
             unitCost: item.unitCost,
             totalCost: item.total,
             previousStock: previousBranchStock,

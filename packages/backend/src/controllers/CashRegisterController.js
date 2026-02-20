@@ -901,11 +901,10 @@ class CashRegisterController {
     summary.appointments.totalAmount = appointments.reduce((sum, a) => sum + parseFloat(a.totalAmount || 0), 0);
     summary.appointments.paidAmount = appointments.reduce((sum, a) => sum + parseFloat(a.paidAmount || 0), 0);
 
-    // Construir filtros de movimientos financieros
-    const movementWhere = {
+    // Construir filtros de recibos (para desglose por método de pago)
+    const receiptWhere = {
       businessId,
-      type: 'INCOME',
-      status: 'COMPLETED',
+      status: 'ACTIVE',
       createdAt: {
         [Op.gte]: openedAt
       }
@@ -913,29 +912,14 @@ class CashRegisterController {
     
     // Si hay sucursal, filtrar por ella
     if (branchId) {
-      movementWhere.branchId = branchId;
+      receiptWhere.branchId = branchId;
     }
-
-    // Obtener movimientos financieros del turno (ingresos) CON DETALLES
-    const FinancialMovement = require('../models/FinancialMovement');
-    const movements = await FinancialMovement.findAll({
-      where: movementWhere,
-      attributes: ['id', 'amount', 'paymentMethod', 'category', 'description', 'createdAt'],
-      include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
-        },
-        {
-          model: Client,
-          as: 'client',
-          attributes: ['id', 'firstName', 'lastName'],
-          required: false
-        }
-      ],
-      order: [['createdAt', 'DESC']],
+    
+    // Obtener recibos del turno para extraer métodos de pago con nombres personalizados
+    const Receipt = require('../models/Receipt');
+    const receipts = await Receipt.findAll({
+      where: receiptWhere,
+      attributes: ['id', 'totalAmount', 'paymentMethod', 'metadata', 'createdAt'],
       transaction
     });
     
@@ -959,28 +943,39 @@ class CashRegisterController {
       };
     });
 
-    // Agrupar por método de pago
-    movements.forEach(movement => {
-      const method = movement.paymentMethod || 'OTHER';
-      const amount = parseFloat(movement.amount);
+    // Agrupar recibos por método de pago (con nombres personalizados)
+    receipts.forEach(receipt => {
+      const amount = parseFloat(receipt.totalAmount);
       
-      // Usar el paymentMethod directamente como tipo
-      // Ya no tenemos metadata en FinancialMovement
-      let methodType = method; // El paymentMethod YA es el tipo
+      // Extraer nombre personalizado del método de pago desde metadata
+      const customName = receipt.metadata?.paymentData?.customName 
+        || receipt.metadata?.paymentData?.methodName 
+        || receipt.paymentMethod; // Fallback al tipo del sistema si no hay custom name
       
-      if (!summary.paymentMethods[method]) {
-        summary.paymentMethods[method] = {
+      // Obtener el tipo del método
+      const methodId = receipt.metadata?.paymentData?.methodId;
+      let methodType = receipt.metadata?.paymentData?.method || receipt.paymentMethod;
+      
+      // Si tenemos methodId, buscar el tipo en el mapa
+      if (methodId && paymentMethodMap[methodId]) {
+        methodType = paymentMethodMap[methodId].type;
+      }
+      
+      // Usar el nombre personalizado como clave (para mostrar en PDF)
+      if (!summary.paymentMethods[customName]) {
+        summary.paymentMethods[customName] = {
           count: 0,
-          total: 0
+          total: 0,
+          type: methodType // Guardar el tipo para saber si es efectivo o no
         };
       }
       
-      summary.paymentMethods[method].count++;
-      summary.paymentMethods[method].total += amount;
+      summary.paymentMethods[customName].count++;
+      summary.paymentMethods[customName].total += amount;
       summary.totalIncome += amount;
 
       // Control específico de efectivo (solo si el TIPO es CASH)
-      if (methodType === 'CASH' || method === 'CASH') {
+      if (methodType === 'CASH') {
         summary.totalCash += amount;
       } else {
         summary.totalNonCash += amount;
@@ -990,16 +985,16 @@ class CashRegisterController {
     // TODO: Agregar ventas de productos si tienes ese módulo
     // const productSales = await ProductSale.findAll({ ... });
 
-    // Añadir movimientos detallados al summary
-    summary.movements = movements.map(m => ({
-      id: m.id,
-      description: m.description,
-      amount: parseFloat(m.amount),
-      paymentMethod: m.paymentMethod,
-      category: m.category,
-      createdAt: m.createdAt,
-      specialist: m.user ? `${m.user.firstName} ${m.user.lastName}` : null,
-      client: m.client ? `${m.client.firstName} ${m.client.lastName}` : null
+    // Añadir recibos detallados al summary (en lugar de movements)
+    summary.movements = receipts.map(r => ({
+      id: r.id,
+      description: r.metadata?.paymentData?.customName || r.paymentMethod,
+      amount: parseFloat(r.totalAmount),
+      paymentMethod: r.metadata?.paymentData?.customName || r.paymentMethod,
+      category: 'INCOME',
+      createdAt: r.createdAt,
+      specialist: null,
+      client: null
     }));
 
     return summary;

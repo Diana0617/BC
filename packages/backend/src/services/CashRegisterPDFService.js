@@ -143,21 +143,9 @@ class CashRegisterPDFService {
           .moveDown(0.5);
 
         const paymentMethods = summary.paymentMethods || {};
-        const methodNames = {
-          CASH: 'Efectivo',
-          CARD: 'Tarjeta',
-          CREDIT_CARD: 'Tarjeta de Crédito',
-          DEBIT_CARD: 'Tarjeta de Débito',
-          TRANSFER: 'Transferencia',
-          BANK_TRANSFER: 'Transferencia Bancaria',
-          QR: 'Código QR',
-          ONLINE: 'Pago en línea',
-          DIGITAL_WALLET: 'Billetera Digital',
-          CHECK: 'Cheque',
-          VOUCHER: 'Vale',
-          CREDIT: 'Crédito',
-          OTHER: 'Otro'
-        };
+        
+        // NOTA: paymentMethods ahora usa nombres personalizados como claves (e.g., "transferencia", "Qr")
+        // Cada valor tiene { count, total, type } donde type es el tipo del sistema (CASH, TRANSFER, etc.)
 
         doc.font('Helvetica').fontSize(10);
 
@@ -178,22 +166,22 @@ class CashRegisterPDFService {
             .stroke()
             .moveDown(0.3);
 
-          // Cada método - primero CASH, luego los demás
+          // Cada método - primero efectivo (tipo CASH), luego los demás
           doc.font('Helvetica');
           
-          // Priorizar CASH primero
-          const sortedMethods = Object.entries(paymentMethods).sort(([methodA], [methodB]) => {
-            if (methodA === 'CASH') return -1;
-            if (methodB === 'CASH') return 1;
+          // Ordenar: efectivo primero, luego el resto
+          const sortedMethods = Object.entries(paymentMethods).sort(([nameA, dataA], [nameB, dataB]) => {
+            if (dataA.type === 'CASH') return -1;
+            if (dataB.type === 'CASH') return 1;
             return 0;
           });
           
-          sortedMethods.forEach(([method, data]) => {
-            const methodName = methodNames[method] || method;
+          sortedMethods.forEach(([methodName, data]) => {
+            // methodName ahora es el nombre personalizado (e.g., "transferencia", "Efectivo", "Qr")
             totalAllPayments += data.total;
             
-            // Resaltar efectivo
-            if (method === 'CASH') {
+            // Resaltar efectivo (basado en el tipo, no en el nombre)
+            if (data.type === 'CASH') {
               doc.font('Helvetica-Bold');
             }
             
@@ -202,7 +190,7 @@ class CashRegisterPDFService {
               .text(`${data.count}`, { width: 100, align: 'center', continued: true })
               .text(`$${this._formatMoney(data.total)}`, { align: 'right' });
               
-            if (method === 'CASH') {
+            if (data.type === 'CASH') {
               doc.font('Helvetica');
             }
           });
