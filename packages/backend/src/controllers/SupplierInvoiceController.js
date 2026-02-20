@@ -318,20 +318,26 @@ class SupplierInvoiceController {
 
           // 🔥 Agregar al catálogo de proveedores
           console.log(`📋 Agregando producto ${newProduct.name} al catálogo del proveedor ${finalSupplierId}`);
-          await SupplierCatalogItem.create({
-            businessId,
-            supplierId: finalSupplierId,
-            productId: finalProductId,
-            supplierSku: item.productData.sku,
-            name: item.productData.name,
-            price: item.unitCost,
-            minimumOrder: 1,
-            leadTime: 7,
-            available: true,
-            lastPurchaseDate: new Date(issueDate),
-            lastPurchasePrice: item.unitCost,
-            notes: `Agregado automáticamente desde factura ${invoiceNumber}`
-          }, { transaction });
+          
+          // Usar findOrCreate para evitar duplicados del mismo proveedor
+          await SupplierCatalogItem.findOrCreate({
+            where: {
+              businessId,
+              supplierId: finalSupplierId,
+              supplierSku: item.productData.sku
+            },
+            defaults: {
+              productId: finalProductId,
+              name: item.productData.name,
+              price: item.unitCost,
+              currency: 'COP',
+              minimumOrder: 1,
+              leadTime: 7,
+              available: true,
+              lastUpdate: new Date(issueDate)
+            },
+            transaction
+          });
           console.log(`✅ Producto agregado al catálogo del proveedor`);
         }
 

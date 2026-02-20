@@ -137,8 +137,8 @@ const SupplierCatalogItem = sequelize.define('SupplierCatalogItem', {
     },
     {
       unique: true,
-      fields: ['businessId', 'supplierSku'],
-      name: 'unique_business_sku'
+      fields: ['businessId', 'supplierId', 'supplierSku'],
+      name: 'unique_business_supplier_sku'
     }
   ]
 });
