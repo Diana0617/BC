@@ -83,8 +83,8 @@ export default function PaymentModal({
       return;
     }
 
-    if (formData.amount <= 0) {
-      alert('El monto debe ser mayor a 0');
+    if (formData.amount < 0) {
+      alert('El monto no puede ser negativo');
       return;
     }
 

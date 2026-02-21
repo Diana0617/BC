@@ -152,8 +152,9 @@ class AppointmentPaymentController {
       // sus propios métodos de pago. La validación ya se hizo al buscar en la BD.
 
       // Validar monto
+      // Se permite 0 para servicios gratuitos/cortesía
       const paymentAmount = parseFloat(amount);
-      if (isNaN(paymentAmount) || paymentAmount <= 0) {
+      if (isNaN(paymentAmount) || paymentAmount < 0) {
         return res.status(400).json({
           success: false,
           error: 'Monto de pago inválido'
