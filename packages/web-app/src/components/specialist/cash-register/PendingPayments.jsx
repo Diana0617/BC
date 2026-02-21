@@ -39,13 +39,15 @@ export default function PendingPayments({ shiftId, branchId }) {
       const params = new URLSearchParams({
         businessId: user.businessId,
         paymentStatus: 'PENDING',
-        ...(branchId && { branchId }),
+        // No filtramos por branchId: el especialista debe ver todos sus cobros
+        // pendientes sin importar en qué sucursal se generaron
         ...(filters.status !== 'all' && { status: filters.status }),
         ...(filters.searchTerm && { search: filters.searchTerm })
       });
 
-      // Si el usuario es SPECIALIST, filtrar solo sus turnos
-      if (user.role === 'SPECIALIST') {
+      // Filtrar por specialistId para roles que atienden clientes directamente
+      // SPECIALIST y RECEPTIONIST_SPECIALIST solo ven sus propias citas en caja
+      if (user.role === 'SPECIALIST' || user.role === 'RECEPTIONIST_SPECIALIST') {
         params.append('specialistId', user.id);
       }
 
