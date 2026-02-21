@@ -62,12 +62,13 @@ class AppointmentPaymentController {
       console.log('💳 [recordPayment] paymentMethod:', req.body.paymentMethod);
       
       // Verificar que el especialista tenga acceso a la cita
+      // RECEPTIONIST_SPECIALIST puede cobrar citas de cualquier especialista del negocio
+      const appointmentWhere = { id: appointmentId, businessId };
+      if (req.user.role === 'SPECIALIST' || req.user.role === 'BUSINESS_SPECIALIST') {
+        appointmentWhere.specialistId = req.specialist.id;
+      }
       const appointment = await Appointment.findOne({
-        where: {
-         id: appointmentId,
-          businessId,
-          specialistId: req.specialist.id
-        },
+        where: appointmentWhere,
         include: [
           {
             model: Service,
