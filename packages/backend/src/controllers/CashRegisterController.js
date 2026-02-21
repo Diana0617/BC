@@ -437,10 +437,12 @@ class CashRegisterController {
         transaction
       );
 
-      // Calcular balance esperado
+      // Calcular balance esperado usando totalCash (suma de todos los métodos de tipo CASH)
+      // NOTA: summary.paymentMethods usa el NOMBRE del método como clave (e.g., "Efectivo"),
+      //       no el tipo del sistema (CASH). summary.totalCash ya acumula correctamente.
       const expectedClosingBalance = 
         parseFloat(activeShift.openingBalance) + 
-        parseFloat(summary.paymentMethods.CASH || 0);
+        parseFloat(summary.totalCash || 0);
 
       const actualBalance = parseFloat(actualClosingBalance);
       const difference = actualBalance - expectedClosingBalance;
