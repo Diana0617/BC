@@ -113,7 +113,10 @@ class AppointmentController {
       }
 
       // Filtro opcional por sucursal específica (sobrescribe el filtro multi-branch)
-      if (branchId) {
+      // EXCEPCIÓN: si ya estamos filtrando por specialistId, no aplicar branchId
+      // porque el especialista puede tener citas pendientes en múltiples sucursales
+      // y el filtro de sus branchIds asignadas ya limita correctamente el acceso.
+      if (branchId && !where.specialistId) {
         where.branchId = branchId;
       }
 
