@@ -59,15 +59,19 @@ export default function CashRegisterClosing({
     { key: 'coins_50', label: '$50', value: 50 }
   ];
 
-  // Definir calculateExpectedAmount antes de usarlo
+  // El control de caja solo aplica a pagos en EFECTIVO.
+  // Monto Esperado = Balance Inicial + Efectivo cobrado en el turno
+  // Los otros métodos (transferencia, QR, etc.) son referencia, no afectan la caja física.
   const calculateExpectedAmount = useCallback(() => {
     if (!shiftData) return 0;
-    
+    // El backend ya calcula expectedClosingBalance = openingBalance + totalCash
+    if (shiftData.expectedClosingBalance !== undefined) {
+      return parseFloat(shiftData.expectedClosingBalance) || 0;
+    }
+    // Fallback manual
     const opening = parseFloat(shiftData.openingBalance) || 0;
-    const income = parseFloat(shiftData.totalIncome) || 0;
-    const expenses = parseFloat(shiftData.totalExpenses) || 0;
-    
-    return opening + income - expenses;
+    const cashIncome = parseFloat(shiftData.totalCash) || 0;
+    return opening + cashIncome;
   }, [shiftData]);
 
   useEffect(() => {
@@ -197,28 +201,44 @@ export default function CashRegisterClosing({
 
       yPos += 5;
 
-      // Información del turno
+      // Control de Caja (solo efectivo)
       doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
-      doc.text('Resumen del Turno', 20, yPos);
-      
+      doc.text('Control de Caja (Solo Efectivo)', 20, yPos);
       yPos += 7;
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      
-      const lines = [
-        `Balance Inicial: ${formatCurrency(shiftData.openingBalance)}`,
-        `Total Ingresos: +${formatCurrency(shiftData.totalIncome)}`,
-        `Total Egresos: -${formatCurrency(shiftData.totalExpenses)}`,
-        `Numero de Movimientos: ${shiftData.movementsCount || 0}`,
-        ``,
-        `Monto Esperado: ${formatCurrency(expectedAmount)}`
-      ];
 
-      lines.forEach(line => {
-        doc.text(line, 20, yPos);
-        yPos += 6;
-      });
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(100, 100, 100);
+      doc.text('La caja fisica solo controla pagos en efectivo. Otros metodos son referencia.', 20, yPos);
+      doc.setTextColor(0, 0, 0);
+      yPos += 7;
+
+      doc.setFontSize(10);
+      doc.text(`Balance Inicial:`, 20, yPos, { continued: false });
+      doc.text(formatCurrency(shiftData.openingBalance), pageWidth - 20, yPos, { align: 'right' });
+      yPos += 6;
+      doc.text(`+ Efectivo cobrado en turno:`, 20, yPos);
+      doc.setTextColor(22, 163, 74);
+      doc.text(formatCurrency(shiftData.totalCash || 0), pageWidth - 20, yPos, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
+      yPos += 4;
+      doc.setDrawColor(150, 150, 150);
+      doc.line(20, yPos, pageWidth - 20, yPos);
+      yPos += 5;
+
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(37, 99, 235);
+      doc.text('Monto Esperado en Caja (Efectivo):', 20, yPos);
+      doc.text(formatCurrency(expectedAmount), pageWidth - 20, yPos, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+      yPos += 6;
+
+      doc.text(`Num. Movimientos: ${shiftData.movementsCount || 0}`, 20, yPos);
+      yPos += 8;
 
       if (formData.closingAmount) {
         yPos += 3;
@@ -231,49 +251,47 @@ export default function CashRegisterClosing({
         yPos += 8;
       }
 
-      // Desglose por Método de Pago
+      // Desglose por Método de Pago — separado en efectivo y otros
       const breakdown = shiftData.paymentMethodsBreakdown || {};
-      if (Object.keys(breakdown).length > 0) {
-        if (yPos > pageHeight - 50) { doc.addPage(); yPos = 20; }
+      const cashMethods = Object.entries(breakdown).filter(([, d]) => d.type === 'CASH');
+      const otherMethods = Object.entries(breakdown).filter(([, d]) => d.type !== 'CASH');
+
+      if (cashMethods.length > 0 || otherMethods.length > 0) {
+        if (yPos > pageHeight - 60) { doc.addPage(); yPos = 20; }
 
         yPos += 5;
         doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
-        doc.text('Resumen por Metodo de Pago', 20, yPos);
+        doc.text('Resumen de Ventas por Metodo', 20, yPos);
         yPos += 6;
 
-        // Encabezado tabla
-        doc.setFontSize(9);
-        doc.text('Metodo', 20, yPos, { width: 80 });
-        doc.text('Cant.', 110, yPos, { width: 30, align: 'right' });
-        doc.text('Total', pageWidth - 20, yPos, { align: 'right' });
-        yPos += 4;
-        doc.setDrawColor(100, 100, 100);
-        doc.line(20, yPos, pageWidth - 20, yPos);
-        yPos += 5;
+        const drawMethodTable = (entries, label, labelColor) => {
+          if (entries.length === 0) return;
+          doc.setFontSize(9);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(...labelColor);
+          doc.text(label, 20, yPos);
+          doc.setTextColor(0, 0, 0);
+          yPos += 5;
 
-        doc.setFont(undefined, 'normal');
-        let grandTotal = 0;
-        Object.entries(breakdown)
-          .sort(([, a], [, b]) => (a.type === 'CASH' ? -1 : b.type === 'CASH' ? 1 : 0))
-          .forEach(([methodName, data]) => {
-            if (data.type === 'CASH') doc.setFont(undefined, 'bold');
-            doc.text(methodName, 20, yPos);
-            doc.text(`${data.count}`, 110, yPos, { align: 'right' });
+          doc.setFont(undefined, 'normal');
+          entries.forEach(([methodName, data]) => {
+            doc.text(methodName, 25, yPos);
+            doc.text(`${data.count} tx`, 110, yPos, { align: 'right' });
             doc.text(formatCurrency(data.total), pageWidth - 20, yPos, { align: 'right' });
-            if (data.type === 'CASH') doc.setFont(undefined, 'normal');
-            grandTotal += data.total;
             yPos += 6;
           });
+        };
+
+        drawMethodTable(cashMethods, 'Efectivo (van a caja):', [22, 163, 74]);
+        drawMethodTable(otherMethods, 'Otros metodos (referencia, no van a caja):', [100, 100, 100]);
 
         // Total general
+        const grandTotal = Object.values(breakdown).reduce((s, d) => s + d.total, 0);
         doc.setDrawColor(100, 100, 100);
         doc.line(20, yPos, pageWidth - 20, yPos);
         yPos += 4;
         doc.setFont(undefined, 'bold');
-        doc.setFontSize(10);
-        doc.text('TOTAL INGRESOS:', 20, yPos);
-        doc.text(formatCurrency(grandTotal), pageWidth - 20, yPos, { align: 'right' });
         doc.setFont(undefined, 'normal');
         yPos += 10;
       }
@@ -536,34 +554,40 @@ export default function CashRegisterClosing({
           </div>
         </div>
 
+        {/* Control de Efectivo */}
         <div className="mt-4 pt-4 border-t-2 border-blue-200">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-gray-700">Monto Esperado:</span>
+          <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide font-semibold">Control de Caja (solo efectivo)</p>
+          <div className="space-y-1">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Balance Inicial:</span>
+              <span>{formatCurrency(shiftData?.openingBalance)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>+ Efectivo cobrado:</span>
+              <span className="text-green-600 font-medium">{formatCurrency(shiftData?.totalCash)}</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-3">
+            <span className="font-semibold text-gray-700">Monto Esperado en Caja:</span>
             <span className="text-2xl font-bold text-blue-600">
               {formatCurrency(expectedAmount)}
             </span>
           </div>
         </div>
 
-        {/* Desglose por Método de Pago */}
-        {shiftData?.paymentMethodsBreakdown && Object.keys(shiftData.paymentMethodsBreakdown).length > 0 && (
-          <div className="mt-4 pt-4 border-t border-blue-200">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Ingresos por Método de Pago:</p>
-            <div className="space-y-2">
+        {/* Otros métodos — solo referencia, no afectan la caja */}
+        {shiftData?.paymentMethodsBreakdown && Object.keys(shiftData.paymentMethodsBreakdown).filter(k => shiftData.paymentMethodsBreakdown[k].type !== 'CASH').length > 0 && (
+          <div className="mt-4 pt-4 border-t border-blue-100">
+            <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide font-semibold">Otros métodos (referencia — no van a caja)</p>
+            <div className="space-y-1">
               {Object.entries(shiftData.paymentMethodsBreakdown)
-                .sort(([, a], [, b]) => (a.type === 'CASH' ? -1 : b.type === 'CASH' ? 1 : 0))
+                .filter(([, data]) => data.type !== 'CASH')
                 .map(([methodName, data]) => (
-                  <div key={methodName} className={`flex items-center justify-between px-3 py-2 rounded-lg ${
-                    data.type === 'CASH' ? 'bg-green-100 font-semibold' : 'bg-white border border-blue-100'
-                  }`}>
-                    <span className="text-sm text-gray-700">
+                  <div key={methodName} className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
+                    <span className="text-sm text-gray-600">
                       {methodName} <span className="text-xs text-gray-400">({data.count} tx)</span>
                     </span>
-                    <span className={`text-sm font-bold ${
-                      data.type === 'CASH' ? 'text-green-700' : 'text-gray-800'
-                    }`}>
-                      {formatCurrency(data.total)}
-                    </span>
+                    <span className="text-sm font-medium text-gray-700">{formatCurrency(data.total)}</span>
                   </div>
                 ))
               }
