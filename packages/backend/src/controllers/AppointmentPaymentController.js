@@ -67,6 +67,8 @@ class AppointmentPaymentController {
       if (req.user.role === 'SPECIALIST' || req.user.role === 'BUSINESS_SPECIALIST') {
         appointmentWhere.specialistId = req.specialist.id;
       }
+      console.log('🔍 [recordPayment] appointmentWhere:', JSON.stringify(appointmentWhere));
+      console.log('🔍 [recordPayment] req.user.role:', req.user.role);
       const appointment = await Appointment.findOne({
         where: appointmentWhere,
         include: [
@@ -82,11 +84,13 @@ class AppointmentPaymentController {
       });
 
       if (!appointment) {
+        console.error('❌ [recordPayment] Cita NO encontrada. where:', JSON.stringify(appointmentWhere));
         return res.status(404).json({
           success: false,
           error: 'Cita no encontrada'
         });
       }
+      console.log('✅ [recordPayment] Cita encontrada:', appointment.id, '| totalAmount:', appointment.totalAmount, '| specialistId:', appointment.specialistId);
 
       const {
         paymentMethod,
@@ -154,12 +158,15 @@ class AppointmentPaymentController {
 
       // Validar monto — se permite 0 para servicios gratuitos/cortesía
       const paymentAmount = parseFloat(amount);
+      console.log('💰 [recordPayment] amount recibido:', amount, '| parseFloat:', paymentAmount);
       if (isNaN(paymentAmount) || paymentAmount < 0) {
+        console.error('❌ [recordPayment] Monto inválido:', amount);
         return res.status(400).json({
           success: false,
           error: 'Monto de pago inválido'
         });
       }
+      console.log('✅ [recordPayment] Monto válido:', paymentAmount);
 
       let proofUrl = null;
       let proofPublicId = null;
