@@ -113,16 +113,24 @@ class AppointmentController {
       }
 
       // Filtro opcional por sucursal específica (sobrescribe el filtro multi-branch)
-      // EXCEPCIÓN: si ya estamos filtrando por specialistId, no aplicar branchId
-      // porque el especialista puede tener citas pendientes en múltiples sucursales
-      // y el filtro de sus branchIds asignadas ya limita correctamente el acceso.
-      if (branchId && !where.specialistId) {
+      // EXCEPCIÓN: cuando se buscan cobros pendientes (paymentStatus) y el usuario
+      // tiene múltiples sucursales asignadas, NO restringir a una sola sucursal.
+      // Esto permite que el especialista vea todos sus cobros pendientes en caja
+      // sin importar en qué sucursal se generó la cita.
+      const isPaymentSearch = !!paymentStatus;
+      const hasMultipleBranches = req.user.branchIds && req.user.branchIds.length > 1;
+      if (branchId && !(isPaymentSearch && hasMultipleBranches)) {
         where.branchId = branchId;
       }
 
       // Filtros adicionales
       if (status) {
         where.status = status;
+      } else if (paymentStatus === 'PENDING') {
+        // Sin filtro de estado explícito + cobros pendientes: mostrar solo
+        // las citas accionables (IN_PROGRESS o COMPLETED). Las SCHEDULED
+        // aún no se pueden cobrar y saturarían la paginación.
+        where.status = { [Op.in]: ['IN_PROGRESS', 'COMPLETED'] };
       }
 
       if (paymentStatus) {
