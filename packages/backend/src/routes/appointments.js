@@ -259,7 +259,7 @@ router.post('/:id/payment', async (req, res) => {
       });
     }
 
-    if (!paymentMethodId || !amount) {
+    if (!paymentMethodId || amount === undefined || amount === null || amount === '') {
       return res.status(400).json({
         success: false,
         error: 'Método de pago y monto son requeridos'
