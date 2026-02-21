@@ -231,6 +231,53 @@ export default function CashRegisterClosing({
         yPos += 8;
       }
 
+      // Desglose por Método de Pago
+      const breakdown = shiftData.paymentMethodsBreakdown || {};
+      if (Object.keys(breakdown).length > 0) {
+        if (yPos > pageHeight - 50) { doc.addPage(); yPos = 20; }
+
+        yPos += 5;
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text('Resumen por Metodo de Pago', 20, yPos);
+        yPos += 6;
+
+        // Encabezado tabla
+        doc.setFontSize(9);
+        doc.text('Metodo', 20, yPos, { width: 80 });
+        doc.text('Cant.', 110, yPos, { width: 30, align: 'right' });
+        doc.text('Total', pageWidth - 20, yPos, { align: 'right' });
+        yPos += 4;
+        doc.setDrawColor(100, 100, 100);
+        doc.line(20, yPos, pageWidth - 20, yPos);
+        yPos += 5;
+
+        doc.setFont(undefined, 'normal');
+        let grandTotal = 0;
+        Object.entries(breakdown)
+          .sort(([, a], [, b]) => (a.type === 'CASH' ? -1 : b.type === 'CASH' ? 1 : 0))
+          .forEach(([methodName, data]) => {
+            if (data.type === 'CASH') doc.setFont(undefined, 'bold');
+            doc.text(methodName, 20, yPos);
+            doc.text(`${data.count}`, 110, yPos, { align: 'right' });
+            doc.text(formatCurrency(data.total), pageWidth - 20, yPos, { align: 'right' });
+            if (data.type === 'CASH') doc.setFont(undefined, 'normal');
+            grandTotal += data.total;
+            yPos += 6;
+          });
+
+        // Total general
+        doc.setDrawColor(100, 100, 100);
+        doc.line(20, yPos, pageWidth - 20, yPos);
+        yPos += 4;
+        doc.setFont(undefined, 'bold');
+        doc.setFontSize(10);
+        doc.text('TOTAL INGRESOS:', 20, yPos);
+        doc.text(formatCurrency(grandTotal), pageWidth - 20, yPos, { align: 'right' });
+        doc.setFont(undefined, 'normal');
+        yPos += 10;
+      }
+
       // Detalle de Movimientos
       if (movements && movements.length > 0) {
         yPos += 5;
@@ -497,6 +544,32 @@ export default function CashRegisterClosing({
             </span>
           </div>
         </div>
+
+        {/* Desglose por Método de Pago */}
+        {shiftData?.paymentMethodsBreakdown && Object.keys(shiftData.paymentMethodsBreakdown).length > 0 && (
+          <div className="mt-4 pt-4 border-t border-blue-200">
+            <p className="text-sm font-semibold text-gray-700 mb-3">Ingresos por Método de Pago:</p>
+            <div className="space-y-2">
+              {Object.entries(shiftData.paymentMethodsBreakdown)
+                .sort(([, a], [, b]) => (a.type === 'CASH' ? -1 : b.type === 'CASH' ? 1 : 0))
+                .map(([methodName, data]) => (
+                  <div key={methodName} className={`flex items-center justify-between px-3 py-2 rounded-lg ${
+                    data.type === 'CASH' ? 'bg-green-100 font-semibold' : 'bg-white border border-blue-100'
+                  }`}>
+                    <span className="text-sm text-gray-700">
+                      {methodName} <span className="text-xs text-gray-400">({data.count} tx)</span>
+                    </span>
+                    <span className={`text-sm font-bold ${
+                      data.type === 'CASH' ? 'text-green-700' : 'text-gray-800'
+                    }`}>
+                      {formatCurrency(data.total)}
+                    </span>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Formulario */}
