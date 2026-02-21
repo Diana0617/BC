@@ -147,6 +147,12 @@ const SupplierInvoice = sequelize.define('SupplierInvoice', {
     type: DataTypes.JSON,
     allowNull: true,
     defaultValue: []
+  },
+  metadata: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null,
+    comment: 'Metadata de distribución: { stockDistributed, branchDistribution, autoDistributed }'
   }
 }, {
   tableName: 'supplier_invoices',

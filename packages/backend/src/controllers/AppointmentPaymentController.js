@@ -67,8 +67,6 @@ class AppointmentPaymentController {
       if (req.user.role === 'SPECIALIST' || req.user.role === 'BUSINESS_SPECIALIST') {
         appointmentWhere.specialistId = req.specialist.id;
       }
-      console.log('🔍 [recordPayment] appointmentWhere:', JSON.stringify(appointmentWhere));
-      console.log('🔍 [recordPayment] req.user.role:', req.user.role);
       const appointment = await Appointment.findOne({
         where: appointmentWhere,
         include: [

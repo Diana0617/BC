@@ -449,7 +449,7 @@ const handleReceiveGoods = (invoice) => {
                               <PackageIcon className="w-4 h-4" />
                             </button>
                           )}
-                          {invoice.status === 'PENDING' && !invoice.metadata?.stockDistributed && invoice.receiptStatus === 'FULLY_RECEIVED' && (
+                          {invoice.status === 'PENDING' && !invoice.metadata?.stockDistributed && invoice.receiptStatus === 'PENDING_RECEIPT' && (
                             <button
                               onClick={() => handleDistribute(invoice)}
                               className="p-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded"

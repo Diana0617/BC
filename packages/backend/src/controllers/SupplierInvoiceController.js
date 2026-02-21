@@ -590,6 +590,16 @@ class SupplierInvoiceController {
         });
       }
 
+      // Validar que no se hayan recibido mercancías previamente via receiveGoods
+      // (los dos flujos son mutuamente excluyentes para evitar duplicación de inventario)
+      if (invoice.receiptStatus !== 'PENDING_RECEIPT') {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: `No se puede distribuir stock cuando ya se han recibido mercancías (estado: ${invoice.receiptStatus}). Usa el flujo de recepción de mercancía.`
+        });
+      }
+
       // Validar que todas las sucursales existan
       const branchIds = distribution.map(d => d.branchId);
       const branches = await Branch.findAll({
@@ -779,111 +789,15 @@ class SupplierInvoiceController {
         });
       }
 
-      // Validar que el stock haya sido distribuido O distribuir automáticamente a sucursal principal
+      // Validar que el stock haya sido distribuido o recibido previamente.
+      // La aprobación NO mueve inventario; eso debe hacerse antes via receiveGoods o distributeStock.
+      // Esto evita la duplicación de entradas que ocurría con la auto-distribución.
       if (!invoice.metadata?.stockDistributed) {
-        console.log('⚠️ Stock no distribuido manualmente, distribuyendo a sucursal principal...');
-        
-        // Obtener sucursal principal del negocio
-        const Business = require('../models').Business;
-        const business = await Business.findByPk(businessId, {
-          include: [{
-            model: Branch,
-            as: 'branches',
-            where: { status: 'ACTIVE' },
-            required: false
-          }],
-          transaction
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Debes recibir o distribuir el stock antes de aprobar la factura. Usa "Recibir Mercancía" o "Distribuir Stock" primero.'
         });
-
-        if (!business || !business.branches || business.branches.length === 0) {
-          await transaction.rollback();
-          return res.status(400).json({
-            success: false,
-            message: 'No hay sucursales activas para distribuir el stock'
-          });
-        }
-
-        // Usar la primera sucursal activa como principal
-        const mainBranch = business.branches[0];
-        
-        // Crear distribución automática con todos los items a la sucursal principal
-        const autoDistribution = [{
-          branchId: mainBranch.id,
-          items: invoice.items.map(item => ({
-            productId: item.productId,
-            quantity: item.quantityOrdered // El campo guardado en la factura es quantityOrdered
-          }))
-        }];
-
-        // Aplicar la distribución automática
-        const userId = req.user.id;
-        const Product = require('../models').Product;
-        const BranchStock = require('../models').BranchStock;
-        const InventoryMovement = require('../models').InventoryMovement;
-
-        for (const item of invoice.items) {
-          const product = await Product.findByPk(item.productId, { transaction });
-          if (!product) continue;
-
-          // Obtener o crear stock de sucursal
-          const [branchStock, created] = await BranchStock.findOrCreate({
-            where: { branchId: mainBranch.id, productId: item.productId },
-            defaults: {
-              businessId,
-              branchId: mainBranch.id,
-              productId: item.productId,
-              currentStock: 0,
-              minStock: 0,
-              maxStock: null,
-              lastCountDate: new Date()
-            },
-            transaction
-          });
-
-          const previousBranchStock = branchStock.currentStock;
-          const newBranchStock = previousBranchStock + item.quantityOrdered; // El campo guardado es quantityOrdered
-
-          // Crear movimiento de inventario
-          await InventoryMovement.create({
-            businessId,
-            productId: item.productId,
-            branchId: mainBranch.id,
-            userId,
-            movementType: 'PURCHASE',
-            quantity: item.quantityOrdered, // El campo guardado es quantityOrdered
-            unitCost: item.unitCost,
-            totalCost: item.total,
-            previousStock: previousBranchStock,
-            newStock: newBranchStock,
-            notes: `Compra automática desde factura ${invoice.invoiceNumber}`,
-            reference: invoice.invoiceNumber,
-            metadata: {
-              source: 'supplier_invoice',
-              invoiceId: invoice.id,
-              autoDistributed: true
-            }
-          }, { transaction });
-
-          // Actualizar stock de sucursal
-          await branchStock.update({
-            currentStock: newBranchStock
-          }, { transaction });
-
-          console.log(`✅ Stock actualizado: ${product.name} en ${mainBranch.name}: ${previousBranchStock} → ${newBranchStock}`);
-        }
-
-        // Marcar como distribuido
-        await invoice.update({
-          metadata: {
-            ...invoice.metadata,
-            stockDistributed: true,
-            autoDistributed: true,
-            distributionDate: new Date(),
-            mainBranchId: mainBranch.id
-          }
-        }, { transaction });
-
-        console.log(`✅ Distribución automática completada a sucursal ${mainBranch.name}`);
       }
 
       // Aprobar factura
@@ -1529,6 +1443,16 @@ class SupplierInvoiceController {
         await invoice.update({ branchId: targetBranchId }, { transaction });
         
         console.log(`📍 Asignada sucursal principal ${primaryBranch.name} a la factura ${invoice.invoiceNumber}`);
+      }
+
+      // Validar que el stock no haya sido distribuido via distributeStock
+      // (los dos flujos son mutuamente excluyentes para evitar duplicación de inventario)
+      if (invoice.metadata?.stockDistributed && invoice.receiptStatus === 'PENDING_RECEIPT') {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'El stock de esta factura ya fue distribuido entre sucursales. No se puede usar la recepción de mercancía sobre una factura ya distribuida.'
+        });
       }
 
       // Validar que la factura no esté completamente recibida

@@ -280,7 +280,7 @@ class SaleController {
             unitCost: itemData.unitCost,
             totalCost: itemData.unitCost * itemData.quantity,
             previousStock: branchId 
-              ? (await BranchStock.findOne({ where: { branchId, productId: itemData.productId }}))?.currentStock || 0
+              ? (await BranchStock.findOne({ where: { branchId, productId: itemData.productId }, transaction }))?.currentStock || 0
               : itemData.product.currentStock,
             newStock: 0, // Se calculará después
             reason: `Venta ${saleNumber}`,
@@ -301,6 +301,14 @@ class SaleController {
               await branchStock.save({ transaction });
               
               inventoryMovement.newStock = branchStock.currentStock;
+              await inventoryMovement.save({ transaction });
+            } else {
+              // No hay registro de stock por sucursal: descontar del stock global del producto
+              // (puede ocurrir si el stock fue cargado globalmente antes de activar sucursales)
+              itemData.product.currentStock -= itemData.quantity;
+              await itemData.product.save({ transaction });
+
+              inventoryMovement.newStock = itemData.product.currentStock;
               await inventoryMovement.save({ transaction });
             }
           } else {

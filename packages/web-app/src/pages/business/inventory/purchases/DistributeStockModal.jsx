@@ -12,7 +12,7 @@ import { useBusinessContext } from '../../../../context/BusinessContext';
 import businessBranchesApi from '@shared/api/businessBranchesApi';
 import supplierInvoicesApi from '@shared/api/supplierInvoicesApi';
 
-const DistributeStockModal = ({ invoice, onClose, onDistributed }) => {
+const DistributeStockModal = ({ invoice, onClose, onSuccess }) => {
   const { businessId } = useBusinessContext();
   const [loading, setLoading] = useState(false);
   const [loadingBranches, setLoadingBranches] = useState(false);
@@ -120,8 +120,9 @@ const DistributeStockModal = ({ invoice, onClose, onDistributed }) => {
 
     // Verificar que cada producto esté completamente distribuido
     return invoice.items.every(item => {
+      const ordered = item.quantityOrdered ?? item.quantity ?? 0;
       const distributed = getProductTotalDistributed(item.productId);
-      return distributed === item.quantity;
+      return distributed === ordered;
     });
   };
 
@@ -139,8 +140,8 @@ const DistributeStockModal = ({ invoice, onClose, onDistributed }) => {
     try {
       const response = await supplierInvoicesApi.distributeStock(businessId, invoice.id, distribution);
       
-      if (onDistributed) {
-        onDistributed(response.data);
+      if (onSuccess) {
+        onSuccess(response.data);
       }
     } catch (err) {
       console.error('Error distributing stock:', err);
@@ -221,16 +222,17 @@ const DistributeStockModal = ({ invoice, onClose, onDistributed }) => {
                       </thead>
                       <tbody>
                         {invoice.items.map((item, idx) => {
+                          const ordered = item.quantityOrdered ?? item.quantity ?? 0;
                           const distributed = getProductTotalDistributed(item.productId);
-                          const remaining = item.quantity - distributed;
+                          const remaining = ordered - distributed;
                           const isComplete = remaining === 0;
-                          const isOver = distributed > item.quantity;
+                          const isOver = distributed > ordered;
 
                           return (
                             <tr key={idx} className="border-b border-gray-200">
                               <td className="py-2 px-2">{item.productName || item.productId}</td>
                               <td className="text-right py-2 px-2">
-                                <strong>{item.quantity}</strong>
+                                <strong>{item.quantityOrdered ?? item.quantity ?? 0}</strong>
                               </td>
                               <td className={`text-right py-2 px-2 ${
                                 isOver ? 'text-red-600 font-bold' : 
@@ -242,7 +244,7 @@ const DistributeStockModal = ({ invoice, onClose, onDistributed }) => {
                               <td className="text-center py-2 px-2">
                                 {isOver ? (
                                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
-                                    +{distributed - item.quantity} exceso
+                                    +{distributed - ordered} exceso
                                   </span>
                                 ) : isComplete ? (
                                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
@@ -318,7 +320,7 @@ const DistributeStockModal = ({ invoice, onClose, onDistributed }) => {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               />
                               <p className="text-xs text-gray-500 mt-1">
-                                Máx: {item.quantity}
+                                Máx: {item.quantityOrdered ?? item.quantity ?? 0}
                               </p>
                             </div>
                           ))}
