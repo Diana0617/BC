@@ -303,9 +303,9 @@ const SupplierCatalog = () => {
                   {/* Mostrar precio de venta del producto si existe, sino el del catálogo */}
                   <div className="flex flex-col">
                     <span className="text-lg font-bold text-gray-900">
-                      ${parseFloat(item.product?.price || item.price).toLocaleString('es-CO')}
+                      ${parseFloat(item.product?.price ?? item.price).toLocaleString('es-CO')}
                     </span>
-                    {item.product?.price && item.price !== item.product.price && (
+                    {item.product?.price != null && item.price !== item.product.price && (
                       <span className="text-xs text-gray-500">
                         Costo: ${parseFloat(item.price).toLocaleString('es-CO')}
                       </span>

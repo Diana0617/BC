@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import * as XLSX from 'xlsx';
 import { getInventoryMovements } from '@shared/api/businessInventoryApi';
 import businessBranchesApi from '@shared/api/businessBranchesApi';
 import { usePagination } from '@shared/hooks/usePagination';
@@ -154,6 +155,32 @@ const InventoryMovements = () => {
     fetchMovements();
   };
 
+  const handleDownloadExcel = () => {
+    if (movements.length === 0) return;
+
+    const rows = movements.map((movement) => ({
+      Fecha: format(new Date(movement.createdAt), 'dd/MM/yyyy HH:mm', { locale: es }),
+      Tipo: movementTypes[movement.movementType]?.label || movement.movementType,
+      Producto: movement.product?.name || 'N/A',
+      SKU: movement.product?.sku || '-',
+      Sucursal: movement.branch?.name || 'General',
+      Cantidad: movement.quantity,
+      Unidad: movement.product?.unit || '',
+      Usuario: movement.user?.name || 'Sistema',
+      Razón: reasons[movement.reason] || movement.reason || '',
+      Notas: movement.notes || '',
+      'Transferencia Desde': movement.metadata?.transferFromBranchName || '',
+      'Transferencia Hacia': movement.metadata?.transferToBranchName || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Movimientos');
+
+    const dateStr = format(new Date(), 'yyyy-MM-dd');
+    XLSX.writeFile(workbook, `movimientos_inventario_${dateStr}.xlsx`);
+  };
+
   const handleClearFilters = () => {
     setFilters({
       productId: '',
@@ -210,6 +237,15 @@ const InventoryMovements = () => {
             <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={handleDownloadExcel}
+              disabled={movements.length === 0 || loading}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Descargar Excel"
+            >
+              <Download className="w-4 h-4" />
+              Excel
+            </button>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"

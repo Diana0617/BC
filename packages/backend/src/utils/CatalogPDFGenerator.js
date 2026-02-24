@@ -9,7 +9,7 @@ class CatalogPDFGenerator {
   static async generate(catalogItems, business, filters = {}) {
     return new Promise(async (resolve, reject) => {
       try {
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true });
         const stream = new PassThrough();
         const chunks = [];
 
