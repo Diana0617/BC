@@ -9,6 +9,7 @@ import {
   PhotoIcon
 } from '@heroicons/react/24/outline';
 import supplierCatalogApi from '@shared/api/supplierCatalogApi';
+import * as XLSX from 'xlsx';
 
 const SupplierCatalog = () => {
   const business = useSelector(state => state.business?.currentBusiness);
@@ -27,6 +28,7 @@ const SupplierCatalog = () => {
   const [total, setTotal] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
 
   // Debug: Log cuando cambia el business
   useEffect(() => {
@@ -109,6 +111,44 @@ const SupplierCatalog = () => {
     }
   };
 
+  const handleDownloadExcel = async () => {
+    try {
+      setDownloadingExcel(true);
+      // Traer todos los items sin paginación
+      const response = await supplierCatalogApi.getCatalog(business.id, {
+        ...filters,
+        page: 1,
+        limit: 9999
+      });
+
+      if (!response.success || !response.data?.length) return;
+
+      const rows = response.data.map(item => ({
+        Nombre: item.name,
+        SKU: item.supplierSku || '',
+        Categoría: item.product?.category || item.category || '',
+        Proveedor: item.supplier?.name || '',
+        'Precio Venta': item.product?.price ?? item.price,
+        'Precio Costo': item.price,
+        Disponible: item.available ? 'Sí' : 'No',
+        Stock: item.product?.stock ?? '',
+        Descripción: item.description || ''
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Catálogo');
+
+      const dateStr = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(workbook, `catalogo_productos_${dateStr}.xlsx`);
+    } catch (error) {
+      console.error('Error downloading Excel:', error);
+      alert('Error al generar Excel');
+    } finally {
+      setDownloadingExcel(false);
+    }
+  };
+
   const clearFilters = () => {
     setFilters({
       supplierId: '',
@@ -143,12 +183,20 @@ const SupplierCatalog = () => {
               Filtros
             </button>
             <button
+              onClick={handleDownloadExcel}
+              disabled={downloadingExcel || total === 0}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" />
+              {downloadingExcel ? 'Generando...' : 'Excel'}
+            </button>
+            <button
               onClick={handleDownloadPDF}
               disabled={downloading || catalogItems.length === 0}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ArrowDownTrayIcon className="h-4 w-4" />
-              {downloading ? 'Generando...' : 'Descargar PDF'}
+              {downloading ? 'Generando...' : 'PDF'}
             </button>
           </div>
         </div>

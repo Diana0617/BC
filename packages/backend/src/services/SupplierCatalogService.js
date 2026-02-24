@@ -219,6 +219,38 @@ class SupplierCatalogService {
         order: [['name', 'ASC']]
       });
 
+      // Auto-vincular items sin productId buscando por SKU en los productos del negocio
+      const unlinkedItems = result.rows.filter(item => !item.product);
+      if (unlinkedItems.length > 0) {
+        const skus = [...new Set(unlinkedItems.map(item => item.supplierSku).filter(Boolean))];
+        const matchingProducts = await Product.findAll({
+          where: {
+            businessId,
+            sku: { [Op.in]: skus },
+            isActive: true
+          },
+          attributes: ['id', 'name', 'sku', 'price', 'cost', 'images', 'category', 'brand', 'currentStock']
+        });
+
+        const productBySkuMap = {};
+        matchingProducts.forEach(p => { productBySkuMap[p.sku] = p; });
+
+        const linkUpdates = [];
+        for (const item of unlinkedItems) {
+          const matched = productBySkuMap[item.supplierSku];
+          if (matched) {
+            item.product = matched;
+            // Persistir el vínculo para futuras consultas (sin await para no bloquear)
+            linkUpdates.push(item.update({ productId: matched.id }));
+          }
+        }
+        if (linkUpdates.length > 0) {
+          Promise.all(linkUpdates).catch(err =>
+            console.error('Error auto-linking catalog items to products:', err)
+          );
+        }
+      }
+
       return {
         success: true,
         data: result.rows,
